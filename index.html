@@ -1052,6 +1052,7 @@
       <div class="auth-logo"><div class="auth-logo-text">ROYAL♠WIN</div></div>
       <div class="auth-title">Create Account</div>
       <div class="auth-sub">Join and claim your 200% welcome bonus</div>
+      <div id="registerFormFields">
       <div class="invite-pill" id="invitePill">🎁 &nbsp;<span>Invited by code:</span> &nbsp;<strong id="inviteCodeDisplay">644371759</strong></div>
       <div class="form-row">
         <div class="form-group">
@@ -1073,7 +1074,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Password</label>
-        <input class="form-input" type="password" id="regPassword" placeholder="Min 8 characters" oninput="checkStrength(this.value)" oninput="checkStrength(this.value)">
+        <input class="form-input" type="password" id="regPassword" placeholder="Min 8 characters" oninput="checkStrength(this.value)">
         <div class="strength-bar" style="margin-top:6px;"><div class="strength-fill" id="strengthFill"></div></div>
         <div class="strength-label" id="strengthLabel"></div>
       </div>
@@ -1085,7 +1086,6 @@
         <input type="checkbox" id="terms" checked>
         <label for="terms">I agree to the <a href="#">Terms & Conditions</a> and <a href="#">Privacy Policy</a></label>
       </div>
-      <div id="registerForm">
       <button class="btn btn-gold btn-full" onclick="sendOTP()">🚀 Send OTP & Continue</button>
       </div>
       <div class="otp-wrap" id="otpWrap">
@@ -1321,7 +1321,15 @@
   // OTP
   let otpInterval;
   function sendOTP() {
-    document.getElementById('registerForm').style.display = 'none';
+    const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
+    const username = document.getElementById('regUsername') ? document.getElementById('regUsername').value.trim() : '';
+    const password = document.getElementById('regPassword') ? document.getElementById('regPassword').value : '';
+    if (!contact) { showToast('⚠️ Enter your mobile or email'); return; }
+    if (!username) { showToast('⚠️ Enter a username'); return; }
+    if (!password || password.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
+    // Hide form, show OTP
+    const fields = document.getElementById('registerFormFields');
+    if (fields) fields.style.display = 'none';
     document.getElementById('otpWrap').style.display = 'block';
     showToast('📱 OTP sent to your mobile/email!');
     startOTPTimer();
