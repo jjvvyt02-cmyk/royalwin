@@ -1085,7 +1085,22 @@
         <input type="checkbox" id="terms" checked>
         <label for="terms">I agree to the <a href="#">Terms & Conditions</a> and <a href="#">Privacy Policy</a></label>
       </div>
-      <button class="btn btn-gold btn-full" onclick="doRegister()">🚀 Create Account & Play</button>
+      <div id="registerForm">
+      <button class="btn btn-gold btn-full" onclick="sendOTP()">🚀 Send OTP & Continue</button>
+      </div>
+      <div class="otp-wrap" id="otpWrap">
+        <div style="text-align:center;margin-bottom:0.5rem;font-size:0.9rem;color:var(--muted);">Enter the 6-digit OTP sent to your mobile/email</div>
+        <div class="otp-inputs">
+          <input class="otp-input" maxlength="1" id="otp1" oninput="otpMove(this,'otp2')">
+          <input class="otp-input" maxlength="1" id="otp2" oninput="otpMove(this,'otp3')">
+          <input class="otp-input" maxlength="1" id="otp3" oninput="otpMove(this,'otp4')">
+          <input class="otp-input" maxlength="1" id="otp4" oninput="otpMove(this,'otp5')">
+          <input class="otp-input" maxlength="1" id="otp5" oninput="otpMove(this,'otp6')">
+          <input class="otp-input" maxlength="1" id="otp6" oninput="otpMove(this,null)">
+        </div>
+        <div class="otp-timer">Resend OTP in <span id="otpTimer">59</span>s &nbsp;<button class="resend-btn" id="resendBtn" style="display:none;" onclick="resendOTP()">Resend</button></div>
+        <button class="btn btn-gold btn-full" onclick="verifyOTP()">✅ Verify & Create Account</button>
+      </div>
       <div class="auth-footer">Already have an account? <a onclick="showPage('login')">Sign In</a></div>
     </div>
   </div>
