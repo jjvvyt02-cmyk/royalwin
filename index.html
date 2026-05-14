@@ -2637,6 +2637,56 @@
       fbDB.ref('wingo/bettinglocked').on('value', (snap) => {
         if (snap.val() === true) cgBettingOpen = false;
       });
+
+      // Listen for announcement banner
+      fbDB.ref('announcement').on('value', (snap) => {
+        const data = snap.val();
+        let bannerEl = document.getElementById('announcementBanner');
+        if (data && data.active && data.message) {
+          if (!bannerEl) {
+            bannerEl = document.createElement('div');
+            bannerEl.id = 'announcementBanner';
+            bannerEl.style.cssText = 'background:linear-gradient(135deg,#c07a10,var(--gold2));color:#000;text-align:center;padding:0.5rem 1rem;font-size:0.88rem;font-weight:700;position:fixed;top:64px;left:0;right:0;z-index:200;';
+            document.body.insertBefore(bannerEl, document.body.firstChild);
+          }
+          bannerEl.textContent = '📢 ' + data.message;
+          bannerEl.style.display = 'block';
+        } else if (bannerEl) {
+          bannerEl.style.display = 'none';
+        }
+      });
+
+      // Listen for maintenance mode
+      fbDB.ref('maintenance').on('value', (snap) => {
+        const data = snap.val();
+        if (data && data.active) {
+          let overlay = document.getElementById('maintenanceOverlay');
+          if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'maintenanceOverlay';
+            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(10,10,15,0.97);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;';
+            overlay.innerHTML = '<div style="font-size:3rem;margin-bottom:1rem;">🔧</div><div style="font-family:Cinzel,serif;font-size:1.5rem;color:var(--gold);margin-bottom:0.5rem;">Under Maintenance</div><div id="maintenanceMsgText" style="color:var(--muted);font-size:0.95rem;"></div>';
+            document.body.appendChild(overlay);
+          }
+          document.getElementById('maintenanceMsgText').textContent = data.message || '🔧 Site under maintenance. Back soon!';
+          overlay.style.display = 'flex';
+        } else {
+          const overlay = document.getElementById('maintenanceOverlay');
+          if (overlay) overlay.style.display = 'none';
+        }
+      });
+
+      // Block user check
+      firebase.auth().onAuthStateChanged((user) => {
+        if (user) {
+          fbDB.ref('users/' + user.uid + '/isBlocked').on('value', (snap) => {
+            if (snap.val() === true) {
+              firebase.auth().signOut();
+              showToast('❌ Your account has been blocked. Contact support.');
+            }
+          });
+        }
+      });
       console.log('Firebase initialized!');
     } catch(e) {
       console.warn('Firebase error:', e.message);
