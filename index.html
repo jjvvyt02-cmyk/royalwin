@@ -1473,12 +1473,13 @@
 
       } else {
         // Verify phone OTP with Firebase
-        if (!window._confirmResult) { showToast('❌ Please request OTP again.'); return; }
+        if (!window._phoneConfirmResult && !window._confirmResult) { showToast('❌ Please request OTP again.'); return; }
         showToast('⏳ Verifying OTP...');
-        await window._confirmResult.confirm(otp);
+        const confirmResult = window._phoneConfirmResult || window._confirmResult;
+        await confirmResult.confirm(otp);
         showToast('✅ Phone verified!');
         // Phone is verified — now complete registration
-        await doRegisterPhone();
+        await doRegister();
       }
     } catch(e) {
       const msg = e.code === 'auth/invalid-verification-code' ? 'Wrong OTP. Please try again.' :
