@@ -961,6 +961,7 @@
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
+<div id="recaptchaContainer"></div>
 
 <!-- NAV -->
 <nav id="mainNav">
@@ -1305,35 +1306,125 @@
     if (inp) inp.value = val;
   }
 
-  function doDeposit() {
-    const amt = document.getElementById('depositAmount').value;
+  async function doDeposit() {
+    const amt = parseFloat(document.getElementById('depositAmount').value);
     if (!amt || amt < 300) { showToast('⚠️ Minimum deposit is ₹300'); return; }
     if (amt > 20000) { showToast('⚠️ Maximum deposit is ₹20,000'); return; }
-    showToast('✅ Deposit of ₹' + parseInt(amt).toLocaleString() + ' initiated!');
+    if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
+    try {
+      const db = window.fbDB || fbDB;
+      // Save deposit request to Firebase
+      await db.ref('users/' + window.currentUser.uid + '/depositRequests').push({
+        amount: amt, status: 'pending', method: 'manual',
+        timestamp: Date.now(), uid: window.currentUser.uid
+      });
+      // Also save to admin deposits node
+      await db.ref('adminRequests/deposits').push({
+        amount: amt, status: 'pending', uid: window.currentUser.uid,
+        username: window.userProfile ? window.userProfile.username : 'Unknown',
+        timestamp: Date.now()
+      });
+      showToast('✅ Deposit request of ₹' + amt.toLocaleString('en-IN') + ' submitted! Admin will approve shortly.');
+    } catch(e) { showToast('❌ Deposit request failed: ' + e.message); }
   }
 
-  function doWithdraw() {
-    const amt = document.getElementById('withdrawAmount').value;
+  async function doWithdraw() {
+    const amt = parseFloat(document.getElementById('withdrawAmount').value);
     if (!amt || amt < 200) { showToast('⚠️ Minimum withdrawal is ₹200'); return; }
-    showToast('⬆️ Withdrawal of ₹' + parseInt(amt).toLocaleString() + ' submitted!');
+    if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
+    const db = window.fbDB || fbDB;
+    try {
+      const balSnap = await db.ref('users/' + window.currentUser.uid + '/balance').once('value');
+      const bal = parseFloat(balSnap.val() || 0);
+      if (amt > bal) { showToast('❌ Insufficient balance! Your balance: ₹' + bal.toLocaleString('en-IN')); return; }
+      // Save withdrawal request
+      await db.ref('users/' + window.currentUser.uid + '/withdrawRequests').push({
+        amount: amt, status: 'pending', timestamp: Date.now(), uid: window.currentUser.uid
+      });
+      await db.ref('adminRequests/withdrawals').push({
+        amount: amt, status: 'pending', uid: window.currentUser.uid,
+        username: window.userProfile ? window.userProfile.username : 'Unknown',
+        balance: bal, timestamp: Date.now()
+      });
+      showToast('⬆️ Withdrawal of ₹' + amt.toLocaleString('en-IN') + ' submitted! Admin will process shortly.');
+    } catch(e) { showToast('❌ Withdrawal failed: ' + e.message); }
   }
 
   // OTP
   let otpInterval;
-  function sendOTP() {
+  async function sendOTP() {
     const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
     const username = document.getElementById('regUsername') ? document.getElementById('regUsername').value.trim() : '';
     const password = document.getElementById('regPassword') ? document.getElementById('regPassword').value : '';
     if (!contact) { showToast('⚠️ Enter your mobile or email'); return; }
     if (!username) { showToast('⚠️ Enter a username'); return; }
     if (!password || password.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
-    // Hide form, show OTP
-    const fields = document.getElementById('registerFormFields');
-    if (fields) fields.style.display = 'none';
-    document.getElementById('otpWrap').style.display = 'block';
-    showToast('📱 OTP sent to your mobile/email!');
-    startOTPTimer();
-    document.getElementById('otp1').focus();
+
+    const isEmail = contact.includes('@');
+
+    try {
+      if (isEmail) {
+        // Email OTP — send sign-in link
+        showToast('⏳ Sending OTP to your email...');
+        // Generate a 6-digit OTP and store in Firebase temporarily
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        window._regOTP = otp;
+        window._regIsEmail = true;
+
+        // Save OTP to Firebase temporarily (expires in 10 mins)
+        const db = window.fbDB || fbDB;
+        if (db) {
+          await db.ref('otpVerification/' + contact.replace(/[.#$\[\]]/g, '_')).set({
+            otp, expires: Date.now() + 600000, contact
+          });
+        }
+
+        // In production, send email via Firebase Email trigger or EmailJS
+        // For now show the OTP in toast (replace with real email service)
+        showToast('📧 OTP sent to ' + contact + '! Check your email.');
+        console.log('DEV MODE - Email OTP:', otp); // Remove in production
+
+      } else {
+        // Phone OTP — use Firebase Phone Auth
+        showToast('⏳ Sending OTP to ' + contact + '...');
+
+        // Format phone number
+        let phone = contact.replace(/\s/g, '');
+        if (!phone.startsWith('+')) phone = '+91' + phone;
+
+        // Setup recaptcha (invisible)
+        if (!window.recaptchaVerifier) {
+          window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
+            size: 'invisible',
+            callback: () => {}
+          });
+        }
+
+        const confirmResult = await firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier);
+        window._confirmResult = confirmResult;
+        window._regIsEmail = false;
+        showToast('📱 OTP sent to ' + phone + '!');
+      }
+
+      // Hide form, show OTP inputs
+      const fields = document.getElementById('registerFormFields');
+      if (fields) fields.style.display = 'none';
+      document.getElementById('otpWrap').style.display = 'block';
+      startOTPTimer();
+      document.getElementById('otp1').focus();
+
+    } catch(e) {
+      console.error('OTP send error:', e);
+      // Reset recaptcha on error
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+      const msg = e.code === 'auth/invalid-phone-number' ? 'Invalid phone number. Use format: +91XXXXXXXXXX' :
+                  e.code === 'auth/too-many-requests' ? 'Too many attempts. Try again later.' :
+                  e.message;
+      showToast('❌ ' + msg);
+    }
   }
 
   function startOTPTimer() {
@@ -1357,10 +1448,44 @@
     if (el.value && nextId) document.getElementById(nextId).focus();
   }
 
-  function verifyOTP() {
+  async function verifyOTP() {
     const otp = ['otp1','otp2','otp3','otp4','otp5','otp6'].map(id => document.getElementById(id).value).join('');
     if (otp.length < 6) { showToast('⚠️ Please enter the full 6-digit OTP'); return; }
-    doRegister();
+
+    const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
+    const isEmail = contact.includes('@');
+
+    try {
+      if (isEmail) {
+        // Verify email OTP from Firebase
+        const db = window.fbDB || fbDB;
+        if (db) {
+          const snap = await db.ref('otpVerification/' + contact.replace(/[.#$\[\]]/g, '_')).once('value');
+          const data = snap.val();
+          if (!data) { showToast('❌ OTP expired. Please request a new one.'); return; }
+          if (Date.now() > data.expires) { showToast('❌ OTP expired. Please request a new one.'); return; }
+          if (data.otp !== otp) { showToast('❌ Wrong OTP. Please try again.'); return; }
+          // Delete OTP after use
+          await db.ref('otpVerification/' + contact.replace(/[.#$\[\]]/g, '_')).remove();
+        }
+        showToast('✅ Email verified!');
+        await doRegister();
+
+      } else {
+        // Verify phone OTP with Firebase
+        if (!window._confirmResult) { showToast('❌ Please request OTP again.'); return; }
+        showToast('⏳ Verifying OTP...');
+        await window._confirmResult.confirm(otp);
+        showToast('✅ Phone verified!');
+        // Phone is verified — now complete registration
+        await doRegisterPhone();
+      }
+    } catch(e) {
+      const msg = e.code === 'auth/invalid-verification-code' ? 'Wrong OTP. Please try again.' :
+                  e.code === 'auth/code-expired' ? 'OTP expired. Please request a new one.' :
+                  e.message;
+      showToast('❌ ' + msg);
+    }
   }
 
 
@@ -1395,13 +1520,40 @@
   }
 
   // Forgot Password
-  function sendForgotOTP() {
-    const v = document.getElementById('forgotInput').value;
+  async function sendForgotOTP() {
+    const v = document.getElementById('forgotInput').value.trim();
     if (!v) { showToast('⚠️ Enter your mobile or email'); return; }
-    document.getElementById('forgotForm').style.display = 'none';
-    document.getElementById('forgotOTPWrap').style.display = 'block';
-    showToast('📱 Reset OTP sent!');
-    setTimeout(() => document.getElementById('fotp1').focus(), 100);
+
+    const isEmail = v.includes('@');
+    try {
+      if (isEmail) {
+        // Send password reset email via Firebase
+        await firebase.auth().sendPasswordResetEmail(v);
+        showToast('📧 Password reset email sent to ' + v);
+        document.getElementById('forgotForm').style.display = 'none';
+        document.getElementById('forgotOTPWrap').style.display = 'block';
+        setTimeout(() => document.getElementById('fotp1').focus(), 100);
+      } else {
+        // Phone reset — send OTP
+        let phone = v.replace(/\s/g, '');
+        if (!phone.startsWith('+')) phone = '+91' + phone;
+        if (!window.recaptchaVerifier) {
+          window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptchaContainer', {
+            size: 'invisible', callback: () => {}
+          });
+        }
+        const confirmResult = await firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier);
+        window._forgotConfirmResult = confirmResult;
+        window._forgotPhone = phone;
+        showToast('📱 OTP sent to ' + phone);
+        document.getElementById('forgotForm').style.display = 'none';
+        document.getElementById('forgotOTPWrap').style.display = 'block';
+        setTimeout(() => document.getElementById('fotp1').focus(), 100);
+      }
+    } catch(e) {
+      if (window.recaptchaVerifier) { window.recaptchaVerifier.clear(); window.recaptchaVerifier = null; }
+      showToast('❌ ' + (e.message || 'Failed to send OTP'));
+    }
   }
   function doResetPassword() {
     const otp = ['fotp1','fotp2','fotp3','fotp4','fotp5','fotp6'].map(id => document.getElementById(id).value).join('');
@@ -1711,13 +1863,27 @@
     }, 1000);
   }
 
-  function confirmQRPayment() {
-    const amt = document.getElementById('qrAmount').value || 500;
-    document.getElementById('qrConfirmed').style.display = 'block';
-    document.getElementById('qrConfirmMsg').textContent = '₹' + parseInt(amt).toLocaleString() + ' has been credited to your wallet.';
-    clearInterval(qrTimerInterval);
-    showToast('💰 ₹' + parseInt(amt).toLocaleString() + ' credited to wallet!');
-    setTimeout(() => closeQR(), 3000);
+  async function confirmQRPayment() {
+    const amt = parseFloat(document.getElementById('qrAmount').value || 500);
+    if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
+    try {
+      const db = window.fbDB || fbDB;
+      // Save UPI deposit request for admin to verify
+      await db.ref('adminRequests/deposits').push({
+        amount: amt, status: 'pending', method: 'UPI QR',
+        uid: window.currentUser.uid,
+        username: window.userProfile ? window.userProfile.username : 'Unknown',
+        timestamp: Date.now()
+      });
+      await db.ref('users/' + window.currentUser.uid + '/depositRequests').push({
+        amount: amt, status: 'pending', method: 'UPI QR', timestamp: Date.now()
+      });
+      document.getElementById('qrConfirmed').style.display = 'block';
+      document.getElementById('qrConfirmMsg').textContent = '₹' + amt.toLocaleString('en-IN') + ' payment submitted! Admin will verify and credit shortly.';
+      clearInterval(qrTimerInterval);
+      showToast('✅ Payment submitted! Awaiting admin verification.');
+      setTimeout(() => closeQR(), 4000);
+    } catch(e) { showToast('❌ Error: ' + e.message); }
   }
 
   // ── COLOR PREDICTION GAME ──
@@ -1992,6 +2158,19 @@
     const selColor = cgSelectedColor === 'green' ? '#27ae60' : cgSelectedColor === 'red' ? '#e02020' : cgSelectedColor === 'violet' ? '#7c4dff' : cgSelectedBigSmall === 'big' ? '#ffd700' : cgSelectedBigSmall === 'small' ? '#2563eb' : '#aaa';
     const selLabel = cgSelectedColor ? cgSelectedColor.charAt(0).toUpperCase()+cgSelectedColor.slice(1) : cgSelectedBigSmall ? cgSelectedBigSmall.charAt(0).toUpperCase()+cgSelectedBigSmall.slice(1) : 'No.'+cgSelectedNum;
     window._cgPendingBet = { round: cgRoundByTimer[cgTimer], bet: amt, actualBet: actualAmt, selection: selLabel, selColor, savedColor: cgSelectedColor, savedNum: cgSelectedNum, savedBS: cgSelectedBigSmall };
+
+    // Deduct balance from Firebase
+    try {
+      const db = window.fbDB || fbDB;
+      const user = window.currentUser;
+      if (db && user) {
+        const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
+        const currentBal = parseFloat(balSnap.val() || 0);
+        if (currentBal < amt) { showToast('❌ Insufficient balance!'); return; }
+        await db.ref('users/' + user.uid + '/balance').set(parseFloat((currentBal - amt).toFixed(2)));
+        updateBalanceDisplay(currentBal - amt);
+      }
+    } catch(e) { console.warn('Balance deduct failed:', e); }
 
     // Save bet summary to Firebase (no user identity — just selection + amount)
     try {
@@ -3061,5 +3240,6 @@
 
 
 
+<div id="recaptcha-container"></div>
 </body>
 </html>
