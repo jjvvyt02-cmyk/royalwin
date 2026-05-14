@@ -1344,6 +1344,7 @@
       await db.ref('adminRequests/withdrawals').push({
         amount: amt, status: 'pending', uid: window.currentUser.uid,
         username: window.userProfile ? window.userProfile.username : 'Unknown',
+        contact: window.userProfile ? (window.userProfile.contact || window.userProfile.mobile || window.userProfile.email || '') : '',
         balance: bal, timestamp: Date.now()
       });
       showToast('⬆️ Withdrawal of ₹' + amt.toLocaleString('en-IN') + ' submitted! Admin will process shortly.');
@@ -1866,6 +1867,7 @@
         amount: amt, status: 'pending', method: 'UPI QR',
         uid: window.currentUser.uid,
         username: window.userProfile ? window.userProfile.username : 'Unknown',
+        contact: window.userProfile ? (window.userProfile.contact || window.userProfile.mobile || window.userProfile.email || '') : '',
         timestamp: Date.now()
       });
       await db.ref('users/' + window.currentUser.uid + '/depositRequests').push({
