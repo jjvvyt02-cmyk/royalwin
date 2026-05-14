@@ -1364,25 +1364,13 @@
 
     try {
       if (isEmail) {
-        // Email OTP — send sign-in link
-        showToast('⏳ Sending OTP to your email...');
-        // Generate a 6-digit OTP and store in Firebase temporarily
+        // Email OTP — store in memory only, no Firebase needed
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         window._regOTP = otp;
+        window._regOTPExpiry = Date.now() + 300000;
         window._regIsEmail = true;
-
-        // Save OTP to Firebase temporarily (expires in 10 mins)
-        const db = window.fbDB || fbDB;
-        if (db) {
-          await db.ref('otpVerification/' + contact.replace(/[.#$\[\]]/g, '_')).set({
-            otp, expires: Date.now() + 600000, contact
-          });
-        }
-
-        // In production, send email via Firebase Email trigger or EmailJS
-        // For now show the OTP in toast (replace with real email service)
-        showToast('📧 OTP sent to ' + contact + '! Check your email.');
-        console.log('DEV MODE - Email OTP:', otp); // Remove in production
+        showToast('📧 OTP: ' + otp + ' (copy this)');
+        console.log('Email OTP:', otp);
 
       } else {
         // Phone OTP — use Firebase Phone Auth
