@@ -1538,13 +1538,17 @@
         // Phone reset — send OTP
         let phone = v.replace(/\s/g, '');
         if (!phone.startsWith('+')) phone = '+91' + phone;
-        if (!window.recaptchaVerifier) {
-          window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptchaContainer', {
-            size: 'invisible', callback: () => {}
-          });
-        }
+        try {
+          if (window.recaptchaVerifier) { window.recaptchaVerifier.clear(); window.recaptchaVerifier = null; }
+        } catch(e) {}
+        document.getElementById('recaptchaContainer').innerHTML = '';
+        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptchaContainer', {
+          size: 'invisible', callback: () => {}
+        });
+        await window.recaptchaVerifier.render();
         const confirmResult = await firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier);
         window._forgotConfirmResult = confirmResult;
+        window._confirmResult = confirmResult;
         window._forgotPhone = phone;
         showToast('📱 OTP sent to ' + phone);
         document.getElementById('forgotForm').style.display = 'none';
