@@ -737,22 +737,17 @@
   .mobile-nav-item.active { color: var(--gold); }
   .mobile-nav-item.active .mn-icon { transform: translateY(-2px); filter: drop-shadow(0 2px 6px rgba(240,192,64,0.5)); }
   .mobile-nav-center {
-    position: relative; margin-top: -22px;
+    position: relative;
   }
   .mobile-nav-center .mn-icon {
     background: linear-gradient(135deg, #c07a10, var(--gold2));
-    border-radius: 50%; width: 54px; height: 54px;
+    border-radius: 50%; width: 44px; height: 44px;
     display: flex; align-items: center; justify-content: center;
-    box-shadow: 0 4px 20px rgba(240,192,64,0.5);
-    border: 3px solid #0d0d1a;
+    box-shadow: 0 2px 12px rgba(240,192,64,0.5);
     margin: 0 auto;
   }
   .mobile-nav-center.active .mn-icon {
-    box-shadow: 0 6px 28px rgba(240,192,64,0.7);
-  }
-  .mobile-nav-center span {
-    margin-top: 6px;
-    display: block;
+    box-shadow: 0 4px 20px rgba(240,192,64,0.7);
   }
 
   @media (max-width: 768px) {
