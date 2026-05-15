@@ -1263,6 +1263,12 @@
       switchWalletTab('deposit');
       return;
     }
+    if (name === 'bonus100') {
+      showPage('wallet');
+      switchWalletTab('deposit');
+      setTimeout(() => { selectBonus(3); }, 100);
+      return;
+    }
     if (name === 'withdraw') {
       showPage('wallet');
       switchWalletTab('withdraw');
@@ -1275,7 +1281,7 @@
     if (name === 'bethistory') renderBetHistory(currentBetFilter);
     if (name === 'history') loadTransactionHistory();
     if (name === 'referral') loadReferralData();
-    if (name === 'wallet') checkDepositBonus();
+    if (name === 'wallet') { checkDepositBonus(); loadWagerProgress(); }
   }
 
   async function doLogin() {
@@ -1414,6 +1420,40 @@
     } catch(e) { showToast('❌ Error: ' + e.message); }
   }
 
+
+  async function loadWagerProgress() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    try {
+      const snap = await db.ref('users/' + user.uid + '/wager').once('value');
+      const wager = snap.val();
+      const progressSection = document.getElementById('wagerProgressSection');
+      const doneSection = document.getElementById('wagerDoneSection');
+      if (!wager || !wager.required || wager.required <= 0) {
+        if (progressSection) progressSection.style.display = 'none';
+        if (doneSection) doneSection.style.display = 'none';
+        return;
+      }
+      const completed = parseFloat(wager.completed || 0);
+      const required = parseFloat(wager.required);
+      const pct = Math.min(100, Math.round(completed / required * 100));
+      const remaining = Math.max(0, parseFloat((required - completed).toFixed(2)));
+      if (completed >= required) {
+        if (progressSection) progressSection.style.display = 'none';
+        if (doneSection) doneSection.style.display = 'block';
+      } else {
+        if (doneSection) doneSection.style.display = 'none';
+        if (progressSection) progressSection.style.display = 'block';
+        document.getElementById('wagerProgressBar').style.width = pct + '%';
+        document.getElementById('wagerPctText').textContent = pct + '% completed';
+        document.getElementById('wagerCompleted').textContent = '₹' + completed.toLocaleString('en-IN');
+        document.getElementById('wagerRequired').textContent = '₹' + required.toLocaleString('en-IN');
+        document.getElementById('wagerRemaining').textContent = '₹' + remaining.toLocaleString('en-IN') + ' more to wager before you can withdraw';
+      }
+    } catch(e) { console.warn('Wager load failed:', e); }
+  }
+
   async function refreshWalletBalance() {
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
@@ -1453,7 +1493,7 @@
 
   function selectBonus(opt) {
     selectedBonusOption = opt;
-    [1,2].forEach(i => {
+    [1,2,3].forEach(i => {
       const el = document.getElementById('bonusOpt' + i);
       if (el) {
         el.style.borderColor = i === opt ? 'var(--gold)' : 'var(--border)';
@@ -1480,13 +1520,16 @@
     if (recurringEl) recurringEl.textContent = '5% = +₹' + Math.round(amt * 0.05) + ' bonus on this deposit';
 
     // Update info box
+    const b3 = amt; // 100%
     const infoEl = document.getElementById('selectedBonusInfo');
     if (infoEl && selectedBonusOption > 0) {
       infoEl.style.display = 'block';
       if (selectedBonusOption === 1) {
         infoEl.innerHTML = '✅ <strong>8% Bonus Selected</strong> — You get +₹' + b1 + ' bonus. Must wager ₹' + amt.toLocaleString('en-IN') + ' (1x) before withdrawing bonus.';
-      } else {
+      } else if (selectedBonusOption === 2) {
         infoEl.innerHTML = '✅ <strong>15% Bonus Selected</strong> — You get +₹' + b2 + ' bonus. Must wager ₹' + (amt * 2.5).toLocaleString('en-IN') + ' (2.5x) before withdrawing bonus.';
+      } else if (selectedBonusOption === 3) {
+        infoEl.innerHTML = '🏆 <strong>100% Bonus Selected</strong> — You get +₹' + b3.toLocaleString('en-IN') + ' bonus. Must wager ₹' + (amt * 10).toLocaleString('en-IN') + ' (10x) before withdrawing bonus.';
       }
     }
   }
@@ -1548,6 +1591,14 @@
     if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
     const db = window.fbDB || fbDB;
     try {
+      // Check wager requirement
+      const wagerSnap = await db.ref('users/' + window.currentUser.uid + '/wager').once('value');
+      const wager = wagerSnap.val();
+      if (wager && wager.required > 0 && wager.completed < wager.required) {
+        const remaining = parseFloat((wager.required - wager.completed).toFixed(2));
+        showToast('❌ Complete wager first! ₹' + remaining.toLocaleString('en-IN') + ' more to wager.');
+        return;
+      }
       const balSnap = await db.ref('users/' + window.currentUser.uid + '/balance').once('value');
       const bal = parseFloat(balSnap.val() || 0);
       if (amt > bal) { showToast('❌ Insufficient balance! Your balance: ₹' + bal.toLocaleString('en-IN')); return; }
@@ -2453,7 +2504,7 @@
     const selLabel = cgSelectedColor ? cgSelectedColor.charAt(0).toUpperCase()+cgSelectedColor.slice(1) : cgSelectedBigSmall ? cgSelectedBigSmall.charAt(0).toUpperCase()+cgSelectedBigSmall.slice(1) : 'No.'+cgSelectedNum;
     window._cgPendingBet = { round: cgRoundByTimer[cgTimer], bet: amt, actualBet: actualAmt, selection: selLabel, selColor, savedColor: cgSelectedColor, savedNum: cgSelectedNum, savedBS: cgSelectedBigSmall };
 
-    // Deduct balance from Firebase
+    // Deduct balance from Firebase + update wager progress
     try {
       const db = window.fbDB || fbDB;
       const user = window.currentUser;
@@ -2463,6 +2514,13 @@
         if (currentBal < amt) { showToast('❌ Insufficient balance!'); return; }
         await db.ref('users/' + user.uid + '/balance').set(parseFloat((currentBal - amt).toFixed(2)));
         updateBalanceDisplay(currentBal - amt);
+        // Update wager progress
+        const wagerSnap = await db.ref('users/' + user.uid + '/wager').once('value');
+        const wager = wagerSnap.val();
+        if (wager && wager.required > 0 && wager.completed < wager.required) {
+          const newCompleted = parseFloat((wager.completed + amt).toFixed(2));
+          await db.ref('users/' + user.uid + '/wager/completed').set(newCompleted);
+        }
       }
     } catch(e) { console.warn('Balance deduct failed:', e); }
 
@@ -3304,16 +3362,22 @@
       <!-- Bonus Selection — shown only for first deposit -->
       <div id="bonusSelectionSection" style="display:none;margin-bottom:1.5rem;">
         <div class="section-title" style="font-size:1.1rem;margin-bottom:0.8rem;">🎁 First Deposit Bonus</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;max-width:500px;">
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;max-width:600px;">
           <div id="bonusOpt1" onclick="selectBonus(1)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s;">
-            <div style="font-size:1.8rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;">8%</div>
-            <div style="font-size:0.82rem;font-weight:700;margin:0.3rem 0;">Bonus on Deposit</div>
-            <div style="font-size:0.72rem;color:var(--muted);">1x Wager Required</div>
+            <div style="font-size:1.6rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;">8%</div>
+            <div style="font-size:0.78rem;font-weight:700;margin:0.3rem 0;">Bonus on Deposit</div>
+            <div style="font-size:0.68rem;color:var(--muted);">1x Wager Required</div>
           </div>
           <div id="bonusOpt2" onclick="selectBonus(2)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s;">
-            <div style="font-size:1.8rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;">15%</div>
-            <div style="font-size:0.82rem;font-weight:700;margin:0.3rem 0;">Bonus on Deposit</div>
-            <div style="font-size:0.72rem;color:var(--muted);">2.5x Wager Required</div>
+            <div style="font-size:1.6rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;">15%</div>
+            <div style="font-size:0.78rem;font-weight:700;margin:0.3rem 0;">Bonus on Deposit</div>
+            <div style="font-size:0.68rem;color:var(--muted);">2.5x Wager Required</div>
+          </div>
+          <div id="bonusOpt3" onclick="selectBonus(3)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s;position:relative;overflow:hidden;">
+            <div style="position:absolute;top:0;left:0;right:0;background:var(--gold);font-size:0.58rem;font-weight:700;color:#000;padding:0.15rem;text-align:center;">BEST</div>
+            <div style="font-size:1.6rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;margin-top:0.6rem;">100%</div>
+            <div style="font-size:0.78rem;font-weight:700;margin:0.3rem 0;">Bonus on Deposit</div>
+            <div style="font-size:0.68rem;color:var(--muted);">10x Wager Required</div>
           </div>
         </div>
         <div id="selectedBonusInfo" style="margin-top:0.8rem;padding:0.7rem 1rem;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-size:0.8rem;color:var(--muted);max-width:500px;display:none;"></div>
@@ -3354,6 +3418,27 @@
     <div class="wallet-panel" id="panel-withdraw">
       <div class="section-title" style="font-size:1.2rem;margin-bottom:0.4rem;">Withdraw Funds</div>
       <div class="section-sub">Withdrawals processed within 24 hours</div>
+
+      <!-- Wager progress bar -->
+      <div id="wagerProgressSection" style="display:none;background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.2);border-radius:12px;padding:1rem;margin-bottom:1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
+          <div style="font-size:0.82rem;font-weight:700;color:var(--red2);">⚠️ Wager Requirement Active</div>
+          <div style="font-size:0.75rem;color:var(--muted);" id="wagerPctText">0%</div>
+        </div>
+        <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;margin-bottom:0.5rem;">
+          <div id="wagerProgressBar" style="height:100%;background:linear-gradient(90deg,var(--red2),var(--gold));border-radius:4px;transition:width 0.5s;width:0%;"></div>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.78rem;">
+          <span style="color:var(--muted);">Wagered: <strong id="wagerCompleted" style="color:#fff;">₹0</strong></span>
+          <span style="color:var(--muted);">Required: <strong id="wagerRequired" style="color:#fff;">₹0</strong></span>
+        </div>
+        <div style="font-size:0.75rem;color:var(--red2);margin-top:0.4rem;" id="wagerRemaining">Complete wager to unlock withdrawal</div>
+      </div>
+
+      <!-- Wager completed -->
+      <div id="wagerDoneSection" style="display:none;background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:12px;padding:0.8rem 1rem;margin-bottom:1rem;">
+        <div style="font-size:0.82rem;color:var(--green);font-weight:700;">✅ Wager requirement completed! Withdrawal unlocked.</div>
+      </div>
       <div class="deposit-methods">
         <div class="method-card selected" onclick="selectMethod(this)">
           <div class="method-icon">📱</div>
