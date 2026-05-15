@@ -737,17 +737,22 @@
   .mobile-nav-item.active { color: var(--gold); }
   .mobile-nav-item.active .mn-icon { transform: translateY(-2px); filter: drop-shadow(0 2px 6px rgba(240,192,64,0.5)); }
   .mobile-nav-center {
-    position: relative; margin-top: -20px;
+    position: relative; margin-top: -22px;
   }
   .mobile-nav-center .mn-icon {
     background: linear-gradient(135deg, #c07a10, var(--gold2));
-    border-radius: 50%; width: 52px; height: 52px;
+    border-radius: 50%; width: 54px; height: 54px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.5rem; box-shadow: 0 4px 20px rgba(240,192,64,0.5);
-    border: 3px solid #0d0d1a; margin: 0 auto;
+    box-shadow: 0 4px 20px rgba(240,192,64,0.5);
+    border: 3px solid #0d0d1a;
+    margin: 0 auto;
   }
   .mobile-nav-center.active .mn-icon {
     box-shadow: 0 6px 28px rgba(240,192,64,0.7);
+  }
+  .mobile-nav-center span {
+    margin-top: 6px;
+    display: block;
   }
 
   @media (max-width: 768px) {
@@ -3517,7 +3522,7 @@
 
   <!-- Promotion (center) -->
   <button class="mobile-nav-item mobile-nav-center" id="mn-promo" onclick="mobileNav('referral')">
-    <div class="mn-icon">
+    <div class="mn-icon" style="display:flex;align-items:center;justify-content:center;">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
         <path d="M20 12V22H4V12" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M22 7H2V12H22V7Z" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
