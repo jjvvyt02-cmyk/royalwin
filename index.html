@@ -3099,9 +3099,13 @@
           document.getElementById('navUser').style.display = 'flex';
           document.getElementById('mobileNav').style.display = 'flex';
           showTicker();
-          // Hide sign in button on hero
+          // Hide guest buttons, show welcome banner when logged in
           const heroSignIn = document.getElementById('heroSignInBtn');
           if (heroSignIn) heroSignIn.style.display = 'none';
+          const heroPlay = document.getElementById('heroPlayBtn');
+          if (heroPlay) heroPlay.style.display = 'none';
+          const heroBanner = document.getElementById('heroWelcomeBanner');
+          if (heroBanner) heroBanner.style.display = 'block';
           // Save last login time
           try {
             const db = window.fbDB || fbDB;
@@ -3114,6 +3118,12 @@
           document.getElementById('navGuest').style.display = 'flex';
           document.getElementById('navUser').style.display = 'none';
           document.getElementById('mobileNav').style.display = 'none';
+          const heroPlayBtn = document.getElementById('heroPlayBtn');
+          if (heroPlayBtn) heroPlayBtn.style.display = 'inline-flex';
+          const heroSignInBtn = document.getElementById('heroSignInBtn');
+          if (heroSignInBtn) heroSignInBtn.style.display = 'inline-flex';
+          const heroWelcome = document.getElementById('heroWelcomeBanner');
+          if (heroWelcome) heroWelcome.style.display = 'none';
         }
       });
       // Test read to confirm connection
