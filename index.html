@@ -1233,7 +1233,7 @@
     <div class="ref-history">
       <div class="tier-header">📋 Referral History</div>
       <div class="history-row head">
-        <div>User</div><div>Joined</div><div>Earned</div>
+        <div>User (UID)</div><div>Joined</div><div>Bonus</div><div>Commission</div>
       </div>
       <div id="refHistoryRows">
         <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem;">No referrals yet</div>
@@ -1315,34 +1315,34 @@
     const profile = window.userProfile;
     if (!profile || !profile.referralCode) return;
     try {
-      const snap = await db.ref('users').once('value');
-      const allUsers = snap.val() || {};
-      const referred = Object.entries(allUsers).filter(([uid, u]) => u.referredBy === profile.referralCode);
+      const snap = await db.ref('users/' + user.uid + '/referrals').once('value');
+      const referrals = snap.val() ? Object.values(snap.val()) : [];
 
       // Update count
       const countEl = document.getElementById('refTotalCount');
-      if (countEl) countEl.textContent = referred.length;
+      if (countEl) countEl.textContent = referrals.length;
 
-      // Calculate total commission (5% of deposits)
-      let totalEarned = 0;
-      const rows = referred.map(([uid, u]) => {
-        const txs = u.transactions ? Object.values(u.transactions) : [];
-        const deposits = txs.filter(t => t.type === 'deposit').reduce((s, t) => s + (t.amount || 0), 0);
-        const commission = parseFloat((deposits * 0.05).toFixed(2));
-        totalEarned += commission;
-        const joined = u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}) : '—';
-        return `<div class="history-row">
-          <div style="font-size:0.75rem;color:var(--muted);">${uid}</div>
-          <div style="color:var(--muted);font-size:0.82rem;">${joined}</div>
-          <div style="color:var(--green);font-weight:700;">${commission > 0 ? '+₹' + commission.toLocaleString('en-IN') : '—'}</div>
-        </div>`;
-      });
-
+      // Total commission earned
+      const totalEarned = referrals.reduce((s, r) => s + (r.bonus || 0) + (r.commission || 0), 0);
       const earnedEl = document.getElementById('refTotalEarned');
       if (earnedEl) earnedEl.textContent = '₹' + totalEarned.toLocaleString('en-IN', {minimumFractionDigits:2});
 
+      // Render rows
       const histEl = document.getElementById('refHistoryRows');
-      if (histEl) histEl.innerHTML = rows.length > 0 ? rows.join('') : '<div style="text-align:center;padding:2rem;color:var(--muted);">No referrals yet</div>';
+      if (!histEl) return;
+      if (referrals.length === 0) {
+        histEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);">No referrals yet</div>';
+        return;
+      }
+      histEl.innerHTML = referrals.map(r => {
+        const joined = r.joinedAt ? new Date(r.joinedAt).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}) : '—';
+        return `<div class="history-row">
+          <div style="font-size:0.72rem;color:var(--muted);">${r.uid ? r.uid.substring(0,14) + '...' : '—'}</div>
+          <div style="color:var(--muted);font-size:0.78rem;">${joined}</div>
+          <div style="color:var(--gold);font-size:0.78rem;font-weight:700;">${r.bonus ? '+₹' + r.bonus : '—'}</div>
+          <div style="color:var(--green);font-size:0.78rem;font-weight:700;">${r.commission ? '+₹' + r.commission.toLocaleString('en-IN') : '—'}</div>
+        </div>`;
+      }).join('');
     } catch(e) { console.warn('Referral load failed:', e); }
   }
 
@@ -1364,6 +1364,72 @@
     el.classList.add('selected');
     const inp = el.closest('.wallet-panel').querySelector('input[type="number"]');
     if (inp) inp.value = val;
+  }
+
+
+  let selectedBonusOption = 0; // 0=none, 1=8%, 2=15%
+
+  function selectBonus(opt) {
+    selectedBonusOption = opt;
+    [1,2].forEach(i => {
+      const el = document.getElementById('bonusOpt' + i);
+      if (el) {
+        el.style.borderColor = i === opt ? 'var(--gold)' : 'var(--border)';
+        el.style.background = i === opt ? 'rgba(240,192,64,0.08)' : 'var(--card)';
+      }
+    });
+    updateBonusPreview();
+  }
+
+  function updateBonusPreview() {
+    const amt = parseFloat(document.getElementById('depositAmount')?.value || 0);
+    if (!amt) return;
+
+    // Update first deposit bonus amounts
+    const b1 = Math.round(amt * 0.08);
+    const b2 = Math.round(amt * 0.15);
+    const el1 = document.getElementById('bonusAmt1');
+    const el2 = document.getElementById('bonusAmt2');
+    if (el1) el1.textContent = '+₹' + b1 + ' bonus';
+    if (el2) el2.textContent = '+₹' + b2 + ' bonus';
+
+    // Update recurring bonus
+    const recurringEl = document.getElementById('recurringBonusAmt');
+    if (recurringEl) recurringEl.textContent = '5% = +₹' + Math.round(amt * 0.05) + ' bonus on this deposit';
+
+    // Update info box
+    const infoEl = document.getElementById('selectedBonusInfo');
+    if (infoEl && selectedBonusOption > 0) {
+      infoEl.style.display = 'block';
+      if (selectedBonusOption === 1) {
+        infoEl.innerHTML = '✅ <strong>8% Bonus Selected</strong> — You get +₹' + b1 + ' bonus. Must wager ₹' + amt.toLocaleString('en-IN') + ' (1x) before withdrawing bonus.';
+      } else {
+        infoEl.innerHTML = '✅ <strong>15% Bonus Selected</strong> — You get +₹' + b2 + ' bonus. Must wager ₹' + (amt * 2.5).toLocaleString('en-IN') + ' (2.5x) before withdrawing bonus.';
+      }
+    }
+  }
+
+  async function checkDepositBonus() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    try {
+      const snap = await db.ref('users/' + user.uid + '/hasDeposited').once('value');
+      const hasDeposited = snap.val();
+      const bonusSection = document.getElementById('bonusSelectionSection');
+      const recurringSection = document.getElementById('recurringBonusInfo');
+      if (!hasDeposited) {
+        // First deposit — show bonus choice
+        if (bonusSection) bonusSection.style.display = 'block';
+        if (recurringSection) recurringSection.style.display = 'none';
+        updateBonusPreview();
+      } else {
+        // Recurring — show auto 5% info
+        if (bonusSection) bonusSection.style.display = 'none';
+        if (recurringSection) recurringSection.style.display = 'block';
+        updateBonusPreview();
+      }
+    } catch(e) {}
   }
 
   async function doDeposit() {
@@ -1996,6 +2062,8 @@
         uid: window.currentUser.uid,
         username: window.userProfile ? window.userProfile.username : 'Unknown',
         contact: window.userProfile ? (window.userProfile.contact || window.userProfile.mobile || window.userProfile.email || '') : '',
+        referredBy: window.userProfile ? (window.userProfile.referredBy || '') : '',
+        isFirstDeposit: window.userProfile ? !window.userProfile.hasDeposited : true,
         timestamp: Date.now()
       });
       await db.ref('users/' + window.currentUser.uid + '/depositRequests').push({
@@ -3090,6 +3158,32 @@
           <div class="method-limit">Min ₹1,000</div>
         </div>
       </div>
+
+      <!-- Bonus Selection — shown only for first deposit -->
+      <div id="bonusSelectionSection" style="display:none;margin-bottom:1.5rem;">
+        <div class="section-title" style="font-size:1.1rem;margin-bottom:0.8rem;">🎁 First Deposit Bonus</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;max-width:500px;">
+          <div id="bonusOpt1" onclick="selectBonus(1)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s;">
+            <div style="font-size:1.8rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;">8%</div>
+            <div style="font-size:0.82rem;font-weight:700;margin:0.3rem 0;">Bonus on Deposit</div>
+            <div style="font-size:0.72rem;color:var(--muted);">1x Wager Required</div>
+          </div>
+          <div id="bonusOpt2" onclick="selectBonus(2)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s;">
+            <div style="font-size:1.8rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;">15%</div>
+            <div style="font-size:0.82rem;font-weight:700;margin:0.3rem 0;">Bonus on Deposit</div>
+            <div style="font-size:0.72rem;color:var(--muted);">2.5x Wager Required</div>
+          </div>
+        </div>
+        <div id="selectedBonusInfo" style="margin-top:0.8rem;padding:0.7rem 1rem;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-size:0.8rem;color:var(--muted);max-width:500px;display:none;"></div>
+      </div>
+
+      <!-- Recurring deposit bonus info (2nd deposit onwards) -->
+      <div id="recurringBonusInfo" style="display:none;margin-bottom:1.2rem;padding:0.8rem 1rem;background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:10px;max-width:500px;">
+        <div style="font-size:0.85rem;font-weight:700;color:var(--green);">🎁 5% Bonus Auto-Applied</div>
+        <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;">You'll receive 5% bonus on this deposit with 1x wager requirement.</div>
+        <div style="font-size:0.78rem;color:var(--green);margin-top:0.3rem;" id="recurringBonusAmt"></div>
+      </div>
+
       <div class="section-title" style="font-size:1.1rem;margin-bottom:1rem;">Select Amount</div>
       <div class="amount-presets">
         <div class="amount-preset selected" onclick="setAmount(this,'300')">₹300</div>
@@ -3102,13 +3196,16 @@
       </div>
       <div class="form-group" style="max-width:400px;">
         <label class="form-label">Or enter custom amount (₹300 – ₹20,000)</label>
-        <input class="form-input" type="number" id="depositAmount" placeholder="Enter amount in ₹" value="300" min="300" max="20000">
+        <input class="form-input" type="number" id="depositAmount" placeholder="Enter amount in ₹" value="300" min="300" max="20000" oninput="updateBonusPreview()">
       </div>
       <div class="form-group" style="max-width:400px;">
         <label class="form-label">UPI ID</label>
-        <input class="form-input" type="text" placeholder="yourname@upi">
+        <input class="form-input" type="text" id="depositUpiId" placeholder="yourname@upi">
       </div>
-      <div style="display:flex;gap:1rem;flex-wrap:wrap;"><button class="btn btn-gold" style="padding:0.8rem 2rem;" onclick="openQR()">📱 Pay via UPI QR</button><button class="btn btn-outline" style="padding:0.8rem 2rem;border-color:var(--gold);color:var(--gold);" onclick="doDeposit()">Manual Deposit</button></div>
+      <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+        <button class="btn btn-gold" style="padding:0.8rem 2rem;" onclick="openQR()">📱 Pay via UPI QR</button>
+        <button class="btn btn-outline" style="padding:0.8rem 2rem;border-color:var(--gold);color:var(--gold);" onclick="doDeposit()">Manual Deposit</button>
+      </div>
     </div>
 
     <!-- WITHDRAW -->
