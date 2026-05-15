@@ -1370,6 +1370,50 @@
   }
 
 
+  function calcBonus100(val) {
+    const amt = parseFloat(val);
+    const preview = document.getElementById('bonus100Preview');
+    if (!amt || amt <= 0) { if(preview) preview.style.display = 'none'; return; }
+    if(preview) preview.style.display = 'block';
+    document.getElementById('b100Deposit').textContent = '₹' + amt.toLocaleString('en-IN');
+    document.getElementById('b100Bonus').textContent = '+₹' + amt.toLocaleString('en-IN');
+    document.getElementById('b100Total').textContent = '₹' + (amt * 2).toLocaleString('en-IN');
+    document.getElementById('b100Wager').textContent = '₹' + (amt * 10).toLocaleString('en-IN');
+  }
+
+  function setBonus100Amt(amt) {
+    const input = document.getElementById('bonus100Amt');
+    if (input) { input.value = amt; calcBonus100(amt); }
+  }
+
+  async function submitBonus100Deposit() {
+    const amt = parseFloat(document.getElementById('bonus100Amt').value);
+    const upiId = document.getElementById('bonus100UpiId').value.trim();
+    if (!amt || amt < 300) { showToast('⚠️ Minimum deposit is ₹300'); return; }
+    if (!window.currentUser) { showToast('⚠️ Please login first'); showPage('login'); return; }
+    try {
+      const db = window.fbDB || fbDB;
+      await db.ref('adminRequests/deposits').push({
+        amount: amt, status: 'pending', method: 'UPI - 100% Bonus',
+        uid: window.currentUser.uid,
+        username: window.userProfile ? window.userProfile.username : 'Unknown',
+        contact: window.userProfile ? (window.userProfile.contact || '') : '',
+        upiId: upiId || 'Not provided',
+        isFirstDeposit: true,
+        bonusType: 'first_100pct',
+        bonusPct: 100, bonusAmt: amt, wagerReq: 10,
+        referredBy: window.userProfile?.referredBy || '',
+        timestamp: Date.now()
+      });
+      await db.ref('users/' + window.currentUser.uid + '/depositRequests').push({
+        amount: amt, status: 'pending', method: 'UPI - 100% Bonus',
+        bonusPct: 100, bonusAmt: amt, wagerReq: 10, timestamp: Date.now()
+      });
+      showToast('✅ Request submitted! You will receive ₹' + (amt * 2).toLocaleString('en-IN') + ' after admin approval.');
+      showPage('home');
+    } catch(e) { showToast('❌ Error: ' + e.message); }
+  }
+
   async function refreshWalletBalance() {
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
@@ -3366,66 +3410,82 @@
 <div class="page" id="page-bonus100">
   <div style="max-width:500px;margin:0 auto;padding:1rem;">
 
-    <!-- Hero -->
-    <div style="background:linear-gradient(135deg,#1a0800,#3d1800);border:1px solid rgba(240,192,64,0.3);border-radius:20px;padding:2rem;text-align:center;margin-bottom:1.5rem;position:relative;overflow:hidden;">
-      <div style="position:absolute;top:-20px;right:-20px;font-size:8rem;opacity:0.08;">🎁</div>
-      <div style="font-size:0.78rem;color:var(--gold);text-transform:uppercase;letter-spacing:2px;margin-bottom:0.5rem;">First Deposit Only</div>
-      <div style="font-family:'Cinzel',serif;font-size:4rem;font-weight:900;color:var(--gold);line-height:1;">100%</div>
-      <div style="font-family:'Cinzel',serif;font-size:1.2rem;color:#fff;margin-bottom:0.5rem;">Welcome Bonus</div>
-      <div style="font-size:0.82rem;color:var(--muted);">Deposit ₹1,000 → Get ₹1,000 bonus = Play with ₹2,000!</div>
+    <!-- Back button -->
+    <button onclick="history.back() || showPage('home')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;margin-bottom:1rem;padding:0;">← Back</button>
+
+    <!-- Hero banner -->
+    <div style="background:linear-gradient(135deg,#1a0800,#3d1800);border:1px solid rgba(240,192,64,0.3);border-radius:20px;padding:1.5rem;text-align:center;margin-bottom:1.2rem;position:relative;overflow:hidden;">
+      <div style="position:absolute;top:-10px;right:-10px;font-size:6rem;opacity:0.06;">🎁</div>
+      <div style="font-size:0.72rem;color:var(--gold);text-transform:uppercase;letter-spacing:2px;margin-bottom:0.3rem;">First Deposit Only</div>
+      <div style="font-family:'Cinzel',serif;font-size:3.5rem;font-weight:900;color:var(--gold);line-height:1;">100%</div>
+      <div style="font-family:'Cinzel',serif;font-size:1rem;color:#fff;">First Deposit Bonus</div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:0.3rem;">10x wager requirement applies</div>
+    </div>
+
+    <!-- Amount input + live preview -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.2rem;margin-bottom:1rem;">
+      <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.8rem;font-weight:600;">💰 Enter Deposit Amount</div>
+
+      <!-- Presets -->
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.4rem;margin-bottom:0.8rem;">
+        <button onclick="setBonus100Amt(500)" class="amount-preset">₹500</button>
+        <button onclick="setBonus100Amt(1000)" class="amount-preset">₹1,000</button>
+        <button onclick="setBonus100Amt(2000)" class="amount-preset">₹2,000</button>
+        <button onclick="setBonus100Amt(5000)" class="amount-preset">₹5,000</button>
+      </div>
+
+      <input type="number" id="bonus100Amt" placeholder="Or enter custom amount (min ₹300)"
+        oninput="calcBonus100(this.value)"
+        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.8rem;color:var(--text);font-size:1rem;margin-bottom:1rem;box-sizing:border-box;">
+
+      <!-- Live breakdown -->
+      <div id="bonus100Preview" style="display:none;background:var(--bg3);border-radius:12px;padding:1rem;margin-bottom:0.8rem;">
+        <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.7rem;">Bonus Breakdown</div>
+        <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:0.82rem;color:var(--muted);">Your Deposit</span>
+          <span id="b100Deposit" style="font-weight:700;color:#fff;">₹0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:0.82rem;color:var(--muted);">100% Bonus</span>
+          <span id="b100Bonus" style="font-weight:700;color:var(--green);">+₹0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.06);">
+          <span style="font-size:0.82rem;color:var(--muted);">Total to Play</span>
+          <span id="b100Total" style="font-weight:800;color:var(--gold);font-family:'Cinzel',serif;">₹0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;padding:0.4rem 0;">
+          <span style="font-size:0.82rem;color:var(--muted);">Wager Required (10x)</span>
+          <span id="b100Wager" style="font-weight:700;color:var(--red2);">₹0</span>
+        </div>
+      </div>
+
+      <!-- UPI ID -->
+      <input type="text" id="bonus100UpiId" placeholder="Enter UPI ID (yourname@upi)"
+        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.8rem;color:var(--text);font-size:0.9rem;margin-bottom:1rem;box-sizing:border-box;">
+
+      <button class="btn btn-gold btn-full" onclick="submitBonus100Deposit()" style="padding:1rem;font-size:1rem;">
+        🎁 Deposit & Claim 100% Bonus
+      </button>
     </div>
 
     <!-- How it works -->
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.2rem;margin-bottom:1.2rem;">
-      <div style="font-family:'Cinzel',serif;font-size:0.9rem;color:var(--gold);margin-bottom:1rem;">How It Works</div>
-      <div style="display:flex;flex-direction:column;gap:0.8rem;">
-        <div style="display:flex;align-items:center;gap:0.8rem;">
-          <div style="width:32px;height:32px;border-radius:50%;background:rgba(240,192,64,0.15);border:1px solid rgba(240,192,64,0.3);display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:800;color:var(--gold);flex-shrink:0;">1</div>
-          <div style="font-size:0.85rem;">Make your <strong>first deposit</strong> of any amount</div>
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem 1.2rem;">
+      <div style="font-size:0.8rem;color:var(--gold);font-weight:700;margin-bottom:0.8rem;">📋 Terms</div>
+      <div style="display:flex;flex-direction:column;gap:0.6rem;">
+        <div style="display:flex;gap:0.6rem;font-size:0.8rem;color:var(--muted);">
+          <span style="color:var(--gold);">✓</span> Valid on first deposit only
         </div>
-        <div style="display:flex;align-items:center;gap:0.8rem;">
-          <div style="width:32px;height:32px;border-radius:50%;background:rgba(240,192,64,0.15);border:1px solid rgba(240,192,64,0.3);display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:800;color:var(--gold);flex-shrink:0;">2</div>
-          <div style="font-size:0.85rem;"><strong>100% bonus</strong> is credited to your wallet instantly</div>
+        <div style="display:flex;gap:0.6rem;font-size:0.8rem;color:var(--muted);">
+          <span style="color:var(--gold);">✓</span> 100% bonus credited instantly after admin approval
         </div>
-        <div style="display:flex;align-items:center;gap:0.8rem;">
-          <div style="width:32px;height:32px;border-radius:50%;background:rgba(240,192,64,0.15);border:1px solid rgba(240,192,64,0.3);display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:800;color:var(--gold);flex-shrink:0;">3</div>
-          <div style="font-size:0.85rem;">Play games and meet <strong>10x wager</strong> to withdraw bonus</div>
+        <div style="display:flex;gap:0.6rem;font-size:0.8rem;color:var(--muted);">
+          <span style="color:var(--gold);">✓</span> 10x wager required before withdrawing bonus
         </div>
-      </div>
-    </div>
-
-    <!-- Wager info -->
-    <div style="background:rgba(240,192,64,0.06);border:1px solid rgba(240,192,64,0.2);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1.2rem;">
-      <div style="font-size:0.78rem;color:var(--gold);font-weight:700;margin-bottom:0.6rem;">📋 Wager Requirement</div>
-      <div style="font-size:0.82rem;color:var(--muted);line-height:1.6;">
-        You must wager <strong style="color:#fff;">10x</strong> your deposit amount before withdrawing the bonus.<br>
-        Example: Deposit ₹1,000 → Wager ₹10,000 → Withdraw bonus ₹1,000
-      </div>
-    </div>
-
-    <!-- Calculator -->
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1.5rem;">
-      <div style="font-size:0.82rem;color:var(--muted);margin-bottom:0.5rem;">🧮 Bonus Calculator</div>
-      <input type="number" id="bonusCalcAmt" placeholder="Enter deposit amount" oninput="calcBonus100(this.value)"
-        style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.7rem;color:var(--text);font-size:0.9rem;margin-bottom:0.7rem;">
-      <div id="bonusCalcResult" style="display:none;font-size:0.82rem;">
-        <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border);">
-          <span style="color:var(--muted);">Your Deposit</span><span id="calcDeposit" style="color:#fff;font-weight:700;">₹0</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border);">
-          <span style="color:var(--muted);">100% Bonus</span><span id="calcBonus" style="color:var(--green);font-weight:700;">+₹0</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid var(--border);">
-          <span style="color:var(--muted);">Total Balance</span><span id="calcTotal" style="color:var(--gold);font-weight:800;">₹0</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;padding:0.4rem 0;">
-          <span style="color:var(--muted);">Wager Required</span><span id="calcWager" style="color:var(--red2);font-weight:700;">₹0</span>
+        <div style="display:flex;gap:0.6rem;font-size:0.8rem;color:var(--muted);">
+          <span style="color:var(--gold);">✓</span> Minimum deposit ₹300
         </div>
       </div>
     </div>
-
-    <button class="btn btn-gold btn-full" onclick="showPage('wallet')" style="padding:1rem;font-size:1rem;margin-bottom:0.8rem;">💰 Deposit Now & Claim Bonus</button>
-    <button class="btn btn-outline btn-full" onclick="showPage('home')" style="padding:0.8rem;">← Back to Home</button>
 
   </div>
 </div>
@@ -3613,7 +3673,7 @@
           <div class="promo-tag">New Player</div>
           <div class="promo-name">First Deposit Bonus</div>
           <div class="promo-desc">Up to 100% bonus on your first deposit. 10x wager requirement applies.</div>
-          <div class="promo-footer"><span class="promo-expiry">Up to +100%</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="showPage('bonus100')">Claim Now</button></div>
+          <div class="promo-footer"><span class="promo-expiry">Up to +100%</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="event.stopPropagation();showPage('bonus100')">Claim Now</button></div>
         </div>
       </div>
       <div class="promo-card">
