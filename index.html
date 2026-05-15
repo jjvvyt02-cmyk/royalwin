@@ -1246,6 +1246,17 @@
   let isLoggedIn = false;
 
   function showPage(name) {
+    // Redirect deposit/withdraw to wallet page with correct tab
+    if (name === 'deposit') {
+      showPage('wallet');
+      switchWalletTab('deposit');
+      return;
+    }
+    if (name === 'withdraw') {
+      showPage('wallet');
+      switchWalletTab('withdraw');
+      return;
+    }
     document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
     document.getElementById('page-' + name).classList.add('active');
     window.scrollTo(0, 0);
@@ -1253,6 +1264,7 @@
     if (name === 'bethistory') renderBetHistory(currentBetFilter);
     if (name === 'history') loadTransactionHistory();
     if (name === 'referral') loadReferralData();
+    if (name === 'wallet') checkDepositBonus();
   }
 
   async function doLogin() {
@@ -1410,23 +1422,29 @@
   }
 
   async function checkDepositBonus() {
+    const bonusSection = document.getElementById('bonusSelectionSection');
+    const recurringSection = document.getElementById('recurringBonusInfo');
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
+
+    // Show first deposit bonus by default while loading
+    if (bonusSection) bonusSection.style.display = 'block';
+    if (recurringSection) recurringSection.style.display = 'none';
+    updateBonusPreview();
+
     if (!user || !db) return;
     try {
       const snap = await db.ref('users/' + user.uid + '/hasDeposited').once('value');
       const hasDeposited = snap.val();
-      const bonusSection = document.getElementById('bonusSelectionSection');
-      const recurringSection = document.getElementById('recurringBonusInfo');
-      if (!hasDeposited) {
-        // First deposit — show bonus choice
-        if (bonusSection) bonusSection.style.display = 'block';
-        if (recurringSection) recurringSection.style.display = 'none';
-        updateBonusPreview();
-      } else {
-        // Recurring — show auto 5% info
+      if (hasDeposited) {
+        // Recurring deposit
         if (bonusSection) bonusSection.style.display = 'none';
         if (recurringSection) recurringSection.style.display = 'block';
+        updateBonusPreview();
+      } else {
+        // First deposit
+        if (bonusSection) bonusSection.style.display = 'block';
+        if (recurringSection) recurringSection.style.display = 'none';
         updateBonusPreview();
       }
     } catch(e) {}
