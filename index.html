@@ -1257,41 +1257,60 @@
   let isLoggedIn = false;
 
   function showPage(name) {
-    // Redirect deposit/withdraw to wallet page with correct tab
-    if (name === 'deposit') {
-      window._bonus100Locked = false;
-      lockBonusCards(false);
-      showPage('wallet');
-      switchWalletTab('deposit');
-      return;
+    // Internal function to actually show a page
+    function _showPageInternal(pageName) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const pageEl = document.getElementById('page-' + pageName);
+      if (pageEl) pageEl.classList.add('active');
+      window.scrollTo(0, 0);
+      updateMobileNav(pageName);
     }
+
     if (name === 'bonus100') {
-      window._bonus100Locked = true;
-      showPage('wallet');
+      // Go to wallet deposit tab with 100% bonus locked
+      _showPageInternal('wallet');
       switchWalletTab('deposit');
-      // Wait for checkDepositBonus to show the section first, then lock
+      updateMobileNav('wallet');
       setTimeout(async () => {
         await checkDepositBonus();
         selectBonus(3);
         lockBonusCards(true);
-      }, 200);
+        window._bonus100Locked = true;
+      }, 150);
       return;
     }
+
+    if (name === 'deposit') {
+      window._bonus100Locked = false;
+      _showPageInternal('wallet');
+      switchWalletTab('deposit');
+      updateMobileNav('wallet');
+      lockBonusCards(false);
+      checkDepositBonus();
+      loadWagerProgress();
+      return;
+    }
+
     if (name === 'withdraw') {
-      showPage('wallet');
+      window._bonus100Locked = false;
+      _showPageInternal('wallet');
       switchWalletTab('withdraw');
+      updateMobileNav('wallet');
+      lockBonusCards(false);
+      loadWagerProgress();
       return;
     }
-    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-    document.getElementById('page-' + name).classList.add('active');
-    window.scrollTo(0, 0);
-    updateMobileNav(name);
+
+    // Default - show any other page
+    window._bonus100Locked = false;
+    lockBonusCards(false);
+    _showPageInternal(name);
+
     if (name === 'bethistory') renderBetHistory(currentBetFilter);
     if (name === 'history') loadTransactionHistory();
     if (name === 'referral') loadReferralData();
     if (name === 'wallet') {
-      window._bonus100Locked = false;
-      lockBonusCards(false);
+      switchWalletTab('deposit');
       checkDepositBonus();
       loadWagerProgress();
     }
