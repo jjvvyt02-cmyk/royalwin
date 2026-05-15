@@ -732,6 +732,8 @@
   .mobile-nav-item .mn-icon {
     font-size: 1.35rem; line-height: 1; transition: all 0.2s;
   }
+  .mn-svg { transition: all 0.2s; display:block; }
+  .mobile-nav-item.active .mn-svg { filter: drop-shadow(0 1px 4px rgba(240,192,64,0.5)); }
   .mobile-nav-item.active { color: var(--gold); }
   .mobile-nav-item.active .mn-icon { transform: translateY(-2px); filter: drop-shadow(0 2px 6px rgba(240,192,64,0.5)); }
   .mobile-nav-center {
@@ -2718,7 +2720,13 @@
       if (avatarEl) avatarEl.textContent = (profile.username || profile.firstName || 'U').charAt(0).toUpperCase();
       // Update bottom nav avatar
       const bottomAv = document.getElementById('bottomAvatar');
-      if (bottomAv) bottomAv.textContent = (profile.username || profile.firstName || 'U').charAt(0).toUpperCase();
+      if (bottomAv) {
+        bottomAv.textContent = (profile.username || profile.firstName || 'U').charAt(0).toUpperCase();
+        bottomAv.style.display = 'flex';
+        // Hide the SVG person icon
+        const svgIcon = bottomAv.previousElementSibling;
+        if (svgIcon) svgIcon.style.display = 'none';
+      }
       // Update profile page
       const initial = (profile.username || profile.firstName || 'U').charAt(0).toUpperCase();
       const profAvBig = document.getElementById('profileAvatarBig');
@@ -3487,26 +3495,62 @@
 
 <!-- MOBILE BOTTOM NAV -->
 <div class="mobile-nav" id="mobileNav" style="display:none;">
+
+  <!-- Home -->
   <button class="mobile-nav-item active" id="mn-home" onclick="mobileNav('home')">
-    <div class="mn-icon">🏠</div>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="mn-svg">
+      <path d="M3 12L12 3L21 12V21H15V15H9V21H3V12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+    </svg>
     <span>Home</span>
   </button>
+
+  <!-- Activity -->
   <button class="mobile-nav-item" id="mn-activity" onclick="mobileNav('promotions')">
-    <div class="mn-icon">📊</div>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="mn-svg">
+      <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+      <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+      <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
+      <path d="M14 17.5H21M17.5 14V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
     <span>Activity</span>
   </button>
+
+  <!-- Promotion (center) -->
   <button class="mobile-nav-item mobile-nav-center" id="mn-promo" onclick="mobileNav('referral')">
-    <div class="mn-icon">🎁</div>
+    <div class="mn-icon">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+        <path d="M20 12V22H4V12" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M22 7H2V12H22V7Z" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 22V7" stroke="#000" stroke-width="2" stroke-linecap="round"/>
+        <path d="M12 7H7.5C6.12 7 5 5.88 5 4.5C5 3.12 6.12 2 7.5 2C10 2 12 7 12 7Z" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M12 7H16.5C17.88 7 19 5.88 19 4.5C19 3.12 17.88 2 16.5 2C14 2 12 7 12 7Z" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
     <span>Promotion</span>
   </button>
+
+  <!-- Wallet -->
   <button class="mobile-nav-item" id="mn-wallet" onclick="mobileNav('wallet')">
-    <div class="mn-icon">💰</div>
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="mn-svg">
+      <rect x="2" y="5" width="20" height="15" rx="2" stroke="currentColor" stroke-width="2"/>
+      <path d="M2 10H22" stroke="currentColor" stroke-width="2"/>
+      <circle cx="17" cy="15" r="1.5" fill="currentColor"/>
+    </svg>
     <span>Wallet</span>
   </button>
+
+  <!-- Account -->
   <button class="mobile-nav-item" id="mn-account" onclick="mobileNav('profile')">
-    <div class="mn-icon" id="bottomAvatar" style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#c07a10,var(--gold2));display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:800;color:#000;margin:0 auto;">U</div>
+    <div style="position:relative;width:26px;height:26px;margin:0 auto;">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" class="mn-svg" style="position:absolute;top:0;left:0;">
+        <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
+        <path d="M4 20C4 17 7.58 14 12 14C16.42 14 20 17 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <div id="bottomAvatar" style="display:none;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#c07a10,var(--gold2));align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:#000;position:absolute;top:0;left:0;">U</div>
+    </div>
     <span>Account</span>
   </button>
+
 </div>
 
 
