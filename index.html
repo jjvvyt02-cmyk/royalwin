@@ -1349,7 +1349,7 @@
       histEl.innerHTML = referrals.map(r => {
         const joined = r.joinedAt ? new Date(r.joinedAt).toLocaleDateString('en-IN', {day:'numeric', month:'short', year:'numeric'}) : '—';
         return `<div class="history-row">
-          <div style="font-size:0.72rem;color:var(--muted);">${r.uid ? r.uid.substring(0,14) + '...' : '—'}</div>
+          <div style="font-size:0.72rem;color:var(--muted);">UID: ${r.memberId || (r.uid ? r.uid.substring(0,8) : '—')}</div>
           <div style="color:var(--muted);font-size:0.78rem;">${joined}</div>
           <div style="color:var(--gold);font-size:0.78rem;font-weight:700;">${r.bonus ? '+₹' + r.bonus : '—'}</div>
           <div style="color:var(--green);font-size:0.78rem;font-weight:700;">${r.commission ? '+₹' + r.commission.toLocaleString('en-IN') : '—'}</div>
@@ -1358,6 +1358,21 @@
     } catch(e) { console.warn('Referral load failed:', e); }
   }
 
+
+  async function refreshWalletBalance() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    const btn = document.querySelector('[onclick="refreshWalletBalance()"]');
+    if (btn) btn.style.animation = 'spin 0.6s linear';
+    try {
+      const snap = await db.ref('users/' + user.uid + '/balance').once('value');
+      const bal = parseFloat(snap.val() || 0);
+      updateBalanceDisplay(bal);
+      showToast('✅ Balance updated!');
+    } catch(e) { showToast('❌ Failed to refresh'); }
+    if (btn) setTimeout(() => btn.style.animation = '', 600);
+  }
 
   function switchWalletTab(tab) {
     ['deposit','withdraw','history'].forEach(t => {
@@ -1889,8 +1904,20 @@
       // Generate referral code
       const myRefCode = 'ROY-' + Math.floor(1000 + Math.random() * 9000);
 
+      // Generate unique 6-digit member ID
+      let memberId;
+      let isUnique = false;
+      while (!isUnique) {
+        memberId = Math.floor(100000 + Math.random() * 900000).toString();
+        const snap = await firebase.database().ref('memberIds/' + memberId).once('value');
+        if (!snap.val()) isUnique = true;
+      }
+      // Reserve the member ID
+      await firebase.database().ref('memberIds/' + memberId).set(user.uid);
+
       // Save user profile to Firebase
       await firebase.database().ref('users/' + user.uid).set({
+        memberId,
         uid: user.uid,
         firstName,
         lastName,
@@ -2923,7 +2950,9 @@
       const profUserDisp = document.getElementById('profileUsernameDisplay');
       if (profUserDisp) profUserDisp.textContent = profile.username || profile.firstName || '—';
       const profUID = document.getElementById('profileUIDDisplay');
-      if (profUID) profUID.textContent = 'UID: ' + (profile.uid ? profile.uid.substring(0,10) + '...' : '—');
+      const uidVal = profile.memberId || profile.uid?.substring(0,8) || '—';
+      const profUIDEl = document.getElementById('profileUIDDisplay');
+      if (profUIDEl) profUIDEl.innerHTML = 'UID: <span style="color:var(--gold);">' + uidVal + '</span> <button onclick="navigator.clipboard.writeText('' + uidVal + '').then(()=>showToast('📋 UID copied!'))" style="background:none;border:1px solid var(--border);border-radius:4px;padding:0.1rem 0.4rem;font-size:0.65rem;color:var(--muted);cursor:pointer;margin-left:0.3rem;">Copy</button>';
       // Show last login
       const lastLoginEl = document.getElementById('profileLastLogin');
       if (lastLoginEl && profile.lastLogin) {
@@ -3157,10 +3186,15 @@
 <div class="page" id="page-wallet">
   <div class="wallet-page">
     <div class="wallet-hero">
-      <div>
-        <div class="wallet-balance-label">Total Balance</div>
-        <div class="wallet-balance-val" id="walletBalanceDisplay">₹0.00</div>
-        <div class="wallet-balance-sub">💚 Active &nbsp;|&nbsp; Last updated: just now</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+        <div>
+          <div class="wallet-balance-label">Total Balance</div>
+          <div style="display:flex;align-items:center;gap:0.6rem;">
+            <div class="wallet-balance-val" id="walletBalanceDisplay">₹0.00</div>
+            <button onclick="refreshWalletBalance()" style="background:none;border:none;cursor:pointer;color:var(--gold);font-size:1.1rem;padding:0.2rem;" title="Refresh balance">🔄</button>
+          </div>
+          <div class="wallet-balance-sub">💚 Active &nbsp;|&nbsp; Last updated: just now</div>
+        </div>
       </div>
     </div>
 
