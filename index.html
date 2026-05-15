@@ -1259,14 +1259,21 @@
   function showPage(name) {
     // Redirect deposit/withdraw to wallet page with correct tab
     if (name === 'deposit') {
+      window._bonus100Locked = false;
+      lockBonusCards(false);
       showPage('wallet');
       switchWalletTab('deposit');
       return;
     }
     if (name === 'bonus100') {
+      window._bonus100Locked = true;
       showPage('wallet');
       switchWalletTab('deposit');
-      setTimeout(() => { selectBonus(3); }, 100);
+      setTimeout(() => {
+        selectBonus(3);
+        // Lock the cards - disable opt 1 and 2
+        lockBonusCards(true);
+      }, 100);
       return;
     }
     if (name === 'withdraw') {
@@ -1281,7 +1288,12 @@
     if (name === 'bethistory') renderBetHistory(currentBetFilter);
     if (name === 'history') loadTransactionHistory();
     if (name === 'referral') loadReferralData();
-    if (name === 'wallet') { checkDepositBonus(); loadWagerProgress(); }
+    if (name === 'wallet') {
+      window._bonus100Locked = false;
+      lockBonusCards(false);
+      checkDepositBonus();
+      loadWagerProgress();
+    }
   }
 
   async function doLogin() {
@@ -1491,7 +1503,33 @@
 
   let selectedBonusOption = 0; // 0=none, 1=8%, 2=15%
 
+  function lockBonusCards(lock) {
+    [1, 2].forEach(i => {
+      const el = document.getElementById('bonusOpt' + i);
+      if (el) {
+        el.style.opacity = lock ? '0.35' : '1';
+        el.style.pointerEvents = lock ? 'none' : 'auto';
+        el.style.cursor = lock ? 'not-allowed' : 'pointer';
+      }
+    });
+    const opt3 = document.getElementById('bonusOpt3');
+    if (opt3 && lock) {
+      // Add locked indicator
+      if (!document.getElementById('bonus3LockNote')) {
+        const note = document.createElement('div');
+        note.id = 'bonus3LockNote';
+        note.style.cssText = 'font-size:0.65rem;color:var(--gold);margin-top:0.3rem;';
+        note.textContent = '🔒 Pre-selected';
+        opt3.appendChild(note);
+      }
+    } else {
+      const note = document.getElementById('bonus3LockNote');
+      if (note) note.remove();
+    }
+  }
+
   function selectBonus(opt) {
+    if (window._bonus100Locked && opt !== 3) return; // locked to 100%
     selectedBonusOption = opt;
     [1,2,3].forEach(i => {
       const el = document.getElementById('bonusOpt' + i);
