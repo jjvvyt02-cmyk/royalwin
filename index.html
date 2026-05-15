@@ -716,38 +716,42 @@
   .mobile-nav {
     display: none;
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
-    background: rgba(10,10,15,0.98); border-top: 1px solid var(--border);
-    backdrop-filter: blur(20px);
+    background: #0d0d1a;
+    border-top: 2px solid rgba(240,192,64,0.15);
     grid-template-columns: repeat(5, 1fr);
-    padding: 0.4rem 0 0.6rem;
+    padding: 0; height: 62px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
   }
   .mobile-nav-item {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 0.2rem; cursor: pointer; padding: 0.3rem 0.5rem;
-    color: var(--muted); font-size: 0.62rem; font-family: 'Exo 2', sans-serif;
+    gap: 0.15rem; cursor: pointer; padding: 0.4rem 0.2rem;
+    color: #555; font-size: 0.58rem; font-family: 'Exo 2', sans-serif;
     font-weight: 600; letter-spacing: 0.3px; transition: all 0.2s;
-    border: none; background: none;
+    border: none; background: none; height: 100%; width: 100%;
   }
-  .mobile-nav-item .mn-icon { font-size: 1.3rem; }
-  .mobile-nav-item.active, .mobile-nav-item:hover { color: var(--gold); }
-  .mobile-nav-item.active .mn-icon { transform: translateY(-2px); }
+  .mobile-nav-item .mn-icon {
+    font-size: 1.35rem; line-height: 1; transition: all 0.2s;
+  }
+  .mobile-nav-item.active { color: var(--gold); }
+  .mobile-nav-item.active .mn-icon { transform: translateY(-2px); filter: drop-shadow(0 2px 6px rgba(240,192,64,0.5)); }
   .mobile-nav-center {
-    position: relative; margin-top: -18px;
+    position: relative; margin-top: -20px;
   }
   .mobile-nav-center .mn-icon {
     background: linear-gradient(135deg, #c07a10, var(--gold2));
-    border-radius: 50%; width: 48px; height: 48px;
+    border-radius: 50%; width: 52px; height: 52px;
     display: flex; align-items: center; justify-content: center;
-    font-size: 1.4rem; box-shadow: 0 4px 16px rgba(240,192,64,0.4);
-    border: 3px solid var(--bg);
+    font-size: 1.5rem; box-shadow: 0 4px 20px rgba(240,192,64,0.5);
+    border: 3px solid #0d0d1a; margin: 0 auto;
   }
-  .mobile-nav-center.active .mn-icon, .mobile-nav-center:hover .mn-icon {
-    box-shadow: 0 6px 24px rgba(240,192,64,0.6);
+  .mobile-nav-center.active .mn-icon {
+    box-shadow: 0 6px 28px rgba(240,192,64,0.7);
   }
 
   @media (max-width: 768px) {
     .mobile-nav { display: grid; }
     nav { padding: 0 1rem; }
+    body { padding-bottom: 62px; }
     .nav-links, #navUser .nav-btn, #navUser .balance-pill { display: none !important; }
     #navUser { gap: 0.5rem; }
     .notif-bell, .avatar { display: flex !important; }
@@ -2715,6 +2719,16 @@
       // Update bottom nav avatar
       const bottomAv = document.getElementById('bottomAvatar');
       if (bottomAv) bottomAv.textContent = (profile.username || profile.firstName || 'U').charAt(0).toUpperCase();
+      // Update profile page
+      const initial = (profile.username || profile.firstName || 'U').charAt(0).toUpperCase();
+      const profAvBig = document.getElementById('profileAvatarBig');
+      if (profAvBig) profAvBig.textContent = initial;
+      const profUserDisp = document.getElementById('profileUsernameDisplay');
+      if (profUserDisp) profUserDisp.textContent = profile.username || profile.firstName || '—';
+      const profUID = document.getElementById('profileUIDDisplay');
+      if (profUID) profUID.textContent = 'UID: ' + (profile.uid ? profile.uid.substring(0,10) + '...' : '—');
+      const profContact = document.getElementById('profileContactDisplay');
+      if (profContact) profContact.textContent = profile.contact || profile.mobile || profile.email || '—';
       // Update profile page balance + username
       const profBal = document.getElementById('profileBalance');
       if (profBal) profBal.textContent = '₹' + parseFloat(profile.balance || 0).toLocaleString('en-IN', {minimumFractionDigits:2});
@@ -3057,57 +3071,86 @@
 <!-- PROFILE PAGE -->
 <div class="page" id="page-profile">
   <div class="profile-page">
-    <div class="profile-hero">
-      <div class="profile-avatar-big">R<div class="avatar-edit">✏️</div></div>
-      <div class="profile-info">
-        <h2>RoyalUser</h2>
-        <div class="uid">UID: #ROY-291847 &nbsp;|&nbsp; Member since May 2026</div>
-        <div class="profile-badges">
-          <span class="p-badge">🥉 Bronze VIP</span>
-          <span class="p-badge">✅ Verified</span>
-          <span class="p-badge">🎯 Active Player</span>
+
+    <!-- Hero section with avatar + user info -->
+    <div style="background:linear-gradient(135deg,#1a1a35,#0d0d1a);padding:1.5rem 1rem 1rem;margin:-1rem -1rem 1rem;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem;">
+        <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#c07a10,var(--gold2));display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.8rem;font-weight:800;color:#000;flex-shrink:0;" id="profileAvatarBig">U</div>
+        <div style="flex:1;">
+          <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--text);" id="profileUsernameDisplay">—</div>
+          <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;" id="profileUIDDisplay">UID: —</div>
+          <div style="font-size:0.75rem;color:var(--muted);" id="profileContactDisplay">—</div>
+        </div>
+      </div>
+
+      <!-- Balance card -->
+      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1rem;">
+        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Total Balance</div>
+        <div style="font-family:'Cinzel',serif;font-size:1.8rem;font-weight:800;color:var(--gold);margin-bottom:0.8rem;" id="profileBalance">₹0.00</div>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;text-align:center;">
+          <div onclick="showPage('wallet')" style="cursor:pointer;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">💳</div>
+            <div style="font-size:0.65rem;color:var(--muted);">Wallet</div>
+          </div>
+          <div onclick="showPage('deposit')" style="cursor:pointer;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(240,192,64,0.15);border:1px solid rgba(240,192,64,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">⬇️</div>
+            <div style="font-size:0.65rem;color:var(--muted);">Deposit</div>
+          </div>
+          <div onclick="showPage('withdraw')" style="cursor:pointer;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(39,174,96,0.15);border:1px solid rgba(39,174,96,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">⬆️</div>
+            <div style="font-size:0.65rem;color:var(--muted);">Withdraw</div>
+          </div>
+          <div onclick="showPage('vip')" style="cursor:pointer;">
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">💎</div>
+            <div style="font-size:0.65rem;color:var(--muted);">VIP</div>
+          </div>
         </div>
       </div>
     </div>
-    <div class="profile-grid">
-      <div class="profile-card">
-        <h4>👤 Account Details</h4>
-        <div class="form-group"><label class="form-label">Username</label><input class="form-input" value="RoyalUser"></div>
-        <div class="form-group"><label class="form-label">Mobile</label><input class="form-input" value="+91 98765 43210"></div>
-        <div class="form-group"><label class="form-label">Email</label><input class="form-input" value="user@example.com"></div>
-        <button class="btn btn-gold" style="padding:0.6rem 1.5rem;font-size:0.88rem;" onclick="showToast('✅ Profile updated!')">Save Changes</button>
+
+    <!-- Quick action grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:0.8rem;">
+      <div onclick="showPage('history')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(39,174,96,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">🎯</div>
+        <div><div style="font-size:0.85rem;font-weight:700;">Bet History</div><div style="font-size:0.7rem;color:var(--muted);">My betting history</div></div>
       </div>
-      <div class="profile-card">
-        <h4>🔒 Security</h4>
-        <div class="form-group"><label class="form-label">Current Password</label><input class="form-input" type="password" placeholder="••••••••"></div>
-        <div class="form-group"><label class="form-label">New Password</label><input class="form-input" type="password" placeholder="New password" oninput="checkStrength(this.value)"><div class="strength-bar" style="margin-top:6px;"><div class="strength-fill" id="strengthFill2"></div></div><div class="strength-label" id="strengthLabel2"></div></div>
-        <button class="btn btn-outline" style="padding:0.6rem 1.5rem;font-size:0.88rem;border-color:var(--gold);color:var(--gold);" onclick="showToast('🔒 Password changed!')">Change Password</button>
+      <div onclick="showPage('history')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,77,255,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">💰</div>
+        <div><div style="font-size:0.85rem;font-weight:700;">Transaction</div><div style="font-size:0.7rem;color:var(--muted);">My transaction history</div></div>
       </div>
-      <div class="profile-card">
-        <h4>📊 My Stats</h4>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;">
-          <div style="text-align:center;"><div style="font-family:Cinzel,serif;font-size:1.4rem;color:var(--gold);">47</div><div style="font-size:0.75rem;color:var(--muted);">Games Played</div></div>
-          <div style="text-align:center;"><div style="font-family:Cinzel,serif;font-size:1.4rem;color:var(--green);">₹3,200</div><div style="font-size:0.75rem;color:var(--muted);">Total Won</div></div>
-          <div style="text-align:center;"><div style="font-family:Cinzel,serif;font-size:1.4rem;color:var(--gold);">12</div><div style="font-size:0.75rem;color:var(--muted);">Referrals</div></div>
-          <div style="text-align:center;"><div style="font-family:Cinzel,serif;font-size:1.4rem;color:var(--red2);">₹1,800</div><div style="font-size:0.75rem;color:var(--muted);">Total Deposited</div></div>
-        </div>
+      <div onclick="showPage('deposit')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(240,192,64,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">⬇️</div>
+        <div><div style="font-size:0.85rem;font-weight:700;">Deposit</div><div style="font-size:0.7rem;color:var(--muted);">My deposit history</div></div>
       </div>
-      <div class="profile-card">
-        <h4>🎁 Bonuses</h4>
-        <div style="margin-bottom:0.8rem;padding:0.8rem;background:var(--bg3);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
-          <div><div style="font-size:0.85rem;">Welcome Bonus</div><div style="font-size:0.75rem;color:var(--muted);">Claimed</div></div>
-          <span class="badge badge-success">✅ Used</span>
-        </div>
-        <div style="margin-bottom:0.8rem;padding:0.8rem;background:var(--bg3);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
-          <div><div style="font-size:0.85rem;">Daily Spin</div><div style="font-size:0.75rem;color:var(--muted);">Available now</div></div>
-          <button class="btn btn-gold" style="padding:0.3rem 0.8rem;font-size:0.78rem;" onclick="openWheel()">Spin!</button>
-        </div>
-        <div style="padding:0.8rem;background:var(--bg3);border-radius:8px;display:flex;justify-content:space-between;align-items:center;">
-          <div><div style="font-size:0.85rem;">Referral Bonus</div><div style="font-size:0.75rem;color:var(--muted);">₹980 pending</div></div>
-          <span class="badge badge-pending">⏳ Pending</span>
-        </div>
+      <div onclick="showPage('withdraw')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
+        <div style="width:40px;height:40px;border-radius:10px;background:rgba(224,32,32,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">⬆️</div>
+        <div><div style="font-size:0.85rem;font-weight:700;">Withdraw</div><div style="font-size:0.7rem;color:var(--muted);">My withdraw history</div></div>
       </div>
     </div>
+
+    <!-- Settings list -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:0.8rem;">
+      <div onclick="openWheel()" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎡</span><span style="font-size:0.88rem;">Daily Spin</span></div>
+        <span style="color:var(--muted);font-size:0.8rem;">›</span>
+      </div>
+      <div onclick="showPage('referral')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎁</span><span style="font-size:0.88rem;">Refer & Earn</span></div>
+        <span style="color:var(--muted);font-size:0.8rem;">›</span>
+      </div>
+      <div onclick="showPage('vip')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">💎</span><span style="font-size:0.88rem;">VIP Club</span></div>
+        <span style="color:var(--muted);font-size:0.8rem;">›</span>
+      </div>
+      <div onclick="showPage('support')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎧</span><span style="font-size:0.88rem;">Support</span></div>
+        <span style="color:var(--muted);font-size:0.8rem;">›</span>
+      </div>
+    </div>
+
+    <!-- Sign out -->
+    <button onclick="logout()" style="width:100%;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.25);border-radius:12px;padding:0.9rem;color:var(--red2);font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:1rem;">🚪 Sign Out</button>
+
   </div>
 </div>
 
