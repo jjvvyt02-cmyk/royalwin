@@ -2950,9 +2950,24 @@
       const profUserDisp = document.getElementById('profileUsernameDisplay');
       if (profUserDisp) profUserDisp.textContent = profile.username || profile.firstName || '—';
       const profUID = document.getElementById('profileUIDDisplay');
-      const uidVal = profile.memberId || profile.uid?.substring(0,8) || '—';
+      const uidVal = profile.memberId || (profile.uid ? profile.uid.substring(0,8) : '—');
       const profUIDEl = document.getElementById('profileUIDDisplay');
-      if (profUIDEl) profUIDEl.innerHTML = 'UID: <span style="color:var(--gold);">' + uidVal + '</span> <button onclick="navigator.clipboard.writeText('' + uidVal + '').then(()=>showToast('📋 UID copied!'))" style="background:none;border:1px solid var(--border);border-radius:4px;padding:0.1rem 0.4rem;font-size:0.65rem;color:var(--muted);cursor:pointer;margin-left:0.3rem;">Copy</button>';
+      if (profUIDEl) {
+        profUIDEl.innerHTML = '';
+        const uidSpan = document.createElement('span');
+        uidSpan.textContent = 'UID: ';
+        uidSpan.style.color = 'var(--muted)';
+        const uidVal2 = document.createElement('span');
+        uidVal2.textContent = uidVal;
+        uidVal2.style.color = 'var(--gold)';
+        const copyBtn = document.createElement('button');
+        copyBtn.textContent = 'Copy';
+        copyBtn.style.cssText = 'background:none;border:1px solid var(--border);border-radius:4px;padding:0.1rem 0.4rem;font-size:0.65rem;color:var(--muted);cursor:pointer;margin-left:0.4rem;';
+        copyBtn.onclick = () => navigator.clipboard.writeText(uidVal).then(() => showToast('📋 UID copied!'));
+        profUIDEl.appendChild(uidSpan);
+        profUIDEl.appendChild(uidVal2);
+        profUIDEl.appendChild(copyBtn);
+      }
       // Show last login
       const lastLoginEl = document.getElementById('profileLastLogin');
       if (lastLoginEl && profile.lastLogin) {
