@@ -1408,6 +1408,14 @@
   }
 
 
+  function showDepositHistory() {
+    showPage('wallet');
+    switchWalletTab('history');
+  }
+  function showWithdrawHistory() {
+    showPage('withdraw');
+  }
+
   function calcBonus100(val) {
     const amt = parseFloat(val);
     const preview = document.getElementById('bonus100Preview');
@@ -1566,6 +1574,33 @@
       const f = document.getElementById('withdrawFields-' + m);
       if (f) f.style.display = m === method ? 'block' : 'none';
     });
+  }
+
+
+  async function loadDepositHistory() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    const el = document.getElementById('depositHistoryRows');
+    if (!user || !db || !el) return;
+    try {
+      const snap = await db.ref('users/' + user.uid + '/depositRequests').once('value');
+      const data = snap.val();
+      if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No deposits yet</div>'; return; }
+      const rows = Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+      el.innerHTML = rows.map(r => {
+        const time = r.timestamp ? new Date(r.timestamp).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'}) : '—';
+        const statusColor = r.status === 'approved' ? 'var(--green)' : r.status === 'rejected' ? 'var(--red2)' : 'var(--gold)';
+        const statusText = r.status === 'approved' ? '✅ Approved' : r.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
+        const bonusText = r.bonusPct ? ` + ${r.bonusPct}% bonus` : '';
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.6rem;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:700;color:var(--green);">+₹${(r.amount||0).toLocaleString('en-IN')}<span style="font-size:0.72rem;color:var(--gold);margin-left:0.4rem;">${bonusText}</span></div>
+            <div style="font-size:0.72rem;color:var(--muted);">${r.method || 'UPI'} · ${time}</div>
+          </div>
+          <div style="font-size:0.78rem;font-weight:700;color:${statusColor};">${statusText}</div>
+        </div>`;
+      }).join('');
+    } catch(e) { console.warn('Deposit history failed:', e); }
   }
 
   async function loadWithdrawHistory() {
@@ -3543,7 +3578,7 @@
     <div class="wallet-tabs">
       <button class="wallet-tab active" id="tab-deposit" onclick="switchWalletTab('deposit')">⬇️ Deposit</button>
       <button class="wallet-tab" id="tab-withdraw" onclick="switchWalletTab('withdraw')">⬆️ Withdraw</button>
-      <button class="wallet-tab" id="tab-history" onclick="switchWalletTab('history')">📋 History</button>
+      <button class="wallet-tab" id="tab-history" onclick="switchWalletTab('history')">📋 Deposits</button>
     </div>
 
     <!-- DEPOSIT -->
@@ -3551,14 +3586,14 @@
       <div class="section-title" style="font-size:1.2rem;margin-bottom:0.4rem;">Select Payment Method</div>
       <div class="section-sub">Choose how you want to deposit funds</div>
       <div class="deposit-methods">
-        <div class="method-card selected" onclick="selectMethod(this)">
-          <div class="method-icon">📱</div>
+        <div class="method-card selected" onclick="selectMethod(this)" style="flex:1;">
+          <div class="method-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6C3CE1,#4B9BF5);display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;font-size:1.3rem;">📲</div>
           <div class="method-name">UPI</div>
           <div class="method-limit">Min ₹300</div>
         </div>
-        <div class="method-card" onclick="selectMethod(this)">
-          <div class="method-icon">🪙</div>
-          <div class="method-name">Crypto</div>
+        <div class="method-card" onclick="selectMethod(this)" style="flex:1;">
+          <div class="method-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#26a17b,#1a7a5c);display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;font-size:1.4rem;font-weight:900;color:#fff;">₮</div>
+          <div class="method-name">USDT</div>
           <div class="method-limit">Min ₹1,000</div>
         </div>
       </div>
@@ -3656,18 +3691,18 @@
 
       <!-- Method selection -->
       <div class="deposit-methods" style="margin-bottom:1rem;">
-        <div class="method-card selected" id="wm-upi" onclick="selectWithdrawMethod('upi',this)">
-          <div class="method-icon">📱</div>
+        <div class="method-card selected" id="wm-upi" onclick="selectWithdrawMethod('upi',this)" style="flex:1;">
+          <div class="method-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6C3CE1,#4B9BF5);display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;font-size:1.3rem;">📲</div>
           <div class="method-name">UPI</div>
           <div class="method-limit">Min ₹200</div>
         </div>
-        <div class="method-card" id="wm-bank" onclick="selectWithdrawMethod('bank',this)">
-          <div class="method-icon">🏦</div>
-          <div class="method-name">Bank Transfer</div>
+        <div class="method-card" id="wm-bank" onclick="selectWithdrawMethod('bank',this)" style="flex:1;">
+          <div class="method-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1a3a6e,#2563eb);display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;font-size:1.3rem;">🏛️</div>
+          <div class="method-name">Bank</div>
           <div class="method-limit">Min ₹500</div>
         </div>
-        <div class="method-card" id="wm-usdt" onclick="selectWithdrawMethod('usdt',this)">
-          <div class="method-icon" style="font-weight:900;font-size:1.3rem;color:#26a17b;">$</div>
+        <div class="method-card" id="wm-usdt" onclick="selectWithdrawMethod('usdt',this)" style="flex:1;">
+          <div class="method-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#26a17b,#1a7a5c);display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;font-size:1.4rem;font-weight:900;color:#fff;">₮</div>
           <div class="method-name">USDT</div>
           <div class="method-limit">Min ₹1,000</div>
         </div>
@@ -3771,12 +3806,12 @@
 
     </div>
 
-    <!-- HISTORY -->
+    <!-- HISTORY (deposit history only) -->
     <div class="wallet-panel" id="panel-history">
-      <div class="tx-table">
-        <div class="tx-row head"><div>Type</div><div>Amount</div><div>Date</div><div>Status</div></div>
-        <div class="tx-row"><div>⬇️ Deposit — UPI</div><div class="tx-deposit">+₹1,000</div><div style="color:var(--muted);">12 May 2026</div><div><span class="badge badge-success">Success</span></div></div>
-        <div class="tx-row"><div>⬆️ Withdraw — UPI</div><div class="tx-withdraw">-₹500</div><div style="color:var(--muted);">10 May 2026</div><div><span class="badge badge-success">Success</span></div></div>
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.95rem;margin-bottom:1rem;">📋 Deposit History</div>
+      <div id="depositHistoryRows">
+        <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>
+      </div>
         <div class="tx-row"><div>⬇️ Deposit — Card</div><div class="tx-deposit">+₹2,000</div><div style="color:var(--muted);">8 May 2026</div><div><span class="badge badge-success">Success</span></div></div>
         <div class="tx-row"><div>⬆️ Withdraw — Bank</div><div class="tx-withdraw">-₹1,500</div><div style="color:var(--muted);">5 May 2026</div><div><span class="badge badge-pending">Pending</span></div></div>
         <div class="tx-row"><div>⬇️ Deposit — UPI</div><div class="tx-deposit">+₹500</div><div style="color:var(--muted);">2 May 2026</div><div><span class="badge badge-failed">Failed</span></div></div>
@@ -3949,21 +3984,21 @@
 
     <!-- Quick action grid -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:0.8rem;">
-      <div onclick="showPage('history')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
+      <div onclick="showPage('bethistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
         <div style="width:40px;height:40px;border-radius:10px;background:rgba(39,174,96,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">🎯</div>
-        <div><div style="font-size:0.85rem;font-weight:700;">Bet History</div><div style="font-size:0.7rem;color:var(--muted);">My betting history</div></div>
+        <div><div style="font-size:0.85rem;font-weight:700;">Bet History</div><div style="font-size:0.7rem;color:var(--muted);">Win & Loss history</div></div>
       </div>
       <div onclick="showPage('history')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
         <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,77,255,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">💰</div>
-        <div><div style="font-size:0.85rem;font-weight:700;">Transaction</div><div style="font-size:0.7rem;color:var(--muted);">My transaction history</div></div>
+        <div><div style="font-size:0.85rem;font-weight:700;">Transaction</div><div style="font-size:0.7rem;color:var(--muted);">All transactions</div></div>
       </div>
-      <div onclick="showPage('deposit')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
+      <div onclick="showDepositHistory()" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
         <div style="width:40px;height:40px;border-radius:10px;background:rgba(240,192,64,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">⬇️</div>
-        <div><div style="font-size:0.85rem;font-weight:700;">Deposit</div><div style="font-size:0.7rem;color:var(--muted);">My deposit history</div></div>
+        <div><div style="font-size:0.85rem;font-weight:700;">Deposit History</div><div style="font-size:0.7rem;color:var(--muted);">My deposit history</div></div>
       </div>
-      <div onclick="showPage('withdraw')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
+      <div onclick="showWithdrawHistory()" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
         <div style="width:40px;height:40px;border-radius:10px;background:rgba(224,32,32,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">⬆️</div>
-        <div><div style="font-size:0.85rem;font-weight:700;">Withdraw</div><div style="font-size:0.7rem;color:var(--muted);">My withdraw history</div></div>
+        <div><div style="font-size:0.85rem;font-weight:700;">Withdrawal History</div><div style="font-size:0.7rem;color:var(--muted);">My withdrawal history</div></div>
       </div>
     </div>
 
