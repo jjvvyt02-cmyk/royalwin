@@ -966,15 +966,19 @@
 <!-- NAV -->
 <nav id="mainNav">
   <div class="nav-logo" onclick="showPage('home')">ROYAL<span>♠</span>WIN</div>
+  <!-- Guest nav -->
   <div class="nav-links" id="navGuest">
     <button class="nav-btn" onclick="showPage('login')">Sign In</button>
     <button class="nav-btn primary" onclick="showPage('register')">Join Now</button>
   </div>
+  <!-- Logged in nav — minimal, just notification bell -->
   <div class="nav-user" id="navUser" style="display:none;">
-    <div class="balance-pill" id="userBalance">💰 ₹0.00</div>
-    <button class="nav-btn" onclick="showPage('wallet')">💰 Wallet</button><button class="nav-btn" onclick="showPage('promotions')">🎁 Promos</button><button class="nav-btn" onclick="showPage('vip')">💎 VIP</button><button class="nav-btn" onclick="showPage('referral')">🎁 Refer & Earn</button>
-    <div class="notif-bell" onclick="toggleNotif()" title="Notifications">🔔<span class="notif-badge" id="notifBadge">3</span></div><div class="notif-dropdown" id="notifDropdown"><div class="notif-title">Notifications</div><div class="notif-item unread">🎁 Welcome bonus of ₹500 credited!</div><div class="notif-item unread">✅ Deposit of ₹1,000 successful</div><div class="notif-item unread">🎉 You reached Bronze VIP!</div><div class="notif-item">📢 New promotion available</div></div><div class="avatar" id="userAvatar" onclick="showPage('profile')" title="My Account">R</div>
-    <button class="nav-btn" onclick="logout()" style="font-size:0.8rem;">Sign Out</button>
+    <div class="notif-bell" onclick="toggleNotif()" title="Notifications">🔔<span class="notif-badge" id="notifBadge">3</span></div>
+    <div class="notif-dropdown" id="notifDropdown">
+      <div class="notif-title">Notifications</div>
+      <div class="notif-item unread">🎁 Welcome bonus credited!</div>
+      <div class="notif-item unread">📢 New promotion available</div>
+    </div>
   </div>
 </nav>
 
@@ -1341,10 +1345,13 @@
       await db.ref('users/' + window.currentUser.uid + '/withdrawRequests').push({
         amount: amt, status: 'pending', timestamp: Date.now(), uid: window.currentUser.uid
       });
+      const upiId = document.querySelector('#panel-withdraw input[placeholder*="upi"]') ? 
+                    document.querySelector('#panel-withdraw input[placeholder*="upi"]').value : '';
       await db.ref('adminRequests/withdrawals').push({
         amount: amt, status: 'pending', uid: window.currentUser.uid,
         username: window.userProfile ? window.userProfile.username : 'Unknown',
         contact: window.userProfile ? (window.userProfile.contact || window.userProfile.mobile || window.userProfile.email || '') : '',
+        upiId: upiId || 'Not provided',
         balance: bal, timestamp: Date.now()
       });
       showToast('⬆️ Withdrawal of ₹' + amt.toLocaleString('en-IN') + ' submitted! Admin will process shortly.');
@@ -1589,72 +1596,126 @@
   }
 
   // Spinning Wheel
-  const wheelPrizes = ['₹100','₹500','₹50','₹1,000','₹200','₹5,000','Try Again','₹300'];
-  const wheelColors = ['#c07a10','#27ae60','#7c4dff','#e02020','#f39c12','#b8912a','#444','#1a8a5a'];
+  // Daily spin: 5 segments visible, only 18/48/88 can win
+  // ── DAILY SPIN WHEEL ──
+  // 5 segments visible: ₹18, ₹48, ₹88, ₹288, ₹488
+  // But only 3 can win: ₹18=80%, ₹48=15%, ₹88=5%
+  const wheelPrizes = ['₹18', '₹48', '₹88', '₹288', '₹488'];
+  const wheelColors = ['#27ae60', '#c07a10', '#7c4dff', '#e02020', '#b8912a'];
+  const wheelWeightedPool = [
+    ...Array(80).fill(18),  // 80%
+    ...Array(15).fill(48),  // 15%
+    ...Array(5).fill(88),   // 5%
+    // 288 and 488 = 0% — never win
+  ];
+  const prizeIndexMap = { 18: 0, 48: 1, 88: 2, 288: 3, 488: 4 };
   let spinning = false;
 
   function drawWheel(rotation) {
     const canvas = document.getElementById('wheelCanvas');
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
-    const cx = 140, cy = 140, r = 130;
+    const cx = 140, cy = 140, r = 125;
     const slices = wheelPrizes.length;
     const arc = (2 * Math.PI) / slices;
     ctx.clearRect(0, 0, 280, 280);
     for (let i = 0; i < slices; i++) {
       const start = rotation + i * arc;
+      // Slice
       ctx.beginPath(); ctx.moveTo(cx, cy);
       ctx.arc(cx, cy, r, start, start + arc);
       ctx.closePath(); ctx.fillStyle = wheelColors[i]; ctx.fill();
-      ctx.strokeStyle = '#000'; ctx.lineWidth = 2; ctx.stroke();
+      ctx.strokeStyle = '#111'; ctx.lineWidth = 3; ctx.stroke();
+      // Label
       ctx.save(); ctx.translate(cx, cy);
       ctx.rotate(start + arc / 2);
       ctx.textAlign = 'right'; ctx.fillStyle = '#fff';
-      ctx.font = 'bold 13px Exo 2, sans-serif';
-      ctx.fillText(wheelPrizes[i], r - 12, 5);
+      ctx.font = 'bold 18px Cinzel, serif';
+      ctx.fillText(wheelPrizes[i], r - 14, 6);
       ctx.restore();
     }
-    ctx.beginPath(); ctx.arc(cx, cy, 18, 0, 2*Math.PI);
-    ctx.fillStyle = '#1a1a2e'; ctx.fill();
-    ctx.strokeStyle = 'var(--gold)'; ctx.lineWidth = 3; ctx.stroke();
+    // Center circle
+    ctx.beginPath(); ctx.arc(cx, cy, 20, 0, 2 * Math.PI);
+    ctx.fillStyle = '#0a0a0f'; ctx.fill();
+    ctx.strokeStyle = '#f0c040'; ctx.lineWidth = 3; ctx.stroke();
+    // Pointer triangle
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r - 10);
+    ctx.lineTo(cx - 10, cy - r + 12);
+    ctx.lineTo(cx + 10, cy - r + 12);
+    ctx.closePath();
+    ctx.fillStyle = '#f0c040'; ctx.fill();
   }
 
-  function openWheel() {
+  async function openWheel(fromLogin = false) {
     if (!isLoggedIn) { showToast('🔐 Please sign in first!'); showPage('login'); return; }
+    const db = window.fbDB || fbDB;
+    const user = window.currentUser;
+    if (db && user) {
+      try {
+        const snap = await db.ref('users/' + user.uid + '/lastSpinDate').once('value');
+        if (snap.val() === new Date().toDateString()) {
+          // Already claimed today — don't show wheel
+          if (!fromLogin) showToast('🎡 Already claimed today! Come back tomorrow.');
+          return;
+        }
+      } catch(e) {}
+    }
     document.getElementById('wheelOverlay').classList.add('open');
     document.getElementById('wheelResult').style.display = 'none';
     document.getElementById('spinBtn').disabled = false;
+    spinning = false;
     drawWheel(0);
   }
+
   function closeWheel() { document.getElementById('wheelOverlay').classList.remove('open'); }
 
-  function spinWheel() {
+  async function spinWheel() {
     if (spinning) return;
     spinning = true;
     document.getElementById('spinBtn').disabled = true;
     document.getElementById('wheelResult').style.display = 'none';
+
+    // Pick winner
+    const winAmt = wheelWeightedPool[Math.floor(Math.random() * wheelWeightedPool.length)];
+    const winIndex = prizeIndexMap[winAmt];
     const slices = wheelPrizes.length;
     const arc = (2 * Math.PI) / slices;
-    const winIndex = Math.floor(Math.random() * slices);
-    const totalRotation = (Math.PI * 2 * 8) + (Math.PI * 2 - (winIndex * arc + arc / 2));
-    let start = null, current = 0;
+    // Rotate so winning slice lands at top (pointer)
+    const targetAngle = (Math.PI * 2 * 8) + (Math.PI * 2 - (winIndex * arc + arc / 2));
+    let start = null;
+
     function animate(ts) {
       if (!start) start = ts;
       const elapsed = ts - start;
-      const duration = 4000;
+      const duration = 4500;
       const progress = Math.min(elapsed / duration, 1);
       const ease = 1 - Math.pow(1 - progress, 4);
-      current = totalRotation * ease;
-      drawWheel(current);
-      if (progress < 1) { requestAnimationFrame(animate); }
-      else {
-        spinning = false;
-        const prize = wheelPrizes[winIndex];
-        const resultEl = document.getElementById('wheelResult');
-        resultEl.textContent = prize === 'Try Again' ? '😅 Better luck next time!' : '🎉 You won ' + prize + '!';
-        resultEl.style.display = 'block';
-        if (prize !== 'Try Again') showToast('🎉 Congratulations! ' + prize + ' added to wallet!');
-      }
+      drawWheel(targetAngle * ease);
+      if (progress < 1) { requestAnimationFrame(animate); return; }
+
+      spinning = false;
+      const resultEl = document.getElementById('wheelResult');
+      resultEl.innerHTML = '🎉 You won <strong style="color:var(--gold);">₹' + winAmt + '</strong>!';
+      resultEl.style.display = 'block';
+
+      // Add to real Firebase balance immediately + mark claimed
+      (async () => {
+        try {
+          const db = window.fbDB || fbDB;
+          const user = window.currentUser;
+          if (db && user) {
+            const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
+            const newBal = parseFloat((parseFloat(balSnap.val() || 0) + winAmt).toFixed(2));
+            await db.ref('users/' + user.uid + '/balance').set(newBal);
+            await db.ref('users/' + user.uid + '/lastSpinDate').set(new Date().toDateString());
+            updateBalanceDisplay(newBal);
+            showToast('💰 ₹' + winAmt + ' added to your wallet!');
+            // Auto close after 3 seconds
+            setTimeout(() => closeWheel(), 5000);
+          }
+        } catch(e) { console.warn('Wheel error:', e); }
+      })();
     }
     requestAnimationFrame(animate);
   }
@@ -1709,7 +1770,18 @@
       showToast('🎉 Welcome to RoyalWin, ' + username + '!');
       showPage('home');
       showTicker();
-      setTimeout(() => openWheel(), 1200);
+      // Check if daily spin already claimed before showing
+    setTimeout(async () => {
+      const db = window.fbDB || fbDB;
+      const user = window.currentUser || firebase.auth().currentUser;
+      if (db && user) {
+        const snap = await db.ref('users/' + user.uid + '/lastSpinDate').once('value');
+        // Only open if not claimed today — pass fromLogin=true so no toast if already claimed
+        if (snap.val() !== new Date().toDateString()) openWheel(true);
+      } else {
+        openWheel(true);
+      }
+    }, 1200);
     } catch(e) {
       console.error('Register error:', e);
       const msg = e.code === 'auth/email-already-in-use' ? 'This account already exists. Please sign in.' :
@@ -2436,6 +2508,9 @@
   // ── MOBILE BOTTOM NAV ──
   function mobileNav(page) {
     document.querySelectorAll('.mobile-nav-item').forEach(b => b.classList.remove('active'));
+    const pageToNav = { home:'mn-home', promotions:'mn-activity', referral:'mn-promo', wallet:'mn-wallet', profile:'mn-account' };
+    const activeBtn = document.getElementById(pageToNav[page]);
+    if (activeBtn) activeBtn.classList.add('active');
     const el = document.getElementById('mn-' + page);
     if (el) el.classList.add('active');
     if (page === 'game') { openColorGame(); return; }
@@ -2449,25 +2524,95 @@
   }
 
   // ── BET HISTORY ──
-  const betHistoryData = [
-    { game:'WinGo', icon:'🎯', color:'#7c4dff', bet:100, result:'Green', profit:92, won:true,  time:'13 May, 11:42', round:'20250513041' },
-    { game:'WinGo', icon:'🎯', color:'#e02020', bet:200, result:'Red',   profit:-200,won:false, time:'13 May, 11:10', round:'20250513038' },
-    { game:'WinGo', icon:'🎯', color:'#27ae60', bet:50,  result:'Big',   profit:46,  won:true,  time:'13 May, 10:55', round:'20250513036' },
-    { game:'Slots',  icon:'🎰', color:'#f39c12', bet:300, result:'Bonus', profit:540, won:true,  time:'13 May, 10:30', round:'—' },
-    { game:'WinGo', icon:'🎯', color:'#e02020', bet:150, result:'Small', profit:-150,won:false, time:'13 May, 10:12', round:'20250513031' },
-    { game:'Dragon Tiger',icon:'🐉',color:'#7c4dff',bet:500,result:'Dragon',profit:480,won:true,time:'12 May, 22:40',round:'—'},
-    { game:'WinGo', icon:'🎯', color:'#27ae60', bet:100, result:'Violet',profit:432, won:true,  time:'12 May, 22:10', round:'20250512089' },
-    { game:'Dice',  icon:'🎲', color:'#e02020', bet:200, result:'4',     profit:-200,won:false, time:'12 May, 21:55', round:'—' },
-    { game:'WinGo', icon:'🎯', color:'#e02020', bet:500, result:'Red',   profit:480, won:true,  time:'12 May, 21:20', round:'20250512081' },
-    { game:'WinGo', icon:'🎯', color:'#27ae60', bet:100, result:'Big',   profit:-100,won:false, time:'12 May, 20:50', round:'20250512075' },
-    { game:'Slots',  icon:'🎰', color:'#f39c12', bet:200, result:'Win',   profit:160, won:true,  time:'12 May, 20:10', round:'—' },
-    { game:'WinGo', icon:'🎯', color:'#7c4dff', bet:300, result:'Number 5',profit:2592,won:true,time:'12 May, 19:45',round:'20250512068'},
-    { game:'Dragon Tiger',icon:'🐉',color:'#e02020',bet:400,result:'Tiger',profit:-400,won:false,time:'12 May, 19:00',round:'—'},
-    { game:'WinGo', icon:'🎯', color:'#e02020', bet:50,  result:'Small', profit:46,  won:true,  time:'12 May, 18:30', round:'20250512055' },
-    { game:'Dice',  icon:'🎲', color:'#27ae60', bet:100, result:'6',     profit:96,  won:true,  time:'12 May, 18:00', round:'—' },
-  ];
+  let betHistoryData = []; // Loaded from Firebase
 
   let currentBetFilter = 'all';
+
+  let allTransactions = [];
+  let currentTxFilter = 'all';
+
+  async function loadTransactionHistory() {
+    const container = document.getElementById('txHistoryRows');
+    if (!container) return;
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) {
+      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Please log in to view transactions</div>';
+      return;
+    }
+    container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
+    try {
+      // Load all transaction types
+      const txSnap = await db.ref('users/' + user.uid + '/transactions').once('value');
+      const betSnap = await db.ref('users/' + user.uid + '/betHistory').once('value');
+
+      let txs = [];
+      if (txSnap.val()) txs = txs.concat(Object.values(txSnap.val()));
+      if (betSnap.val()) {
+        // Add bet history as transactions
+        Object.values(betSnap.val()).forEach(b => {
+          txs.push({
+            type: b.won ? 'win' : 'loss',
+            amount: b.won ? parseFloat(b.profit) : -parseFloat(b.bet),
+            details: b.game + ' · ' + b.result,
+            balance: b.balance || 0,
+            timestamp: b.timestamp || 0
+          });
+        });
+      }
+
+      // Sort by timestamp desc
+      allTransactions = txs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      renderTxRows(allTransactions);
+    } catch(e) {
+      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Failed to load transactions</div>';
+    }
+  }
+
+  function filterTx(el, filter) {
+    document.querySelectorAll('.history-filters .hf-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    currentTxFilter = filter;
+    const filtered = filter === 'all' ? allTransactions :
+                     allTransactions.filter(tx => tx.type === filter);
+    renderTxRows(filtered);
+  }
+
+  function renderTxRows(txs) {
+    const container = document.getElementById('txHistoryRows');
+    if (!container) return;
+    if (!txs || txs.length === 0) {
+      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No transactions found</div>';
+      return;
+    }
+    const typeConfig = {
+      deposit:    { icon:'⬇️', label:'Deposit',    color:'#27ae60', sign:'+' },
+      withdrawal: { icon:'⬆️', label:'Withdrawal', color:'#e02020', sign:'-' },
+      win:        { icon:'🏆', label:'Win',         color:'#27ae60', sign:'+' },
+      loss:       { icon:'🎮', label:'Bet Loss',    color:'#e02020', sign:'-' },
+      manual_add: { icon:'➕', label:'Admin Credit',color:'#27ae60', sign:'+' },
+      manual_deduct:{ icon:'➖', label:'Admin Debit',color:'#e02020',sign:'-' },
+      spin:       { icon:'🎡', label:'Daily Spin',  color:'#27ae60', sign:'+' },
+    };
+    container.innerHTML = txs.map(tx => {
+      const cfg = typeConfig[tx.type] || { icon:'💸', label: tx.type || 'Transaction', color:'var(--muted)', sign:'' };
+      const amt = Math.abs(tx.amount || 0);
+      const isCredit = cfg.sign === '+';
+      const time = tx.timestamp ? new Date(tx.timestamp).toLocaleString('en-IN', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '—';
+      return `<div class="bh-row">
+        <div class="bh-game">
+          <div class="bh-dot" style="background:${cfg.color};"></div>
+          <span>${cfg.icon} ${cfg.label}</span>
+        </div>
+        <div style="color:${cfg.color};font-weight:700;">${cfg.sign}₹${amt.toLocaleString('en-IN', {minimumFractionDigits:2})}</div>
+        <div style="color:var(--muted);font-size:0.75rem;">${tx.details || tx.game || '—'}</div>
+        <div style="color:var(--muted);font-size:0.75rem;">${time}</div>
+        <div style="color:var(--text);font-size:0.78rem;">₹${(tx.balance || 0).toLocaleString('en-IN', {minimumFractionDigits:2})}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function renderTransactionHistory() { loadTransactionHistory(); }
 
   function renderBetHistory(filter) {
     const container = document.getElementById('betHistoryRows');
@@ -2502,12 +2647,30 @@
     renderBetHistory(filter);
   }
 
-  // Add bet to history when round resolves
-  function addBetToHistory(game, bet, result, profit, won, round) {
+  // Add bet to history when round resolves — saves to Firebase
+  async function addBetToHistory(game, bet, result, profit, won, round) {
     const now = new Date();
-    const time = now.getDate() + ' May, ' + now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-    betHistoryData.unshift({ game, icon:'🎯', color: won ? '#27ae60' : '#e02020', bet, result, profit: won ? profit : -bet, won, time, round: round || '—' });
+    const time = now.toLocaleDateString('en-IN', {day:'numeric', month:'short'}) + ', ' +
+                 now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+    const entry = {
+      game, icon:'🎯',
+      color: won ? '#27ae60' : '#e02020',
+      bet: parseFloat(bet), result,
+      profit: won ? parseFloat(profit) : -parseFloat(bet),
+      won, time, round: round || '—',
+      timestamp: Date.now()
+    };
+    betHistoryData.unshift(entry);
     if (currentBetFilter !== undefined) renderBetHistory(currentBetFilter);
+
+    // Save to Firebase
+    try {
+      const db = window.fbDB || fbDB;
+      const user = window.currentUser;
+      if (db && user) {
+        await db.ref('users/' + user.uid + '/betHistory').push(entry);
+      }
+    } catch(e) { console.warn('Bet history save failed:', e); }
   }
 
   function showToast(msg) {
@@ -2526,9 +2689,37 @@
       if (!profile) return;
       window.userProfile = profile;
 
+      // Load real bet history from Firebase
+      try {
+        const histSnap = await firebase.database().ref('users/' + uid + '/betHistory').once('value');
+        if (histSnap.val()) {
+          betHistoryData = Object.values(histSnap.val())
+            .sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+          renderBetHistory(currentBetFilter || 'all');
+        }
+      } catch(e) {}
+
+      // Load real transactions (deposits/withdrawals)
+      try {
+        const txSnap = await firebase.database().ref('users/' + uid + '/transactions').once('value');
+        if (txSnap.val()) {
+          window.userTransactions = Object.values(txSnap.val())
+            .sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+          renderTransactionHistory();
+        }
+      } catch(e) {}
+
       // Update nav avatar
       const avatarEl = document.getElementById('userAvatar');
       if (avatarEl) avatarEl.textContent = (profile.username || profile.firstName || 'U').charAt(0).toUpperCase();
+      // Update bottom nav avatar
+      const bottomAv = document.getElementById('bottomAvatar');
+      if (bottomAv) bottomAv.textContent = (profile.username || profile.firstName || 'U').charAt(0).toUpperCase();
+      // Update profile page balance + username
+      const profBal = document.getElementById('profileBalance');
+      if (profBal) profBal.textContent = '₹' + parseFloat(profile.balance || 0).toLocaleString('en-IN', {minimumFractionDigits:2});
+      const profUser = document.getElementById('profileUsername');
+      if (profUser) profUser.textContent = '@' + (profile.username || '—') + ' · ' + (profile.contact || profile.mobile || profile.email || '');
 
       // Update balance
       updateBalanceDisplay(profile.balance || 0);
@@ -2544,8 +2735,17 @@
   }
 
   function updateBalanceDisplay(balance) {
+    const bal = parseFloat(balance || 0);
+    const formatted = '₹' + bal.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
     const balEl = document.getElementById('userBalance');
-    if (balEl) balEl.textContent = '💰 ₹' + parseFloat(balance).toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+    if (balEl) balEl.textContent = '💰 ' + formatted;
+    const withdrawBal = document.getElementById('withdrawAvailBalance');
+    if (withdrawBal) withdrawBal.textContent = formatted;
+    // Update profile page balance
+    const profBal = document.getElementById('profileBalance');
+    if (profBal) profBal.textContent = formatted;
+    // Store current balance globally
+    window.currentBalance = bal;
   }
 
   function updateProfilePage(profile) {
@@ -2610,12 +2810,17 @@
           loadUserProfile(user.uid);
           document.getElementById('navGuest').style.display = 'none';
           document.getElementById('navUser').style.display = 'flex';
+          document.getElementById('mobileNav').style.display = 'flex';
           showTicker();
+          // Hide sign in button on hero
+          const heroSignIn = document.getElementById('heroSignInBtn');
+          if (heroSignIn) heroSignIn.style.display = 'none';
         } else {
           window.currentUser = null;
           isLoggedIn = false;
           document.getElementById('navGuest').style.display = 'flex';
           document.getElementById('navUser').style.display = 'none';
+          document.getElementById('mobileNav').style.display = 'none';
         }
       });
       // Test read to confirm connection
@@ -2793,7 +2998,7 @@
         <input class="form-input" type="text" placeholder="yourname@upi or account number">
       </div>
       <div style="background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.15);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1.2rem;max-width:400px;font-size:0.85rem;color:var(--muted);">
-        💰 Available balance: <strong style="color:var(--gold);">₹12,500</strong> &nbsp;|&nbsp; Min withdrawal: <strong style="color:var(--text);">₹200</strong>
+        💰 Available balance: <strong style="color:var(--gold);" id="withdrawAvailBalance">₹0.00</strong> &nbsp;|&nbsp; Min withdrawal: <strong style="color:var(--text);">₹200</strong>
       </div>
       <button class="btn btn-outline" style="padding:0.8rem 2.5rem;border-color:var(--gold);color:var(--gold);" onclick="doWithdraw()">⬆️ Withdraw Now</button>
     </div>
@@ -2822,8 +3027,31 @@
     <div class="wheel-pointer"></div>
     <canvas class="wheel-canvas" id="wheelCanvas" width="280" height="280"></canvas>
   </div>
+  <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;flex-wrap:wrap;justify-content:center;">
+    <div style="text-align:center;background:rgba(39,174,96,0.15);border:1px solid rgba(39,174,96,0.3);border-radius:8px;padding:0.35rem 0.7rem;">
+      <div style="font-size:0.6rem;color:var(--muted);">80%</div>
+      <div style="font-family:'Cinzel',serif;color:#27ae60;font-weight:800;font-size:0.9rem;">₹18</div>
+    </div>
+    <div style="text-align:center;background:rgba(192,122,16,0.15);border:1px solid rgba(192,122,16,0.3);border-radius:8px;padding:0.35rem 0.7rem;">
+      <div style="font-size:0.6rem;color:var(--muted);">15%</div>
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-weight:800;font-size:0.9rem;">₹48</div>
+    </div>
+    <div style="text-align:center;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:8px;padding:0.35rem 0.7rem;">
+      <div style="font-size:0.6rem;color:var(--muted);">5%</div>
+      <div style="font-family:'Cinzel',serif;color:var(--red2);font-weight:800;font-size:0.9rem;">₹88</div>
+    </div>
+    <div style="text-align:center;background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:8px;padding:0.35rem 0.7rem;">
+      <div style="font-size:0.6rem;color:var(--muted);">Lucky</div>
+      <div style="font-family:'Cinzel',serif;color:#7c4dff;font-weight:800;font-size:0.9rem;">₹288</div>
+    </div>
+    <div style="text-align:center;background:rgba(184,145,42,0.15);border:1px solid rgba(184,145,42,0.3);border-radius:8px;padding:0.35rem 0.7rem;">
+      <div style="font-size:0.6rem;color:var(--muted);">Jackpot</div>
+      <div style="font-family:'Cinzel',serif;color:#b8912a;font-weight:800;font-size:0.9rem;">₹488</div>
+    </div>
+  </div>
   <button class="btn btn-gold spin-btn" id="spinBtn" onclick="spinWheel()">🎰 Spin Now!</button>
   <div class="wheel-result" id="wheelResult"></div>
+  <div style="font-size:0.72rem;color:var(--muted);margin-top:0.5rem;">🗓️ Daily spin — once per day</div>
 </div>
 
 <!-- PROFILE PAGE -->
@@ -3215,26 +3443,26 @@
 
 
 <!-- MOBILE BOTTOM NAV -->
-<div class="mobile-nav" id="mobileNav">
+<div class="mobile-nav" id="mobileNav" style="display:none;">
   <button class="mobile-nav-item active" id="mn-home" onclick="mobileNav('home')">
     <div class="mn-icon">🏠</div>
     <span>Home</span>
+  </button>
+  <button class="mobile-nav-item" id="mn-activity" onclick="mobileNav('promotions')">
+    <div class="mn-icon">📊</div>
+    <span>Activity</span>
+  </button>
+  <button class="mobile-nav-item mobile-nav-center" id="mn-promo" onclick="mobileNav('referral')">
+    <div class="mn-icon">🎁</div>
+    <span>Promotion</span>
   </button>
   <button class="mobile-nav-item" id="mn-wallet" onclick="mobileNav('wallet')">
     <div class="mn-icon">💰</div>
     <span>Wallet</span>
   </button>
-  <button class="mobile-nav-item mobile-nav-center" id="mn-game" onclick="mobileNav('game')">
-    <div class="mn-icon">🎯</div>
-    <span>Play</span>
-  </button>
-  <button class="mobile-nav-item" id="mn-referral" onclick="mobileNav('referral')">
-    <div class="mn-icon">🎁</div>
-    <span>Refer</span>
-  </button>
-  <button class="mobile-nav-item" id="mn-profile" onclick="mobileNav('profile')">
-    <div class="mn-icon">👤</div>
-    <span>Profile</span>
+  <button class="mobile-nav-item" id="mn-account" onclick="mobileNav('profile')">
+    <div class="mn-icon" id="bottomAvatar" style="width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#c07a10,var(--gold2));display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:800;color:#000;margin:0 auto;">U</div>
+    <span>Account</span>
   </button>
 </div>
 
@@ -3264,21 +3492,28 @@
       </div>
     </div>
 
-    <div class="history-filters">
-      <div class="hf-btn active" onclick="filterBets(this,'all')">All</div>
-      <div class="hf-btn" onclick="filterBets(this,'wingo')">🎯 WinGo</div>
-      <div class="hf-btn" onclick="filterBets(this,'slots')">🎰 Slots</div>
-      <div class="hf-btn" onclick="filterBets(this,'dragon')">🐉 Dragon Tiger</div>
-      <div class="hf-btn" onclick="filterBets(this,'dice')">🎲 Dice</div>
-      <div class="hf-btn" onclick="filterBets(this,'win')">✅ Won</div>
-      <div class="hf-btn" onclick="filterBets(this,'lose')">❌ Lost</div>
+    <!-- Transaction History Only -->
+    <div style="margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💰 Transaction History</div>
+      <button class="hf-btn" onclick="loadTransactionHistory()" style="padding:0.3rem 0.8rem;font-size:0.78rem;">🔄 Refresh</button>
+    </div>
+
+    <!-- Filter buttons -->
+    <div class="history-filters" style="margin-bottom:1rem;">
+      <div class="hf-btn active" onclick="filterTx(this,'all')">All</div>
+      <div class="hf-btn" onclick="filterTx(this,'deposit')">⬇️ Deposit</div>
+      <div class="hf-btn" onclick="filterTx(this,'withdrawal')">⬆️ Withdrawal</div>
+      <div class="hf-btn" onclick="filterTx(this,'win')">🏆 Win</div>
+      <div class="hf-btn" onclick="filterTx(this,'loss')">🎮 Bet</div>
     </div>
 
     <div class="bet-history-table">
       <div class="bh-row head">
-        <div>Game</div><div>Bet</div><div>Result</div><div>Profit/Loss</div><div>Time</div><div>Round</div>
+        <div>Type</div><div>Amount</div><div>Details</div><div>Time</div><div>Balance</div>
       </div>
-      <div id="betHistoryRows"></div>
+      <div id="txHistoryRows">
+        <div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>
+      </div>
     </div>
   </div>
 </div>
