@@ -1486,6 +1486,113 @@
     } catch(e) { console.warn('Wager load failed:', e); }
   }
 
+
+  async function saveWithdrawDetails(method) {
+    const db = window.fbDB || fbDB;
+    const user = window.currentUser;
+    if (!user || !db) return;
+
+    let details = {};
+    if (method === 'upi') {
+      const upiId = document.getElementById('w-upiId')?.value.trim();
+      if (!upiId) { showToast('⚠️ Enter UPI ID'); return; }
+      details = { upiId };
+    } else if (method === 'bank') {
+      const name = document.getElementById('w-bankName')?.value.trim();
+      const acc = document.getElementById('w-bankAcc')?.value.trim();
+      const ifsc = document.getElementById('w-bankIFSC')?.value.trim();
+      const bank = document.getElementById('w-bankBankName')?.value.trim();
+      if (!name || !acc || !ifsc || !bank) { showToast('⚠️ Fill all bank details'); return; }
+      details = { name, acc, ifsc, bank };
+    } else if (method === 'usdt') {
+      const addr = document.getElementById('w-usdtAddr')?.value.trim();
+      if (!addr) { showToast('⚠️ Enter USDT address'); return; }
+      details = { addr };
+    }
+
+    try {
+      await db.ref('users/' + user.uid + '/withdrawDetails/' + method).set({
+        ...details, savedAt: Date.now(), lockedByAdmin: false
+      });
+      showToast('✅ Details saved! Cannot be changed without admin approval.');
+      loadSavedWithdrawDetails();
+    } catch(e) { showToast('❌ Error: ' + e.message); }
+  }
+
+  async function loadSavedWithdrawDetails() {
+    const db = window.fbDB || fbDB;
+    const user = window.currentUser;
+    if (!user || !db) return;
+    try {
+      const snap = await db.ref('users/' + user.uid + '/withdrawDetails').once('value');
+      const data = snap.val() || {};
+
+      // UPI
+      if (data.upi) {
+        document.getElementById('savedUpiDisplay').style.display = 'flex';
+        document.getElementById('savedUpiText').textContent = data.upi.upiId;
+        document.getElementById('newUpiForm').style.display = 'none';
+      }
+
+      // Bank
+      if (data.bank) {
+        document.getElementById('savedBankDisplay').style.display = 'block';
+        document.getElementById('savedBankText').innerHTML =
+          `<strong>${data.bank.name}</strong><br>${data.bank.bank} · ${data.bank.acc}<br>IFSC: ${data.bank.ifsc}`;
+        document.getElementById('newBankForm').style.display = 'none';
+      }
+
+      // USDT
+      if (data.usdt) {
+        document.getElementById('savedUsdtDisplay').style.display = 'flex';
+        document.getElementById('savedUsdtText').textContent = data.usdt.addr;
+        document.getElementById('newUsdtForm').style.display = 'none';
+      }
+
+      // Check USDT deposit restriction
+      const depSnap = await db.ref('users/' + user.uid + '/hasUsdtDeposit').once('value');
+      window._userHasUsdtDeposit = depSnap.val() || false;
+
+    } catch(e) { console.warn('Load withdraw details failed:', e); }
+  }
+
+  let currentWithdrawMethod = 'upi';
+
+  function selectWithdrawMethod(method, el) {
+    currentWithdrawMethod = method;
+    document.querySelectorAll('#panel-withdraw .method-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    ['upi','bank','usdt'].forEach(m => {
+      const f = document.getElementById('withdrawFields-' + m);
+      if (f) f.style.display = m === method ? 'block' : 'none';
+    });
+  }
+
+  async function loadWithdrawHistory() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    const el = document.getElementById('withdrawHistoryRows');
+    if (!user || !db || !el) return;
+    try {
+      const snap = await db.ref('users/' + user.uid + '/withdrawRequests').once('value');
+      const data = snap.val();
+      if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No withdrawals yet</div>'; return; }
+      const rows = Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+      el.innerHTML = rows.map(r => {
+        const time = r.timestamp ? new Date(r.timestamp).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'}) : '—';
+        const statusColor = r.status === 'approved' ? 'var(--green)' : r.status === 'rejected' ? 'var(--red2)' : 'var(--gold)';
+        const statusText = r.status === 'approved' ? '✅ Approved' : r.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.6rem;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:700;color:var(--red2);">-₹${(r.amount||0).toLocaleString('en-IN')}</div>
+            <div style="font-size:0.72rem;color:var(--muted);">${r.method || 'UPI'} · ${time}</div>
+          </div>
+          <div style="font-size:0.78rem;font-weight:700;color:${statusColor};">${statusText}</div>
+        </div>`;
+      }).join('');
+    } catch(e) { console.warn('Withdraw history failed:', e); }
+  }
+
   async function refreshWalletBalance() {
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
@@ -1506,7 +1613,7 @@
       document.getElementById('tab-' + t).classList.toggle('active', t === tab);
       document.getElementById('panel-' + t).classList.toggle('active', t === tab);
     });
-    if (tab === 'withdraw') loadWagerProgress();
+    if (tab === 'withdraw') { loadWagerProgress(); loadWithdrawHistory(); loadSavedWithdrawDetails(); }
   }
 
   function selectMethod(el) {
@@ -1687,16 +1794,32 @@
       await db.ref('users/' + window.currentUser.uid + '/withdrawRequests').push({
         amount: amt, status: 'pending', timestamp: Date.now(), uid: window.currentUser.uid
       });
-      const upiId = document.querySelector('#panel-withdraw input[placeholder*="upi"]') ? 
-                    document.querySelector('#panel-withdraw input[placeholder*="upi"]').value : '';
+      // Check USDT restriction
+      if (currentWithdrawMethod === 'usdt' && !window._userHasUsdtDeposit) {
+        showToast('❌ USDT withdrawal only available if you deposited via USDT');
+        return;
+      }
+      // Get saved details
+      const savedSnap = await db.ref('users/' + window.currentUser.uid + '/withdrawDetails/' + currentWithdrawMethod).once('value');
+      const saved = savedSnap.val();
+      if (!saved) { showToast('⚠️ Please save your ' + currentWithdrawMethod.toUpperCase() + ' details first'); return; }
+      let upiId = '';
+      if (currentWithdrawMethod === 'upi') upiId = saved.upiId;
+      else if (currentWithdrawMethod === 'bank') upiId = `Acc: ${saved.acc} | IFSC: ${saved.ifsc} | Bank: ${saved.bank} | Name: ${saved.name}`;
+      else upiId = `USDT TRC20: ${saved.addr}`;
       await db.ref('adminRequests/withdrawals').push({
         amount: amt, status: 'pending', uid: window.currentUser.uid,
         username: window.userProfile ? window.userProfile.username : 'Unknown',
-        contact: window.userProfile ? (window.userProfile.contact || window.userProfile.mobile || window.userProfile.email || '') : '',
-        upiId: upiId || 'Not provided',
+        contact: window.userProfile ? (window.userProfile.contact || '') : '',
+        upiId, method: currentWithdrawMethod.toUpperCase(),
         balance: bal, timestamp: Date.now()
       });
+      await db.ref('users/' + window.currentUser.uid + '/withdrawRequests').push({
+        amount: amt, status: 'pending', method: currentWithdrawMethod.toUpperCase(),
+        upiId, timestamp: Date.now()
+      });
       showToast('⬆️ Withdrawal of ₹' + amt.toLocaleString('en-IN') + ' submitted! Admin will process shortly.');
+      loadWithdrawHistory();
     } catch(e) { showToast('❌ Withdrawal failed: ' + e.message); }
   }
 
@@ -3530,41 +3653,122 @@
       <div id="wagerDoneSection" style="display:none;background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:12px;padding:0.8rem 1rem;margin-bottom:1rem;">
         <div style="font-size:0.85rem;color:var(--green);font-weight:700;">✅ Wager completed! Withdrawal is unlocked.</div>
       </div>
-      <div class="deposit-methods">
-        <div class="method-card selected" onclick="selectMethod(this)">
+
+      <!-- Method selection -->
+      <div class="deposit-methods" style="margin-bottom:1rem;">
+        <div class="method-card selected" id="wm-upi" onclick="selectWithdrawMethod('upi',this)">
           <div class="method-icon">📱</div>
           <div class="method-name">UPI</div>
           <div class="method-limit">Min ₹200</div>
         </div>
-        <div class="method-card" onclick="selectMethod(this)">
+        <div class="method-card" id="wm-bank" onclick="selectWithdrawMethod('bank',this)">
           <div class="method-icon">🏦</div>
           <div class="method-name">Bank Transfer</div>
           <div class="method-limit">Min ₹500</div>
         </div>
-        <div class="method-card" onclick="selectMethod(this)">
-          <div class="method-icon">🪙</div>
-          <div class="method-name">Crypto</div>
+        <div class="method-card" id="wm-usdt" onclick="selectWithdrawMethod('usdt',this)">
+          <div class="method-icon" style="font-weight:900;font-size:1.3rem;color:#26a17b;">$</div>
+          <div class="method-name">USDT</div>
           <div class="method-limit">Min ₹1,000</div>
         </div>
       </div>
-      <div class="amount-presets">
-        <div class="amount-preset" onclick="setAmount(this,'500')">₹500</div>
-        <div class="amount-preset selected" onclick="setAmount(this,'1000')">₹1,000</div>
-        <div class="amount-preset" onclick="setAmount(this,'2000')">₹2,000</div>
-        <div class="amount-preset" onclick="setAmount(this,'5000')">₹5,000</div>
-      </div>
-      <div class="form-group" style="max-width:400px;">
+
+      <!-- Amount -->
+      <div class="form-group" style="max-width:420px;">
         <label class="form-label">Withdraw Amount (₹)</label>
-        <input class="form-input" type="number" id="withdrawAmount" placeholder="Enter amount" value="1000">
+        <input class="form-input" type="number" id="withdrawAmount" placeholder="Enter amount (min ₹200)">
       </div>
-      <div class="form-group" style="max-width:400px;">
-        <label class="form-label">UPI ID / Account Number</label>
-        <input class="form-input" type="text" placeholder="yourname@upi or account number">
+
+      <!-- UPI Fields -->
+      <div id="withdrawFields-upi" style="max-width:420px;">
+        <!-- Saved UPI -->
+        <div id="savedUpiDisplay" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:0.72rem;color:var(--muted);">Saved UPI ID</div>
+            <div style="font-weight:700;color:var(--text);" id="savedUpiText">—</div>
+          </div>
+          <div style="font-size:0.72rem;color:var(--green);">🔒 Saved</div>
+        </div>
+        <!-- New UPI input -->
+        <div id="newUpiForm">
+          <div class="form-group">
+            <label class="form-label">UPI ID</label>
+            <input class="form-input" type="text" id="w-upiId" placeholder="yourname@upi">
+          </div>
+          <button onclick="saveWithdrawDetails('upi')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.6rem 1.5rem;font-weight:700;color:#000;cursor:pointer;font-size:0.85rem;margin-bottom:0.8rem;">💾 Save UPI ID</button>
+        </div>
       </div>
-      <div style="background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.15);border-radius:10px;padding:1rem 1.2rem;margin-bottom:1.2rem;max-width:400px;font-size:0.85rem;color:var(--muted);">
-        💰 Available balance: <strong style="color:var(--gold);" id="withdrawAvailBalance">₹0.00</strong> &nbsp;|&nbsp; Min withdrawal: <strong style="color:var(--text);">₹200</strong>
+
+      <!-- Bank Fields -->
+      <div id="withdrawFields-bank" style="display:none;max-width:420px;">
+        <!-- Saved Bank -->
+        <div id="savedBankDisplay" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.5rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:0.72rem;color:var(--muted);">Saved Bank Details</div>
+            <div style="font-size:0.72rem;color:var(--green);">🔒 Saved</div>
+          </div>
+          <div id="savedBankText" style="font-size:0.82rem;color:var(--text);margin-top:0.3rem;line-height:1.6;"></div>
+        </div>
+        <!-- New Bank input -->
+        <div id="newBankForm">
+          <div class="form-group">
+            <label class="form-label">Account Holder Name</label>
+            <input class="form-input" type="text" id="w-bankName" placeholder="Full name as per bank">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Account Number</label>
+            <input class="form-input" type="text" id="w-bankAcc" placeholder="Enter account number">
+          </div>
+          <div class="form-group">
+            <label class="form-label">IFSC Code</label>
+            <input class="form-input" type="text" id="w-bankIFSC" placeholder="e.g. SBIN0001234">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Bank Name</label>
+            <input class="form-input" type="text" id="w-bankBankName" placeholder="e.g. State Bank of India">
+          </div>
+          <button onclick="saveWithdrawDetails('bank')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.6rem 1.5rem;font-weight:700;color:#000;cursor:pointer;font-size:0.85rem;margin-bottom:0.8rem;">💾 Save Bank Details</button>
+        </div>
       </div>
-      <button class="btn btn-outline" style="padding:0.8rem 2.5rem;border-color:var(--gold);color:var(--gold);" onclick="doWithdraw()">⬆️ Withdraw Now</button>
+
+      <!-- USDT Fields -->
+      <div id="withdrawFields-usdt" style="display:none;max-width:420px;">
+        <!-- Saved USDT -->
+        <div id="savedUsdtDisplay" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-size:0.72rem;color:var(--muted);">Saved USDT Address</div>
+            <div style="font-weight:700;color:var(--text);font-size:0.8rem;word-break:break-all;" id="savedUsdtText">—</div>
+          </div>
+          <div style="font-size:0.72rem;color:var(--green);flex-shrink:0;margin-left:0.5rem;">🔒 Saved</div>
+        </div>
+        <!-- New USDT input -->
+        <div id="newUsdtForm">
+          <div class="form-group">
+            <label class="form-label">USDT Wallet Address (TRC20)</label>
+            <input class="form-input" type="text" id="w-usdtAddr" placeholder="TRC20 wallet address">
+          </div>
+          <div style="background:rgba(38,161,123,0.08);border:1px solid rgba(38,161,123,0.2);border-radius:8px;padding:0.7rem;font-size:0.78rem;color:var(--muted);margin-bottom:0.8rem;">
+            ⚠️ Only TRC20 (Tron) network. Sending to wrong network will result in permanent loss.
+          </div>
+          <button onclick="saveWithdrawDetails('usdt')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.6rem 1.5rem;font-weight:700;color:#000;cursor:pointer;font-size:0.85rem;margin-bottom:0.8rem;">💾 Save USDT Address</button>
+        </div>
+      </div>
+
+      <!-- Balance info -->
+      <div style="background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.15);border-radius:10px;padding:0.8rem 1rem;margin:1rem 0;max-width:420px;font-size:0.85rem;color:var(--muted);">
+        💰 Available: <strong style="color:var(--gold);" id="withdrawAvailBalance">₹0.00</strong> &nbsp;|&nbsp; Min: <strong style="color:var(--text);">₹200</strong>
+      </div>
+
+      <button class="btn btn-gold" style="padding:0.8rem 2.5rem;max-width:420px;width:100%;" onclick="doWithdraw()">⬆️ Withdraw Now</button>
+
+      <!-- Withdrawal History -->
+      <div style="margin-top:2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.95rem;margin-bottom:0.8rem;">📋 Withdrawal History</div>
+        <div id="withdrawHistoryRows">
+          <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No withdrawals yet</div>
+        </div>
+      </div>
+
     </div>
 
     <!-- HISTORY -->
