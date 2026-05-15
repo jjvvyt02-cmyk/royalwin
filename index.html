@@ -1818,11 +1818,14 @@
 
     // Pick winner
     const winAmt = wheelWeightedPool[Math.floor(Math.random() * wheelWeightedPool.length)];
-    const winIndex = prizeIndexMap[winAmt];
-    const slices = wheelPrizes.length;
+    const winIndex = prizeIndexMap[winAmt]; // 0=₹18, 1=₹48, 2=₹88
+    const slices = wheelPrizes.length; // 5
     const arc = (2 * Math.PI) / slices;
-    // Rotate so winning slice lands at top (pointer)
-    const targetAngle = (Math.PI * 2 * 8) + (Math.PI * 2 - (winIndex * arc + arc / 2));
+    // Calculate angle so winning slice center aligns with top pointer
+    // Pointer is at top (270deg = -PI/2), wheel starts at rotation 0
+    // We need: rotation + winIndex*arc + arc/2 = -PI/2 (mod 2PI)
+    const extraSpins = 8; // spin around 8 times
+    const targetAngle = (2 * Math.PI * extraSpins) + (2 * Math.PI - winIndex * arc - arc / 2);
     let start = null;
 
     function animate(ts) {
@@ -2571,7 +2574,15 @@
     // Number badge
     const badge = document.getElementById('cgResNumBadge');
     badge.textContent = num;
-    badge.style.background = color || '#7c4dff';
+    // Map color names to actual CSS colors/gradients
+    const colorMap = {
+      'violet-red':   'linear-gradient(135deg, #7c4dff 50%, #e02020 50%)',
+      'violet-green': 'linear-gradient(135deg, #7c4dff 50%, #27ae60 50%)',
+      'red':          '#e02020',
+      'green':        '#27ae60',
+      'violet':       '#7c4dff',
+    };
+    badge.style.background = colorMap[color] || color || '#7c4dff';
     badge.style.display = 'inline-flex';
 
     // Amount
@@ -2948,6 +2959,9 @@
     if (balEl) balEl.textContent = '💰 ' + formatted;
     const withdrawBal = document.getElementById('withdrawAvailBalance');
     if (withdrawBal) withdrawBal.textContent = formatted;
+    // Update wallet page balance
+    const walletBal = document.getElementById('walletBalanceDisplay');
+    if (walletBal) walletBal.textContent = formatted;
     // Update profile page balance
     const profBal = document.getElementById('profileBalance');
     if (profBal) profBal.textContent = formatted;
@@ -3145,12 +3159,8 @@
     <div class="wallet-hero">
       <div>
         <div class="wallet-balance-label">Total Balance</div>
-        <div class="wallet-balance-val">₹12,500.00</div>
+        <div class="wallet-balance-val" id="walletBalanceDisplay">₹0.00</div>
         <div class="wallet-balance-sub">💚 Active &nbsp;|&nbsp; Last updated: just now</div>
-      </div>
-      <div class="wallet-action-btns">
-        <button class="btn btn-gold" onclick="switchWalletTab('deposit')">⬇️ Deposit</button>
-        <button class="btn btn-outline" onclick="switchWalletTab('withdraw')">⬆️ Withdraw</button>
       </div>
     </div>
 
