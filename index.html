@@ -1269,11 +1269,12 @@
       window._bonus100Locked = true;
       showPage('wallet');
       switchWalletTab('deposit');
-      setTimeout(() => {
+      // Wait for checkDepositBonus to show the section first, then lock
+      setTimeout(async () => {
+        await checkDepositBonus();
         selectBonus(3);
-        // Lock the cards - disable opt 1 and 2
         lockBonusCards(true);
-      }, 100);
+      }, 200);
       return;
     }
     if (name === 'withdraw') {
@@ -1504,27 +1505,42 @@
   let selectedBonusOption = 0; // 0=none, 1=8%, 2=15%
 
   function lockBonusCards(lock) {
+    // Show/hide locked banner
+    let lockBanner = document.getElementById('bonusLockBanner');
+    if (lock) {
+      if (!lockBanner) {
+        lockBanner = document.createElement('div');
+        lockBanner.id = 'bonusLockBanner';
+        lockBanner.style.cssText = 'background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.3);border-radius:10px;padding:0.6rem 1rem;margin-bottom:0.6rem;font-size:0.8rem;color:var(--gold);max-width:500px;';
+        lockBanner.innerHTML = '🔒 100% bonus pre-selected from promotion. <span style="color:var(--muted);cursor:pointer;text-decoration:underline;" onclick="window._bonus100Locked=false;lockBonusCards(false);">Change option</span>';
+        const bonusSection = document.getElementById('bonusSelectionSection');
+        if (bonusSection) bonusSection.insertBefore(lockBanner, bonusSection.firstChild);
+      }
+    } else {
+      if (lockBanner) lockBanner.remove();
+    }
+
     [1, 2].forEach(i => {
       const el = document.getElementById('bonusOpt' + i);
       if (el) {
-        el.style.opacity = lock ? '0.35' : '1';
+        el.style.opacity = lock ? '0.3' : '1';
         el.style.pointerEvents = lock ? 'none' : 'auto';
         el.style.cursor = lock ? 'not-allowed' : 'pointer';
       }
     });
+
     const opt3 = document.getElementById('bonusOpt3');
-    if (opt3 && lock) {
-      // Add locked indicator
-      if (!document.getElementById('bonus3LockNote')) {
-        const note = document.createElement('div');
-        note.id = 'bonus3LockNote';
-        note.style.cssText = 'font-size:0.65rem;color:var(--gold);margin-top:0.3rem;';
-        note.textContent = '🔒 Pre-selected';
-        opt3.appendChild(note);
+    if (opt3) {
+      let lockNote = document.getElementById('bonus3LockNote');
+      if (lock && !lockNote) {
+        lockNote = document.createElement('div');
+        lockNote.id = 'bonus3LockNote';
+        lockNote.style.cssText = 'font-size:0.62rem;color:var(--gold);margin-top:0.3rem;font-weight:700;';
+        lockNote.textContent = '✅ Selected';
+        opt3.appendChild(lockNote);
+      } else if (!lock && lockNote) {
+        lockNote.remove();
       }
-    } else {
-      const note = document.getElementById('bonus3LockNote');
-      if (note) note.remove();
     }
   }
 
