@@ -2961,7 +2961,7 @@
           // Save last login time
           try {
             const db = window.fbDB || fbDB;
-            if (db) await db.ref('users/' + user.uid + '/lastLogin').set(Date.now());
+            if (db) db.ref('users/' + user.uid + '/lastLogin').set(Date.now());
           } catch(e) {}
           resetInactivityTimer();
         } else {
