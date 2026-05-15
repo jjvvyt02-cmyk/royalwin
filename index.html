@@ -1481,7 +1481,7 @@
         document.getElementById('wagerPctText').textContent = pct + '% completed';
         document.getElementById('wagerCompleted').textContent = '₹' + completed.toLocaleString('en-IN');
         document.getElementById('wagerRequired').textContent = '₹' + required.toLocaleString('en-IN');
-        document.getElementById('wagerRemaining').textContent = '₹' + remaining.toLocaleString('en-IN') + ' more to wager before you can withdraw';
+        document.getElementById('wagerRemaining').textContent = '₹' + remaining.toLocaleString('en-IN');
       }
     } catch(e) { console.warn('Wager load failed:', e); }
   }
@@ -1598,11 +1598,11 @@
     if (infoEl && selectedBonusOption > 0) {
       infoEl.style.display = 'block';
       if (selectedBonusOption === 1) {
-        infoEl.innerHTML = '✅ <strong>8% Bonus Selected</strong> — You get +₹' + b1 + ' bonus. Must wager ₹' + amt.toLocaleString('en-IN') + ' (1x) before withdrawing bonus.';
+        infoEl.innerHTML = '✅ <strong>8% Bonus Selected</strong> — You get +₹' + b1 + ' bonus. Must wager ₹' + amt.toLocaleString('en-IN') + ' (1x) before withdrawing.';
       } else if (selectedBonusOption === 2) {
-        infoEl.innerHTML = '✅ <strong>15% Bonus Selected</strong> — You get +₹' + b2 + ' bonus. Must wager ₹' + (amt * 2.5).toLocaleString('en-IN') + ' (2.5x) before withdrawing bonus.';
+        infoEl.innerHTML = '✅ <strong>15% Bonus Selected</strong> — You get +₹' + b2 + ' bonus. Must wager ₹' + (amt * 2.5).toLocaleString('en-IN') + ' (2.5x) before withdrawing.';
       } else if (selectedBonusOption === 3) {
-        infoEl.innerHTML = '🏆 <strong>100% Bonus Selected</strong> — You get +₹' + b3.toLocaleString('en-IN') + ' bonus. Must wager ₹' + (amt * 10).toLocaleString('en-IN') + ' (10x) before withdrawing bonus.';
+        infoEl.innerHTML = '🏆 <strong>100% Bonus Selected</strong> — You get +₹' + b3.toLocaleString('en-IN') + ' bonus. Must wager ₹' + (amt * 10).toLocaleString('en-IN') + ' (10x) before withdrawing.';
       }
     }
   }
@@ -3493,24 +3493,34 @@
       <div class="section-sub">Withdrawals processed within 24 hours</div>
 
       <!-- Wager progress bar -->
-      <div id="wagerProgressSection" style="display:none;background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.2);border-radius:12px;padding:1rem;margin-bottom:1rem;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.5rem;">
-          <div style="font-size:0.82rem;font-weight:700;color:var(--red2);">⚠️ Wager Requirement Active</div>
-          <div style="font-size:0.75rem;color:var(--muted);" id="wagerPctText">0%</div>
+      <div id="wagerProgressSection" style="display:none;background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.2);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+          <div style="font-size:0.85rem;font-weight:700;color:var(--red2);">⚠️ Wager Requirement Pending</div>
+          <div style="font-size:0.78rem;color:var(--gold);font-weight:700;" id="wagerPctText">0%</div>
         </div>
-        <div style="height:8px;background:rgba(255,255,255,0.08);border-radius:4px;overflow:hidden;margin-bottom:0.5rem;">
-          <div id="wagerProgressBar" style="height:100%;background:linear-gradient(90deg,var(--red2),var(--gold));border-radius:4px;transition:width 0.5s;width:0%;"></div>
+        <div style="height:10px;background:rgba(255,255,255,0.08);border-radius:5px;overflow:hidden;margin-bottom:0.7rem;">
+          <div id="wagerProgressBar" style="height:100%;background:linear-gradient(90deg,var(--red2),var(--gold));border-radius:5px;transition:width 0.5s;width:0%;"></div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:0.78rem;">
-          <span style="color:var(--muted);">Wagered: <strong id="wagerCompleted" style="color:#fff;">₹0</strong></span>
-          <span style="color:var(--muted);">Required: <strong id="wagerRequired" style="color:#fff;">₹0</strong></span>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;text-align:center;margin-bottom:0.6rem;">
+          <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:0.5rem;">
+            <div style="font-size:0.65rem;color:var(--muted);">Wagered</div>
+            <div style="font-size:0.88rem;font-weight:700;color:#fff;" id="wagerCompleted">₹0</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:0.5rem;">
+            <div style="font-size:0.65rem;color:var(--muted);">Required</div>
+            <div style="font-size:0.88rem;font-weight:700;color:#fff;" id="wagerRequired">₹0</div>
+          </div>
+          <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:0.5rem;">
+            <div style="font-size:0.65rem;color:var(--muted);">Remaining</div>
+            <div style="font-size:0.88rem;font-weight:700;color:var(--red2);" id="wagerRemaining">₹0</div>
+          </div>
         </div>
-        <div style="font-size:0.75rem;color:var(--red2);margin-top:0.4rem;" id="wagerRemaining">Complete wager to unlock withdrawal</div>
+        <div style="font-size:0.78rem;color:var(--muted);text-align:center;">Complete wager requirement to unlock withdrawal</div>
       </div>
 
       <!-- Wager completed -->
       <div id="wagerDoneSection" style="display:none;background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:12px;padding:0.8rem 1rem;margin-bottom:1rem;">
-        <div style="font-size:0.82rem;color:var(--green);font-weight:700;">✅ Wager requirement completed! Withdrawal unlocked.</div>
+        <div style="font-size:0.85rem;color:var(--green);font-weight:700;">✅ Wager completed! Withdrawal is unlocked.</div>
       </div>
       <div class="deposit-methods">
         <div class="method-card selected" onclick="selectMethod(this)">
