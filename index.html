@@ -2971,12 +2971,16 @@
   // ── DAILY SPIN WHEEL ──
   // 5 segments visible: ₹18, ₹48, ₹88, ₹288, ₹488
   // But only 3 can win: ₹18=80%, ₹48=15%, ₹88=5%
+  const wheelPrizes = ['₹18', '₹48', '₹88', '₹288', '₹488'];
+  const wheelColors = ['#27ae60', '#c07a10', '#7c4dff', '#e02020', '#b8912a'];
+  const wheelWeightedPool = [
     ...Array(80).fill(18),  // 80%
     ...Array(15).fill(48),  // 15%
     ...Array(5).fill(88),   // 5%
     // 288 and 488 = 0% — never win
   ];
   const prizeIndexMap = { 18: 0, 48: 1, 88: 2, 288: 3, 488: 4 };
+  let spinning = false;
 
 
 
@@ -3138,9 +3142,13 @@
           };
 
           let currentCode = inviteCode;
+          const referrerChain = {};
           for (let level = 1; level <= 4; level++) {
             const referrer = codeToUser[currentCode];
             if (!referrer) break;
+
+            // Store referrer UID in chain
+            referrerChain['l' + level] = referrer.uid;
 
             const refKey = level === 1 ? 'referrals' : 'referrals_l' + level;
             await db.ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid).set({
@@ -3151,6 +3159,11 @@
             // Move up the chain
             currentCode = referrer.referredBy;
             if (!currentCode) break;
+          }
+
+          // Save referrerChain on new user's profile (used for fast commission lookup)
+          if (Object.keys(referrerChain).length > 0) {
+            await db.ref('users/' + user.uid + '/referrerChain').set(referrerChain);
           }
         } catch(refErr) {
           console.warn('Referral chain error:', refErr);
@@ -3688,70 +3701,60 @@
         const newTotalBet = parseFloat(((totalBetSnap.val() || 0) + amt).toFixed(2));
         await db.ref('users/' + user.uid + '/totalBet').set(newTotalBet);
 
-        // ── UPDATE totalBet in referral records up the chain ──
+        // ── CREDIT COMMISSION TO REFERRERS via referrerChain (fast, no full scan) ──
         try {
-          const profile = window.userProfile;
-          if (profile && profile.referredBy) {
-            const allSnap = await db.ref('users').once('value');
-            const allUsers = allSnap.val() || {};
-            const codeMap = {};
-            Object.entries(allUsers).forEach(([uid, u]) => {
-              if (u.referralCode) codeMap[u.referralCode] = { uid, referredBy: u.referredBy || '' };
-            });
+          // Single small read — just this user's referrer chain
+          const chainSnap = await db.ref('users/' + user.uid + '/referrerChain').once('value');
+          const chain = chainSnap.val();
+          if (chain) {
+            // Get commission rates (cached on window to avoid re-fetching every bet)
+            if (!window._commRates) {
+              const ratesSnap = await db.ref('settings/commissionRates').once('value');
+              const rates = ratesSnap.val() || {};
+              window._commRates = {
+                1: (rates.l1 != null ? rates.l1 : 1) / 100,
+                2: (rates.l2 != null ? rates.l2 : 0.8) / 100,
+                3: (rates.l3 != null ? rates.l3 : 0.5) / 100,
+                4: (rates.l4 != null ? rates.l4 : 0.2) / 100,
+              };
+              // Refresh cache every 10 minutes in case admin changes rates
+              setTimeout(() => { window._commRates = null; }, 600000);
+            }
 
-            // Get commission rates from Firebase (fallback to defaults)
-            const ratesSnap = await db.ref('settings/commissionRates').once('value');
-            const rates = ratesSnap.val() || {};
-            const commRates = {
-              1: (rates.l1 != null ? rates.l1 : 1) / 100,
-              2: (rates.l2 != null ? rates.l2 : 0.8) / 100,
-              3: (rates.l3 != null ? rates.l3 : 0.5) / 100,
-              4: (rates.l4 != null ? rates.l4 : 0.2) / 100,
-            };
+            const todayKey = new Date().toISOString().split('T')[0];
+            const profile = window.userProfile;
 
-            let currentCode = profile.referredBy;
             for (let level = 1; level <= 4; level++) {
-              const referrer = codeMap[currentCode];
-              if (!referrer) break;
+              const referrerUid = chain['l' + level];
+              if (!referrerUid) continue;
 
-              const commAmt = parseFloat((amt * commRates[level]).toFixed(2));
+              const commAmt = parseFloat((amt * window._commRates[level]).toFixed(2));
+              if (commAmt <= 0) continue;
 
-              // Credit commission to referrer's balance
-              const refBalSnap = await db.ref('users/' + referrer.uid + '/balance').once('value');
-              const newRefBal = parseFloat(((refBalSnap.val() || 0) + commAmt).toFixed(2));
-              await db.ref('users/' + referrer.uid + '/balance').set(newRefBal);
-
-              // Update totalBet in referral record
               const refKey = level === 1 ? 'referrals' : 'referrals_l' + level;
-              const refBetSnap = await db.ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid + '/totalBet').once('value');
-              const newRefTotalBet = parseFloat(((refBetSnap.val() || 0) + amt).toFixed(2));
-              await db.ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid + '/totalBet').set(newRefTotalBet);
 
-              // Update commission earned in referral record
-              const refCommSnap = await db.ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid + '/commission').once('value');
-              const newRefComm = parseFloat(((refCommSnap.val() || 0) + commAmt).toFixed(2));
-              await db.ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid + '/commission').set(newRefComm);
-
-              // Add to referrer's transaction history
-              await db.ref('users/' + referrer.uid + '/transactions/' + Date.now() + '_comm_' + level).set({
-                type: 'commission',
-                amount: commAmt,
-                from: user.uid,
-                fromMemberId: profile.memberId || '',
-                level: level,
-                betAmt: amt,
-                timestamp: Date.now(),
-                description: 'L' + level + ' referral bet commission'
-              });
-
-              // Update yesterday's commission for agency card
-              const todayKey = new Date().toISOString().split('T')[0];
-              const dayCommSnap = await db.ref('users/' + referrer.uid + '/dailyCommission/' + todayKey).once('value');
-              const newDayComm = parseFloat(((dayCommSnap.val() || 0) + commAmt).toFixed(2));
-              await db.ref('users/' + referrer.uid + '/dailyCommission/' + todayKey).set(newDayComm);
-
-              currentCode = referrer.referredBy;
-              if (!currentCode) break;
+              // Run all updates for this referrer in parallel
+              await Promise.all([
+                // Credit balance
+                db.ref('users/' + referrerUid + '/balance').transaction(bal => parseFloat(((bal || 0) + commAmt).toFixed(2))),
+                // Update totalBet in referral record
+                db.ref('users/' + referrerUid + '/' + refKey + '/' + user.uid + '/totalBet').transaction(v => parseFloat(((v || 0) + amt).toFixed(2))),
+                // Update commission in referral record
+                db.ref('users/' + referrerUid + '/' + refKey + '/' + user.uid + '/commission').transaction(v => parseFloat(((v || 0) + commAmt).toFixed(2))),
+                // Daily commission tracker
+                db.ref('users/' + referrerUid + '/dailyCommission/' + todayKey).transaction(v => parseFloat(((v || 0) + commAmt).toFixed(2))),
+                // Transaction history entry
+                db.ref('users/' + referrerUid + '/transactions/' + Date.now() + '_c' + level).set({
+                  type: 'commission',
+                  amount: commAmt,
+                  from: user.uid,
+                  fromMemberId: profile ? (profile.memberId || '') : '',
+                  level: level,
+                  betAmt: amt,
+                  timestamp: Date.now(),
+                  description: 'L' + level + ' referral bet commission'
+                })
+              ]);
             }
           }
         } catch(refErr) { console.warn('Referral commission error:', refErr); }
