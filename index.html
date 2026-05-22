@@ -1576,15 +1576,24 @@
       const wager = snap.val();
       const progressSection = document.getElementById('wagerProgressSection');
       const doneSection = document.getElementById('wagerDoneSection');
+      const totalWageredInfo = document.getElementById('totalWageredInfo');
+      const totalWageredAmt = document.getElementById('totalWageredAmt');
+
       if (!wager || !wager.required || wager.required <= 0) {
         if (progressSection) progressSection.style.display = 'none';
         if (doneSection) doneSection.style.display = 'none';
+        if (totalWageredInfo) totalWageredInfo.style.display = 'none';
         return;
       }
       const completed = parseFloat(wager.completed || 0);
       const required = parseFloat(wager.required);
       const pct = Math.min(100, Math.round(completed / required * 100));
       const remaining = Math.max(0, parseFloat((required - completed).toFixed(2)));
+
+      // Always show total wagered
+      if (totalWageredInfo) totalWageredInfo.style.display = 'block';
+      if (totalWageredAmt) totalWageredAmt.textContent = '₹' + completed.toLocaleString('en-IN');
+
       if (completed >= required) {
         if (progressSection) progressSection.style.display = 'none';
         if (doneSection) doneSection.style.display = 'block';
@@ -3828,6 +3837,14 @@
         <div style="font-size:0.85rem;color:var(--green);font-weight:700;">✅ Wager completed! Withdrawal is unlocked.</div>
       </div>
 
+      <!-- Total Wagered info -->
+      <div id="totalWageredInfo" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.8rem 1rem;margin-bottom:1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:0.82rem;color:var(--muted);">Total Wagered</span>
+          <span style="font-weight:700;color:var(--gold);" id="totalWageredAmt">₹0</span>
+        </div>
+      </div>
+
       <!-- Method selection -->
       <div class="deposit-methods" style="margin-bottom:1rem;">
         <div class="method-card selected" id="wm-upi" onclick="selectWithdrawMethod('upi',this)" style="flex:1;">
@@ -4081,13 +4098,7 @@
       </div>
     </div>
 
-    <!-- Total wagered -->
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;">
-      <div style="display:flex;justify-content:space-between;">
-        <span style="font-size:0.82rem;color:var(--muted);">Total Wagered</span>
-        <span style="font-weight:700;" id="gsTotalWagered">₹0</span>
-      </div>
-    </div>
+    <!-- Total wagered removed -->
 
   </div>
 </div>
@@ -4125,28 +4136,6 @@
   <div class="wheel-wrap">
     <div class="wheel-pointer"></div>
     <canvas class="wheel-canvas" id="wheelCanvas" width="280" height="280"></canvas>
-  </div>
-  <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem;flex-wrap:wrap;justify-content:center;">
-    <div style="text-align:center;background:rgba(39,174,96,0.15);border:1px solid rgba(39,174,96,0.3);border-radius:8px;padding:0.35rem 0.7rem;">
-      <div style="font-size:0.6rem;color:var(--muted);">80%</div>
-      <div style="font-family:'Cinzel',serif;color:#27ae60;font-weight:800;font-size:0.9rem;">₹18</div>
-    </div>
-    <div style="text-align:center;background:rgba(192,122,16,0.15);border:1px solid rgba(192,122,16,0.3);border-radius:8px;padding:0.35rem 0.7rem;">
-      <div style="font-size:0.6rem;color:var(--muted);">15%</div>
-      <div style="font-family:'Cinzel',serif;color:var(--gold);font-weight:800;font-size:0.9rem;">₹48</div>
-    </div>
-    <div style="text-align:center;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:8px;padding:0.35rem 0.7rem;">
-      <div style="font-size:0.6rem;color:var(--muted);">5%</div>
-      <div style="font-family:'Cinzel',serif;color:var(--red2);font-weight:800;font-size:0.9rem;">₹88</div>
-    </div>
-    <div style="text-align:center;background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:8px;padding:0.35rem 0.7rem;">
-      <div style="font-size:0.6rem;color:var(--muted);">Lucky</div>
-      <div style="font-family:'Cinzel',serif;color:#7c4dff;font-weight:800;font-size:0.9rem;">₹288</div>
-    </div>
-    <div style="text-align:center;background:rgba(184,145,42,0.15);border:1px solid rgba(184,145,42,0.3);border-radius:8px;padding:0.35rem 0.7rem;">
-      <div style="font-size:0.6rem;color:var(--muted);">Jackpot</div>
-      <div style="font-family:'Cinzel',serif;color:#b8912a;font-weight:800;font-size:0.9rem;">₹488</div>
-    </div>
   </div>
   <button class="btn btn-gold spin-btn" id="spinBtn" onclick="spinWheel()">🎰 Spin Now!</button>
   <div class="wheel-result" id="wheelResult"></div>
