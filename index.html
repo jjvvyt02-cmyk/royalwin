@@ -3066,8 +3066,9 @@
 
   async function initLiveChat() {
     const user = window.currentUser;
-    const db = window.fbDB;
+    const db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
     if (!user || !db) return;
+    window._chatInitialized = true;
 
     const chatRef = db.ref('chats/' + user.uid + '/messages');
     const msgsEl = document.getElementById('chatMessages');
@@ -3125,19 +3126,30 @@
 
   async function sendChat() {
     const inp = document.getElementById('chatInput');
-    const msg = inp.value.trim();
+    const msg = inp ? inp.value.trim() : '';
     if (!msg) return;
 
+    // Wait for Firebase if not ready yet
+    const db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
     const user = window.currentUser;
-    const db = window.fbDB;
 
-    if (!user || !db) {
+    if (!user) {
       showToast('🔐 Please sign in to use Live Chat');
       showPage('login');
       return;
     }
 
-    inp.value = '';
+    if (!db) {
+      showToast('⏳ Connecting... please try again in a moment');
+      return;
+    }
+
+    // Auto-init chat if not already done
+    if (!window._chatInitialized) {
+      await initLiveChat();
+    }
+
+    if (inp) inp.value = '';
 
     try {
       await db.ref('chats/' + user.uid + '/messages').push({
@@ -3146,15 +3158,16 @@
         timestamp: Date.now(),
         readByAdmin: false
       });
-
-      // Update last message for admin list
       await db.ref('chats/' + user.uid + '/info').update({
         lastMessage: msg,
         lastMessageTime: Date.now(),
         unreadByAdmin: true,
         status: 'open'
       });
-    } catch(e) { showToast('❌ Failed to send message'); }
+    } catch(e) {
+      showToast('❌ Failed to send message: ' + e.message);
+      console.error('sendChat error:', e);
+    }
   }
 
   // ── DAILY SPIN WHEEL ──
