@@ -2822,11 +2822,14 @@
       if (selectedBonusOption === 1) { bonusPct = 8;  bonusAmt = Math.round(amt * 0.08); wagerReq = 1; }
       if (selectedBonusOption === 2) { bonusPct = 15; bonusAmt = Math.round(amt * 0.15); wagerReq = 2.5; }
 
-      // 5% recurring bonus for returning users (when no bonus option selected but hasDeposited)
-      if (selectedBonusOption === 0 && window.userProfile && window.userProfile.hasDeposited) {
-        bonusPct = 5;
-        bonusAmt = Math.round(amt * 0.05);
-        wagerReq = 1;
+      // 5% recurring bonus for returning users — read directly from Firebase
+      if (selectedBonusOption === 0) {
+        const hasDepSnap = await db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value');
+        if (hasDepSnap.val()) {
+          bonusPct = 5;
+          bonusAmt = Math.round(amt * 0.05);
+          wagerReq = 1;
+        }
       }
 
       const depositData = {
