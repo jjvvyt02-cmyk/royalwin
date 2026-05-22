@@ -2665,18 +2665,28 @@
     if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
     try {
       const db = window.fbDB || fbDB;
-      // Save deposit request to Firebase
-      await db.ref('users/' + window.currentUser.uid + '/depositRequests').push({
-        amount: amt, status: 'pending', method: 'manual',
-        timestamp: Date.now(), uid: window.currentUser.uid
-      });
-      // Also save to admin deposits node
-      await db.ref('adminRequests/deposits').push({
+
+      // Calculate bonus based on selected option
+      let bonusPct = 0, bonusAmt = 0, wagerReq = 0;
+      if (selectedBonusOption === 1) { bonusPct = 8;  bonusAmt = Math.round(amt * 0.08); wagerReq = 1; }
+      if (selectedBonusOption === 2) { bonusPct = 15; bonusAmt = Math.round(amt * 0.15); wagerReq = 2.5; }
+
+      const depositData = {
         amount: amt, status: 'pending', uid: window.currentUser.uid,
         username: window.userProfile ? window.userProfile.username : 'Unknown',
-        timestamp: Date.now()
+        contact: window.userProfile ? (window.userProfile.contact || '') : '',
+        timestamp: Date.now(),
+        bonusPct, bonusAmt, wagerReq
+      };
+
+      await db.ref('users/' + window.currentUser.uid + '/depositRequests').push({
+        amount: amt, status: 'pending', method: 'manual',
+        bonusPct, bonusAmt, wagerReq, timestamp: Date.now()
       });
-      showToast('✅ Deposit request of ₹' + amt.toLocaleString('en-IN') + ' submitted! Admin will approve shortly.');
+      await db.ref('adminRequests/deposits').push(depositData);
+
+      const bonusMsg = bonusAmt > 0 ? ' + ₹' + bonusAmt + ' (' + bonusPct + '% bonus) after approval.' : ' submitted! Admin will approve shortly.';
+      showToast('✅ Deposit of ₹' + amt.toLocaleString('en-IN') + bonusMsg);
     } catch(e) { showToast('❌ Deposit request failed: ' + e.message); }
   }
 
