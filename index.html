@@ -3101,7 +3101,23 @@
         Object.values(messages).sort((a,b) => a.timestamp - b.timestamp).forEach(m => {
           const div = document.createElement('div');
           div.className = 'msg ' + (m.sender === 'admin' ? 'agent' : 'user');
-          div.textContent = m.text;
+
+          if (m.type === 'image' && m.fileData) {
+            const img = document.createElement('img');
+            img.src = m.fileData;
+            img.style.cssText = 'max-width:100%;max-height:200px;border-radius:8px;display:block;cursor:pointer;';
+            img.onclick = () => window.open(m.fileData, '_blank');
+            div.appendChild(img);
+          } else if (m.type === 'file' && m.fileData) {
+            const link = document.createElement('a');
+            link.href = m.fileData;
+            link.download = m.fileName || 'file';
+            link.style.cssText = 'display:flex;align-items:center;gap:0.4rem;color:inherit;text-decoration:none;font-size:0.82rem;';
+            link.innerHTML = '📎 <span>' + (m.fileName || 'Download file') + '</span>';
+            div.appendChild(link);
+          } else {
+            div.textContent = m.text || '';
+          }
 
           // Timestamp
           const time = document.createElement('div');
@@ -3122,6 +3138,57 @@
         });
       }
     });
+  }
+
+  async function sendChatFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const user = window.currentUser;
+    const db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
+    if (!user || !db) { showToast('🔐 Please sign in to send files'); return; }
+
+    // Auto-init chat if needed
+    if (!window._chatInitialized) await initLiveChat();
+
+    // Check file size (max 5MB)
+    if (file.size > 5 * 1024 * 1024) { showToast('❌ File too large! Max 5MB'); return; }
+
+    showToast('📤 Uploading...');
+
+    try {
+      const isImage = file.type.startsWith('image/');
+      // Convert to base64
+      const base64 = await new Promise((res, rej) => {
+        const reader = new FileReader();
+        reader.onload = () => res(reader.result);
+        reader.onerror = rej;
+        reader.readAsDataURL(file);
+      });
+
+      await db.ref('chats/' + user.uid + '/messages').push({
+        type: isImage ? 'image' : 'file',
+        fileName: file.name,
+        fileSize: file.size,
+        fileData: base64,
+        sender: 'user',
+        timestamp: Date.now(),
+        readByAdmin: false
+      });
+
+      await db.ref('chats/' + user.uid + '/info').update({
+        lastMessage: isImage ? '📷 Image' : '📎 ' + file.name,
+        lastMessageTime: Date.now(),
+        unreadByAdmin: true,
+        status: 'open'
+      });
+
+      input.value = ''; // reset input
+      showToast('✅ File sent!');
+    } catch(e) {
+      showToast('❌ Upload failed: ' + e.message);
+      console.error('File upload error:', e);
+    }
   }
 
   async function sendChat() {
@@ -5481,6 +5548,10 @@
         <div class="msg agent">You can ask me about deposits, withdrawals, bonuses, or any issue you face.</div>
       </div>
       <div class="chat-input-row">
+        <!-- Hidden file input -->
+        <input type="file" id="chatFileInput" accept="image/*,.pdf,.doc,.docx" style="display:none;" onchange="sendChatFile(this)">
+        <!-- Attachment button -->
+        <button onclick="document.getElementById('chatFileInput').click()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.7rem;color:var(--muted);cursor:pointer;flex-shrink:0;font-size:1rem;" title="Attach file">📎</button>
         <input class="chat-input" id="chatInput" placeholder="Type your message..." onkeydown="if(event.key==='Enter')sendChat()">
         <button class="chat-send" onclick="sendChat()">➤</button>
       </div>
