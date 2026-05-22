@@ -1700,34 +1700,69 @@
   async function redeemGiftCode() {
     const input = document.getElementById('giftCodeInput');
     const code = input ? input.value.trim().toUpperCase() : '';
+    const statusEl = document.getElementById('giftRedeemStatus');
+
     if (!code) { showToast('⚠️ Enter a gift code'); return; }
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
     if (!user || !db) { showToast('🔐 Please sign in'); return; }
+
+    // Show loading state
+    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = 'var(--muted)'; statusEl.textContent = '⏳ Checking code...'; }
+
     try {
-      // Check if code exists in Firebase giftCodes
+      // Check if code exists
       const codeSnap = await db.ref('giftCodes/' + code).once('value');
       const giftData = codeSnap.val();
-      if (!giftData) { showToast('❌ Invalid gift code'); return; }
-      if (!giftData.active) { showToast('❌ This code has expired'); return; }
+      if (!giftData) {
+        if (statusEl) { statusEl.style.color = 'var(--red2)'; statusEl.textContent = '❌ Invalid gift code. Please check and try again.'; }
+        showToast('❌ Invalid gift code');
+        return;
+      }
+      if (!giftData.active) {
+        if (statusEl) { statusEl.style.color = 'var(--red2)'; statusEl.textContent = '❌ This code has expired or been disabled.'; }
+        showToast('❌ This code has expired');
+        return;
+      }
+
       // Check if already redeemed by this user
       const redeemedSnap = await db.ref('users/' + user.uid + '/redeemedGifts/' + code).once('value');
-      if (redeemedSnap.val()) { showToast('⚠️ You already redeemed this code'); return; }
+      if (redeemedSnap.val()) {
+        if (statusEl) {
+          statusEl.style.color = '#f39c12';
+          statusEl.textContent = '⚠️ You have already redeemed this code! Each code can only be used once per account.';
+        }
+        showToast('⚠️ You already redeemed this code!');
+        return;
+      }
+
       // Check max redemptions
-      if (giftData.maxUses && (giftData.usedCount || 0) >= giftData.maxUses) { showToast('❌ This code has reached its limit'); return; }
+      if (giftData.maxUses && (giftData.usedCount || 0) >= giftData.maxUses) {
+        if (statusEl) { statusEl.style.color = 'var(--red2)'; statusEl.textContent = '❌ This code has reached its maximum usage limit.'; }
+        showToast('❌ This code has reached its limit');
+        return;
+      }
+
       // Credit balance
       const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
       const newBal = parseFloat(((balSnap.val() || 0) + giftData.amount).toFixed(2));
       await db.ref('users/' + user.uid + '/balance').set(newBal);
       updateBalanceDisplay(newBal);
+
       // Record redemption
       await db.ref('users/' + user.uid + '/redeemedGifts/' + code).set({ code, amount: giftData.amount, redeemedAt: Date.now() });
-      // Increment usedCount
       await db.ref('giftCodes/' + code + '/usedCount').set((giftData.usedCount || 0) + 1);
+
       if (input) input.value = '';
+      if (statusEl) { statusEl.style.color = 'var(--green)'; statusEl.textContent = '✅ Code redeemed! ₹' + giftData.amount + ' added to your wallet.'; }
       showToast('🎁 Gift redeemed! +₹' + giftData.amount + ' added to wallet');
       loadGiftHistory();
-    } catch(e) { showToast('❌ Redemption failed. Try again.'); console.warn(e); }
+
+    } catch(e) {
+      if (statusEl) { statusEl.style.color = 'var(--red2)'; statusEl.textContent = '❌ Error: ' + e.message; }
+      showToast('❌ Redemption failed: ' + e.message);
+      console.warn('redeemGiftCode error:', e);
+    }
   }
 
   // ── LANGUAGE ──
@@ -5385,9 +5420,11 @@
     <div style="margin-bottom:1rem;">
       <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;"><span data-t="gift.enter">Enter Gift Code</span></div>
       <div style="display:flex;gap:0.5rem;">
-        <input id="giftCodeInput" type="text" placeholder="e.g. ROYAL100" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;color:var(--text);font-size:0.88rem;font-family:'Exo 2',sans-serif;outline:none;" oninput="this.value=this.value.toUpperCase()">
+        <input id="giftCodeInput" type="text" placeholder="e.g. ROYAL100" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;color:var(--text);font-size:0.88rem;font-family:'Exo 2',sans-serif;outline:none;" oninput="this.value=this.value.toUpperCase();document.getElementById('giftRedeemStatus').style.display='none'">
         <button onclick="redeemGiftCode()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.7rem 1.2rem;color:#000;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Redeem</button>
       </div>
+      <!-- Status message shown inside modal -->
+      <div id="giftRedeemStatus" style="display:none;margin-top:0.6rem;font-size:0.82rem;font-weight:600;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border-radius:8px;line-height:1.4;"></div>
     </div>
     <!-- Gift history -->
     <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;"><span data-t="gift.redeemed">Redeemed Gifts</span></div>
