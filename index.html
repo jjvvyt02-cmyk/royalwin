@@ -2303,7 +2303,8 @@
     if (!user || !db || !el) return;
     el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
     try {
-      const snap = await db.ref('users/' + user.uid + '/depositRequests').once('value');
+      // Read from adminRequests/deposits (where admin updates status)
+      const snap = await db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).once('value');
       const data = snap.val();
       if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No deposits yet</div>'; return; }
       const rows = Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
@@ -2331,7 +2332,8 @@
     if (!user || !db || !el) return;
     el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
     try {
-      const snap = await db.ref('users/' + user.uid + '/withdrawRequests').once('value');
+      // Read from adminRequests/withdrawals where status is actually updated
+      const snap = await db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(user.uid).once('value');
       const data = snap.val();
       if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No withdrawals yet</div>'; return; }
       const rows = Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
