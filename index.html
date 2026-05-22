@@ -1308,6 +1308,8 @@
 
     if (name === 'bethistory') renderBetHistory(currentBetFilter);
     if (name === 'history') loadTransactionHistory();
+    if (name === 'deposithistory') loadDepositHistoryPage();
+    if (name === 'withdrawhistory') loadWithdrawHistoryPage();
     if (name === 'referral') loadReferralData();
     if (name === 'wallet') {
       switchWalletTab('deposit');
@@ -1407,6 +1409,62 @@
     } catch(e) { console.warn('Referral load failed:', e); }
   }
 
+
+
+  async function loadDepositHistoryPage() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    const el = document.getElementById('depositHistoryPageRows');
+    if (!user || !db || !el) return;
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
+    try {
+      const snap = await db.ref('users/' + user.uid + '/depositRequests').once('value');
+      const data = snap.val();
+      if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No deposits yet</div>'; return; }
+      const rows = Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+      el.innerHTML = rows.map(r => {
+        const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+        const statusColor = r.status === 'approved' ? 'var(--green)' : r.status === 'rejected' ? 'var(--red2)' : 'var(--gold)';
+        const statusText = r.status === 'approved' ? '✅ Approved' : r.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
+        const bonusText = r.bonusPct ? `<span style="font-size:0.7rem;color:var(--gold);margin-left:0.4rem;">+${r.bonusPct}% bonus</span>` : '';
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.7rem;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:700;color:var(--green);font-size:1rem;">+₹${(r.amount||0).toLocaleString('en-IN')}${bonusText}</div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">${r.method || 'UPI'}</div>
+            <div style="font-size:0.7rem;color:var(--muted);">${time}</div>
+          </div>
+          <div style="font-size:0.8rem;font-weight:700;color:${statusColor};">${statusText}</div>
+        </div>`;
+      }).join('');
+    } catch(e) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Failed to load</div>'; }
+  }
+
+  async function loadWithdrawHistoryPage() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    const el = document.getElementById('withdrawHistoryPageRows');
+    if (!user || !db || !el) return;
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
+    try {
+      const snap = await db.ref('users/' + user.uid + '/withdrawRequests').once('value');
+      const data = snap.val();
+      if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No withdrawals yet</div>'; return; }
+      const rows = Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+      el.innerHTML = rows.map(r => {
+        const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+        const statusColor = r.status === 'approved' ? 'var(--green)' : r.status === 'rejected' ? 'var(--red2)' : 'var(--gold)';
+        const statusText = r.status === 'approved' ? '✅ Approved' : r.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.7rem;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:700;color:var(--red2);font-size:1rem;">-₹${(r.amount||0).toLocaleString('en-IN')}</div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">${r.method || 'UPI'}</div>
+            <div style="font-size:0.7rem;color:var(--muted);">${time}</div>
+          </div>
+          <div style="font-size:0.8rem;font-weight:700;color:${statusColor};">${statusText}</div>
+        </div>`;
+      }).join('');
+    } catch(e) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Failed to load</div>'; }
+  }
 
   function showDepositHistory() {
     showPage('wallet');
@@ -3915,6 +3973,33 @@
   </div>
 </div>
 
+
+<!-- DEPOSIT HISTORY PAGE -->
+<div class="page" id="page-deposithistory">
+  <div style="max-width:600px;margin:0 auto;padding:1rem;">
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
+      <button onclick="showPage('profile')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬇️ Deposit History</div>
+    </div>
+    <div id="depositHistoryPageRows">
+      <div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>
+    </div>
+  </div>
+</div>
+
+<!-- WITHDRAWAL HISTORY PAGE -->
+<div class="page" id="page-withdrawhistory">
+  <div style="max-width:600px;margin:0 auto;padding:1rem;">
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
+      <button onclick="showPage('profile')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬆️ Withdrawal History</div>
+    </div>
+    <div id="withdrawHistoryPageRows">
+      <div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>
+    </div>
+  </div>
+</div>
+
 <!-- SPINNING WHEEL OVERLAY -->
 <div class="wheel-overlay" id="wheelOverlay">
   <button class="wheel-close" onclick="closeWheel()">✕ Close</button>
@@ -4002,11 +4087,11 @@
         <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,77,255,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">💰</div>
         <div><div style="font-size:0.85rem;font-weight:700;">Transaction</div><div style="font-size:0.7rem;color:var(--muted);">All transactions</div></div>
       </div>
-      <div onclick="showDepositHistory()" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
+      <div onclick="showPage('deposithistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
         <div style="width:40px;height:40px;border-radius:10px;background:rgba(240,192,64,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">⬇️</div>
         <div><div style="font-size:0.85rem;font-weight:700;">Deposit History</div><div style="font-size:0.7rem;color:var(--muted);">My deposit history</div></div>
       </div>
-      <div onclick="showWithdrawHistory()" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
+      <div onclick="showPage('withdrawhistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
         <div style="width:40px;height:40px;border-radius:10px;background:rgba(224,32,32,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">⬆️</div>
         <div><div style="font-size:0.85rem;font-weight:700;">Withdrawal History</div><div style="font-size:0.7rem;color:var(--muted);">My withdrawal history</div></div>
       </div>
