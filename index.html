@@ -1380,7 +1380,7 @@
         <!-- Result count -->
         <div id="refSearchCount" style="display:none;padding:0.35rem 0.9rem;font-size:0.7rem;color:var(--muted);border-bottom:1px solid var(--border);"></div>
         <div class="sub-hist-row head">
-          <div>Lv</div><div>User</div><div>Joined</div><div>Deposit</div><div>Earned</div>
+          <div>Lv</div><div>UID</div><div>Joined</div><div>Deposit</div><div>Bet</div>
         </div>
         <div id="refHistoryRows">
           <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">No referrals yet</div>
@@ -1625,19 +1625,19 @@
     const levelColors = { '1':'var(--gold2)', '2':'var(--green)', '3':'#a87dff', '4':'var(--red2)' };
     histEl.innerHTML = filtered.map(r => {
       const lv = String(r.level || 1);
-      const lvColor = levelColors[lv] || 'var(--muted)';
       const joined = r.joinedAt ? new Date(r.joinedAt).toLocaleDateString('en-IN', {day:'numeric', month:'short'}) : '—';
       const depAmt = r.firstDepositAmt ? '₹' + Number(r.firstDepositAmt).toLocaleString('en-IN') : '—';
-      const earned = (r.bonus || 0) + (r.commission || 0);
+      const betAmt = r.totalBet ? '₹' + Number(r.totalBet).toLocaleString('en-IN') : '—';
+      const shortUid = (r.uid || '').substring(0, 10) + (r.uid && r.uid.length > 10 ? '…' : '');
       return `<div class="sub-hist-row">
         <div><span class="ref-level-badge lv${lv}" style="font-size:0.62rem;padding:0.1rem 0.35rem;">L${lv}</span></div>
         <div style="overflow:hidden;">
-          <div style="font-size:0.72rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.username || ('UID:' + (r.uid||'').substring(0,6))}</div>
-          <div style="font-size:0.62rem;color:var(--muted);">${r.memberId || ''}</div>
+          <div style="font-size:0.68rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.uid||''}">${shortUid || '—'}</div>
+          <div style="font-size:0.6rem;color:var(--muted);">${r.memberId ? 'ID:' + r.memberId : ''}</div>
         </div>
         <div style="color:var(--muted);font-size:0.68rem;">${joined}</div>
         <div style="font-size:0.72rem;color:${r.firstDepositAmt ? 'var(--green)' : 'var(--muted)'};">${depAmt}</div>
-        <div style="font-size:0.72rem;font-weight:700;color:var(--green);">${earned > 0 ? '+₹' + earned.toLocaleString('en-IN') : '—'}</div>
+        <div style="font-size:0.72rem;color:${r.totalBet ? 'var(--gold)' : 'var(--muted)'};">${betAmt}</div>
       </div>`;
     }).join('');
   }
@@ -3348,6 +3348,35 @@
           const newCompleted = parseFloat((wager2.completed + amt).toFixed(2));
           await db.ref('users/' + user.uid + '/wager/completed').set(newCompleted);
         }
+
+        // ── UPDATE totalBet on user profile ──
+        const totalBetSnap = await db.ref('users/' + user.uid + '/totalBet').once('value');
+        const newTotalBet = parseFloat(((totalBetSnap.val() || 0) + amt).toFixed(2));
+        await db.ref('users/' + user.uid + '/totalBet').set(newTotalBet);
+
+        // ── UPDATE totalBet in referral records up the chain ──
+        try {
+          const profile = window.userProfile;
+          if (profile && profile.referredBy) {
+            const allSnap = await db.ref('users').once('value');
+            const allUsers = allSnap.val() || {};
+            const codeMap = {};
+            Object.entries(allUsers).forEach(([uid, u]) => {
+              if (u.referralCode) codeMap[u.referralCode] = { uid, referredBy: u.referredBy || '' };
+            });
+            let currentCode = profile.referredBy;
+            for (let level = 1; level <= 4; level++) {
+              const referrer = codeMap[currentCode];
+              if (!referrer) break;
+              const refKey = level === 1 ? 'referrals' : 'referrals_l' + level;
+              const refSnap = await db.ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid + '/totalBet').once('value');
+              const newRefTotalBet = parseFloat(((refSnap.val() || 0) + amt).toFixed(2));
+              await db.ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid + '/totalBet').set(newRefTotalBet);
+              currentCode = referrer.referredBy;
+              if (!currentCode) break;
+            }
+          }
+        } catch(refErr) { console.warn('Referral bet update failed:', refErr); }
       }
     } catch(e) { console.warn('Balance deduct failed:', e); }
 
