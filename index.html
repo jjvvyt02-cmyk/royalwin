@@ -4426,91 +4426,82 @@
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
     if (!user || !db) {
-      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="tx.login">Please log in to view transactions</span></div>';
+      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Please log in to view transactions</div>';
       return;
     }
     container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
     try {
-      // Load all transaction types in parallel
-      const [txSnap, betSnap, depSnap, withSnap] = await Promise.all([
-        db.ref('users/' + user.uid + '/transactions').once('value'),
-        db.ref('users/' + user.uid + '/betHistory').once('value'),
-        db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).once('value'),
-        db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(user.uid).once('value'),
-      ]);
-
       let txs = [];
 
-      // User transactions (bonus, commission, admin credits etc)
-      if (txSnap.val()) txs = txs.concat(Object.values(txSnap.val()));
+      // 1. User transactions (bonuses, commissions, admin credits)
+      try {
+        const txSnap = await db.ref('users/' + user.uid + '/transactions').once('value');
+        if (txSnap.val()) txs = txs.concat(Object.values(txSnap.val()));
+      } catch(e) { console.warn('tx load err:', e); }
 
-      // Bet history
-      if (betSnap.val()) {
-        Object.values(betSnap.val()).forEach(b => {
-          txs.push({
-            type: b.won ? 'win' : 'loss',
-            amount: b.won ? parseFloat(b.profit) : -parseFloat(b.bet),
-            details: b.game + ' · ' + b.result,
-            balance: b.balance || 0,
-            timestamp: b.timestamp || 0
-          });
-        });
-      }
-
-      // Deposits from adminRequests (has real status)
-      if (depSnap.val()) {
-        Object.values(depSnap.val()).forEach(d => {
-          // Avoid duplicate if already in transactions
-          txs.push({
-            type: 'deposit',
-            amount: d.amount,
-            details: (d.method || 'UPI') + (d.bonusPct ? ' · ' + d.bonusPct + '% bonus' : '') + ' · ' + (d.status || 'pending'),
-            balance: 0,
-            timestamp: d.timestamp || 0,
-            status: d.status
-          });
-          // Add bonus as separate entry if approved and has bonus
-          if (d.status === 'approved' && d.bonusAmt > 0) {
+      // 2. Bet history
+      try {
+        const betSnap = await db.ref('users/' + user.uid + '/betHistory').once('value');
+        if (betSnap.val()) {
+          Object.values(betSnap.val()).forEach(b => {
             txs.push({
-              type: 'deposit_bonus',
-              amount: d.bonusAmt,
-              details: d.bonusPct + '% deposit bonus',
-              balance: 0,
-              timestamp: (d.timestamp || 0) + 1
+              type: b.won ? 'win' : 'loss',
+              amount: b.won ? parseFloat(b.profit||0) : -parseFloat(b.bet||0),
+              details: (b.game||'Game') + ' · ' + (b.result||''),
+              balance: b.balance || 0,
+              timestamp: b.timestamp || 0
             });
-          }
-        });
-      }
-
-      // Withdrawals from adminRequests
-      if (withSnap.val()) {
-        Object.values(withSnap.val()).forEach(w => {
-          txs.push({
-            type: 'withdrawal',
-            amount: w.amount,
-            details: (w.method || 'UPI') + ' · ' + (w.status || 'pending'),
-            balance: 0,
-            timestamp: w.timestamp || 0,
-            status: w.status
           });
-        });
-      }
+        }
+      } catch(e) { console.warn('bet load err:', e); }
 
-      // Remove duplicates by timestamp+type
-      const seen = new Set();
-      txs = txs.filter(tx => {
-        const key = tx.type + '_' + tx.timestamp;
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
+      // 3. Deposits from adminRequests — get all then filter by uid
+      try {
+        const depSnap = await db.ref('adminRequests/deposits').once('value');
+        if (depSnap.val()) {
+          Object.values(depSnap.val()).filter(d => d.uid === user.uid).forEach(d => {
+            txs.push({
+              type: 'deposit',
+              amount: d.amount || 0,
+              details: (d.method || 'UPI') + (d.bonusPct ? ' · +' + d.bonusPct + '% bonus' : '') + ' · ' + (d.status || 'pending'),
+              balance: 0,
+              timestamp: d.timestamp || 0
+            });
+            if (d.status === 'approved' && d.bonusAmt > 0) {
+              txs.push({
+                type: 'deposit_bonus',
+                amount: d.bonusAmt,
+                details: d.bonusPct + '% deposit bonus',
+                balance: 0,
+                timestamp: (d.timestamp || 0) + 1
+              });
+            }
+          });
+        }
+      } catch(e) { console.warn('dep load err:', e); }
+
+      // 4. Withdrawals from adminRequests
+      try {
+        const withSnap = await db.ref('adminRequests/withdrawals').once('value');
+        if (withSnap.val()) {
+          Object.values(withSnap.val()).filter(w => w.uid === user.uid).forEach(w => {
+            txs.push({
+              type: 'withdrawal',
+              amount: w.amount || 0,
+              details: (w.method || 'UPI') + ' · ' + (w.status || 'pending'),
+              balance: 0,
+              timestamp: w.timestamp || 0
+            });
+          });
+        }
+      } catch(e) { console.warn('with load err:', e); }
 
       // Sort by timestamp desc
       allTransactions = txs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
       renderTxRows(allTransactions);
     } catch(e) {
       console.error('Transaction history error:', e);
-      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Failed to load transactions: ' + e.message + '</div>';
+      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Failed to load: ' + e.message + '</div>';
     }
   }
 
