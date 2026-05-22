@@ -1308,6 +1308,7 @@
 
     if (name === 'bethistory') renderBetHistory(currentBetFilter);
     if (name === 'history') loadTransactionHistory();
+    if (name === 'profile') renderBetHistory(currentBetFilter || 'all');
     if (name === 'deposithistory') loadDepositHistoryPage();
     if (name === 'withdrawhistory') loadWithdrawHistoryPage();
     if (name === 'referral') loadReferralData();
@@ -3265,29 +3266,37 @@
     const totalWon = betHistoryData.filter(d => d.won).reduce((s,d) => s + parseFloat(d.profit||0), 0);
     const totalLost = betHistoryData.filter(d => !d.won).reduce((s,d) => s + parseFloat(d.bet||0), 0);
     const netProfit = totalWon - totalLost;
-    const countEl = document.getElementById('totalBetsCount');
-    const wonEl = document.getElementById('totalWonAmt');
-    const lostEl = document.getElementById('totalLostAmt');
-    const netEl = document.getElementById('netProfitAmt');
-    if (countEl) countEl.textContent = totalBets;
-    if (wonEl) wonEl.textContent = '₹' + totalWon.toLocaleString('en-IN');
-    if (lostEl) lostEl.textContent = '₹' + totalLost.toLocaleString('en-IN');
-    if (netEl) { netEl.textContent = (netProfit >= 0 ? '+' : '') + '₹' + netProfit.toLocaleString('en-IN'); netEl.style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red2)'; }
+    // Update account page stats
+    const acctBets = document.getElementById('acctTotalBets');
+    const acctWon = document.getElementById('acctTotalWon');
+    const acctLost = document.getElementById('acctTotalLost');
+    const acctNet = document.getElementById('acctNetProfit');
+    if (acctBets) acctBets.textContent = totalBets;
+    if (acctWon) acctWon.textContent = '₹' + totalWon.toLocaleString('en-IN');
+    if (acctLost) acctLost.textContent = '₹' + totalLost.toLocaleString('en-IN');
+    if (acctNet) { acctNet.textContent = (netProfit >= 0 ? '+' : '') + '₹' + netProfit.toLocaleString('en-IN'); acctNet.style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red2)'; }
 
     if (data.length === 0) { container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No bets yet</div>'; return; }
 
-    container.innerHTML = data.map(d => `
+    container.innerHTML = data.map(d => {
+      // Capitalize first letter of result
+      const result = d.result ? d.result.charAt(0).toUpperCase() + d.result.slice(1) : '—';
+      // Format time with seconds
+      const timeStr = d.timestamp ? new Date(d.timestamp).toLocaleString('en-IN', {
+        day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+      }) : (d.time || '—');
+      return `
       <div class="bh-row">
         <div class="bh-game">
           <div class="bh-dot" style="background:${d.color};"></div>
           <span>${d.icon} ${d.game}</span>
         </div>
         <div>₹${d.bet}</div>
-        <div>${d.result}</div>
+        <div>${result}</div>
         <div class="${d.won ? 'bh-win' : 'bh-lose'}">${d.won ? '+₹'+d.profit : '-₹'+Math.abs(d.profit)}</div>
-        <div style="color:var(--muted);font-size:0.78rem;">${d.time}</div>
-      </div>
-    `).join('');
+        <div style="color:var(--muted);font-size:0.78rem;">${timeStr}</div>
+      </div>`;
+    }).join('');
   }
 
   function filterBets(el, filter) {
@@ -4126,6 +4135,28 @@
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">💎</span><span style="font-size:0.88rem;">VIP Club</span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
+      <!-- Game Stats -->
+      <div style="padding:0.9rem 1rem;border-bottom:1px solid var(--border);">
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.7rem;text-transform:uppercase;letter-spacing:0.5px;">📊 Game Stats</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+          <div style="background:var(--bg3);border-radius:8px;padding:0.6rem;text-align:center;">
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;" id="acctTotalBets">0</div>
+            <div style="font-size:0.65rem;color:var(--muted);">Total Bets</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:8px;padding:0.6rem;text-align:center;">
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--green);" id="acctTotalWon">₹0</div>
+            <div style="font-size:0.65rem;color:var(--muted);">Total Won</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:8px;padding:0.6rem;text-align:center;">
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--red2);" id="acctTotalLost">₹0</div>
+            <div style="font-size:0.65rem;color:var(--muted);">Total Lost</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:8px;padding:0.6rem;text-align:center;">
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--gold);" id="acctNetProfit">₹0</div>
+            <div style="font-size:0.65rem;color:var(--muted);">Net Profit</div>
+          </div>
+        </div>
+      </div>
       <div onclick="showPage('support')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;cursor:pointer;">
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎧</span><span style="font-size:0.88rem;">Support</span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
@@ -4538,25 +4569,6 @@
   <div class="history-page">
     <div class="section-title" style="margin-bottom:0.4rem;">🎯 Bet History</div>
     <div class="section-sub" style="margin-bottom:1.5rem;">Your personal betting records</div>
-
-    <div class="history-summary">
-      <div class="hs-card">
-        <div class="hs-val" id="totalBetsCount">0</div>
-        <div class="hs-lbl">Total Bets</div>
-      </div>
-      <div class="hs-card">
-        <div class="hs-val" style="color:var(--green);" id="totalWonAmt">₹0</div>
-        <div class="hs-lbl">Total Won</div>
-      </div>
-      <div class="hs-card">
-        <div class="hs-val" style="color:var(--red2);" id="totalLostAmt">₹0</div>
-        <div class="hs-lbl">Total Lost</div>
-      </div>
-      <div class="hs-card">
-        <div class="hs-val" style="color:var(--gold);" id="netProfitAmt">₹0</div>
-        <div class="hs-lbl">Net Profit</div>
-      </div>
-    </div>
 
     <!-- Filters -->
     <div class="history-filters" style="margin-bottom:1rem;">
