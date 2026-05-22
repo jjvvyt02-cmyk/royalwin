@@ -4431,14 +4431,21 @@
     }
     container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
     try {
-      // Load all transaction types
-      const txSnap = await db.ref('users/' + user.uid + '/transactions').once('value');
-      const betSnap = await db.ref('users/' + user.uid + '/betHistory').once('value');
+      // Load all transaction types in parallel
+      const [txSnap, betSnap, depSnap, withSnap] = await Promise.all([
+        db.ref('users/' + user.uid + '/transactions').once('value'),
+        db.ref('users/' + user.uid + '/betHistory').once('value'),
+        db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).once('value'),
+        db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(user.uid).once('value'),
+      ]);
 
       let txs = [];
+
+      // User transactions (bonus, commission, admin credits etc)
       if (txSnap.val()) txs = txs.concat(Object.values(txSnap.val()));
+
+      // Bet history
       if (betSnap.val()) {
-        // Add bet history as transactions
         Object.values(betSnap.val()).forEach(b => {
           txs.push({
             type: b.won ? 'win' : 'loss',
@@ -4450,11 +4457,60 @@
         });
       }
 
+      // Deposits from adminRequests (has real status)
+      if (depSnap.val()) {
+        Object.values(depSnap.val()).forEach(d => {
+          // Avoid duplicate if already in transactions
+          txs.push({
+            type: 'deposit',
+            amount: d.amount,
+            details: (d.method || 'UPI') + (d.bonusPct ? ' · ' + d.bonusPct + '% bonus' : '') + ' · ' + (d.status || 'pending'),
+            balance: 0,
+            timestamp: d.timestamp || 0,
+            status: d.status
+          });
+          // Add bonus as separate entry if approved and has bonus
+          if (d.status === 'approved' && d.bonusAmt > 0) {
+            txs.push({
+              type: 'deposit_bonus',
+              amount: d.bonusAmt,
+              details: d.bonusPct + '% deposit bonus',
+              balance: 0,
+              timestamp: (d.timestamp || 0) + 1
+            });
+          }
+        });
+      }
+
+      // Withdrawals from adminRequests
+      if (withSnap.val()) {
+        Object.values(withSnap.val()).forEach(w => {
+          txs.push({
+            type: 'withdrawal',
+            amount: w.amount,
+            details: (w.method || 'UPI') + ' · ' + (w.status || 'pending'),
+            balance: 0,
+            timestamp: w.timestamp || 0,
+            status: w.status
+          });
+        });
+      }
+
+      // Remove duplicates by timestamp+type
+      const seen = new Set();
+      txs = txs.filter(tx => {
+        const key = tx.type + '_' + tx.timestamp;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+
       // Sort by timestamp desc
       allTransactions = txs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
       renderTxRows(allTransactions);
     } catch(e) {
-      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Failed to load transactions</div>';
+      console.error('Transaction history error:', e);
+      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Failed to load transactions: ' + e.message + '</div>';
     }
   }
 
@@ -4475,13 +4531,16 @@
       return;
     }
     const typeConfig = {
-      deposit:    { icon:'⬇️', label:'Deposit',    color:'#27ae60', sign:'+' },
-      withdrawal: { icon:'⬆️', label:'Withdrawal', color:'#e02020', sign:'-' },
-      win:        { icon:'🏆', label:'Win',         color:'#27ae60', sign:'+' },
-      loss:       { icon:'🎮', label:'Bet Loss',    color:'#e02020', sign:'-' },
-      manual_add: { icon:'➕', label:'Admin Credit',color:'#27ae60', sign:'+' },
-      manual_deduct:{ icon:'➖', label:'Admin Debit',color:'#e02020',sign:'-' },
-      spin:       { icon:'🎡', label:'Daily Spin',  color:'#27ae60', sign:'+' },
+      deposit:       { icon:'⬇️', label:'Deposit',        color:'#27ae60', sign:'+' },
+      deposit_bonus: { icon:'🎁', label:'Deposit Bonus',  color:'#f0c040', sign:'+' },
+      withdrawal:    { icon:'⬆️', label:'Withdrawal',     color:'#e02020', sign:'-' },
+      win:           { icon:'🏆', label:'Win',            color:'#27ae60', sign:'+' },
+      loss:          { icon:'🎮', label:'Bet Loss',       color:'#e02020', sign:'-' },
+      commission:    { icon:'💰', label:'Commission',     color:'#27ae60', sign:'+' },
+      referral_bonus:{ icon:'👥', label:'Referral Bonus', color:'#27ae60', sign:'+' },
+      manual_add:    { icon:'➕', label:'Admin Credit',   color:'#27ae60', sign:'+' },
+      manual_deduct: { icon:'➖', label:'Admin Debit',    color:'#e02020', sign:'-' },
+      spin:          { icon:'🎡', label:'Daily Spin',     color:'#27ae60', sign:'+' },
     };
     container.innerHTML = txs.map(tx => {
       const cfg = typeConfig[tx.type] || { icon:'💸', label: tx.type || 'Transaction', color:'var(--muted)', sign:'' };
