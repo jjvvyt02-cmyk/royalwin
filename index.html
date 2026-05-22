@@ -3260,6 +3260,22 @@
     else if (filter === 'win') data = data.filter(d => d.won);
     else if (filter === 'lose') data = data.filter(d => !d.won);
 
+    // Update summary stats
+    const totalBets = betHistoryData.length;
+    const totalWon = betHistoryData.filter(d => d.won).reduce((s,d) => s + parseFloat(d.profit||0), 0);
+    const totalLost = betHistoryData.filter(d => !d.won).reduce((s,d) => s + parseFloat(d.bet||0), 0);
+    const netProfit = totalWon - totalLost;
+    const countEl = document.getElementById('totalBetsCount');
+    const wonEl = document.getElementById('totalWonAmt');
+    const lostEl = document.getElementById('totalLostAmt');
+    const netEl = document.getElementById('netProfitAmt');
+    if (countEl) countEl.textContent = totalBets;
+    if (wonEl) wonEl.textContent = '₹' + totalWon.toLocaleString('en-IN');
+    if (lostEl) lostEl.textContent = '₹' + totalLost.toLocaleString('en-IN');
+    if (netEl) { netEl.textContent = (netProfit >= 0 ? '+' : '') + '₹' + netProfit.toLocaleString('en-IN'); netEl.style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red2)'; }
+
+    if (data.length === 0) { container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No bets yet</div>'; return; }
+
     container.innerHTML = data.map(d => `
       <div class="bh-row">
         <div class="bh-game">
@@ -3270,7 +3286,6 @@
         <div>${d.result}</div>
         <div class="${d.won ? 'bh-win' : 'bh-lose'}">${d.won ? '+₹'+d.profit : '-₹'+Math.abs(d.profit)}</div>
         <div style="color:var(--muted);font-size:0.78rem;">${d.time}</div>
-        <div style="color:var(--muted);font-size:0.75rem;">${d.round}</div>
       </div>
     `).join('');
   }
@@ -4521,50 +4536,41 @@
 <!-- BET HISTORY PAGE -->
 <div class="page" id="page-bethistory">
   <div class="history-page">
-    <div class="section-title" style="margin-bottom:0.4rem;">📋 Bet History</div>
+    <div class="section-title" style="margin-bottom:0.4rem;">🎯 Bet History</div>
     <div class="section-sub" style="margin-bottom:1.5rem;">Your personal betting records</div>
 
     <div class="history-summary">
       <div class="hs-card">
-        <div class="hs-val">47</div>
+        <div class="hs-val" id="totalBetsCount">0</div>
         <div class="hs-lbl">Total Bets</div>
       </div>
       <div class="hs-card">
-        <div class="hs-val" style="color:var(--green);">₹3,840</div>
+        <div class="hs-val" style="color:var(--green);" id="totalWonAmt">₹0</div>
         <div class="hs-lbl">Total Won</div>
       </div>
       <div class="hs-card">
-        <div class="hs-val" style="color:var(--red2);">₹2,100</div>
+        <div class="hs-val" style="color:var(--red2);" id="totalLostAmt">₹0</div>
         <div class="hs-lbl">Total Lost</div>
       </div>
       <div class="hs-card">
-        <div class="hs-val" style="color:var(--gold);">₹1,740</div>
+        <div class="hs-val" style="color:var(--gold);" id="netProfitAmt">₹0</div>
         <div class="hs-lbl">Net Profit</div>
       </div>
     </div>
 
-    <!-- Transaction History Only -->
-    <div style="margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💰 Transaction History</div>
-      <button class="hf-btn" onclick="loadTransactionHistory()" style="padding:0.3rem 0.8rem;font-size:0.78rem;">🔄 Refresh</button>
-    </div>
-
-    <!-- Filter buttons -->
+    <!-- Filters -->
     <div class="history-filters" style="margin-bottom:1rem;">
-      <div class="hf-btn active" onclick="filterTx(this,'all')">All</div>
-      <div class="hf-btn" onclick="filterTx(this,'deposit')">⬇️ Deposit</div>
-      <div class="hf-btn" onclick="filterTx(this,'withdrawal')">⬆️ Withdrawal</div>
-      <div class="hf-btn" onclick="filterTx(this,'win')">🏆 Win</div>
-      <div class="hf-btn" onclick="filterTx(this,'loss')">🎮 Bet</div>
+      <div class="hf-btn active" onclick="filterBets(this,'all')">All</div>
+      <div class="hf-btn" onclick="filterBets(this,'wingo')">🎯 WinGo</div>
+      <div class="hf-btn" onclick="filterBets(this,'win')">✅ Won</div>
+      <div class="hf-btn" onclick="filterBets(this,'lose')">❌ Lost</div>
     </div>
 
     <div class="bet-history-table">
       <div class="bh-row head">
-        <div>Type</div><div>Amount</div><div>Details</div><div>Time</div><div>Balance</div>
+        <div>Game</div><div>Bet</div><div>Result</div><div>Profit/Loss</div><div>Time</div>
       </div>
-      <div id="txHistoryRows">
-        <div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>
-      </div>
+      <div id="betHistoryRows"></div>
     </div>
   </div>
 </div>
