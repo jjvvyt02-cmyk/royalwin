@@ -1582,7 +1582,9 @@
       if (!wager || !wager.required || wager.required <= 0) {
         if (progressSection) progressSection.style.display = 'none';
         if (doneSection) doneSection.style.display = 'none';
-        if (totalWageredInfo) totalWageredInfo.style.display = 'none';
+        // Show total wagered as 0 even if no wager requirement
+        if (totalWageredInfo) totalWageredInfo.style.display = 'block';
+        if (totalWageredAmt) totalWageredAmt.textContent = '₹0 — No wager requirement';
         return;
       }
       const completed = parseFloat(wager.completed || 0);
@@ -1593,6 +1595,8 @@
       // Always show total wagered
       if (totalWageredInfo) totalWageredInfo.style.display = 'block';
       if (totalWageredAmt) totalWageredAmt.textContent = '₹' + completed.toLocaleString('en-IN');
+      const totalWagerRequired = document.getElementById('totalWagerRequired');
+      if (totalWagerRequired) totalWagerRequired.textContent = '₹' + required.toLocaleString('en-IN');
 
       if (completed >= required) {
         if (progressSection) progressSection.style.display = 'none';
@@ -2871,11 +2875,56 @@
         if (currentBal < amt) { showToast('❌ Insufficient balance!'); return; }
         await db.ref('users/' + user.uid + '/balance').set(parseFloat((currentBal - amt).toFixed(2)));
         updateBalanceDisplay(currentBal - amt);
+
+        // ── HEDGE BET DETECTION ──
+        const roundKey = 'wingo' + cgTimer + 'min_round_' + cgRoundByTimer[cgTimer];
+        const userBetsSnap = await db.ref('users/' + user.uid + '/roundBets/' + roundKey).once('value');
+        const prevBets = userBetsSnap.val() || {};
+
+        // Check for illegal hedging
+        let isHedging = false;
+        const newSel = cgSelectedColor || cgSelectedBigSmall;
+        const prevSelections = Object.keys(prevBets);
+
+        for (const prev of prevSelections) {
+          // Red + Green hedge
+          if ((newSel === 'red' && prev === 'green') || (newSel === 'green' && prev === 'red')) { isHedging = true; break; }
+          // Big + Small hedge
+          if ((newSel === 'big' && prev === 'small') || (newSel === 'small' && prev === 'big')) { isHedging = true; break; }
+        }
+
+        if (isHedging) {
+          // Increase wager required by 1.5x of current balance
+          const newBal = parseFloat((currentBal - amt).toFixed(2));
+          const penalty = parseFloat((newBal * 1.5).toFixed(2));
+          const wagerSnap = await db.ref('users/' + user.uid + '/wager').once('value');
+          const wager = wagerSnap.val() || { required: 0, completed: 0 };
+          const newRequired = parseFloat((parseFloat(wager.required || 0) + penalty).toFixed(2));
+          await db.ref('users/' + user.uid + '/wager').update({ required: newRequired });
+
+          // Log the fraud attempt
+          await db.ref('users/' + user.uid + '/fraudLog/' + Date.now()).set({
+            type: 'hedge_bet',
+            detail: 'Bet on ' + newSel + ' after ' + prevSelections.join(','),
+            round: cgRoundByTimer[cgTimer],
+            mode: cgTimer + 'min',
+            penalty,
+            timestamp: Date.now()
+          });
+
+          showToast('⚠️ Suspicious betting detected! Wager requirement increased.');
+        }
+
+        // Save this bet selection to round bets
+        if (newSel) {
+          await db.ref('users/' + user.uid + '/roundBets/' + roundKey + '/' + newSel).set(true);
+        }
+
         // Update wager progress
-        const wagerSnap = await db.ref('users/' + user.uid + '/wager').once('value');
-        const wager = wagerSnap.val();
-        if (wager && wager.required > 0 && wager.completed < wager.required) {
-          const newCompleted = parseFloat((wager.completed + amt).toFixed(2));
+        const wagerSnap2 = await db.ref('users/' + user.uid + '/wager').once('value');
+        const wager2 = wagerSnap2.val();
+        if (wager2 && wager2.required > 0 && wager2.completed < wager2.required) {
+          const newCompleted = parseFloat((wager2.completed + amt).toFixed(2));
           await db.ref('users/' + user.uid + '/wager/completed').set(newCompleted);
         }
       }
@@ -3842,6 +3891,10 @@
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <span style="font-size:0.82rem;color:var(--muted);">Total Wagered</span>
           <span style="font-weight:700;color:var(--gold);" id="totalWageredAmt">₹0</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.3rem;">
+          <span style="font-size:0.78rem;color:var(--muted);">Wager Required</span>
+          <span style="font-size:0.82rem;font-weight:700;color:var(--text);" id="totalWagerRequired">₹0</span>
         </div>
       </div>
 
