@@ -1733,77 +1733,218 @@
   // ── LANGUAGE ──
   window._currentLang = localStorage.getItem('royalwin_lang') || 'en';
 
-  // ── TRANSLATIONS ──
-  const translations = {
-    en: {
-      // Nav
-      'nav.home': 'Home', 'nav.activity': 'Activity', 'nav.promotion': 'Promotion',
-      'nav.wallet': 'Wallet', 'nav.account': 'Account',
-      // Home
-      'home.tagline': '#1 Online Gaming Platform',
-      'home.headline1': 'Win Big.', 'home.headline2': 'Play Royal.',
-      'home.sub': 'Join millions of players. Spin, bet, and conquer. Real money games, massive jackpots, and instant withdrawals.',
-      'home.start': '🚀 Start Playing', 'home.signin': 'Sign In',
-      'home.players': 'Players', 'home.games': 'Games', 'home.support': 'Support',
-      // Wallet
-      'wallet.deposit': 'Deposit', 'wallet.withdraw': 'Withdraw',
-      'wallet.balance': 'Your Balance',
-      'wallet.dep.title': 'Add Money', 'wallet.with.title': 'Withdraw Money',
-      // Account
-      'account.bethistory': 'Bet History', 'account.transaction': 'Transaction',
-      'account.dephistory': 'Deposit History', 'account.withhistory': 'Withdrawal History',
-      'account.gifts': 'Gifts', 'account.language': 'Language',
-      'account.gamestats': 'Game Stats', 'account.support': 'Support',
-      'account.signout': '🚪 Sign Out',
-      // Support
-      'support.title': 'Support Center', 'support.sub': 'We\'re here 24/7 to help you',
-      'support.telegram': 'Telegram', 'support.telegram.sub': 'Instant reply',
-      'support.livechat': 'Live Chat', 'support.livechat.sub': 'Online now',
-      // Promotion
-      'promo.title': 'Promotions & Bonuses',
-      // Auth
-      'auth.login.title': 'Welcome Back', 'auth.login.sub': 'Sign in to your account',
-      'auth.reg.title': 'Create Account', 'auth.reg.sub': 'Join RoyalWin today',
-      'auth.signin.btn': '🔐 Sign In', 'auth.reg.btn': '🚀 Create Account',
-      'auth.forgot': 'Forgot Password?', 'auth.noacc': "Don't have an account?",
-      'auth.haveacc': 'Already have an account?',
-    },
-    hi: {
-      // Nav
-      'nav.home': 'होम', 'nav.activity': 'गतिविधि', 'nav.promotion': 'प्रमोशन',
-      'nav.wallet': 'वॉलेट', 'nav.account': 'अकाउंट',
-      // Home
-      'home.tagline': '#1 ऑनलाइन गेमिंग प्लेटफॉर्म',
-      'home.headline1': 'बड़ा जीतें।', 'home.headline2': 'रॉयल खेलें।',
-      'home.sub': 'लाखों खिलाड़ियों से जुड़ें। बेट लगाएं, जीतें। रियल मनी गेम्स, बड़े जैकपॉट और तुरंत निकासी।',
-      'home.start': '🚀 खेलना शुरू करें', 'home.signin': 'साइन इन करें',
-      'home.players': 'खिलाड़ी', 'home.games': 'गेम्स', 'home.support': 'सपोर्ट',
-      // Wallet
-      'wallet.deposit': 'जमा करें', 'wallet.withdraw': 'निकालें',
-      'wallet.balance': 'आपका बैलेंस',
-      'wallet.dep.title': 'पैसे जोड़ें', 'wallet.with.title': 'पैसे निकालें',
-      // Account
-      'account.bethistory': 'बेट इतिहास', 'account.transaction': 'लेनदेन',
-      'account.dephistory': 'जमा इतिहास', 'account.withhistory': 'निकासी इतिहास',
-      'account.gifts': 'गिफ्ट', 'account.language': 'भाषा',
-      'account.gamestats': 'गेम आँकड़े', 'account.support': 'सपोर्ट',
-      'account.signout': '🚪 साइन आउट',
-      // Support
-      'support.title': 'सपोर्ट केंद्र', 'support.sub': 'हम 24/7 आपकी मदद के लिए यहाँ हैं',
-      'support.telegram': 'टेलीग्राम', 'support.telegram.sub': 'तुरंत जवाब',
-      'support.livechat': 'लाइव चैट', 'support.livechat.sub': 'अभी ऑनलाइन',
-      // Promotion
-      'promo.title': 'प्रमोशन और बोनस',
-      // Auth
-      'auth.login.title': 'वापस आपका स्वागत है', 'auth.login.sub': 'अपने अकाउंट में साइन इन करें',
-      'auth.reg.title': 'अकाउंट बनाएं', 'auth.reg.sub': 'आज RoyalWin से जुड़ें',
-      'auth.signin.btn': '🔐 साइन इन करें', 'auth.reg.btn': '🚀 अकाउंट बनाएं',
-      'auth.forgot': 'पासवर्ड भूल गए?', 'auth.noacc': 'अकाउंट नहीं है?',
-      'auth.haveacc': 'पहले से अकाउंट है?',
-    }
+  window._currentLang = localStorage.getItem('royalwin_lang') || 'en';
+
+  window._hiTranslations = {
+    "Home": "होम",
+    "Activity": "गतिविधि",
+    "Promotion": "प्रमोशन",
+    "Wallet": "वॉलेट",
+    "Account": "अकाउंट",
+    "#1 Online Gaming Platform": "#1 ऑनलाइन गेमिंग प्लेटफॉर्म",
+    "Win Big.": "बड़ा जीतें।",
+    "Play Royal.": "रॉयल खेलें।",
+    "Join millions of players. Spin, bet, and conquer. Real money games, massive jackpots, and instant withdrawals.": "लाखों खिलाड़ियों से जुड़ें। बेट लगाएं और जीतें। रियल मनी गेम्स, बड़े जैकपॉट और तुरंत निकासी।",
+    "Start Playing": "खेलना शुरू करें",
+    "Sign In": "साइन इन",
+    "Players": "खिलाड़ी",
+    "Games": "गेम्स",
+    "Support": "सपोर्ट",
+    "LIVE WINNERS": "लाइव विजेता",
+    "WinGo Lottery": "विनगो लॉटरी",
+    "Color Prediction": "कलर प्रेडिक्शन",
+    "Play Now": "अभी खेलें",
+    "Lottery": "लॉटरी",
+    "Welcome Back": "वापस आपका स्वागत है",
+    "Sign in to your account": "अपने अकाउंट में साइन इन करें",
+    "Create Account": "अकाउंट बनाएं",
+    "Join RoyalWin today": "आज RoyalWin से जुड़ें",
+    "Mobile / Email": "मोबाइल / ईमेल",
+    "Password": "पासवर्ड",
+    "Confirm Password": "पासवर्ड की पुष्टि करें",
+    "Username": "यूज़रनेम",
+    "Invitation Code": "आमंत्रण कोड",
+    "Optional": "वैकल्पिक",
+    "Forgot Password?": "पासवर्ड भूल गए?",
+    "Don't have an account?": "अकाउंट नहीं है?",
+    "Already have an account?": "पहले से अकाउंट है?",
+    "Send OTP": "OTP भेजें",
+    "Verify OTP": "OTP वेरीफाई करें",
+    "Verify": "वेरीफाई करें",
+    "Min 8 characters": "न्यूनतम 8 अक्षर",
+    "Deposit": "जमा करें",
+    "Withdraw": "निकालें",
+    "Your Balance": "आपका बैलेंस",
+    "Add Money": "पैसे जोड़ें",
+    "Withdraw Money": "पैसे निकालें",
+    "Deposit Amount": "जमा राशि",
+    "Select Bonus": "बोनस चुनें",
+    "No Bonus": "कोई बोनस नहीं",
+    "How to Pay": "कैसे भुगतान करें",
+    "Payment Received!": "भुगतान प्राप्त हुआ!",
+    "I have paid": "मैंने भुगतान कर दिया",
+    "Withdraw Amount": "निकासी राशि",
+    "UPI ID": "UPI आईडी",
+    "Bank Name": "बैंक नाम",
+    "Account Number": "खाता नंबर",
+    "IFSC Code": "IFSC कोड",
+    "Account Holder Name": "खाताधारक का नाम",
+    "Save Details": "विवरण सेव करें",
+    "Withdraw Now": "अभी निकालें",
+    "Wager Progress": "वेजर प्रगति",
+    "Wager completed": "वेजर पूर्ण",
+    "Bet History": "बेट इतिहास",
+    "Win & Loss history": "जीत और हार का इतिहास",
+    "Transaction": "लेनदेन",
+    "All transactions": "सभी लेनदेन",
+    "Deposit History": "जमा इतिहास",
+    "My deposit history": "मेरा जमा इतिहास",
+    "Withdrawal History": "निकासी इतिहास",
+    "My withdrawal history": "मेरी निकासी इतिहास",
+    "Gifts": "गिफ्ट",
+    "Language": "भाषा",
+    "Game Stats": "गेम आँकड़े",
+    "Sign Out": "साइन आउट",
+    "Profile": "प्रोफाइल",
+    "Member ID": "सदस्य आईडी",
+    "VIP Level": "VIP स्तर",
+    "New Player": "नया खिलाड़ी",
+    "Support Center": "सपोर्ट केंद्र",
+    "We're here 24/7 to help you": "हम 24/7 आपकी मदद के लिए यहाँ हैं",
+    "Telegram": "टेलीग्राम",
+    "Instant reply": "तुरंत जवाब",
+    "Live Chat": "लाइव चैट",
+    "Online now": "अभी ऑनलाइन",
+    "Promotions & Bonuses": "प्रमोशन और बोनस",
+    "First Deposit Bonus": "पहली जमा बोनस",
+    "Daily Free Spin": "दैनिक फ्री स्पिन",
+    "VIP Reload Bonus": "VIP रीलोड बोनस",
+    "Claim Now": "अभी क्लेम करें",
+    "Spin!": "स्पिन करें!",
+    "Upgrade": "अपग्रेड करें",
+    "Invite": "आमंत्रित करें",
+    "Agency": "एजेंसी",
+    "Yesterday's total commission (₹)": "कल का कुल कमीशन (₹)",
+    "Total Commission Earned": "कुल कमीशन अर्जित",
+    "Total Referrals": "कुल रेफरल",
+    "Direct Subordinates": "प्रत्यक्ष अधीनस्थ",
+    "Team Subordinates": "टीम अधीनस्थ",
+    "Registrations": "पंजीकरण",
+    "Deposits": "जमा",
+    "Deposit amount": "जमा राशि",
+    "First deposits": "पहली जमा",
+    "Download QR Code": "QR कोड डाउनलोड करें",
+    "Copy invite code": "आमंत्रण कोड कॉपी करें",
+    "Subordinate data": "अधीनस्थ डेटा",
+    "View all levels": "सभी स्तर देखें",
+    "Commission details": "कमीशन विवरण",
+    "Earnings breakdown": "कमाई का विवरण",
+    "Rebate ratio": "रिबेट अनुपात",
+    "Commission rates per level": "प्रति स्तर कमीशन दरें",
+    "Subordinates": "अधीनस्थ",
+    "Commission": "कमीशन",
+    "No referrals at this level": "इस स्तर पर कोई रेफरल नहीं",
+    "No referrals yet": "अभी तक कोई रेफरल नहीं",
+    "No commissions yet": "अभी तक कोई कमीशन नहीं",
+    "No data": "कोई डेटा नहीं",
+    "All": "सभी",
+    "Win": "जीत",
+    "Loss": "हार",
+    "Pending": "लंबित",
+    "Round": "राउंड",
+    "Selection": "चुनाव",
+    "Result": "परिणाम",
+    "Profit": "लाभ",
+    "No bets yet": "अभी तक कोई बेट नहीं",
+    "Net Profit": "शुद्ध लाभ",
+    "Total Bets": "कुल बेट",
+    "Win Rate": "जीत दर",
+    "No transactions yet": "अभी तक कोई लेनदेन नहीं",
+    "Please log in to view transactions": "लेनदेन देखने के लिए लॉगिन करें",
+    "VIP Program": "VIP प्रोग्राम",
+    "Bronze": "ब्रोंज़",
+    "Silver": "सिल्वर",
+    "Gold": "गोल्ड",
+    "Current Level": "वर्तमान स्तर",
+    "Place Bet": "बेट लगाएं",
+    "Confirm Bet": "बेट कन्फर्म करें",
+    "Betting Open": "बेटिंग खुली है",
+    "Betting Closed": "बेटिंग बंद है",
+    "Green": "हरा",
+    "Red": "लाल",
+    "Violet": "बैंगनी",
+    "Big": "बड़ा",
+    "Small": "छोटा",
+    "Bet Amount": "बेट राशि",
+    "Round History": "राउंड इतिहास",
+    "Online": "ऑनलाइन",
+    "Pick": "चुनें",
+    "Copy Link": "लिंक कॉपी करें",
+    "Save": "सेव करें",
+    "Cancel": "रद्द करें",
+    "Close": "बंद करें",
+    "Back": "वापस",
+    "Next": "अगला",
+    "Submit": "सबमिट करें",
+    "Loading...": "लोड हो रहा है...",
+    "Redeemed Gifts": "रिडीम किए गए गिफ्ट",
+    "No gifts redeemed yet": "अभी तक कोई गिफ्ट रिडीम नहीं",
+    "Enter Gift Code": "गिफ्ट कोड दर्ज करें",
+    "Redeem": "रिडीम करें",
+    "Select Language": "भाषा चुनें",
+    "More languages coming soon": "जल्द ही और भाषाएं आएंगी",
+    "Every day": "हर दिन",
+    "VIP Gold+": "VIP गोल्ड+",
+    "Ongoing": "जारी है",
+    "Rebate level L0": "रिबेट स्तर L0",
+    "1 level lower commission rebate": "स्तर 1 कमीशन रिबेट",
+    "2 level lower commission rebate": "स्तर 2 कमीशन रिबेट",
+    "3 level lower commission rebate": "स्तर 3 कमीशन रिबेट",
+    "4 level lower commission rebate": "स्तर 4 कमीशन रिबेट",
+    "Commission rates are set by the admin and may change.": "कमीशन दरें एडमिन द्वारा निर्धारित हैं और बदल सकती हैं।",
+    "Subordinate Data": "अधीनस्थ डेटा",
+    "Commission Details": "कमीशन विवरण",
+    "Rebate Ratio": "रिबेट अनुपात",
+    "Number of bettors": "बेटकर्ताओं की संख्या",
+    "Total bet": "कुल बेट",
+    "First deposit amount": "पहली जमा राशि",
+    "Total commission": "कुल कमीशन",
+    "Forgot Password": "पासवर्ड भूल गए",
+    "Custom rewards": "कस्टम पुरस्कार",
+    "Higher limits": "उच्च सीमाएं",
+    "Basic support": "बेसिक सपोर्ट",
+    "Daily spin": "दैनिक स्पिन",
+    "Joined": "शामिल हुए",
   };
 
-  function t(key) {
+  function applyTranslations(lang) {
+    if (lang === 'en') {
+      // Restore English - reload page is simplest
+      location.reload();
+      return;
+    }
+    const dict = window._hiTranslations;
+    // Walk all text nodes and translate
+    function walkAndTranslate(node) {
+      if (node.nodeType === 3) { // Text node
+        const trimmed = node.textContent.trim();
+        if (dict[trimmed]) {
+          node.textContent = node.textContent.replace(trimmed, dict[trimmed]);
+        }
+      } else if (node.nodeType === 1 && !['SCRIPT','STYLE','INPUT','TEXTAREA'].includes(node.tagName)) {
+        node.childNodes.forEach(walkAndTranslate);
+      }
+    }
+    walkAndTranslate(document.body);
+
+    // Also translate placeholders
+    document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el => {
+      const ph = el.getAttribute('placeholder');
+      if (dict[ph]) el.setAttribute('placeholder', dict[ph]);
+    });
+  }
+
+    function t(key) {
     return (translations[window._currentLang] || translations.en)[key] || (translations.en)[key] || key;
   }
 
@@ -1843,17 +1984,26 @@
     if (label) label.textContent = lang === 'hi' ? 'हिन्दी' : 'English';
   }
   function setLanguage(lang) {
+    const prev = window._currentLang;
     window._currentLang = lang;
     localStorage.setItem('royalwin_lang', lang);
     updateLangUI(lang);
-    applyTranslations(lang);
-    showToast(lang === 'hi' ? '🇮🇳 भाषा बदली गई: हिन्दी' : '🇬🇧 Language set: English');
-    setTimeout(closeLanguageModal, 800);
+    if (lang === 'en' && prev !== 'en') {
+      // Reload to restore English
+      showToast('🇬🇧 Language set: English');
+      setTimeout(() => location.reload(), 800);
+    } else if (lang === 'hi') {
+      applyTranslations('hi');
+      showToast('🇮🇳 भाषा बदली गई: हिन्दी');
+      setTimeout(closeLanguageModal, 800);
+    } else {
+      setTimeout(closeLanguageModal, 800);
+    }
   }
 
   // Apply saved language on load
   document.addEventListener('DOMContentLoaded', () => {
-    if (window._currentLang !== 'en') applyTranslations(window._currentLang);
+    if (window._currentLang === 'hi') applyTranslations('hi');
   });
 
   async function logout() {
