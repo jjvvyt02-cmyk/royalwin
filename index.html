@@ -1398,7 +1398,7 @@
 <div class="page" id="page-subdata">
   <div style="max-width:520px;margin:0 auto;padding:0 0 5rem;">
     <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:3.5rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
       <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.3rem;font-family:'Exo 2',sans-serif;">‹ Back</button>
       <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Subordinate Data</div>
       <button onclick="loadSubData()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;">🔄</button>
@@ -1473,7 +1473,7 @@
 <div class="page" id="page-commdetails">
   <div style="max-width:520px;margin:0 auto;padding:0 0 5rem;">
     <!-- Header -->
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:3.5rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
       <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.3rem;font-family:'Exo 2',sans-serif;">‹ Back</button>
       <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Commission Details</div>
       <button onclick="loadCommDetails()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;">🔄</button>
@@ -1503,7 +1503,7 @@
 <!-- REBATE RATIO PAGE -->
 <div class="page" id="page-rebateratio">
   <div style="max-width:520px;margin:0 auto;padding:0 0 5rem;">
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:3.5rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
       <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">‹ Back</button>
       <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Rebate Ratio</div>
       <div style="width:40px;"></div>
@@ -1791,23 +1791,24 @@
   async function loadRebateRates() {
     try {
       const db = window.fbDB || fbDB;
-      // Try to load from Firebase (admin sets these under /settings/commissionRates)
-      const snap = await db.ref('settings/commissionRates').once('value');
-      const rates = snap.val() || {};
-      // Fallback defaults if admin hasn't set them yet
-      const l1 = rates.l1 != null ? rates.l1 : null;
-      const l2 = rates.l2 != null ? rates.l2 : null;
-      const l3 = rates.l3 != null ? rates.l3 : null;
-      const l4 = rates.l4 != null ? rates.l4 : null;
-      const fmt = v => v != null ? Number(v).toFixed(3) + '%' : 'TBD';
-      document.getElementById('rebate-l1').textContent = fmt(l1);
-      document.getElementById('rebate-l2').textContent = fmt(l2);
-      document.getElementById('rebate-l3').textContent = fmt(l3);
-      document.getElementById('rebate-l4').textContent = fmt(l4);
+      // Real-time listener — updates instantly when admin changes rates
+      db.ref('settings/commissionRates').on('value', snap => {
+        const rates = snap.val() || {};
+        const l1 = rates.l1 != null ? rates.l1 : 5;
+        const l2 = rates.l2 != null ? rates.l2 : 3;
+        const l3 = rates.l3 != null ? rates.l3 : 2;
+        const l4 = rates.l4 != null ? rates.l4 : 1;
+        const fmt = v => Number(v).toFixed(3) + '%';
+        document.getElementById('rebate-l1').textContent = fmt(l1);
+        document.getElementById('rebate-l2').textContent = fmt(l2);
+        document.getElementById('rebate-l3').textContent = fmt(l3);
+        document.getElementById('rebate-l4').textContent = fmt(l4);
+      });
     } catch(e) {
+      const defaults = {l1:'1.000%', l2:'0.800%', l3:'0.500%', l4:'0.200%'};
       ['l1','l2','l3','l4'].forEach(l => {
         const el = document.getElementById('rebate-' + l);
-        if (el) el.textContent = 'TBD';
+        if (el) el.textContent = defaults[l];
       });
     }
   }
@@ -2091,14 +2092,13 @@
       if (el_totalComm) el_totalComm.textContent = '₹' + totalComm.toLocaleString('en-IN', {minimumFractionDigits:2});
       if (el_totalRefs) el_totalRefs.textContent = allRefs.length;
 
-      // Yesterday commission
+      // Yesterday commission — read from dailyCommission node
       const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
-      const yStart = new Date(yesterday.getFullYear(), yesterday.getMonth(), yesterday.getDate()).getTime();
-      const yEnd = yStart + 86400000;
-      const yestComm = allRefs.filter(r => (r.creditedAt||r.joinedAt||0) >= yStart && (r.creditedAt||r.joinedAt||0) < yEnd)
-        .reduce((s, r) => s + (r.bonus||0) + (r.commission||0), 0);
+      const yKey = yesterday.toISOString().split('T')[0];
+      const yCommSnap = await db.ref('users/' + user.uid + '/dailyCommission/' + yKey).once('value');
+      const yestComm = yCommSnap.val() || 0;
       const el_yest = document.getElementById('agencyYesterdayComm');
-      if (el_yest) el_yest.textContent = yestComm.toFixed(2);
+      if (el_yest) el_yest.textContent = Number(yestComm).toFixed(2);
 
 
       // --- Direct subordinates card ---
@@ -3741,19 +3741,63 @@
             Object.entries(allUsers).forEach(([uid, u]) => {
               if (u.referralCode) codeMap[u.referralCode] = { uid, referredBy: u.referredBy || '' };
             });
+
+            // Get commission rates from Firebase (fallback to defaults)
+            const ratesSnap = await db.ref('settings/commissionRates').once('value');
+            const rates = ratesSnap.val() || {};
+            const commRates = {
+              1: (rates.l1 != null ? rates.l1 : 1) / 100,
+              2: (rates.l2 != null ? rates.l2 : 0.8) / 100,
+              3: (rates.l3 != null ? rates.l3 : 0.5) / 100,
+              4: (rates.l4 != null ? rates.l4 : 0.2) / 100,
+            };
+
             let currentCode = profile.referredBy;
             for (let level = 1; level <= 4; level++) {
               const referrer = codeMap[currentCode];
               if (!referrer) break;
+
+              const commAmt = parseFloat((amt * commRates[level]).toFixed(2));
+
+              // Credit commission to referrer's balance
+              const refBalSnap = await db.ref('users/' + referrer.uid + '/balance').once('value');
+              const newRefBal = parseFloat(((refBalSnap.val() || 0) + commAmt).toFixed(2));
+              await db.ref('users/' + referrer.uid + '/balance').set(newRefBal);
+
+              // Update totalBet in referral record
               const refKey = level === 1 ? 'referrals' : 'referrals_l' + level;
-              const refSnap = await db.ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid + '/totalBet').once('value');
-              const newRefTotalBet = parseFloat(((refSnap.val() || 0) + amt).toFixed(2));
+              const refBetSnap = await db.ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid + '/totalBet').once('value');
+              const newRefTotalBet = parseFloat(((refBetSnap.val() || 0) + amt).toFixed(2));
               await db.ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid + '/totalBet').set(newRefTotalBet);
+
+              // Update commission earned in referral record
+              const refCommSnap = await db.ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid + '/commission').once('value');
+              const newRefComm = parseFloat(((refCommSnap.val() || 0) + commAmt).toFixed(2));
+              await db.ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid + '/commission').set(newRefComm);
+
+              // Add to referrer's transaction history
+              await db.ref('users/' + referrer.uid + '/transactions/' + Date.now() + '_comm_' + level).set({
+                type: 'commission',
+                amount: commAmt,
+                from: user.uid,
+                fromMemberId: profile.memberId || '',
+                level: level,
+                betAmt: amt,
+                timestamp: Date.now(),
+                description: 'L' + level + ' referral bet commission'
+              });
+
+              // Update yesterday's commission for agency card
+              const todayKey = new Date().toISOString().split('T')[0];
+              const dayCommSnap = await db.ref('users/' + referrer.uid + '/dailyCommission/' + todayKey).once('value');
+              const newDayComm = parseFloat(((dayCommSnap.val() || 0) + commAmt).toFixed(2));
+              await db.ref('users/' + referrer.uid + '/dailyCommission/' + todayKey).set(newDayComm);
+
               currentCode = referrer.referredBy;
               if (!currentCode) break;
             }
           }
-        } catch(refErr) { console.warn('Referral bet update failed:', refErr); }
+        } catch(refErr) { console.warn('Referral commission error:', refErr); }
       }
     } catch(e) { console.warn('Balance deduct failed:', e); }
 
