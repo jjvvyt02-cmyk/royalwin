@@ -1098,12 +1098,12 @@
     <div class="hero-glow"></div>
     <div class="hero-badge">🎰 &nbsp;#1 Online Gaming Platform</div>
     <h1>
-      <span class="gold">Win Big.</span><br>
+      <span class="gold"><span data-t="home.h1">Win Big.</span></span><br>
       Play <span class="red">Royal.</span>
     </h1>
     <p data-t="home.sub">Join millions of players. Spin, bet, and conquer. Real money games, massive jackpots, and instant withdrawals.</p>
     <div class="hero-btns" id="heroBtns">
-      <button class="btn btn-gold" id="heroPlayBtn" onclick="showPage('register')">🚀 Start Playing</button>
+      <button class="btn btn-gold" id="heroPlayBtn" onclick="showPage('register')"><span data-t="home.start">🚀 Start Playing</span></button>
       <button class="btn btn-outline" id="heroSignInBtn" onclick="showPage('login')">Sign In</button>
     </div>
     <!-- Welcome bonus banner shown when logged in -->
@@ -1131,7 +1131,7 @@
         <p>Get up to 15% bonus on your first deposit. Wager requirement applies.</p>
       </div>
       <div class="promo-amount" style="font-size:2.2rem;">Up to<br>+15%</div>
-      <button class="btn btn-gold" onclick="showPage('wallet')">Claim Now</button>
+      <button class="btn btn-gold" onclick="showPage('wallet')"><span data-t="promo.claim">Claim Now</span></button>
     </div>
 
     <div class="section-title">🔥 Hot Games</div>
@@ -1167,7 +1167,7 @@
   <div class="auth-wrap">
     <div class="auth-card">
       <div class="auth-logo"><div class="auth-logo-text">ROYAL♠WIN</div></div>
-      <div class="auth-title">Create Account</div>
+      <div class="auth-title"><span data-t="auth.create">Create Account</span></div>
       <div class="auth-sub">Join and claim your 200% welcome bonus</div>
       <div id="registerFormFields">
       <div class="invite-pill" id="invitePill">🎁 &nbsp;<span>Invited by code:</span> &nbsp;<strong id="inviteCodeDisplay">644371759</strong></div>
@@ -1218,7 +1218,7 @@
         <div class="otp-timer">Resend OTP in <span id="otpTimer">59</span>s &nbsp;<button class="resend-btn" id="resendBtn" style="display:none;" onclick="resendOTP()">Resend</button></div>
         <button class="btn btn-gold btn-full" onclick="verifyOTP()">✅ Verify & Create Account</button>
       </div>
-      <div class="auth-footer">Already have an account? <a onclick="showPage('login')">Sign In</a></div>
+      <div class="auth-footer"><span data-t="auth.haveacc">Already have an account?</span> <a onclick="showPage('login')">Sign In</a></div>
     </div>
   </div>
 </div>
@@ -1230,7 +1230,7 @@
   <div class="auth-wrap">
     <div class="auth-card">
       <div class="auth-logo"><div class="auth-logo-text">ROYAL♠WIN</div></div>
-      <div class="auth-title">Welcome Back</div>
+      <div class="auth-title"><span data-t="auth.welcome">Welcome Back</span></div>
       <div class="auth-sub">Sign in to your account and keep playing</div>
       <div class="form-group">
         <label class="form-label">Mobile / Email / Username</label>
@@ -1270,11 +1270,11 @@
       <!-- Total commission row -->
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:0.8rem;border-top:1px solid rgba(240,192,64,0.12);">
         <div>
-          <div style="font-size:0.68rem;color:var(--muted);">Total Commission Earned</div>
+          <div style="font-size:0.68rem;color:var(--muted);"><span data-t="ref.totalcomm">Total Commission Earned</span></div>
           <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--green);" id="agencyTotalComm">₹0.00</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:0.68rem;color:var(--muted);">Total Referrals</div>
+          <div style="font-size:0.68rem;color:var(--muted);"><span data-t="ref.totalrefs">Total Referrals</span></div>
           <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--gold);" id="agencyTotalRefs">0</div>
         </div>
       </div>
@@ -1291,7 +1291,7 @@
         <div class="sub-stat-row">
           <div class="sub-stat">
             <div class="sub-stat-val" id="dirRegCount">0</div>
-            <div class="sub-stat-lbl">Registrations</div>
+            <div class="sub-stat-lbl"><span data-t="ref.regs">Registrations</span></div>
           </div>
           <div class="sub-stat">
             <div class="sub-stat-val" id="dirDepCount">0</div>
@@ -1299,11 +1299,11 @@
           </div>
           <div class="sub-stat" style="margin-top:0.6rem;">
             <div class="sub-stat-val" style="color:var(--gold);font-size:0.95rem;" id="dirDepAmt">0.00</div>
-            <div class="sub-stat-lbl">Deposit amount</div>
+            <div class="sub-stat-lbl"><span data-t="ref.depamt">Deposit amount</span></div>
           </div>
           <div class="sub-stat" style="margin-top:0.6rem;">
             <div class="sub-stat-val" id="dirFirstDep">0</div>
-            <div class="sub-stat-lbl">First deposits</div>
+            <div class="sub-stat-lbl"><span data-t="ref.firstdeps">First deposits</span></div>
           </div>
         </div>
       </div>
@@ -1317,7 +1317,7 @@
         <div class="sub-stat-row">
           <div class="sub-stat">
             <div class="sub-stat-val" id="teamRegCount">0</div>
-            <div class="sub-stat-lbl">Registrations</div>
+            <div class="sub-stat-lbl"><span data-t="ref.regs">Registrations</span></div>
           </div>
           <div class="sub-stat">
             <div class="sub-stat-val" id="teamDepCount">0</div>
@@ -1325,11 +1325,11 @@
           </div>
           <div class="sub-stat" style="margin-top:0.6rem;">
             <div class="sub-stat-val" style="color:var(--gold);font-size:0.95rem;" id="teamDepAmt">0.00</div>
-            <div class="sub-stat-lbl">Deposit amount</div>
+            <div class="sub-stat-lbl"><span data-t="ref.depamt">Deposit amount</span></div>
           </div>
           <div class="sub-stat" style="margin-top:0.6rem;">
             <div class="sub-stat-val" id="teamFirstDep">0</div>
-            <div class="sub-stat-lbl">First deposits</div>
+            <div class="sub-stat-lbl"><span data-t="ref.firstdeps">First deposits</span></div>
           </div>
         </div>
       </div>
@@ -1359,7 +1359,7 @@
           <div class="ref-nav-icon">👥</div>
           <div>
             <div class="ref-nav-title">Subordinate data</div>
-            <div class="ref-nav-sub">View all levels</div>
+            <div class="ref-nav-sub"><span data-t="ref.viewlevels">View all levels</span></div>
           </div>
         </div>
         <div class="ref-nav-arrow">›</div>
@@ -1369,7 +1369,7 @@
           <div class="ref-nav-icon">💰</div>
           <div>
             <div class="ref-nav-title">Commission details</div>
-            <div class="ref-nav-sub">Earnings breakdown</div>
+            <div class="ref-nav-sub"><span data-t="ref.earnings">Earnings breakdown</span></div>
           </div>
         </div>
         <div class="ref-nav-arrow">›</div>
@@ -1382,7 +1382,7 @@
           <div class="ref-nav-icon">%</div>
           <div>
             <div class="ref-nav-title">Rebate ratio</div>
-            <div class="ref-nav-sub">Commission rates per level</div>
+            <div class="ref-nav-sub"><span data-t="ref.ratesub">Commission rates per level</span></div>
           </div>
         </div>
         <div class="ref-nav-arrow">›</div>
@@ -1436,23 +1436,23 @@
         </div>
         <div style="padding:1rem;border-bottom:1px solid var(--border);">
           <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-depamt">0.00</div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Deposit amount</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;"><span data-t="ref.depamt">Deposit amount</span></div>
         </div>
         <div style="padding:1rem;border-right:1px solid var(--border);border-bottom:1px solid var(--border);">
           <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-bettors">0</div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Number of bettors</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;"><span data-t="ref.bettors">Number of bettors</span></div>
         </div>
         <div style="padding:1rem;border-bottom:1px solid var(--border);">
           <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-totalbet">0.00</div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Total bet</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;"><span data-t="ref.totalbet">Total bet</span></div>
         </div>
         <div style="padding:1rem;border-right:1px solid var(--border);">
           <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-firstdeps">0</div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">First deposits</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;"><span data-t="ref.firstdeps">First deposits</span></div>
         </div>
         <div style="padding:1rem;">
           <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-firstamt">0.00</div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">First deposit amount</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;"><span data-t="ref.firstamt">First deposit amount</span></div>
         </div>
       </div>
     </div>
@@ -1463,7 +1463,7 @@
         <div>Lv</div><div>UID</div><div>Joined</div><div>Deposit</div><div>Bet</div>
       </div>
       <div id="subdataRows">
-        <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">No data</div>
+        <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;"><span data-t="ref.nodata">No data</span></div>
       </div>
     </div>
   </div>
@@ -1483,7 +1483,7 @@
     <div style="margin:0.8rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;">
       <input id="commdetailsDate" type="date" onchange="loadCommDetails()" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.6rem 1rem;color:var(--text);font-size:0.85rem;font-family:'Exo 2',sans-serif;outline:none;color-scheme:dark;margin-bottom:0.8rem;box-sizing:border-box;">
       <div style="display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:0.85rem;font-weight:700;color:var(--text);">Total commission</span>
+        <span style="font-size:0.85rem;font-weight:700;color:var(--text);"><span data-t="ref.totalcomm2">Total commission</span></span>
         <span style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--green);" id="commdetailsTotal">0.00</span>
       </div>
     </div>
@@ -1494,7 +1494,7 @@
         <div>Lv</div><div>UID</div><div>Type</div><div>Amount</div>
       </div>
       <div id="commdetailsRows">
-        <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">No data</div>
+        <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;"><span data-t="ref.nodata">No data</span></div>
       </div>
     </div>
   </div>
@@ -1518,40 +1518,40 @@
       <!-- Rebate level card -->
       <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
         <div style="padding:1rem 1.2rem;border-bottom:1px solid var(--border);">
-          <div style="font-size:0.9rem;font-weight:800;color:var(--text);">Rebate level L0</div>
+          <div style="font-size:0.9rem;font-weight:800;color:var(--text);"><span data-t="ref.rebatelevel">Rebate level L0</span></div>
         </div>
         <!-- Level rows -->
         <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;border-bottom:1px solid rgba(255,255,255,0.05);">
           <div style="display:flex;align-items:center;gap:0.7rem;">
             <span class="ref-level-badge lv1" style="font-size:0.72rem;">L1</span>
-            <span style="font-size:0.85rem;color:var(--muted);">1 level lower commission rebate</span>
+            <span style="font-size:0.85rem;color:var(--muted);"><span data-t="ref.l1rebate">1 level lower commission rebate</span></span>
           </div>
           <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l1">1.000%</span>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;border-bottom:1px solid rgba(255,255,255,0.05);">
           <div style="display:flex;align-items:center;gap:0.7rem;">
             <span class="ref-level-badge lv2" style="font-size:0.72rem;">L2</span>
-            <span style="font-size:0.85rem;color:var(--muted);">2 level lower commission rebate</span>
+            <span style="font-size:0.85rem;color:var(--muted);"><span data-t="ref.l2rebate">2 level lower commission rebate</span></span>
           </div>
           <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l2">0.800%</span>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;border-bottom:1px solid rgba(255,255,255,0.05);">
           <div style="display:flex;align-items:center;gap:0.7rem;">
             <span class="ref-level-badge lv3" style="font-size:0.72rem;">L3</span>
-            <span style="font-size:0.85rem;color:var(--muted);">3 level lower commission rebate</span>
+            <span style="font-size:0.85rem;color:var(--muted);"><span data-t="ref.l3rebate">3 level lower commission rebate</span></span>
           </div>
           <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l3">0.500%</span>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;">
           <div style="display:flex;align-items:center;gap:0.7rem;">
             <span class="ref-level-badge lv4" style="font-size:0.72rem;">L4</span>
-            <span style="font-size:0.85rem;color:var(--muted);">4 level lower commission rebate</span>
+            <span style="font-size:0.85rem;color:var(--muted);"><span data-t="ref.l4rebate">4 level lower commission rebate</span></span>
           </div>
           <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l4">0.200%</span>
         </div>
       </div>
 
-      <div style="margin-top:0.8rem;font-size:0.72rem;color:var(--muted);text-align:center;">Commission rates are set by the admin and may change.</div>
+      <div style="margin-top:0.8rem;font-size:0.72rem;color:var(--muted);text-align:center;"><span data-t="ref.ratenote">Commission rates are set by the admin and may change.</span></div>
     </div>
   </div>
 </div>
@@ -1687,7 +1687,7 @@
     const gifts = snap.val() ? Object.values(snap.val()) : [];
     const el = document.getElementById('giftHistoryList');
     if (!el) return;
-    if (gifts.length === 0) { el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.8rem;">No gifts redeemed yet</div>'; return; }
+    if (gifts.length === 0) { el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.8rem;"><span data-t="gift.none">No gifts redeemed yet</span></div>'; return; }
     el.innerHTML = gifts.map(g => `
       <div style="display:flex;justify-content:space-between;align-items:center;padding:0.7rem 1rem;border-bottom:1px solid var(--border);">
         <div>
@@ -1733,239 +1733,104 @@
   // ── LANGUAGE ──
   window._currentLang = localStorage.getItem('royalwin_lang') || 'en';
 
-  window._currentLang = localStorage.getItem('royalwin_lang') || 'en';
-
-  window._hiTranslations = {
-    "Home": "होम",
-    "Activity": "गतिविधि",
-    "Promotion": "प्रमोशन",
-    "Wallet": "वॉलेट",
-    "Account": "अकाउंट",
-    "#1 Online Gaming Platform": "#1 ऑनलाइन गेमिंग प्लेटफॉर्म",
-    "Win Big.": "बड़ा जीतें।",
-    "Play Royal.": "रॉयल खेलें।",
-    "Join millions of players. Spin, bet, and conquer. Real money games, massive jackpots, and instant withdrawals.": "लाखों खिलाड़ियों से जुड़ें। बेट लगाएं और जीतें। रियल मनी गेम्स, बड़े जैकपॉट और तुरंत निकासी।",
-    "Start Playing": "खेलना शुरू करें",
-    "Sign In": "साइन इन",
-    "Players": "खिलाड़ी",
-    "Games": "गेम्स",
-    "Support": "सपोर्ट",
-    "LIVE WINNERS": "लाइव विजेता",
-    "WinGo Lottery": "विनगो लॉटरी",
-    "Color Prediction": "कलर प्रेडिक्शन",
-    "Play Now": "अभी खेलें",
-    "Lottery": "लॉटरी",
-    "Welcome Back": "वापस आपका स्वागत है",
-    "Sign in to your account": "अपने अकाउंट में साइन इन करें",
-    "Create Account": "अकाउंट बनाएं",
-    "Join RoyalWin today": "आज RoyalWin से जुड़ें",
-    "Mobile / Email": "मोबाइल / ईमेल",
-    "Password": "पासवर्ड",
-    "Confirm Password": "पासवर्ड की पुष्टि करें",
-    "Username": "यूज़रनेम",
-    "Invitation Code": "आमंत्रण कोड",
-    "Optional": "वैकल्पिक",
-    "Forgot Password?": "पासवर्ड भूल गए?",
-    "Don't have an account?": "अकाउंट नहीं है?",
-    "Already have an account?": "पहले से अकाउंट है?",
-    "Send OTP": "OTP भेजें",
-    "Verify OTP": "OTP वेरीफाई करें",
-    "Verify": "वेरीफाई करें",
-    "Min 8 characters": "न्यूनतम 8 अक्षर",
-    "Deposit": "जमा करें",
-    "Withdraw": "निकालें",
-    "Your Balance": "आपका बैलेंस",
-    "Add Money": "पैसे जोड़ें",
-    "Withdraw Money": "पैसे निकालें",
-    "Deposit Amount": "जमा राशि",
-    "Select Bonus": "बोनस चुनें",
-    "No Bonus": "कोई बोनस नहीं",
-    "How to Pay": "कैसे भुगतान करें",
-    "Payment Received!": "भुगतान प्राप्त हुआ!",
-    "I have paid": "मैंने भुगतान कर दिया",
-    "Withdraw Amount": "निकासी राशि",
-    "UPI ID": "UPI आईडी",
-    "Bank Name": "बैंक नाम",
-    "Account Number": "खाता नंबर",
-    "IFSC Code": "IFSC कोड",
-    "Account Holder Name": "खाताधारक का नाम",
-    "Save Details": "विवरण सेव करें",
-    "Withdraw Now": "अभी निकालें",
-    "Wager Progress": "वेजर प्रगति",
-    "Wager completed": "वेजर पूर्ण",
-    "Bet History": "बेट इतिहास",
-    "Win & Loss history": "जीत और हार का इतिहास",
-    "Transaction": "लेनदेन",
-    "All transactions": "सभी लेनदेन",
-    "Deposit History": "जमा इतिहास",
-    "My deposit history": "मेरा जमा इतिहास",
-    "Withdrawal History": "निकासी इतिहास",
-    "My withdrawal history": "मेरी निकासी इतिहास",
-    "Gifts": "गिफ्ट",
-    "Language": "भाषा",
-    "Game Stats": "गेम आँकड़े",
-    "Sign Out": "साइन आउट",
-    "Profile": "प्रोफाइल",
-    "Member ID": "सदस्य आईडी",
-    "VIP Level": "VIP स्तर",
-    "New Player": "नया खिलाड़ी",
-    "Support Center": "सपोर्ट केंद्र",
-    "We're here 24/7 to help you": "हम 24/7 आपकी मदद के लिए यहाँ हैं",
-    "Telegram": "टेलीग्राम",
-    "Instant reply": "तुरंत जवाब",
-    "Live Chat": "लाइव चैट",
-    "Online now": "अभी ऑनलाइन",
-    "Promotions & Bonuses": "प्रमोशन और बोनस",
-    "First Deposit Bonus": "पहली जमा बोनस",
-    "Daily Free Spin": "दैनिक फ्री स्पिन",
-    "VIP Reload Bonus": "VIP रीलोड बोनस",
-    "Claim Now": "अभी क्लेम करें",
-    "Spin!": "स्पिन करें!",
-    "Upgrade": "अपग्रेड करें",
-    "Invite": "आमंत्रित करें",
-    "Agency": "एजेंसी",
-    "Yesterday's total commission (₹)": "कल का कुल कमीशन (₹)",
-    "Total Commission Earned": "कुल कमीशन अर्जित",
-    "Total Referrals": "कुल रेफरल",
-    "Direct Subordinates": "प्रत्यक्ष अधीनस्थ",
-    "Team Subordinates": "टीम अधीनस्थ",
-    "Registrations": "पंजीकरण",
-    "Deposits": "जमा",
-    "Deposit amount": "जमा राशि",
-    "First deposits": "पहली जमा",
-    "Download QR Code": "QR कोड डाउनलोड करें",
-    "Copy invite code": "आमंत्रण कोड कॉपी करें",
-    "Subordinate data": "अधीनस्थ डेटा",
-    "View all levels": "सभी स्तर देखें",
-    "Commission details": "कमीशन विवरण",
-    "Earnings breakdown": "कमाई का विवरण",
-    "Rebate ratio": "रिबेट अनुपात",
-    "Commission rates per level": "प्रति स्तर कमीशन दरें",
-    "Subordinates": "अधीनस्थ",
-    "Commission": "कमीशन",
-    "No referrals at this level": "इस स्तर पर कोई रेफरल नहीं",
-    "No referrals yet": "अभी तक कोई रेफरल नहीं",
-    "No commissions yet": "अभी तक कोई कमीशन नहीं",
-    "No data": "कोई डेटा नहीं",
-    "All": "सभी",
-    "Win": "जीत",
-    "Loss": "हार",
-    "Pending": "लंबित",
-    "Round": "राउंड",
-    "Selection": "चुनाव",
-    "Result": "परिणाम",
-    "Profit": "लाभ",
-    "No bets yet": "अभी तक कोई बेट नहीं",
-    "Net Profit": "शुद्ध लाभ",
-    "Total Bets": "कुल बेट",
-    "Win Rate": "जीत दर",
-    "No transactions yet": "अभी तक कोई लेनदेन नहीं",
-    "Please log in to view transactions": "लेनदेन देखने के लिए लॉगिन करें",
-    "VIP Program": "VIP प्रोग्राम",
-    "Bronze": "ब्रोंज़",
-    "Silver": "सिल्वर",
-    "Gold": "गोल्ड",
-    "Current Level": "वर्तमान स्तर",
-    "Place Bet": "बेट लगाएं",
-    "Confirm Bet": "बेट कन्फर्म करें",
-    "Betting Open": "बेटिंग खुली है",
-    "Betting Closed": "बेटिंग बंद है",
-    "Green": "हरा",
-    "Red": "लाल",
-    "Violet": "बैंगनी",
-    "Big": "बड़ा",
-    "Small": "छोटा",
-    "Bet Amount": "बेट राशि",
-    "Round History": "राउंड इतिहास",
-    "Online": "ऑनलाइन",
-    "Pick": "चुनें",
-    "Copy Link": "लिंक कॉपी करें",
-    "Save": "सेव करें",
-    "Cancel": "रद्द करें",
-    "Close": "बंद करें",
-    "Back": "वापस",
-    "Next": "अगला",
-    "Submit": "सबमिट करें",
-    "Loading...": "लोड हो रहा है...",
-    "Redeemed Gifts": "रिडीम किए गए गिफ्ट",
-    "No gifts redeemed yet": "अभी तक कोई गिफ्ट रिडीम नहीं",
-    "Enter Gift Code": "गिफ्ट कोड दर्ज करें",
-    "Redeem": "रिडीम करें",
-    "Select Language": "भाषा चुनें",
-    "More languages coming soon": "जल्द ही और भाषाएं आएंगी",
-    "Every day": "हर दिन",
-    "VIP Gold+": "VIP गोल्ड+",
-    "Ongoing": "जारी है",
-    "Rebate level L0": "रिबेट स्तर L0",
-    "1 level lower commission rebate": "स्तर 1 कमीशन रिबेट",
-    "2 level lower commission rebate": "स्तर 2 कमीशन रिबेट",
-    "3 level lower commission rebate": "स्तर 3 कमीशन रिबेट",
-    "4 level lower commission rebate": "स्तर 4 कमीशन रिबेट",
-    "Commission rates are set by the admin and may change.": "कमीशन दरें एडमिन द्वारा निर्धारित हैं और बदल सकती हैं।",
-    "Subordinate Data": "अधीनस्थ डेटा",
-    "Commission Details": "कमीशन विवरण",
-    "Rebate Ratio": "रिबेट अनुपात",
-    "Number of bettors": "बेटकर्ताओं की संख्या",
-    "Total bet": "कुल बेट",
-    "First deposit amount": "पहली जमा राशि",
-    "Total commission": "कुल कमीशन",
-    "Forgot Password": "पासवर्ड भूल गए",
-    "Custom rewards": "कस्टम पुरस्कार",
-    "Higher limits": "उच्च सीमाएं",
-    "Basic support": "बेसिक सपोर्ट",
-    "Daily spin": "दैनिक स्पिन",
-    "Joined": "शामिल हुए",
+  // ── TRANSLATION SYSTEM ──
+  const _T = {
+    en: {
+      'nav.home':'Home','nav.activity':'Activity','nav.promotion':'Promotion',
+      'nav.wallet':'Wallet','nav.account':'Account',
+      'home.tagline':'#1 Online Gaming Platform',
+      'home.h1':'Win Big.','home.h2':'Play Royal.',
+      'home.sub':'Join millions of players. Spin, bet, and conquer. Real money games, massive jackpots, and instant withdrawals.',
+      'home.start':'🚀 Start Playing',
+      'auth.welcome':'Welcome Back','auth.signin.sub':'Sign in to your account',
+      'auth.create':'Create Account','auth.reg.sub':'Join RoyalWin today',
+      'auth.noacc':"Don't have an account?",'auth.haveacc':'Already have an account?',
+      'auth.forgot':'Forgot Password?',
+      'wallet.balance':'Your Balance','wallet.howtopay':'How to Pay',
+      'wallet.paid':'Payment Received!','wallet.nobonus':'No Bonus','wallet.wager':'Wager Progress',
+      'acc.winloss':'Win & Loss history','acc.alltx':'All transactions',
+      'acc.dephist':'My deposit history','acc.withhist':'My withdrawal history',
+      'acc.gamestats':'Game Stats',
+      'sup.title':'Support Center','sup.sub':"We're here 24/7 to help you",
+      'sup.telegram':'Telegram','sup.telegram.sub':'Instant reply',
+      'sup.livechat':'Live Chat','sup.online':'Online now',
+      'ref.totalcomm':'Total Commission Earned','ref.totalrefs':'Total Referrals',
+      'ref.regs':'Registrations','ref.depamt':'Deposit amount','ref.firstdeps':'First deposits',
+      'ref.viewlevels':'View all levels','ref.earnings':'Earnings breakdown',
+      'ref.ratesub':'Commission rates per level',
+      'ref.norefs':'No referrals at this level','ref.norefsyet':'No referrals yet',
+      'ref.nocomm':'No commissions yet','ref.nodata':'No data',
+      'ref.bettors':'Number of bettors','ref.totalbet':'Total bet',
+      'ref.firstamt':'First deposit amount','ref.totalcomm2':'Total commission',
+      'ref.rebatelevel':'Rebate level L0',
+      'ref.l1rebate':'1 level lower commission rebate',
+      'ref.l2rebate':'2 level lower commission rebate',
+      'ref.l3rebate':'3 level lower commission rebate',
+      'ref.l4rebate':'4 level lower commission rebate',
+      'ref.ratenote':'Commission rates are set by the admin and may change.',
+      'bet.nobets':'No bets yet','bet.netprofit':'Net Profit',
+      'bet.totalbets':'Total Bets','bet.winrate':'Win Rate',
+      'tx.none':'No transactions yet','tx.login':'Please log in to view transactions',
+      'gift.enter':'Enter Gift Code','gift.redeemed':'Redeemed Gifts','gift.none':'No gifts redeemed yet',
+      'lang.select':'Select Language','lang.soon':'More languages coming soon',
+      'promo.everyday':'Every day','promo.vipgold':'VIP Gold+','promo.claim':'Claim Now',
+      'acc.bethistory':'Bet History',
+    },
+    hi: {
+      'nav.home':'होम','nav.activity':'गतिविधि','nav.promotion':'प्रमोशन',
+      'nav.wallet':'वॉलेट','nav.account':'अकाउंट',
+      'home.tagline':'#1 ऑनलाइन गेमिंग प्लेटफॉर्म',
+      'home.h1':'बड़ा जीतें।','home.h2':'रॉयल खेलें।',
+      'home.sub':'लाखों खिलाड़ियों से जुड़ें। बेट लगाएं और जीतें। रियल मनी गेम्स, बड़े जैकपॉट और तुरंत निकासी।',
+      'home.start':'🚀 खेलना शुरू करें',
+      'auth.welcome':'वापस आपका स्वागत है','auth.signin.sub':'अपने अकाउंट में साइन इन करें',
+      'auth.create':'अकाउंट बनाएं','auth.reg.sub':'आज RoyalWin से जुड़ें',
+      'auth.noacc':'अकाउंट नहीं है?','auth.haveacc':'पहले से अकाउंट है?',
+      'auth.forgot':'पासवर्ड भूल गए?',
+      'wallet.balance':'आपका बैलेंस','wallet.howtopay':'कैसे भुगतान करें',
+      'wallet.paid':'भुगतान प्राप्त हुआ!','wallet.nobonus':'कोई बोनस नहीं','wallet.wager':'वेजर प्रगति',
+      'acc.winloss':'जीत और हार का इतिहास','acc.alltx':'सभी लेनदेन',
+      'acc.dephist':'मेरा जमा इतिहास','acc.withhist':'मेरी निकासी इतिहास',
+      'acc.gamestats':'गेम आँकड़े',
+      'sup.title':'सपोर्ट केंद्र','sup.sub':'हम 24/7 आपकी मदद के लिए यहाँ हैं',
+      'sup.telegram':'टेलीग्राम','sup.telegram.sub':'तुरंत जवाब',
+      'sup.livechat':'लाइव चैट','sup.online':'अभी ऑनलाइन',
+      'ref.totalcomm':'कुल कमीशन अर्जित','ref.totalrefs':'कुल रेफरल',
+      'ref.regs':'पंजीकरण','ref.depamt':'जमा राशि','ref.firstdeps':'पहली जमा',
+      'ref.viewlevels':'सभी स्तर देखें','ref.earnings':'कमाई का विवरण',
+      'ref.ratesub':'प्रति स्तर कमीशन दरें',
+      'ref.norefs':'इस स्तर पर कोई रेफरल नहीं','ref.norefsyet':'अभी तक कोई रेफरल नहीं',
+      'ref.nocomm':'अभी तक कोई कमीशन नहीं','ref.nodata':'कोई डेटा नहीं',
+      'ref.bettors':'बेटकर्ताओं की संख्या','ref.totalbet':'कुल बेट',
+      'ref.firstamt':'पहली जमा राशि','ref.totalcomm2':'कुल कमीशन',
+      'ref.rebatelevel':'रिबेट स्तर L0',
+      'ref.l1rebate':'स्तर 1 कमीशन रिबेट',
+      'ref.l2rebate':'स्तर 2 कमीशन रिबेट',
+      'ref.l3rebate':'स्तर 3 कमीशन रिबेट',
+      'ref.l4rebate':'स्तर 4 कमीशन रिबेट',
+      'ref.ratenote':'कमीशन दरें एडमिन द्वारा निर्धारित हैं और बदल सकती हैं।',
+      'bet.nobets':'अभी तक कोई बेट नहीं','bet.netprofit':'शुद्ध लाभ',
+      'bet.totalbets':'कुल बेट','bet.winrate':'जीत दर',
+      'tx.none':'अभी तक कोई लेनदेन नहीं','tx.login':'लेनदेन देखने के लिए लॉगिन करें',
+      'gift.enter':'गिफ्ट कोड दर्ज करें','gift.redeemed':'रिडीम किए गए गिफ्ट','gift.none':'अभी तक कोई गिफ्ट रिडीम नहीं',
+      'lang.select':'भाषा चुनें','lang.soon':'जल्द ही और भाषाएं आएंगी',
+      'promo.everyday':'हर दिन','promo.vipgold':'VIP गोल्ड+','promo.claim':'अभी क्लेम करें',
+    }
   };
 
   function applyTranslations(lang) {
-    if (lang === 'en') {
-      // Restore English - reload page is simplest
-      location.reload();
-      return;
-    }
-    const dict = window._hiTranslations;
-    // Walk all text nodes and translate
-    function walkAndTranslate(node) {
-      if (node.nodeType === 3) { // Text node
-        const trimmed = node.textContent.trim();
-        if (dict[trimmed]) {
-          node.textContent = node.textContent.replace(trimmed, dict[trimmed]);
-        }
-      } else if (node.nodeType === 1 && !['SCRIPT','STYLE','INPUT','TEXTAREA'].includes(node.tagName)) {
-        node.childNodes.forEach(walkAndTranslate);
-      }
-    }
-    walkAndTranslate(document.body);
-
-    // Also translate placeholders
-    document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el => {
-      const ph = el.getAttribute('placeholder');
-      if (dict[ph]) el.setAttribute('placeholder', dict[ph]);
-    });
-  }
-
-    function t(key) {
-    return (translations[window._currentLang] || translations.en)[key] || (translations.en)[key] || key;
-  }
-
-  function applyTranslations(lang) {
-    // Apply to all elements with data-t attribute
+    const dict = _T[lang] || _T.en;
     document.querySelectorAll('[data-t]').forEach(el => {
       const key = el.getAttribute('data-t');
-      const val = t(key);
-      if (el.tagName === 'INPUT' && el.getAttribute('placeholder')) {
-        // don't translate inputs by key, keep as is
-      } else {
-        el.textContent = val;
-      }
+      if (dict[key] !== undefined) el.textContent = dict[key];
     });
-    // Apply placeholder translations
     document.querySelectorAll('[data-tp]').forEach(el => {
-      el.setAttribute('placeholder', t(el.getAttribute('data-tp')));
+      const key = el.getAttribute('data-tp');
+      if (dict[key] !== undefined) el.setAttribute('placeholder', dict[key]);
     });
   }
 
-  function showLanguageModal() {
+    function showLanguageModal() {
     const m = document.getElementById('languageModal');
     if (m) { m.style.display = 'flex'; updateLangUI(window._currentLang); }
   }
@@ -2099,7 +1964,7 @@
     // Render rows
     const rowsEl = document.getElementById('subdataRows');
     if (!rowsEl) return;
-    if (filtered.length === 0) { rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">No data</div>'; return; }
+    if (filtered.length === 0) { rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;"><span data-t="ref.nodata">No data</span></div>'; return; }
     const levelColors = {'1':'var(--gold2)','2':'var(--green)','3':'#a87dff','4':'var(--red2)'};
     rowsEl.innerHTML = filtered.map(r => {
       const lv = String(r.level||1);
@@ -2145,7 +2010,7 @@
     if (totalEl) totalEl.textContent = total.toLocaleString('en-IN', {minimumFractionDigits:2});
 
     if (!rowsEl) return;
-    if (commRows.length === 0) { rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">No data</div>'; return; }
+    if (commRows.length === 0) { rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;"><span data-t="ref.nodata">No data</span></div>'; return; }
 
     rowsEl.innerHTML = commRows.map(c => {
       const shortUid = (c.uid||'').substring(0,10) + ((c.uid||'').length > 10 ? '…' : '');
@@ -4433,7 +4298,7 @@
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
     if (!user || !db) {
-      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Please log in to view transactions</div>';
+      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="tx.login">Please log in to view transactions</span></div>';
       return;
     }
     container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
@@ -4536,7 +4401,7 @@
     if (acctLost) acctLost.textContent = '₹' + totalLost.toLocaleString('en-IN');
     if (acctNet) { acctNet.textContent = (netProfit >= 0 ? '+' : '') + '₹' + netProfit.toLocaleString('en-IN'); acctNet.style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red2)'; }
 
-    if (data.length === 0) { container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No bets yet</div>'; return; }
+    if (data.length === 0) { container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="bet.nobets">No bets yet</span></div>'; return; }
 
     container.innerHTML = data.map(d => {
       // Capitalize first letter of result
@@ -5290,7 +5155,7 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1.2rem;">
       <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center;">
         <div style="font-family:'Cinzel',serif;font-size:1.5rem;font-weight:800;" id="gsTotalBets">0</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">Total Bets</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;"><span data-t="bet.totalbets">Total Bets</span></div>
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center;">
         <div style="font-family:'Cinzel',serif;font-size:1.5rem;font-weight:800;color:var(--green);" id="gsTotalWon">₹0</div>
@@ -5302,7 +5167,7 @@
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center;">
         <div style="font-family:'Cinzel',serif;font-size:1.5rem;font-weight:800;color:var(--gold);" id="gsNetProfit">₹0</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">Net Profit</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;"><span data-t="bet.netprofit">Net Profit</span></div>
       </div>
     </div>
 
@@ -5388,15 +5253,15 @@
       </div>
       <div onclick="showPage('history')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
         <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,77,255,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">💰</div>
-        <div><div style="font-size:0.85rem;font-weight:700;">Transaction</div><div style="font-size:0.7rem;color:var(--muted);">All transactions</div></div>
+        <div><div style="font-size:0.85rem;font-weight:700;">Transaction</div><div style="font-size:0.7rem;color:var(--muted);"><span data-t="acc.alltx">All transactions</span></div></div>
       </div>
       <div onclick="showPage('deposithistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
         <div style="width:40px;height:40px;border-radius:10px;background:rgba(240,192,64,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">⬇️</div>
-        <div><div style="font-size:0.85rem;font-weight:700;">Deposit History</div><div style="font-size:0.7rem;color:var(--muted);">My deposit history</div></div>
+        <div><div style="font-size:0.85rem;font-weight:700;">Deposit History</div><div style="font-size:0.7rem;color:var(--muted);"><span data-t="acc.dephist">My deposit history</span></div></div>
       </div>
       <div onclick="showPage('withdrawhistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
         <div style="width:40px;height:40px;border-radius:10px;background:rgba(224,32,32,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">⬆️</div>
-        <div><div style="font-size:0.85rem;font-weight:700;">Withdrawal History</div><div style="font-size:0.7rem;color:var(--muted);">My withdrawal history</div></div>
+        <div><div style="font-size:0.85rem;font-weight:700;">Withdrawal History</div><div style="font-size:0.7rem;color:var(--muted);"><span data-t="acc.withhist">My withdrawal history</span></div></div>
       </div>
     </div>
 
@@ -5414,7 +5279,7 @@
         </div>
       </div>
       <div onclick="showPage('gamestats')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
-        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">📊</span><span style="font-size:0.88rem;">Game Stats</span></div>
+        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">📊</span><span style="font-size:0.88rem;"><span data-t="acc.gamestats">Game Stats</span></span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
       <div onclick="showPage('support')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;cursor:pointer;">
@@ -5438,16 +5303,16 @@
     </div>
     <!-- Gift code input -->
     <div style="margin-bottom:1rem;">
-      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Enter Gift Code</div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;"><span data-t="gift.enter">Enter Gift Code</span></div>
       <div style="display:flex;gap:0.5rem;">
         <input id="giftCodeInput" type="text" placeholder="e.g. ROYAL100" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;color:var(--text);font-size:0.88rem;font-family:'Exo 2',sans-serif;outline:none;" oninput="this.value=this.value.toUpperCase()">
         <button onclick="redeemGiftCode()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.7rem 1.2rem;color:#000;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Redeem</button>
       </div>
     </div>
     <!-- Gift history -->
-    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Redeemed Gifts</div>
+    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;"><span data-t="gift.redeemed">Redeemed Gifts</span></div>
     <div id="giftHistoryList" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;min-height:80px;max-height:200px;overflow-y:auto;">
-      <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.8rem;">No gifts redeemed yet</div>
+      <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.8rem;"><span data-t="gift.none">No gifts redeemed yet</span></div>
     </div>
   </div>
 </div>
@@ -5481,7 +5346,7 @@
         <span id="langCheck-hi" style="color:var(--gold);font-size:1rem;display:none;">✓</span>
       </div>
     </div>
-    <div style="margin-top:1rem;font-size:0.72rem;color:var(--muted);text-align:center;">More languages coming soon</div>
+    <div style="margin-top:1rem;font-size:0.72rem;color:var(--muted);text-align:center;"><span data-t="lang.soon">More languages coming soon</span></div>
   </div>
 </div>
 
@@ -5545,7 +5410,7 @@
           <div class="promo-tag">New Player</div>
           <div class="promo-name">First Deposit Bonus</div>
           <div class="promo-desc">Up to 100% bonus on your first deposit. 10x wager requirement applies.</div>
-          <div class="promo-footer"><span class="promo-expiry">Up to +100%</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="event.stopPropagation();showPage('bonus100')">Claim Now</button></div>
+          <div class="promo-footer"><span class="promo-expiry">Up to +100%</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="event.stopPropagation();showPage('bonus100')"><span data-t="promo.claim">Claim Now</span></button></div>
         </div>
       </div>
       <div class="promo-card">
@@ -5554,7 +5419,7 @@
           <div class="promo-tag">Daily</div>
           <div class="promo-name">Daily Free Spin</div>
           <div class="promo-desc">Spin the wheel every day for free and win up to ₹5,000 in bonus cash.</div>
-          <div class="promo-footer"><span class="promo-expiry">Every day</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="showPage('promotions')">Spin!</button></div>
+          <div class="promo-footer"><span class="promo-expiry"><span data-t="promo.everyday">Every day</span></span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="showPage('promotions')">Spin!</button></div>
         </div>
       </div>
       
@@ -5564,7 +5429,7 @@
           <div class="promo-tag">VIP</div>
           <div class="promo-name">VIP Reload Bonus</div>
           <div class="promo-desc">Gold VIP and above get a 15% reload bonus on every deposit. Auto-applied.</div>
-          <div class="promo-footer"><span class="promo-expiry">VIP Gold+</span><button class="btn btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem;border-color:var(--gold);color:var(--gold);" onclick="showPage('vip')">Upgrade</button></div>
+          <div class="promo-footer"><span class="promo-expiry"><span data-t="promo.vipgold">VIP Gold+</span></span><button class="btn btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem;border-color:var(--gold);color:var(--gold);" onclick="showPage('vip')">Upgrade</button></div>
         </div>
       </div>
     </div>
@@ -5574,8 +5439,8 @@
 <!-- SUPPORT PAGE -->
 <div class="page" id="page-support">
   <div class="support-page">
-    <div class="section-title" style="margin-bottom:0.4rem;">💬 <span data-t="support.title">Support Center</span></div>
-    <div class="section-sub" style="margin-bottom:2rem;"><span data-t="support.sub">We're here 24/7 to help you</span></div>
+    <div class="section-title" style="margin-bottom:0.4rem;">💬 <span data-t="sup.title">Support Center</span></div>
+    <div class="section-sub" style="margin-bottom:2rem;"><span data-t="sup.sub">We're here 24/7 to help you</span></div>
     <div class="support-options" style="grid-template-columns:1fr 1fr;">
       <div class="support-opt" onclick="window.open('https://t.me/royalwinsupport','_blank')">
         <div class="icon">
@@ -5584,13 +5449,13 @@
             <path d="M10.5 23.5L35.5 13.5L28.5 37.5L22 30L34 18L16 28.5L10.5 23.5Z" fill="white"/>
           </svg>
         </div>
-        <div class="lbl"><span data-t="support.telegram">Telegram</span></div>
-        <div class="sub"><span data-t="support.telegram.sub">Instant reply</span></div>
+        <div class="lbl"><span data-t="sup.telegram">Telegram</span></div>
+        <div class="sub"><span data-t="sup.telegram.sub">Instant reply</span></div>
       </div>
       <div class="support-opt" onclick="document.getElementById('liveChatSection').scrollIntoView({behavior:'smooth'})">
         <div class="icon">💬</div>
-        <div class="lbl" data-t="support.livechat">Live Chat</div>
-        <div class="sub" data-t="support.livechat.sub">Online now</div>
+        <div class="lbl" data-t="sup.livechat">Live Chat</div>
+        <div class="sub" data-t="sup.online"><span data-t="sup.online">Online now</span></div>
       </div>
     </div>
     <div id="liveChatSection" class="chat-window" style="margin-top:1.5rem;">
@@ -5786,7 +5651,7 @@
     <div class="qr-timer">⏳ QR expires in <span id="qrTimerVal">10:00</span></div>
 
     <div class="qr-steps">
-      <h4>How to Pay</h4>
+      <h4><span data-t="wallet.howtopay">How to Pay</span></h4>
       <div class="qr-step"><div class="qr-step-num">1</div><div>Open any UPI app (GPay, PhonePe, Paytm, BHIM)</div></div>
       <div class="qr-step"><div class="qr-step-num">2</div><div>Scan the QR code or send to <strong>royalwin@upi</strong></div></div>
       <div class="qr-step"><div class="qr-step-num">3</div><div>Enter the exact amount and complete payment</div></div>
@@ -5797,7 +5662,7 @@
 
     <div class="qr-confirmed" id="qrConfirmed">
       <div class="big-check">✅</div>
-      <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--green);margin-bottom:0.3rem;">Payment Received!</div>
+      <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--green);margin-bottom:0.3rem;"><span data-t="wallet.paid">Payment Received!</span></div>
       <div style="color:var(--muted);font-size:0.85rem;" id="qrConfirmMsg">₹500 has been credited to your wallet.</div>
     </div>
   </div>
