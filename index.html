@@ -1693,6 +1693,10 @@
       const f = document.getElementById('withdrawFields-' + m);
       if (f) f.style.display = m === method ? 'block' : 'none';
     });
+    // Update min display
+    const minMap = { upi: 300, bank: 500, usdt: 1000 };
+    const minEl = document.getElementById('withdrawMinDisplay');
+    if (minEl) minEl.textContent = '₹' + minMap[method];
   }
 
 
@@ -1931,17 +1935,18 @@
   }
 
   async function doWithdraw() {
+    const minAmt = currentWithdrawMethod === 'upi' ? 300 : currentWithdrawMethod === 'bank' ? 500 : 1000;
     const amt = parseFloat(document.getElementById('withdrawAmount').value);
-    if (!amt || amt < 200) { showToast('⚠️ Minimum withdrawal is ₹200'); return; }
+    if (!amt || amt < minAmt) { showToast('⚠️ Minimum withdrawal for ' + currentWithdrawMethod.toUpperCase() + ' is ₹' + minAmt); return; }
     if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
     const db = window.fbDB || fbDB;
     try {
-      // Check wager requirement
+      // Check wager requirement — BLOCK if not completed
       const wagerSnap = await db.ref('users/' + window.currentUser.uid + '/wager').once('value');
       const wager = wagerSnap.val();
       if (wager && wager.required > 0 && wager.completed < wager.required) {
         const remaining = parseFloat((wager.required - wager.completed).toFixed(2));
-        showToast('❌ Complete wager first! ₹' + remaining.toLocaleString('en-IN') + ' more to wager.');
+        showToast('❌ Wager incomplete! ₹' + remaining.toLocaleString('en-IN') + ' more to wager before withdrawing.');
         return;
       }
       const balSnap = await db.ref('users/' + window.currentUser.uid + '/balance').once('value');
@@ -3903,7 +3908,7 @@
         <div class="method-card selected" id="wm-upi" onclick="selectWithdrawMethod('upi',this)" style="flex:1;">
           <div class="method-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6C3CE1,#4B9BF5);display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;font-size:1.3rem;">📲</div>
           <div class="method-name">UPI</div>
-          <div class="method-limit">Min ₹200</div>
+          <div class="method-limit">Min ₹300</div>
         </div>
         <div class="method-card" id="wm-bank" onclick="selectWithdrawMethod('bank',this)" style="flex:1;">
           <div class="method-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1a3a6e,#2563eb);display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;font-size:1.3rem;">🏛️</div>
@@ -4000,7 +4005,7 @@
 
       <!-- Balance info -->
       <div style="background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.15);border-radius:10px;padding:0.8rem 1rem;margin:1rem 0;max-width:420px;font-size:0.85rem;color:var(--muted);">
-        💰 Available: <strong style="color:var(--gold);" id="withdrawAvailBalance">₹0.00</strong> &nbsp;|&nbsp; Min: <strong style="color:var(--text);">₹200</strong>
+        💰 Available: <strong style="color:var(--gold);" id="withdrawAvailBalance">₹0.00</strong> &nbsp;|&nbsp; Min: <strong style="color:var(--text);" id="withdrawMinDisplay">₹300</strong>
       </div>
 
       <button class="btn btn-gold" style="padding:0.8rem 2.5rem;max-width:420px;width:100%;" onclick="doWithdraw()">⬆️ Withdraw Now</button>
