@@ -1644,11 +1644,14 @@
   }
 
   function switchWalletTab(tab) {
-    ['deposit','withdraw','history'].forEach(t => {
-      document.getElementById('tab-' + t).classList.toggle('active', t === tab);
-      document.getElementById('panel-' + t).classList.toggle('active', t === tab);
+    ['deposit','withdraw'].forEach(t => {
+      const tabEl = document.getElementById('tab-' + t);
+      const panelEl = document.getElementById('panel-' + t);
+      if (tabEl) tabEl.classList.toggle('active', t === tab);
+      if (panelEl) panelEl.classList.toggle('active', t === tab);
     });
     if (tab === 'withdraw') { loadWagerProgress(); loadWithdrawHistory(); loadSavedWithdrawDetails(); }
+    if (tab === 'deposit') { checkDepositBonus(); loadDepositHistory(); }
   }
 
   function selectMethod(el) {
@@ -3578,7 +3581,6 @@
     <div class="wallet-tabs">
       <button class="wallet-tab active" id="tab-deposit" onclick="switchWalletTab('deposit')">⬇️ Deposit</button>
       <button class="wallet-tab" id="tab-withdraw" onclick="switchWalletTab('withdraw')">⬆️ Withdraw</button>
-      <button class="wallet-tab" id="tab-history" onclick="switchWalletTab('history')">📋 Deposits</button>
     </div>
 
     <!-- DEPOSIT -->
@@ -3650,6 +3652,14 @@
       <div style="display:flex;gap:1rem;flex-wrap:wrap;">
         <button class="btn btn-gold" style="padding:0.8rem 2rem;" onclick="openQR()">📱 Pay via UPI QR</button>
         <button class="btn btn-outline" style="padding:0.8rem 2rem;border-color:var(--gold);color:var(--gold);" onclick="doDeposit()">Manual Deposit</button>
+      </div>
+
+      <!-- Deposit History -->
+      <div style="margin-top:2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.95rem;margin-bottom:0.8rem;">📋 Deposit History</div>
+        <div id="depositHistoryRows">
+          <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No deposits yet</div>
+        </div>
       </div>
     </div>
 
