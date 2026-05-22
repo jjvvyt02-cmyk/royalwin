@@ -266,11 +266,6 @@
   }
   .agency-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.6rem; }
   .agency-label { font-size:0.78rem; color:rgba(240,192,64,0.7); font-weight:600; letter-spacing:1px; text-transform:uppercase; }
-  .agency-level-badge {
-    background: linear-gradient(135deg,#c07a10,var(--gold2));
-    color:#000; font-size:0.7rem; font-weight:800; border-radius:8px;
-    padding:0.25rem 0.6rem; letter-spacing:1px;
-  }
   .agency-commission-val {
     font-family:'Cinzel',serif; font-size:2.4rem; font-weight:900; color:var(--gold2);
     line-height:1; margin-bottom:0.2rem;
@@ -1267,7 +1262,6 @@
     <div class="agency-card">
       <div class="agency-top">
         <div class="agency-label">🏆 Agency</div>
-        <div class="agency-level-badge" id="agencyLevelBadge">L0</div>
       </div>
       <div class="agency-commission-val" id="agencyYesterdayComm">0.00</div>
       <div class="agency-commission-lbl">Yesterday's total commission (₹)</div>
@@ -1366,14 +1360,25 @@
 
       <!-- Subordinates Tab -->
       <div id="refSubContent-subordinates">
+        <!-- Search bar -->
+        <div style="padding:0.6rem 0.9rem;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:0.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.45rem 0.8rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input id="refSearchInput" type="text" placeholder="Search by UID or member ID..." oninput="searchRefHistory(this.value)"
+              style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:0.78rem;font-family:'Exo 2',sans-serif;">
+            <button onclick="clearRefSearch()" id="refSearchClear" style="display:none;background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:0;">✕</button>
+          </div>
+        </div>
         <!-- Level filter -->
-        <div style="display:flex;gap:0.4rem;padding:0.7rem 0.9rem;border-bottom:1px solid var(--border);overflow-x:auto;">
+        <div style="display:flex;gap:0.4rem;padding:0.6rem 0.9rem;border-bottom:1px solid var(--border);overflow-x:auto;">
           <button onclick="filterRefLevel(this,'all')" class="sub-level-filter active-filter" style="flex-shrink:0;padding:0.25rem 0.7rem;border-radius:20px;border:1px solid var(--gold);background:rgba(240,192,64,0.15);color:var(--gold);font-size:0.72rem;font-weight:700;cursor:pointer;">All</button>
           <button onclick="filterRefLevel(this,'1')" class="sub-level-filter" style="flex-shrink:0;padding:0.25rem 0.7rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;font-weight:700;cursor:pointer;">Level 1</button>
           <button onclick="filterRefLevel(this,'2')" class="sub-level-filter" style="flex-shrink:0;padding:0.25rem 0.7rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;font-weight:700;cursor:pointer;">Level 2</button>
           <button onclick="filterRefLevel(this,'3')" class="sub-level-filter" style="flex-shrink:0;padding:0.25rem 0.7rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;font-weight:700;cursor:pointer;">Level 3</button>
           <button onclick="filterRefLevel(this,'4')" class="sub-level-filter" style="flex-shrink:0;padding:0.25rem 0.7rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;font-weight:700;cursor:pointer;">Level 4</button>
         </div>
+        <!-- Result count -->
+        <div id="refSearchCount" style="display:none;padding:0.35rem 0.9rem;font-size:0.7rem;color:var(--muted);border-bottom:1px solid var(--border);"></div>
         <div class="sub-hist-row head">
           <div>Lv</div><div>User</div><div>Joined</div><div>Deposit</div><div>Earned</div>
         </div>
@@ -1384,6 +1389,16 @@
 
       <!-- Commission Tab -->
       <div id="refSubContent-commission" style="display:none;">
+        <!-- Search bar -->
+        <div style="padding:0.6rem 0.9rem;border-bottom:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:0.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.45rem 0.8rem;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+            <input id="commSearchInput" type="text" placeholder="Search by UID..." oninput="searchCommHistory(this.value)"
+              style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:0.78rem;font-family:'Exo 2',sans-serif;">
+            <button onclick="clearCommSearch()" id="commSearchClear" style="display:none;background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:0;">✕</button>
+          </div>
+        </div>
+        <div id="commSearchCount" style="display:none;padding:0.35rem 0.9rem;font-size:0.7rem;color:var(--muted);border-bottom:1px solid var(--border);"></div>
         <div class="sub-hist-row head" style="grid-template-columns:0.5fr 1.6fr 1fr 0.8fr;">
           <div>Lv</div><div>From User</div><div>Date</div><div>Amount</div>
         </div>
@@ -1546,13 +1561,65 @@
     renderRefRows();
   }
 
+  function searchRefHistory(query) {
+    window._refSearchQuery = query.trim().toLowerCase();
+    const clearBtn = document.getElementById('refSearchClear');
+    if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
+    renderRefRows();
+  }
+
+  function clearRefSearch() {
+    const inp = document.getElementById('refSearchInput');
+    if (inp) inp.value = '';
+    window._refSearchQuery = '';
+    const clearBtn = document.getElementById('refSearchClear');
+    if (clearBtn) clearBtn.style.display = 'none';
+    renderRefRows();
+  }
+
+  function searchCommHistory(query) {
+    window._commSearchQuery = query.trim().toLowerCase();
+    const clearBtn = document.getElementById('commSearchClear');
+    if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
+    renderCommissionRows(window._refAllData || []);
+  }
+
+  function clearCommSearch() {
+    const inp = document.getElementById('commSearchInput');
+    if (inp) inp.value = '';
+    window._commSearchQuery = '';
+    const clearBtn = document.getElementById('commSearchClear');
+    if (clearBtn) clearBtn.style.display = 'none';
+    renderCommissionRows(window._refAllData || []);
+  }
+
   function renderRefRows() {
     const histEl = document.getElementById('refHistoryRows');
+    const countEl = document.getElementById('refSearchCount');
     if (!histEl) return;
     const data = window._refAllData || [];
-    const filtered = window._refLevelFilter === 'all' ? data : data.filter(r => String(r.level || 1) === window._refLevelFilter);
+    const query = (window._refSearchQuery || '').toLowerCase();
+
+    // Level filter
+    let filtered = window._refLevelFilter === 'all' ? data : data.filter(r => String(r.level || 1) === window._refLevelFilter);
+
+    // Search filter
+    if (query) {
+      filtered = filtered.filter(r => {
+        const mid = (r.memberId || '').toLowerCase();
+        const uid = (r.uid || '').toLowerCase();
+        return mid.includes(query) || uid.includes(query);
+      });
+      if (countEl) {
+        countEl.style.display = 'block';
+        countEl.textContent = filtered.length + ' result' + (filtered.length !== 1 ? 's' : '') + ' for "' + query + '"';
+      }
+    } else {
+      if (countEl) countEl.style.display = 'none';
+    }
+
     if (filtered.length === 0) {
-      histEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">No referrals at this level</div>';
+      histEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">' + (query ? '🔍 No results found' : 'No referrals at this level') + '</div>';
       return;
     }
     const levelColors = { '1':'var(--gold2)', '2':'var(--green)', '3':'#a87dff', '4':'var(--red2)' };
@@ -1577,15 +1644,33 @@
 
   function renderCommissionRows(referrals) {
     const el = document.getElementById('refCommissionRows');
+    const countEl = document.getElementById('commSearchCount');
     if (!el) return;
+    const query = (window._commSearchQuery || '').toLowerCase();
     const commRows = [];
     referrals.forEach(r => {
-      if (r.bonus && r.bonus > 0) commRows.push({ lv: r.level||1, user: r.username||('UID:' + (r.uid||'').substring(0,6)), date: r.creditedAt||r.joinedAt, amount: r.bonus, type: 'Reg Bonus' });
-      if (r.commission && r.commission > 0) commRows.push({ lv: r.level||1, user: r.username||('UID:' + (r.uid||'').substring(0,6)), date: r.creditedAt||r.joinedAt, amount: r.commission, type: 'Commission' });
+      if (r.bonus && r.bonus > 0) commRows.push({ lv: r.level||1, user: r.username||('UID:' + (r.uid||'').substring(0,6)), uid: r.uid||'', memberId: r.memberId||'', date: r.creditedAt||r.joinedAt, amount: r.bonus, type: 'Reg Bonus' });
+      if (r.commission && r.commission > 0) commRows.push({ lv: r.level||1, user: r.username||('UID:' + (r.uid||'').substring(0,6)), uid: r.uid||'', memberId: r.memberId||'', date: r.creditedAt||r.joinedAt, amount: r.commission, type: 'Commission' });
     });
     commRows.sort((a,b) => (b.date||0) - (a.date||0));
-    if (commRows.length === 0) { el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">No commissions yet</div>'; return; }
-    el.innerHTML = commRows.map(c => {
+
+    // Search filter
+    let filtered = commRows;
+    if (query) {
+      filtered = commRows.filter(c => (c.uid || '').toLowerCase().includes(query) || (c.memberId || '').toLowerCase().includes(query));
+      if (countEl) {
+        countEl.style.display = 'block';
+        countEl.textContent = filtered.length + ' result' + (filtered.length !== 1 ? 's' : '') + ' for "' + query + '"';
+      }
+    } else {
+      if (countEl) countEl.style.display = 'none';
+    }
+
+    if (filtered.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">' + (query ? '🔍 No results found' : 'No commissions yet') + '</div>';
+      return;
+    }
+    el.innerHTML = filtered.map(c => {
       const d = c.date ? new Date(c.date).toLocaleDateString('en-IN', {day:'numeric', month:'short'}) : '—';
       return `<div class="sub-hist-row" style="grid-template-columns:0.5fr 1.6fr 1fr 0.8fr;">
         <div><span class="ref-level-badge lv${c.lv}" style="font-size:0.62rem;padding:0.1rem 0.35rem;">L${c.lv}</span></div>
@@ -1638,9 +1723,6 @@
       const el_yest = document.getElementById('agencyYesterdayComm');
       if (el_yest) el_yest.textContent = yestComm.toFixed(2);
 
-      // Agency level badge
-      const badge = document.getElementById('agencyLevelBadge');
-      if (badge) badge.textContent = level1.length >= 50 ? 'L3' : level1.length >= 20 ? 'L2' : level1.length >= 5 ? 'L1' : 'L0';
 
       // --- Direct subordinates card ---
       const dirDeps = level1.filter(r => r.firstDepositAmt > 0);
@@ -2692,6 +2774,52 @@
         kycStatus: 'pending',
         isActive: true
       });
+
+      // ── MULTI-LEVEL REFERRAL CHAIN (L1 → L4) ──
+      if (inviteCode) {
+        try {
+          const db = firebase.database();
+          const allUsersSnap = await db.ref('users').once('value');
+          const allUsers = allUsersSnap.val() || {};
+
+          // Build a map: referralCode → { uid, referredBy, username, memberId }
+          const codeToUser = {};
+          Object.entries(allUsers).forEach(([uid, u]) => {
+            if (u.referralCode) codeToUser[u.referralCode] = { uid, referredBy: u.referredBy || '', username: u.username || '', memberId: u.memberId || '' };
+          });
+
+          // Walk up the chain: newUser used inviteCode → that's L1 referrer
+          // L1 referrer's referrer = L2, and so on up to L4
+          const newUserInfo = {
+            uid: user.uid,
+            username: username,
+            memberId: memberId,
+            joinedAt: Date.now(),
+            firstDepositAmt: 0,
+            bonus: 0,
+            commission: 0,
+            creditedAt: Date.now()
+          };
+
+          let currentCode = inviteCode;
+          for (let level = 1; level <= 4; level++) {
+            const referrer = codeToUser[currentCode];
+            if (!referrer) break;
+
+            const refKey = level === 1 ? 'referrals' : 'referrals_l' + level;
+            await db.ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid).set({
+              ...newUserInfo,
+              level: level
+            });
+
+            // Move up the chain
+            currentCode = referrer.referredBy;
+            if (!currentCode) break;
+          }
+        } catch(refErr) {
+          console.warn('Referral chain error:', refErr);
+        }
+      }
 
       // Update avatar with first letter of username
       const avatarEl = document.getElementById('userAvatar');
