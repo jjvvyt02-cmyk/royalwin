@@ -1526,28 +1526,28 @@
             <span class="ref-level-badge lv1" style="font-size:0.72rem;">L1</span>
             <span style="font-size:0.85rem;color:var(--muted);">1 level lower commission rebate</span>
           </div>
-          <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l1">—</span>
+          <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l1">1.000%</span>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;border-bottom:1px solid rgba(255,255,255,0.05);">
           <div style="display:flex;align-items:center;gap:0.7rem;">
             <span class="ref-level-badge lv2" style="font-size:0.72rem;">L2</span>
             <span style="font-size:0.85rem;color:var(--muted);">2 level lower commission rebate</span>
           </div>
-          <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l2">—</span>
+          <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l2">0.800%</span>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;border-bottom:1px solid rgba(255,255,255,0.05);">
           <div style="display:flex;align-items:center;gap:0.7rem;">
             <span class="ref-level-badge lv3" style="font-size:0.72rem;">L3</span>
             <span style="font-size:0.85rem;color:var(--muted);">3 level lower commission rebate</span>
           </div>
-          <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l3">—</span>
+          <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l3">0.500%</span>
         </div>
         <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;">
           <div style="display:flex;align-items:center;gap:0.7rem;">
             <span class="ref-level-badge lv4" style="font-size:0.72rem;">L4</span>
             <span style="font-size:0.85rem;color:var(--muted);">4 level lower commission rebate</span>
           </div>
-          <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l4">—</span>
+          <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l4">0.200%</span>
         </div>
       </div>
 
@@ -1788,29 +1788,28 @@
   }
 
   // ── REBATE RATIO ──
-  async function loadRebateRates() {
-    try {
-      const db = window.fbDB || fbDB;
-      // Real-time listener — updates instantly when admin changes rates
-      db.ref('settings/commissionRates').on('value', snap => {
-        const rates = snap.val() || {};
-        const l1 = rates.l1 != null ? rates.l1 : 5;
-        const l2 = rates.l2 != null ? rates.l2 : 3;
-        const l3 = rates.l3 != null ? rates.l3 : 2;
-        const l4 = rates.l4 != null ? rates.l4 : 1;
-        const fmt = v => Number(v).toFixed(3) + '%';
-        document.getElementById('rebate-l1').textContent = fmt(l1);
-        document.getElementById('rebate-l2').textContent = fmt(l2);
-        document.getElementById('rebate-l3').textContent = fmt(l3);
-        document.getElementById('rebate-l4').textContent = fmt(l4);
-      });
-    } catch(e) {
-      const defaults = {l1:'1.000%', l2:'0.800%', l3:'0.500%', l4:'0.200%'};
+  function loadRebateRates() {
+    const defaults = { l1: 1, l2: 0.8, l3: 0.5, l4: 0.2 };
+    const fmt = v => Number(v).toFixed(3) + '%';
+    const applyRates = (rates) => {
       ['l1','l2','l3','l4'].forEach(l => {
         const el = document.getElementById('rebate-' + l);
-        if (el) el.textContent = defaults[l];
+        if (el) el.textContent = fmt(rates[l] != null ? rates[l] : defaults[l]);
       });
-    }
+    };
+    // Apply defaults immediately so user never sees —
+    applyRates(defaults);
+    // Then try Firebase, retry until fbDB is ready
+    const tryFirebase = () => {
+      const db = window.fbDB;
+      if (!db) { setTimeout(tryFirebase, 400); return; }
+      try {
+        db.ref('settings/commissionRates').on('value', snap => {
+          applyRates(snap.val() || {});
+        });
+      } catch(e) { console.warn('Rebate rates Firebase error:', e); }
+    };
+    tryFirebase();
   }
 
   // ── SUBORDINATE DATA PAGE ──
@@ -2969,57 +2968,17 @@
     }, 900);
   }
 
-  // Spinning Wheel
-  // Daily spin: 5 segments visible, only 18/48/88 can win
   // ── DAILY SPIN WHEEL ──
   // 5 segments visible: ₹18, ₹48, ₹88, ₹288, ₹488
   // But only 3 can win: ₹18=80%, ₹48=15%, ₹88=5%
-  const wheelPrizes = ['₹18', '₹48', '₹88', '₹288', '₹488'];
-  const wheelColors = ['#27ae60', '#c07a10', '#7c4dff', '#e02020', '#b8912a'];
-  const wheelWeightedPool = [
     ...Array(80).fill(18),  // 80%
     ...Array(15).fill(48),  // 15%
     ...Array(5).fill(88),   // 5%
     // 288 and 488 = 0% — never win
   ];
   const prizeIndexMap = { 18: 0, 48: 1, 88: 2, 288: 3, 488: 4 };
-  let spinning = false;
 
-  function drawWheel(rotation) {
-    const canvas = document.getElementById('wheelCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const cx = 140, cy = 140, r = 125;
-    const slices = wheelPrizes.length;
-    const arc = (2 * Math.PI) / slices;
-    ctx.clearRect(0, 0, 280, 280);
-    for (let i = 0; i < slices; i++) {
-      const start = rotation + i * arc;
-      // Slice
-      ctx.beginPath(); ctx.moveTo(cx, cy);
-      ctx.arc(cx, cy, r, start, start + arc);
-      ctx.closePath(); ctx.fillStyle = wheelColors[i]; ctx.fill();
-      ctx.strokeStyle = '#111'; ctx.lineWidth = 3; ctx.stroke();
-      // Label
-      ctx.save(); ctx.translate(cx, cy);
-      ctx.rotate(start + arc / 2);
-      ctx.textAlign = 'right'; ctx.fillStyle = '#fff';
-      ctx.font = 'bold 18px Cinzel, serif';
-      ctx.fillText(wheelPrizes[i], r - 14, 6);
-      ctx.restore();
-    }
-    // Center circle
-    ctx.beginPath(); ctx.arc(cx, cy, 20, 0, 2 * Math.PI);
-    ctx.fillStyle = '#0a0a0f'; ctx.fill();
-    ctx.strokeStyle = '#f0c040'; ctx.lineWidth = 3; ctx.stroke();
-    // Pointer triangle
-    ctx.beginPath();
-    ctx.moveTo(cx, cy - r - 10);
-    ctx.lineTo(cx - 10, cy - r + 12);
-    ctx.lineTo(cx + 10, cy - r + 12);
-    ctx.closePath();
-    ctx.fillStyle = '#f0c040'; ctx.fill();
-  }
+
 
   async function openWheel(fromLogin = false) {
     if (!isLoggedIn) { showToast('🔐 Please sign in first!'); showPage('login'); return; }
@@ -3212,10 +3171,8 @@
       if (db && user) {
         const snap = await db.ref('users/' + user.uid + '/lastSpinDate').once('value');
         // Only open if not claimed today — pass fromLogin=true so no toast if already claimed
-        if (snap.val() !== new Date().toDateString()) openWheel(true);
-      } else {
-        openWheel(true);
-      }
+} else {
+}
     }, 1200);
     } catch(e) {
       console.error('Register error:', e);
@@ -5053,18 +5010,7 @@
 </div>
 
 <!-- SPINNING WHEEL OVERLAY -->
-<div class="wheel-overlay" id="wheelOverlay">
-  <button class="wheel-close" onclick="closeWheel()">✕ Close</button>
-  <div class="wheel-title">🎡 Welcome Spin!</div>
-  <div class="wheel-sub">New player bonus — spin to win up to ₹5,000!</div>
-  <div class="wheel-wrap">
-    <div class="wheel-pointer"></div>
-    <canvas class="wheel-canvas" id="wheelCanvas" width="280" height="280"></canvas>
-  </div>
-  <button class="btn btn-gold spin-btn" id="spinBtn" onclick="spinWheel()">🎰 Spin Now!</button>
-  <div class="wheel-result" id="wheelResult"></div>
-  <div style="font-size:0.72rem;color:var(--muted);margin-top:0.5rem;">🗓️ Daily spin — once per day</div>
-</div>
+
 
 <!-- PROFILE PAGE -->
 <div class="page" id="page-profile">
@@ -5281,36 +5227,10 @@
           <div class="promo-tag">Daily</div>
           <div class="promo-name">Daily Free Spin</div>
           <div class="promo-desc">Spin the wheel every day for free and win up to ₹5,000 in bonus cash.</div>
-          <div class="promo-footer"><span class="promo-expiry">Every day</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="openWheel()">Spin!</button></div>
+          <div class="promo-footer"><span class="promo-expiry">Every day</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="showPage('promotions')">Spin!</button></div>
         </div>
       </div>
-      <div class="promo-card">
-        <div class="promo-thumb" style="background:linear-gradient(135deg,#0a001a,#1a0033);">🎁</div>
-        <div class="promo-body">
-          <div class="promo-tag">Referral</div>
-          <div class="promo-name">Refer & Earn ₹500</div>
-          <div class="promo-desc">Invite a friend and earn ₹500 bonus when they make their first deposit.</div>
-          <div class="promo-footer"><span class="promo-expiry">Ongoing</span><button class="btn btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem;border-color:var(--gold);color:var(--gold);" onclick="showPage('referral')">Invite</button></div>
-        </div>
-      </div>
-      <div class="promo-card">
-        <div class="promo-thumb" style="background:linear-gradient(135deg,#1a1000,#332200);">💰</div>
-        <div class="promo-body">
-          <div class="promo-tag">Weekly</div>
-          <div class="promo-name">10% Cashback Monday</div>
-          <div class="promo-desc">Get 10% cashback on all losses every Monday. Auto-credited to wallet.</div>
-          <div class="promo-footer"><span class="promo-expiry">Every Monday</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="showToast('✅ Cashback enrolled!')">Enroll</button></div>
-        </div>
-      </div>
-      <div class="promo-card">
-        <div class="promo-thumb" style="background:linear-gradient(135deg,#001a1a,#002f2f);">🏆</div>
-        <div class="promo-body">
-          <div class="promo-tag">Tournament</div>
-          <div class="promo-name">Lottery Jackpot ₹1 Lakh</div>
-          <div class="promo-desc">Join the weekly WinGo Lottery tournament. Top 10 players share ₹1 Lakh prize pool.</div>
-          <div class="promo-footer"><span class="promo-expiry">Ends: Sunday</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="showToast('🏆 Joined tournament!')">Join</button></div>
-        </div>
-      </div>
+      
       <div class="promo-card">
         <div class="promo-thumb" style="background:linear-gradient(135deg,#1a0010,#330020);">💎</div>
         <div class="promo-body">
