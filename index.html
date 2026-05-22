@@ -1101,7 +1101,7 @@
       <span class="gold">Win Big.</span><br>
       Play <span class="red">Royal.</span>
     </h1>
-    <p>Join millions of players. Spin, bet, and conquer. Real money games, massive jackpots, and instant withdrawals.</p>
+    <p data-t="home.sub">Join millions of players. Spin, bet, and conquer. Real money games, massive jackpots, and instant withdrawals.</p>
     <div class="hero-btns" id="heroBtns">
       <button class="btn btn-gold" id="heroPlayBtn" onclick="showPage('register')">🚀 Start Playing</button>
       <button class="btn btn-outline" id="heroSignInBtn" onclick="showPage('login')">Sign In</button>
@@ -1732,6 +1732,98 @@
 
   // ── LANGUAGE ──
   window._currentLang = localStorage.getItem('royalwin_lang') || 'en';
+
+  // ── TRANSLATIONS ──
+  const translations = {
+    en: {
+      // Nav
+      'nav.home': 'Home', 'nav.activity': 'Activity', 'nav.promotion': 'Promotion',
+      'nav.wallet': 'Wallet', 'nav.account': 'Account',
+      // Home
+      'home.tagline': '#1 Online Gaming Platform',
+      'home.headline1': 'Win Big.', 'home.headline2': 'Play Royal.',
+      'home.sub': 'Join millions of players. Spin, bet, and conquer. Real money games, massive jackpots, and instant withdrawals.',
+      'home.start': '🚀 Start Playing', 'home.signin': 'Sign In',
+      'home.players': 'Players', 'home.games': 'Games', 'home.support': 'Support',
+      // Wallet
+      'wallet.deposit': 'Deposit', 'wallet.withdraw': 'Withdraw',
+      'wallet.balance': 'Your Balance',
+      'wallet.dep.title': 'Add Money', 'wallet.with.title': 'Withdraw Money',
+      // Account
+      'account.bethistory': 'Bet History', 'account.transaction': 'Transaction',
+      'account.dephistory': 'Deposit History', 'account.withhistory': 'Withdrawal History',
+      'account.gifts': 'Gifts', 'account.language': 'Language',
+      'account.gamestats': 'Game Stats', 'account.support': 'Support',
+      'account.signout': '🚪 Sign Out',
+      // Support
+      'support.title': 'Support Center', 'support.sub': 'We\'re here 24/7 to help you',
+      'support.telegram': 'Telegram', 'support.telegram.sub': 'Instant reply',
+      'support.livechat': 'Live Chat', 'support.livechat.sub': 'Online now',
+      // Promotion
+      'promo.title': 'Promotions & Bonuses',
+      // Auth
+      'auth.login.title': 'Welcome Back', 'auth.login.sub': 'Sign in to your account',
+      'auth.reg.title': 'Create Account', 'auth.reg.sub': 'Join RoyalWin today',
+      'auth.signin.btn': '🔐 Sign In', 'auth.reg.btn': '🚀 Create Account',
+      'auth.forgot': 'Forgot Password?', 'auth.noacc': "Don't have an account?",
+      'auth.haveacc': 'Already have an account?',
+    },
+    hi: {
+      // Nav
+      'nav.home': 'होम', 'nav.activity': 'गतिविधि', 'nav.promotion': 'प्रमोशन',
+      'nav.wallet': 'वॉलेट', 'nav.account': 'अकाउंट',
+      // Home
+      'home.tagline': '#1 ऑनलाइन गेमिंग प्लेटफॉर्म',
+      'home.headline1': 'बड़ा जीतें।', 'home.headline2': 'रॉयल खेलें।',
+      'home.sub': 'लाखों खिलाड़ियों से जुड़ें। बेट लगाएं, जीतें। रियल मनी गेम्स, बड़े जैकपॉट और तुरंत निकासी।',
+      'home.start': '🚀 खेलना शुरू करें', 'home.signin': 'साइन इन करें',
+      'home.players': 'खिलाड़ी', 'home.games': 'गेम्स', 'home.support': 'सपोर्ट',
+      // Wallet
+      'wallet.deposit': 'जमा करें', 'wallet.withdraw': 'निकालें',
+      'wallet.balance': 'आपका बैलेंस',
+      'wallet.dep.title': 'पैसे जोड़ें', 'wallet.with.title': 'पैसे निकालें',
+      // Account
+      'account.bethistory': 'बेट इतिहास', 'account.transaction': 'लेनदेन',
+      'account.dephistory': 'जमा इतिहास', 'account.withhistory': 'निकासी इतिहास',
+      'account.gifts': 'गिफ्ट', 'account.language': 'भाषा',
+      'account.gamestats': 'गेम आँकड़े', 'account.support': 'सपोर्ट',
+      'account.signout': '🚪 साइन आउट',
+      // Support
+      'support.title': 'सपोर्ट केंद्र', 'support.sub': 'हम 24/7 आपकी मदद के लिए यहाँ हैं',
+      'support.telegram': 'टेलीग्राम', 'support.telegram.sub': 'तुरंत जवाब',
+      'support.livechat': 'लाइव चैट', 'support.livechat.sub': 'अभी ऑनलाइन',
+      // Promotion
+      'promo.title': 'प्रमोशन और बोनस',
+      // Auth
+      'auth.login.title': 'वापस आपका स्वागत है', 'auth.login.sub': 'अपने अकाउंट में साइन इन करें',
+      'auth.reg.title': 'अकाउंट बनाएं', 'auth.reg.sub': 'आज RoyalWin से जुड़ें',
+      'auth.signin.btn': '🔐 साइन इन करें', 'auth.reg.btn': '🚀 अकाउंट बनाएं',
+      'auth.forgot': 'पासवर्ड भूल गए?', 'auth.noacc': 'अकाउंट नहीं है?',
+      'auth.haveacc': 'पहले से अकाउंट है?',
+    }
+  };
+
+  function t(key) {
+    return (translations[window._currentLang] || translations.en)[key] || (translations.en)[key] || key;
+  }
+
+  function applyTranslations(lang) {
+    // Apply to all elements with data-t attribute
+    document.querySelectorAll('[data-t]').forEach(el => {
+      const key = el.getAttribute('data-t');
+      const val = t(key);
+      if (el.tagName === 'INPUT' && el.getAttribute('placeholder')) {
+        // don't translate inputs by key, keep as is
+      } else {
+        el.textContent = val;
+      }
+    });
+    // Apply placeholder translations
+    document.querySelectorAll('[data-tp]').forEach(el => {
+      el.setAttribute('placeholder', t(el.getAttribute('data-tp')));
+    });
+  }
+
   function showLanguageModal() {
     const m = document.getElementById('languageModal');
     if (m) { m.style.display = 'flex'; updateLangUI(window._currentLang); }
@@ -1754,9 +1846,15 @@
     window._currentLang = lang;
     localStorage.setItem('royalwin_lang', lang);
     updateLangUI(lang);
+    applyTranslations(lang);
     showToast(lang === 'hi' ? '🇮🇳 भाषा बदली गई: हिन्दी' : '🇬🇧 Language set: English');
     setTimeout(closeLanguageModal, 800);
   }
+
+  // Apply saved language on load
+  document.addEventListener('DOMContentLoaded', () => {
+    if (window._currentLang !== 'en') applyTranslations(window._currentLang);
+  });
 
   async function logout() {
     await firebase.auth().signOut();
@@ -5176,7 +5274,7 @@
     </div>
 
     <!-- Sign out -->
-    <button onclick="logout()" style="width:100%;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.25);border-radius:12px;padding:0.9rem;color:var(--red2);font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:1rem;">🚪 Sign Out</button>
+    <button onclick="logout()" style="width:100%;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.25);border-radius:12px;padding:0.9rem;color:var(--red2);font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:1rem;">🚪 <span data-t="account.signout">🚪 Sign Out</span></button>
 
   </div>
 </div>
@@ -5326,18 +5424,23 @@
 <!-- SUPPORT PAGE -->
 <div class="page" id="page-support">
   <div class="support-page">
-    <div class="section-title" style="margin-bottom:0.4rem;">💬 Support Center</div>
-    <div class="section-sub" style="margin-bottom:2rem;">We're here 24/7 to help you</div>
+    <div class="section-title" style="margin-bottom:0.4rem;">💬 <span data-t="support.title">Support Center</span></div>
+    <div class="section-sub" style="margin-bottom:2rem;"><span data-t="support.sub">We're here 24/7 to help you</span></div>
     <div class="support-options" style="grid-template-columns:1fr 1fr;">
       <div class="support-opt" onclick="window.open('https://t.me/royalwinsupport','_blank')">
-        <div class="icon">✈️</div>
-        <div class="lbl">Telegram</div>
-        <div class="sub">Instant reply</div>
+        <div class="icon">
+          <svg width="38" height="38" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="24" cy="24" r="24" fill="#29B6F6"/>
+            <path d="M10.5 23.5L35.5 13.5L28.5 37.5L22 30L34 18L16 28.5L10.5 23.5Z" fill="white"/>
+          </svg>
+        </div>
+        <div class="lbl"><span data-t="support.telegram">Telegram</span></div>
+        <div class="sub"><span data-t="support.telegram.sub">Instant reply</span></div>
       </div>
       <div class="support-opt" onclick="document.getElementById('liveChatSection').scrollIntoView({behavior:'smooth'})">
         <div class="icon">💬</div>
-        <div class="lbl">Live Chat</div>
-        <div class="sub">Online now</div>
+        <div class="lbl" data-t="support.livechat">Live Chat</div>
+        <div class="sub" data-t="support.livechat.sub">Online now</div>
       </div>
     </div>
     <div id="liveChatSection" class="chat-window" style="margin-top:1.5rem;">
@@ -5559,7 +5662,7 @@
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="mn-svg">
       <path d="M3 12L12 3L21 12V21H15V15H9V21H3V12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
     </svg>
-    <span>Home</span>
+    <span data-t="nav.home">Home</span>
   </button>
 
   <!-- Activity -->
@@ -5570,7 +5673,7 @@
       <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
       <path d="M14 17.5H21M17.5 14V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
     </svg>
-    <span>Activity</span>
+    <span data-t="nav.activity">Activity</span>
   </button>
 
   <!-- Promotion (center) -->
@@ -5584,7 +5687,7 @@
         <path d="M12 7H16.5C17.88 7 19 5.88 19 4.5C19 3.12 17.88 2 16.5 2C14 2 12 7 12 7Z" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <span>Promotion</span>
+    <span data-t="nav.promotion">Promotion</span>
   </button>
 
   <!-- Wallet -->
@@ -5594,7 +5697,7 @@
       <path d="M2 10H22" stroke="currentColor" stroke-width="2"/>
       <circle cx="17" cy="15" r="1.5" fill="currentColor"/>
     </svg>
-    <span>Wallet</span>
+    <span data-t="nav.wallet">Wallet</span>
   </button>
 
   <!-- Account -->
@@ -5606,7 +5709,7 @@
       </svg>
       <div id="bottomAvatar" style="display:none;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#c07a10,var(--gold2));align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:#000;position:absolute;top:0;left:0;">U</div>
     </div>
-    <span>Account</span>
+    <span data-t="nav.account">Account</span>
   </button>
 
 </div>
