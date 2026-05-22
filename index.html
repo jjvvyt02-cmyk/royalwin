@@ -1693,10 +1693,13 @@
       const f = document.getElementById('withdrawFields-' + m);
       if (f) f.style.display = m === method ? 'block' : 'none';
     });
-    // Update min display
-    const minMap = { upi: 300, bank: 500, usdt: 1000 };
+    // Update min display and placeholder
+    const minMap = { upi: 300, bank: 500, usdt: 3000 };
+    const min = minMap[method];
     const minEl = document.getElementById('withdrawMinDisplay');
-    if (minEl) minEl.textContent = '₹' + minMap[method];
+    if (minEl) minEl.textContent = '₹' + min;
+    const amtInput = document.getElementById('withdrawAmount');
+    if (amtInput) amtInput.placeholder = 'Enter amount (min ₹' + min.toLocaleString('en-IN') + ')';
   }
 
 
@@ -1777,9 +1780,18 @@
     if (tab === 'deposit') { checkDepositBonus(); loadDepositHistory(); }
   }
 
-  function selectMethod(el) {
+  function selectMethod(el, method) {
     el.closest('.deposit-methods').querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
+    // Auto-set minimum amount based on method
+    const depositAmtInput = document.getElementById('depositAmount');
+    if (method === 'usdt' && depositAmtInput) {
+      const current = parseFloat(depositAmtInput.value || 0);
+      if (current < 1000) {
+        depositAmtInput.value = 1000;
+        updateBonusPreview();
+      }
+    }
   }
 
   function setAmount(el, val) {
@@ -1935,7 +1947,7 @@
   }
 
   async function doWithdraw() {
-    const minAmt = currentWithdrawMethod === 'upi' ? 300 : currentWithdrawMethod === 'bank' ? 500 : 1000;
+    const minAmt = currentWithdrawMethod === 'upi' ? 300 : currentWithdrawMethod === 'bank' ? 500 : 3000;
     const amt = parseFloat(document.getElementById('withdrawAmount').value);
     if (!amt || amt < minAmt) { showToast('⚠️ Minimum withdrawal for ' + currentWithdrawMethod.toUpperCase() + ' is ₹' + minAmt); return; }
     if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
@@ -3780,12 +3792,12 @@
       <div class="section-title" style="font-size:1.2rem;margin-bottom:0.4rem;">Select Payment Method</div>
       <div class="section-sub">Choose how you want to deposit funds</div>
       <div class="deposit-methods">
-        <div class="method-card selected" onclick="selectMethod(this)" style="flex:1;">
+        <div class="method-card selected" onclick="selectMethod(this,'upi')" style="flex:1;">
           <div class="method-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6C3CE1,#4B9BF5);display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;font-size:1.3rem;">📲</div>
           <div class="method-name">UPI</div>
           <div class="method-limit">Min ₹300</div>
         </div>
-        <div class="method-card" onclick="selectMethod(this)" style="flex:1;">
+        <div class="method-card" onclick="selectMethod(this,'usdt')" style="flex:1;">
           <div class="method-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#26a17b,#1a7a5c);display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;font-size:1.4rem;font-weight:900;color:#fff;">₮</div>
           <div class="method-name">USDT</div>
           <div class="method-limit">Min ₹1,000</div>
@@ -3918,14 +3930,14 @@
         <div class="method-card" id="wm-usdt" onclick="selectWithdrawMethod('usdt',this)" style="flex:1;">
           <div class="method-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#26a17b,#1a7a5c);display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;font-size:1.4rem;font-weight:900;color:#fff;">₮</div>
           <div class="method-name">USDT</div>
-          <div class="method-limit">Min ₹1,000</div>
+          <div class="method-limit">Min ₹3,000</div>
         </div>
       </div>
 
       <!-- Amount -->
       <div class="form-group" style="max-width:420px;">
         <label class="form-label">Withdraw Amount (₹)</label>
-        <input class="form-input" type="number" id="withdrawAmount" placeholder="Enter amount (min ₹200)">
+        <input class="form-input" type="number" id="withdrawAmount" placeholder="Enter amount (min ₹300)">
       </div>
 
       <!-- UPI Fields -->
