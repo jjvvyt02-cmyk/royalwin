@@ -305,6 +305,7 @@
   .ref-invite-code { font-family:'Cinzel',serif; font-size:0.95rem; font-weight:800; color:var(--gold2); display:flex; align-items:center; gap:0.5rem; }
 
   /* Nav cards row */
+  .ref-nav-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.7rem; }
   .ref-nav-card {
     background:var(--card); border:1px solid var(--border); border-radius:14px;
     padding:1rem 1.2rem; cursor:pointer; display:flex; align-items:center;
@@ -1351,65 +1352,207 @@
       </div>
     </div>
 
-    <!-- Subordinate History Table -->
-    <div class="sub-history">
-      <div class="sub-history-tabs">
-        <button class="sub-htab active" id="subTab-subordinates" onclick="showRefSubTab('subordinates')">👥 Subordinates</button>
-        <button class="sub-htab" id="subTab-commission" onclick="showRefSubTab('commission')">💰 Commission</button>
-      </div>
-
-      <!-- Subordinates Tab -->
-      <div id="refSubContent-subordinates">
-        <!-- Search bar -->
-        <div style="padding:0.6rem 0.9rem;border-bottom:1px solid var(--border);">
-          <div style="display:flex;align-items:center;gap:0.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.45rem 0.8rem;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            <input id="refSearchInput" type="text" placeholder="Search by UID or member ID..." oninput="searchRefHistory(this.value)"
-              style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:0.78rem;font-family:'Exo 2',sans-serif;">
-            <button onclick="clearRefSearch()" id="refSearchClear" style="display:none;background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:0;">✕</button>
+    <!-- Nav to detail pages -->
+    <div class="ref-nav-grid" style="margin:0.8rem 1rem 0;">
+      <div class="ref-nav-card" onclick="showPage('subdata')">
+        <div class="ref-nav-left">
+          <div class="ref-nav-icon">👥</div>
+          <div>
+            <div class="ref-nav-title">Subordinate data</div>
+            <div class="ref-nav-sub">View all levels</div>
           </div>
         </div>
-        <!-- Level filter -->
-        <div style="display:flex;gap:0.4rem;padding:0.6rem 0.9rem;border-bottom:1px solid var(--border);overflow-x:auto;">
-          <button onclick="filterRefLevel(this,'all')" class="sub-level-filter active-filter" style="flex-shrink:0;padding:0.25rem 0.7rem;border-radius:20px;border:1px solid var(--gold);background:rgba(240,192,64,0.15);color:var(--gold);font-size:0.72rem;font-weight:700;cursor:pointer;">All</button>
-          <button onclick="filterRefLevel(this,'1')" class="sub-level-filter" style="flex-shrink:0;padding:0.25rem 0.7rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;font-weight:700;cursor:pointer;">Level 1</button>
-          <button onclick="filterRefLevel(this,'2')" class="sub-level-filter" style="flex-shrink:0;padding:0.25rem 0.7rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;font-weight:700;cursor:pointer;">Level 2</button>
-          <button onclick="filterRefLevel(this,'3')" class="sub-level-filter" style="flex-shrink:0;padding:0.25rem 0.7rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;font-weight:700;cursor:pointer;">Level 3</button>
-          <button onclick="filterRefLevel(this,'4')" class="sub-level-filter" style="flex-shrink:0;padding:0.25rem 0.7rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;font-weight:700;cursor:pointer;">Level 4</button>
-        </div>
-        <!-- Result count -->
-        <div id="refSearchCount" style="display:none;padding:0.35rem 0.9rem;font-size:0.7rem;color:var(--muted);border-bottom:1px solid var(--border);"></div>
-        <div class="sub-hist-row head">
-          <div>Lv</div><div>UID</div><div>Joined</div><div>Deposit</div><div>Bet</div>
-        </div>
-        <div id="refHistoryRows">
-          <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">No referrals yet</div>
-        </div>
+        <div class="ref-nav-arrow">›</div>
       </div>
-
-      <!-- Commission Tab -->
-      <div id="refSubContent-commission" style="display:none;">
-        <!-- Search bar -->
-        <div style="padding:0.6rem 0.9rem;border-bottom:1px solid var(--border);">
-          <div style="display:flex;align-items:center;gap:0.5rem;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.45rem 0.8rem;">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-            <input id="commSearchInput" type="text" placeholder="Search by UID..." oninput="searchCommHistory(this.value)"
-              style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:0.78rem;font-family:'Exo 2',sans-serif;">
-            <button onclick="clearCommSearch()" id="commSearchClear" style="display:none;background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.85rem;padding:0;">✕</button>
+      <div class="ref-nav-card" onclick="showPage('commdetails')">
+        <div class="ref-nav-left">
+          <div class="ref-nav-icon">💰</div>
+          <div>
+            <div class="ref-nav-title">Commission details</div>
+            <div class="ref-nav-sub">Earnings breakdown</div>
           </div>
         </div>
-        <div id="commSearchCount" style="display:none;padding:0.35rem 0.9rem;font-size:0.7rem;color:var(--muted);border-bottom:1px solid var(--border);"></div>
-        <div class="sub-hist-row head" style="grid-template-columns:0.5fr 1.6fr 1fr 0.8fr;">
-          <div>Lv</div><div>From User</div><div>Date</div><div>Amount</div>
+        <div class="ref-nav-arrow">›</div>
+      </div>
+    </div>
+    <!-- Rebate ratio - full width -->
+    <div style="margin:0.6rem 1rem 1rem;">
+      <div class="ref-nav-card" onclick="showPage('rebateratio')" style="width:100%;box-sizing:border-box;">
+        <div class="ref-nav-left">
+          <div class="ref-nav-icon">%</div>
+          <div>
+            <div class="ref-nav-title">Rebate ratio</div>
+            <div class="ref-nav-sub">Commission rates per level</div>
+          </div>
         </div>
-        <div id="refCommissionRows">
-          <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">No commissions yet</div>
-        </div>
+        <div class="ref-nav-arrow">›</div>
       </div>
     </div>
 
     <!-- Hidden QR canvas for download -->
     <canvas id="refQrCanvas" width="200" height="200" style="display:none;"></canvas>
+  </div>
+</div>
+
+<!-- SUBORDINATE DATA PAGE -->
+<div class="page" id="page-subdata">
+  <div style="max-width:520px;margin:0 auto;padding:0 0 5rem;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
+      <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.3rem;font-family:'Exo 2',sans-serif;">‹ Back</button>
+      <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Subordinate Data</div>
+      <button onclick="loadSubData()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;">🔄</button>
+    </div>
+
+    <!-- Filters -->
+    <div style="padding:0.8rem 1rem;display:flex;gap:0.6rem;align-items:center;">
+      <!-- Search -->
+      <div style="flex:1;display:flex;align-items:center;gap:0.4rem;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.8rem;">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+        <input id="subdataSearch" type="text" placeholder="Search subordinate UID..." oninput="filterSubData()" style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:0.78rem;font-family:'Exo 2',sans-serif;">
+      </div>
+      <!-- Search button -->
+      <button onclick="filterSubData()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.5rem 0.8rem;color:#000;font-weight:800;cursor:pointer;font-size:0.9rem;">🔍</button>
+    </div>
+
+    <!-- Level + Date filters -->
+    <div style="padding:0 1rem 0.8rem;display:flex;gap:0.6rem;">
+      <select id="subdataLevel" onchange="filterSubData()" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.8rem;color:var(--text);font-size:0.82rem;font-family:'Exo 2',sans-serif;outline:none;">
+        <option value="all">All</option>
+        <option value="1">Level 1</option>
+        <option value="2">Level 2</option>
+        <option value="3">Level 3</option>
+        <option value="4">Level 4</option>
+      </select>
+      <input id="subdataDate" type="date" onchange="filterSubData()" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.8rem;color:var(--text);font-size:0.82rem;font-family:'Exo 2',sans-serif;outline:none;color-scheme:dark;">
+    </div>
+
+    <!-- Stats grid -->
+    <div style="margin:0 1rem 0.8rem;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;">
+        <div style="padding:1rem;border-right:1px solid var(--border);border-bottom:1px solid var(--border);">
+          <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-deposits">0</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Deposits</div>
+        </div>
+        <div style="padding:1rem;border-bottom:1px solid var(--border);">
+          <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-depamt">0.00</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Deposit amount</div>
+        </div>
+        <div style="padding:1rem;border-right:1px solid var(--border);border-bottom:1px solid var(--border);">
+          <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-bettors">0</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Number of bettors</div>
+        </div>
+        <div style="padding:1rem;border-bottom:1px solid var(--border);">
+          <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-totalbet">0.00</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Total bet</div>
+        </div>
+        <div style="padding:1rem;border-right:1px solid var(--border);">
+          <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-firstdeps">0</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">First deposits</div>
+        </div>
+        <div style="padding:1rem;">
+          <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-firstamt">0.00</div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">First deposit amount</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data table -->
+    <div style="margin:0 1rem;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:0.4fr 1.2fr 0.9fr 0.8fr 0.8fr;gap:0.2rem;padding:0.6rem 0.9rem;background:rgba(255,255,255,0.03);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;">
+        <div>Lv</div><div>UID</div><div>Joined</div><div>Deposit</div><div>Bet</div>
+      </div>
+      <div id="subdataRows">
+        <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">No data</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- COMMISSION DETAILS PAGE -->
+<div class="page" id="page-commdetails">
+  <div style="max-width:520px;margin:0 auto;padding:0 0 5rem;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
+      <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.3rem;font-family:'Exo 2',sans-serif;">‹ Back</button>
+      <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Commission Details</div>
+      <button onclick="loadCommDetails()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;">🔄</button>
+    </div>
+
+    <!-- Date filter + total -->
+    <div style="margin:0.8rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;">
+      <input id="commdetailsDate" type="date" onchange="loadCommDetails()" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.6rem 1rem;color:var(--text);font-size:0.85rem;font-family:'Exo 2',sans-serif;outline:none;color-scheme:dark;margin-bottom:0.8rem;box-sizing:border-box;">
+      <div style="display:flex;align-items:center;justify-content:space-between;">
+        <span style="font-size:0.85rem;font-weight:700;color:var(--text);">Total commission</span>
+        <span style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--green);" id="commdetailsTotal">0.00</span>
+      </div>
+    </div>
+
+    <!-- Commission list -->
+    <div style="margin:0 1rem;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div style="display:grid;grid-template-columns:0.4fr 1.2fr 1fr 0.8fr;gap:0.2rem;padding:0.6rem 0.9rem;background:rgba(255,255,255,0.03);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;">
+        <div>Lv</div><div>UID</div><div>Type</div><div>Amount</div>
+      </div>
+      <div id="commdetailsRows">
+        <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">No data</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- REBATE RATIO PAGE -->
+<div class="page" id="page-rebateratio">
+  <div style="max-width:520px;margin:0 auto;padding:0 0 5rem;">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
+      <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">‹ Back</button>
+      <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Rebate Ratio</div>
+      <div style="width:40px;"></div>
+    </div>
+
+    <div style="padding:1rem;">
+      <!-- Lottery tab only -->
+      <div style="margin-bottom:1rem;">
+        <div style="display:inline-block;background:linear-gradient(135deg,#c07a10,var(--gold2));color:#000;font-weight:800;font-size:0.85rem;padding:0.4rem 1.2rem;border-radius:8px;">Lottery</div>
+      </div>
+
+      <!-- Rebate level card -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+        <div style="padding:1rem 1.2rem;border-bottom:1px solid var(--border);">
+          <div style="font-size:0.9rem;font-weight:800;color:var(--text);">Rebate level L0</div>
+        </div>
+        <!-- Level rows -->
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;border-bottom:1px solid rgba(255,255,255,0.05);">
+          <div style="display:flex;align-items:center;gap:0.7rem;">
+            <span class="ref-level-badge lv1" style="font-size:0.72rem;">L1</span>
+            <span style="font-size:0.85rem;color:var(--muted);">1 level lower commission rebate</span>
+          </div>
+          <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l1">—</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;border-bottom:1px solid rgba(255,255,255,0.05);">
+          <div style="display:flex;align-items:center;gap:0.7rem;">
+            <span class="ref-level-badge lv2" style="font-size:0.72rem;">L2</span>
+            <span style="font-size:0.85rem;color:var(--muted);">2 level lower commission rebate</span>
+          </div>
+          <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l2">—</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;border-bottom:1px solid rgba(255,255,255,0.05);">
+          <div style="display:flex;align-items:center;gap:0.7rem;">
+            <span class="ref-level-badge lv3" style="font-size:0.72rem;">L3</span>
+            <span style="font-size:0.85rem;color:var(--muted);">3 level lower commission rebate</span>
+          </div>
+          <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l3">—</span>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;">
+          <div style="display:flex;align-items:center;gap:0.7rem;">
+            <span class="ref-level-badge lv4" style="font-size:0.72rem;">L4</span>
+            <span style="font-size:0.85rem;color:var(--muted);">4 level lower commission rebate</span>
+          </div>
+          <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold2);" id="rebate-l4">—</span>
+        </div>
+      </div>
+
+      <div style="margin-top:0.8rem;font-size:0.72rem;color:var(--muted);text-align:center;">Commission rates are set by the admin and may change.</div>
+    </div>
   </div>
 </div>
 
@@ -1424,6 +1567,29 @@
       if (pageEl) pageEl.classList.add('active');
       window.scrollTo(0, 0);
       updateMobileNav(pageName);
+    }
+
+    if (name === 'rebateratio') {
+      _showPageInternal(name);
+      loadRebateRates();
+      return;
+    }
+
+    if (name === 'subdata') {
+      _showPageInternal('subdata');
+      // Set today's date by default
+      const dateEl = document.getElementById('subdataDate');
+      if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
+      loadSubData();
+      return;
+    }
+
+    if (name === 'commdetails') {
+      _showPageInternal('commdetails');
+      const dateEl = document.getElementById('commdetailsDate');
+      if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
+      loadCommDetails();
+      return;
     }
 
     if (name === 'bonus100') {
@@ -1503,6 +1669,94 @@
     }
   }
 
+  // ── GIFTS ──
+  function showGiftsModal() {
+    const m = document.getElementById('giftsModal');
+    if (m) { m.style.display = 'flex'; loadGiftHistory(); }
+  }
+  function closeGiftsModal() {
+    const m = document.getElementById('giftsModal');
+    if (m) m.style.display = 'none';
+  }
+  async function loadGiftHistory() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    const snap = await db.ref('users/' + user.uid + '/redeemedGifts').once('value');
+    const gifts = snap.val() ? Object.values(snap.val()) : [];
+    const el = document.getElementById('giftHistoryList');
+    if (!el) return;
+    if (gifts.length === 0) { el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.8rem;">No gifts redeemed yet</div>'; return; }
+    el.innerHTML = gifts.map(g => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:0.7rem 1rem;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-size:0.82rem;font-weight:700;color:var(--gold);">${g.code}</div>
+          <div style="font-size:0.68rem;color:var(--muted);">${new Date(g.redeemedAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div>
+        </div>
+        <div style="font-size:0.85rem;font-weight:700;color:var(--green);">+₹${g.amount}</div>
+      </div>`).join('');
+  }
+  async function redeemGiftCode() {
+    const input = document.getElementById('giftCodeInput');
+    const code = input ? input.value.trim().toUpperCase() : '';
+    if (!code) { showToast('⚠️ Enter a gift code'); return; }
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) { showToast('🔐 Please sign in'); return; }
+    try {
+      // Check if code exists in Firebase giftCodes
+      const codeSnap = await db.ref('giftCodes/' + code).once('value');
+      const giftData = codeSnap.val();
+      if (!giftData) { showToast('❌ Invalid gift code'); return; }
+      if (!giftData.active) { showToast('❌ This code has expired'); return; }
+      // Check if already redeemed by this user
+      const redeemedSnap = await db.ref('users/' + user.uid + '/redeemedGifts/' + code).once('value');
+      if (redeemedSnap.val()) { showToast('⚠️ You already redeemed this code'); return; }
+      // Check max redemptions
+      if (giftData.maxUses && (giftData.usedCount || 0) >= giftData.maxUses) { showToast('❌ This code has reached its limit'); return; }
+      // Credit balance
+      const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
+      const newBal = parseFloat(((balSnap.val() || 0) + giftData.amount).toFixed(2));
+      await db.ref('users/' + user.uid + '/balance').set(newBal);
+      updateBalanceDisplay(newBal);
+      // Record redemption
+      await db.ref('users/' + user.uid + '/redeemedGifts/' + code).set({ code, amount: giftData.amount, redeemedAt: Date.now() });
+      // Increment usedCount
+      await db.ref('giftCodes/' + code + '/usedCount').set((giftData.usedCount || 0) + 1);
+      if (input) input.value = '';
+      showToast('🎁 Gift redeemed! +₹' + giftData.amount + ' added to wallet');
+      loadGiftHistory();
+    } catch(e) { showToast('❌ Redemption failed. Try again.'); console.warn(e); }
+  }
+
+  // ── LANGUAGE ──
+  window._currentLang = localStorage.getItem('royalwin_lang') || 'en';
+  function showLanguageModal() {
+    const m = document.getElementById('languageModal');
+    if (m) { m.style.display = 'flex'; updateLangUI(window._currentLang); }
+  }
+  function closeLanguageModal() {
+    const m = document.getElementById('languageModal');
+    if (m) m.style.display = 'none';
+  }
+  function updateLangUI(lang) {
+    ['en','hi'].forEach(l => {
+      const opt = document.getElementById('langOpt-' + l);
+      const chk = document.getElementById('langCheck-' + l);
+      if (opt) { opt.style.background = l === lang ? 'rgba(240,192,64,0.1)' : 'var(--bg3)'; opt.style.borderColor = l === lang ? 'var(--gold)' : 'var(--border)'; }
+      if (chk) chk.style.display = l === lang ? 'block' : 'none';
+    });
+    const label = document.getElementById('currentLangLabel');
+    if (label) label.textContent = lang === 'hi' ? 'हिन्दी' : 'English';
+  }
+  function setLanguage(lang) {
+    window._currentLang = lang;
+    localStorage.setItem('royalwin_lang', lang);
+    updateLangUI(lang);
+    showToast(lang === 'hi' ? '🇮🇳 भाषा बदली गई: हिन्दी' : '🇬🇧 Language set: English');
+    setTimeout(closeLanguageModal, 800);
+  }
+
   async function logout() {
     await firebase.auth().signOut();
     isLoggedIn = false;
@@ -1531,6 +1785,129 @@
     const link = document.getElementById('refLink').textContent;
     navigator.clipboard.writeText(link).catch(() => {});
     showToast('🔗 Referral link copied!');
+  }
+
+  // ── REBATE RATIO ──
+  async function loadRebateRates() {
+    try {
+      const db = window.fbDB || fbDB;
+      // Try to load from Firebase (admin sets these under /settings/commissionRates)
+      const snap = await db.ref('settings/commissionRates').once('value');
+      const rates = snap.val() || {};
+      // Fallback defaults if admin hasn't set them yet
+      const l1 = rates.l1 != null ? rates.l1 : null;
+      const l2 = rates.l2 != null ? rates.l2 : null;
+      const l3 = rates.l3 != null ? rates.l3 : null;
+      const l4 = rates.l4 != null ? rates.l4 : null;
+      const fmt = v => v != null ? Number(v).toFixed(3) + '%' : 'TBD';
+      document.getElementById('rebate-l1').textContent = fmt(l1);
+      document.getElementById('rebate-l2').textContent = fmt(l2);
+      document.getElementById('rebate-l3').textContent = fmt(l3);
+      document.getElementById('rebate-l4').textContent = fmt(l4);
+    } catch(e) {
+      ['l1','l2','l3','l4'].forEach(l => {
+        const el = document.getElementById('rebate-' + l);
+        if (el) el.textContent = 'TBD';
+      });
+    }
+  }
+
+  // ── SUBORDINATE DATA PAGE ──
+  function filterSubData() { renderSubDataRows(window._refAllData || []); }
+
+  function loadSubData() { renderSubDataRows(window._refAllData || []); }
+
+  function renderSubDataRows(allRefs) {
+    const searchVal = (document.getElementById('subdataSearch')?.value || '').trim().toLowerCase();
+    const levelVal = document.getElementById('subdataLevel')?.value || 'all';
+    const dateVal = document.getElementById('subdataDate')?.value || '';
+
+    let filtered = allRefs;
+
+    // Level filter
+    if (levelVal !== 'all') filtered = filtered.filter(r => String(r.level || 1) === levelVal);
+
+    // Date filter — joined on that day
+    if (dateVal) {
+      const dayStart = new Date(dateVal).setHours(0,0,0,0);
+      const dayEnd = dayStart + 86400000;
+      filtered = filtered.filter(r => (r.joinedAt || 0) >= dayStart && (r.joinedAt || 0) < dayEnd);
+    }
+
+    // Search filter
+    if (searchVal) filtered = filtered.filter(r => (r.uid||'').toLowerCase().includes(searchVal) || (r.memberId||'').toLowerCase().includes(searchVal));
+
+    // Update stats
+    const deps = filtered.filter(r => r.firstDepositAmt > 0);
+    const bettors = filtered.filter(r => r.totalBet > 0);
+    document.getElementById('sd-deposits').textContent = deps.length;
+    document.getElementById('sd-depamt').textContent = deps.reduce((s,r) => s + (r.firstDepositAmt||0), 0).toLocaleString('en-IN', {minimumFractionDigits:2});
+    document.getElementById('sd-bettors').textContent = bettors.length;
+    document.getElementById('sd-totalbet').textContent = filtered.reduce((s,r) => s + (r.totalBet||0), 0).toLocaleString('en-IN', {minimumFractionDigits:2});
+    document.getElementById('sd-firstdeps').textContent = deps.length;
+    document.getElementById('sd-firstamt').textContent = deps.reduce((s,r) => s + (r.firstDepositAmt||0), 0).toLocaleString('en-IN', {minimumFractionDigits:2});
+
+    // Render rows
+    const rowsEl = document.getElementById('subdataRows');
+    if (!rowsEl) return;
+    if (filtered.length === 0) { rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">No data</div>'; return; }
+    const levelColors = {'1':'var(--gold2)','2':'var(--green)','3':'#a87dff','4':'var(--red2)'};
+    rowsEl.innerHTML = filtered.map(r => {
+      const lv = String(r.level||1);
+      const joined = r.joinedAt ? new Date(r.joinedAt).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) : '—';
+      const dep = r.firstDepositAmt ? '₹'+Number(r.firstDepositAmt).toLocaleString('en-IN') : '—';
+      const bet = r.totalBet ? '₹'+Number(r.totalBet).toLocaleString('en-IN') : '—';
+      const shortUid = (r.uid||'').substring(0,10) + ((r.uid||'').length > 10 ? '…' : '');
+      return `<div style="display:grid;grid-template-columns:0.4fr 1.2fr 0.9fr 0.8fr 0.8fr;gap:0.2rem;padding:0.6rem 0.9rem;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.72rem;align-items:center;">
+        <div><span class="ref-level-badge lv${lv}" style="font-size:0.6rem;padding:0.1rem 0.3rem;">L${lv}</span></div>
+        <div style="overflow:hidden;">
+          <div style="font-size:0.68rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.uid||''}">${shortUid||'—'}</div>
+          <div style="font-size:0.6rem;color:var(--muted);">${r.memberId?'ID:'+r.memberId:''}</div>
+        </div>
+        <div style="color:var(--muted);font-size:0.68rem;">${joined}</div>
+        <div style="font-size:0.7rem;color:${r.firstDepositAmt?'var(--green)':'var(--muted)'};">${dep}</div>
+        <div style="font-size:0.7rem;color:${r.totalBet?'var(--gold)':'var(--muted)'};">${bet}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── COMMISSION DETAILS PAGE ──
+  function loadCommDetails() {
+    const allRefs = window._refAllData || [];
+    const dateVal = document.getElementById('commdetailsDate')?.value || '';
+    const rowsEl = document.getElementById('commdetailsRows');
+    const totalEl = document.getElementById('commdetailsTotal');
+
+    let commRows = [];
+    allRefs.forEach(r => {
+      if (r.bonus && r.bonus > 0) commRows.push({lv: r.level||1, uid: r.uid||'', memberId: r.memberId||'', date: r.creditedAt||r.joinedAt, amount: r.bonus, type: 'Reg Bonus'});
+      if (r.commission && r.commission > 0) commRows.push({lv: r.level||1, uid: r.uid||'', memberId: r.memberId||'', date: r.creditedAt||r.joinedAt, amount: r.commission, type: 'Commission'});
+    });
+
+    // Date filter
+    if (dateVal) {
+      const dayStart = new Date(dateVal).setHours(0,0,0,0);
+      const dayEnd = dayStart + 86400000;
+      commRows = commRows.filter(c => (c.date||0) >= dayStart && (c.date||0) < dayEnd);
+    }
+
+    commRows.sort((a,b) => (b.date||0) - (a.date||0));
+    const total = commRows.reduce((s,c) => s + (c.amount||0), 0);
+    if (totalEl) totalEl.textContent = total.toLocaleString('en-IN', {minimumFractionDigits:2});
+
+    if (!rowsEl) return;
+    if (commRows.length === 0) { rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">No data</div>'; return; }
+
+    rowsEl.innerHTML = commRows.map(c => {
+      const shortUid = (c.uid||'').substring(0,10) + ((c.uid||'').length > 10 ? '…' : '');
+      const d = c.date ? new Date(c.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) : '—';
+      return `<div style="display:grid;grid-template-columns:0.4fr 1.2fr 1fr 0.8fr;gap:0.2rem;padding:0.6rem 0.9rem;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.72rem;align-items:center;">
+        <div><span class="ref-level-badge lv${c.lv}" style="font-size:0.6rem;padding:0.1rem 0.3rem;">L${c.lv}</span></div>
+        <div style="font-size:0.68rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${c.uid}">${shortUid||'—'}</div>
+        <div style="font-size:0.68rem;color:var(--muted);">${c.type}</div>
+        <div style="font-size:0.72rem;font-weight:700;color:var(--green);">+₹${Number(c.amount).toLocaleString('en-IN')}</div>
+      </div>`;
+    }).join('');
   }
 
   // ── REFERRAL AGENCY SYSTEM ──
@@ -4708,13 +5085,16 @@
 
     <!-- Settings list -->
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:0.8rem;">
-      <div onclick="openWheel()" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
-        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎡</span><span style="font-size:0.88rem;">Daily Spin</span></div>
+      <div onclick="showGiftsModal()" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎁</span><span style="font-size:0.88rem;">Gifts</span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
-      <div onclick="showPage('referral')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
-        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎁</span><span style="font-size:0.88rem;">Refer & Earn</span></div>
-        <span style="color:var(--muted);font-size:0.8rem;">›</span>
+      <div onclick="showLanguageModal()" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🌐</span><span style="font-size:0.88rem;">Language</span></div>
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+          <span id="currentLangLabel" style="font-size:0.8rem;color:var(--gold);">English</span>
+          <span style="color:var(--muted);font-size:0.8rem;">›</span>
+        </div>
       </div>
       <div onclick="showPage('gamestats')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">📊</span><span style="font-size:0.88rem;">Game Stats</span></div>
@@ -4729,6 +5109,62 @@
     <!-- Sign out -->
     <button onclick="logout()" style="width:100%;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.25);border-radius:12px;padding:0.9rem;color:var(--red2);font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:1rem;">🚪 Sign Out</button>
 
+  </div>
+</div>
+
+<!-- GIFTS MODAL -->
+<div id="giftsModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:1.5rem 1.2rem 2rem;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">
+      <div style="font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);">🎁 Gifts</div>
+      <button onclick="closeGiftsModal()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;">✕</button>
+    </div>
+    <!-- Gift code input -->
+    <div style="margin-bottom:1rem;">
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Enter Gift Code</div>
+      <div style="display:flex;gap:0.5rem;">
+        <input id="giftCodeInput" type="text" placeholder="e.g. ROYAL100" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;color:var(--text);font-size:0.88rem;font-family:'Exo 2',sans-serif;outline:none;" oninput="this.value=this.value.toUpperCase()">
+        <button onclick="redeemGiftCode()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.7rem 1.2rem;color:#000;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Redeem</button>
+      </div>
+    </div>
+    <!-- Gift history -->
+    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Redeemed Gifts</div>
+    <div id="giftHistoryList" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;min-height:80px;max-height:200px;overflow-y:auto;">
+      <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.8rem;">No gifts redeemed yet</div>
+    </div>
+  </div>
+</div>
+
+<!-- LANGUAGE MODAL -->
+<div id="languageModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:1.5rem 1.2rem 2rem;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">
+      <div style="font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);">🌐 Select Language</div>
+      <button onclick="closeLanguageModal()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;">✕</button>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:0.6rem;">
+      <div onclick="setLanguage('en')" id="langOpt-en" style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;background:rgba(240,192,64,0.1);border:1px solid var(--gold);border-radius:12px;cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;">
+          <span style="font-size:1.4rem;">🇬🇧</span>
+          <div>
+            <div style="font-size:0.9rem;font-weight:700;color:var(--text);">English</div>
+            <div style="font-size:0.72rem;color:var(--muted);">English</div>
+          </div>
+        </div>
+        <span id="langCheck-en" style="color:var(--gold);font-size:1rem;">✓</span>
+      </div>
+      <div onclick="setLanguage('hi')" id="langOpt-hi" style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;background:var(--bg3);border:1px solid var(--border);border-radius:12px;cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;">
+          <span style="font-size:1.4rem;">🇮🇳</span>
+          <div>
+            <div style="font-size:0.9rem;font-weight:700;color:var(--text);">हिन्दी</div>
+            <div style="font-size:0.72rem;color:var(--muted);">Hindi</div>
+          </div>
+        </div>
+        <span id="langCheck-hi" style="color:var(--gold);font-size:1rem;display:none;">✓</span>
+      </div>
+    </div>
+    <div style="margin-top:1rem;font-size:0.72rem;color:var(--muted);text-align:center;">More languages coming soon</div>
   </div>
 </div>
 
