@@ -1636,6 +1636,7 @@
     if (name === 'history') loadTransactionHistory();
     if (name === 'profile') renderBetHistory(currentBetFilter || 'all');
     if (name === 'gamestats') { renderBetHistory('all'); loadGameStats('today'); }
+    if (name === 'support') setTimeout(initLiveChat, 300);
     if (name === 'deposithistory') loadDepositHistoryPage();
     if (name === 'withdrawhistory') loadWithdrawHistoryPage();
     if (name === 'referral') loadReferralData();
@@ -2947,35 +2948,100 @@
     setTimeout(() => showPage('login'), 1200);
   }
 
-  // Live Chat
-  const chatReplies = [
-    "Sure, I can help with that! 😊",
-    "Please allow me a moment to check your account.",
-    "Your request has been noted. Our team will process it shortly.",
-    "For deposits, we support UPI and Crypto. Minimum is ₹300.",
-    "Withdrawals are processed within 24 hours. Please ensure KYC is complete.",
-    "You can find all bonuses on the Promotions page! 🎁",
-    "Is there anything else I can help you with?"
-  ];
-  let chatReplyIndex = 0;
-  function sendChat() {
+  // ── LIVE CHAT (Firebase Real-time) ──
+  let _chatListener = null;
+
+  async function initLiveChat() {
+    const user = window.currentUser;
+    const db = window.fbDB;
+    if (!user || !db) return;
+
+    const chatRef = db.ref('chats/' + user.uid + '/messages');
+    const msgsEl = document.getElementById('chatMessages');
+    if (!msgsEl) return;
+
+    // Remove old listener if any
+    if (_chatListener) db.ref('chats/' + user.uid + '/messages').off('value', _chatListener);
+
+    // Mark chat as open + save user info for admin
+    await db.ref('chats/' + user.uid + '/info').set({
+      uid: user.uid,
+      username: window.userProfile?.username || 'User',
+      memberId: window.userProfile?.memberId || '',
+      lastSeen: Date.now(),
+      status: 'open'
+    });
+
+    // Listen for messages in real-time
+    _chatListener = chatRef.on('value', snap => {
+      const messages = snap.val();
+      msgsEl.innerHTML = '';
+
+      // Welcome message always first
+      const welcome = document.createElement('div');
+      welcome.className = 'msg agent';
+      welcome.innerHTML = '👋 Hello <b>' + (window.userProfile?.username || 'there') + '</b>! Welcome to RoyalWin Support. How can I help you?';
+      msgsEl.appendChild(welcome);
+
+      if (messages) {
+        Object.values(messages).sort((a,b) => a.timestamp - b.timestamp).forEach(m => {
+          const div = document.createElement('div');
+          div.className = 'msg ' + (m.sender === 'admin' ? 'agent' : 'user');
+          div.textContent = m.text;
+
+          // Timestamp
+          const time = document.createElement('div');
+          time.style.cssText = 'font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:3px;text-align:' + (m.sender === 'admin' ? 'left' : 'right');
+          time.textContent = new Date(m.timestamp).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+          div.appendChild(time);
+          msgsEl.appendChild(div);
+        });
+      }
+      msgsEl.scrollTop = msgsEl.scrollHeight;
+
+      // Mark admin messages as read
+      if (messages) {
+        Object.entries(messages).forEach(([key, m]) => {
+          if (m.sender === 'admin' && !m.readByUser) {
+            db.ref('chats/' + user.uid + '/messages/' + key + '/readByUser').set(true);
+          }
+        });
+      }
+    });
+  }
+
+  async function sendChat() {
     const inp = document.getElementById('chatInput');
     const msg = inp.value.trim();
     if (!msg) return;
-    const msgs = document.getElementById('chatMessages');
-    const userMsg = document.createElement('div');
-    userMsg.className = 'msg user'; userMsg.textContent = msg;
-    msgs.appendChild(userMsg);
+
+    const user = window.currentUser;
+    const db = window.fbDB;
+
+    if (!user || !db) {
+      showToast('🔐 Please sign in to use Live Chat');
+      showPage('login');
+      return;
+    }
+
     inp.value = '';
-    msgs.scrollTop = msgs.scrollHeight;
-    setTimeout(() => {
-      const agentMsg = document.createElement('div');
-      agentMsg.className = 'msg agent';
-      agentMsg.textContent = chatReplies[chatReplyIndex % chatReplies.length];
-      chatReplyIndex++;
-      msgs.appendChild(agentMsg);
-      msgs.scrollTop = msgs.scrollHeight;
-    }, 900);
+
+    try {
+      await db.ref('chats/' + user.uid + '/messages').push({
+        text: msg,
+        sender: 'user',
+        timestamp: Date.now(),
+        readByAdmin: false
+      });
+
+      // Update last message for admin list
+      await db.ref('chats/' + user.uid + '/info').update({
+        lastMessage: msg,
+        lastMessageTime: Date.now(),
+        unreadByAdmin: true,
+        status: 'open'
+      });
+    } catch(e) { showToast('❌ Failed to send message'); }
   }
 
   // ── DAILY SPIN WHEEL ──
@@ -5262,16 +5328,22 @@
   <div class="support-page">
     <div class="section-title" style="margin-bottom:0.4rem;">💬 Support Center</div>
     <div class="section-sub" style="margin-bottom:2rem;">We're here 24/7 to help you</div>
-    <div class="support-options">
-      <div class="support-opt" onclick="showToast('📱 Opening WhatsApp...')"><div class="icon">📱</div><div class="lbl">WhatsApp</div><div class="sub">Instant reply</div></div>
-      <div class="support-opt" onclick="showToast('📧 Email support@royalwin.com')"><div class="icon">📧</div><div class="lbl">Email</div><div class="sub">support@royalwin.com</div></div>
-      <div class="support-opt" onclick="showToast('📞 Calling support...')"><div class="icon">📞</div><div class="lbl">Phone</div><div class="sub">+91 99999 00000</div></div>
-      <div class="support-opt" onclick="showPage('support')"><div class="icon">💬</div><div class="lbl">Live Chat</div><div class="sub">Online now</div></div>
+    <div class="support-options" style="grid-template-columns:1fr 1fr;">
+      <div class="support-opt" onclick="window.open('https://t.me/royalwinsupport','_blank')">
+        <div class="icon">✈️</div>
+        <div class="lbl">Telegram</div>
+        <div class="sub">Instant reply</div>
+      </div>
+      <div class="support-opt" onclick="document.getElementById('liveChatSection').scrollIntoView({behavior:'smooth'})">
+        <div class="icon">💬</div>
+        <div class="lbl">Live Chat</div>
+        <div class="sub">Online now</div>
+      </div>
     </div>
-    <div class="chat-window">
+    <div id="liveChatSection" class="chat-window" style="margin-top:1.5rem;">
       <div class="chat-header">
         <div class="agent-avatar">👨</div>
-        <div class="agent-info"><h4>Raj — Support Agent</h4><div class="agent-status"><span class="live-dot"></span>Online</div></div>
+        <div class="agent-info"><h4>RoyalWin — Support Agent</h4><div class="agent-status"><span class="live-dot"></span>Online</div></div>
       </div>
       <div class="chat-messages" id="chatMessages">
         <div class="msg agent">👋 Hello! Welcome to RoyalWin Support. How can I help you today?</div>
