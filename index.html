@@ -1592,6 +1592,7 @@
       return;
     }
 
+    if (name === 'vip') { loadVipPage(); return; }
     if (name === 'bonus100') {
       // Go to wallet deposit tab with 100% bonus locked
       _showPageInternal('wallet');
@@ -1936,7 +1937,199 @@
     showToast('🔗 Referral link copied!');
   }
 
-  // ── REBATE RATIO ──
+  // ── VIP EXP SYSTEM ──
+  const VIP_LEVELS = [
+    { name: 'Bronze',  icon: '🥉', color: '#cd7f32', minExp: 0,    maxExp: 199,  levelupBonus: 50,   weekly: 25,  monthly: 50   },
+    { name: 'Silver',  icon: '🥈', color: '#c0c0c0', minExp: 200,  maxExp: 499,  levelupBonus: 200,  weekly: 125, monthly: 250  },
+    { name: 'Gold',    icon: '🥇', color: '#f0c040', minExp: 500,  maxExp: 999,  levelupBonus: 500,  weekly: 225, monthly: 650  },
+    { name: 'Diamond', icon: '💎', color: '#a87dff', minExp: 1000, maxExp: Infinity, levelupBonus: 1500, weekly: 325, monthly: 1350 },
+  ];
+
+  function getVipLevel(exp) {
+    for (let i = VIP_LEVELS.length - 1; i >= 0; i--) {
+      if (exp >= VIP_LEVELS[i].minExp) return VIP_LEVELS[i];
+    }
+    return VIP_LEVELS[0];
+  }
+
+  async function loadVipPage() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+
+    try {
+      const snap = await db.ref('users/' + user.uid + '/vip').once('value');
+      const vipData = snap.val() || { exp: 0, level: 'Bronze', weeklyClaimedAt: 0, monthlyClaimedAt: 0, levelupClaimed: [] };
+      const exp = vipData.exp || 0;
+      const level = getVipLevel(exp);
+      const levelIdx = VIP_LEVELS.findIndex(l => l.name === level.name);
+      const nextLevel = VIP_LEVELS[levelIdx + 1];
+
+      // Update level name
+      document.getElementById('vipLevelName').textContent = level.icon + ' ' + level.name;
+      document.getElementById('vipLevelName').style.color = level.color;
+      document.getElementById('vipTotalExp').textContent = exp.toLocaleString('en-IN');
+
+      // Progress bar
+      if (nextLevel) {
+        const progressExp = exp - level.minExp;
+        const totalNeeded = nextLevel.minExp - level.minExp;
+        const pct = Math.min(100, Math.round((progressExp / totalNeeded) * 100));
+        document.getElementById('vipProgressBar').style.width = pct + '%';
+        document.getElementById('vipExpProgress').textContent = exp + ' / ' + nextLevel.minExp + ' EXP';
+        document.getElementById('vipNextLevel').textContent = 'Next: ' + nextLevel.name;
+        document.getElementById('vipExpNeeded').textContent = 'Earn ' + (nextLevel.minExp - exp) + ' more EXP to reach ' + nextLevel.name;
+      } else {
+        document.getElementById('vipProgressBar').style.width = '100%';
+        document.getElementById('vipExpProgress').textContent = exp + ' EXP';
+        document.getElementById('vipNextLevel').textContent = '👑 Max Level!';
+        document.getElementById('vipExpNeeded').textContent = 'You have reached the highest VIP level!';
+      }
+
+      // Highlight current level card
+      ['bronze','silver','gold','diamond'].forEach((l, i) => {
+        const card = document.getElementById('vipCard-' + l);
+        if (!card) return;
+        if (VIP_LEVELS[i].name === level.name) {
+          card.style.opacity = '1';
+          card.style.borderColor = level.color;
+          card.style.boxShadow = '0 0 20px ' + level.color + '22';
+        } else if (exp >= VIP_LEVELS[i].minExp) {
+          card.style.opacity = '1'; // unlocked
+        } else {
+          card.style.opacity = '0.5'; // locked
+        }
+      });
+
+      // Bonus amounts for current level
+      document.getElementById('vipWeeklyAmt').textContent = '₹' + level.weekly;
+      document.getElementById('vipMonthlyAmt').textContent = '₹' + level.monthly;
+
+      // Check weekly claim status
+      const now = Date.now();
+      const weekStart = getWeekStart();
+      const monthStart = getMonthStart();
+      const weeklyBtn = document.getElementById('vipWeeklyBtn');
+      const monthlyBtn = document.getElementById('vipMonthlyBtn');
+
+      if (vipData.weeklyClaimedAt >= weekStart) {
+        weeklyBtn.textContent = '✅ Claimed';
+        weeklyBtn.disabled = true;
+        weeklyBtn.style.background = 'var(--bg3)';
+        weeklyBtn.style.color = 'var(--muted)';
+      }
+      if (vipData.monthlyClaimedAt >= monthStart) {
+        monthlyBtn.textContent = '✅ Claimed';
+        monthlyBtn.disabled = true;
+        monthlyBtn.style.background = 'var(--bg3)';
+        monthlyBtn.style.color = 'var(--muted)';
+      }
+
+    } catch(e) { console.warn('VIP load error:', e); }
+  }
+
+  function getWeekStart() {
+    const now = new Date();
+    const day = now.getDay();
+    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
+    return new Date(now.setDate(diff)).setHours(0,0,0,0);
+  }
+
+  function getMonthStart() {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+  }
+
+  async function claimVipBonus(type) {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) { showToast('🔐 Please sign in'); return; }
+
+    try {
+      const snap = await db.ref('users/' + user.uid + '/vip').once('value');
+      const vipData = snap.val() || { exp: 0, weeklyClaimedAt: 0, monthlyClaimedAt: 0 };
+      const exp = vipData.exp || 0;
+      const level = getVipLevel(exp);
+
+      const weekStart = getWeekStart();
+      const monthStart = getMonthStart();
+
+      if (type === 'weekly') {
+        if (vipData.weeklyClaimedAt >= weekStart) { showToast('⚠️ Already claimed this week!'); return; }
+        const amt = level.weekly;
+        const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
+        const newBal = parseFloat(((balSnap.val() || 0) + amt).toFixed(2));
+        await db.ref('users/' + user.uid + '/balance').set(newBal);
+        await db.ref('users/' + user.uid + '/vip/weeklyClaimedAt').set(Date.now());
+        await db.ref('users/' + user.uid + '/transactions/' + Date.now()).set({
+          type: 'vip_weekly', amount: amt, details: level.name + ' VIP Weekly Bonus',
+          balance: newBal, timestamp: Date.now()
+        });
+        updateBalanceDisplay(newBal);
+        const btn = document.getElementById('vipWeeklyBtn');
+        btn.textContent = '✅ Claimed'; btn.disabled = true; btn.style.background = 'var(--bg3)'; btn.style.color = 'var(--muted)';
+        showToast('🎁 ₹' + amt + ' weekly bonus credited!');
+
+      } else if (type === 'monthly') {
+        if (vipData.monthlyClaimedAt >= monthStart) { showToast('⚠️ Already claimed this month!'); return; }
+        const amt = level.monthly;
+        const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
+        const newBal = parseFloat(((balSnap.val() || 0) + amt).toFixed(2));
+        await db.ref('users/' + user.uid + '/balance').set(newBal);
+        await db.ref('users/' + user.uid + '/vip/monthlyClaimedAt').set(Date.now());
+        await db.ref('users/' + user.uid + '/transactions/' + Date.now()).set({
+          type: 'vip_monthly', amount: amt, details: level.name + ' VIP Monthly Bonus',
+          balance: newBal, timestamp: Date.now()
+        });
+        updateBalanceDisplay(newBal);
+        const btn = document.getElementById('vipMonthlyBtn');
+        btn.textContent = '✅ Claimed'; btn.disabled = true; btn.style.background = 'var(--bg3)'; btn.style.color = 'var(--muted)';
+        showToast('🎁 ₹' + amt + ' monthly bonus credited!');
+      }
+    } catch(e) { showToast('❌ Claim failed: ' + e.message); }
+  }
+
+  async function addVipExp(exp) {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    try {
+      const snap = await db.ref('users/' + user.uid + '/vip').once('value');
+      const vipData = snap.val() || { exp: 0, levelupClaimed: [] };
+      const oldExp = vipData.exp || 0;
+      const newExp = oldExp + exp;
+      const oldLevel = getVipLevel(oldExp);
+      const newLevel = getVipLevel(newExp);
+
+      await db.ref('users/' + user.uid + '/vip/exp').set(newExp);
+
+      // Check level up
+      if (newLevel.name !== oldLevel.name) {
+        const claimed = vipData.levelupClaimed || [];
+        if (!claimed.includes(newLevel.name)) {
+          // Credit level-up bonus
+          const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
+          const newBal = parseFloat(((balSnap.val() || 0) + newLevel.levelupBonus).toFixed(2));
+          await db.ref('users/' + user.uid + '/balance').set(newBal);
+          await db.ref('users/' + user.uid + '/vip/levelupClaimed').set([...claimed, newLevel.name]);
+          await db.ref('users/' + user.uid + '/transactions/' + Date.now()).set({
+            type: 'vip_levelup', amount: newLevel.levelupBonus,
+            details: '🎉 Level up! ' + oldLevel.name + ' → ' + newLevel.name,
+            balance: newBal, timestamp: Date.now()
+          });
+          updateBalanceDisplay(newBal);
+          showToast('🎉 Level Up! ' + newLevel.icon + ' ' + newLevel.name + ' — ₹' + newLevel.levelupBonus + ' bonus credited!');
+        }
+      }
+    } catch(e) { console.warn('VIP EXP error:', e); }
+  }
+
+  // Add vip_weekly and vip_monthly to transaction typeConfig
+  const _vipTypes = {
+    vip_weekly:  { icon:'📅', label:'VIP Weekly Bonus',  color:'#27ae60', sign:'+' },
+    vip_monthly: { icon:'🗓️', label:'VIP Monthly Bonus', color:'#27ae60', sign:'+' },
+    vip_levelup: { icon:'⬆️', label:'VIP Level Up',      color:'#f0c040', sign:'+' },
+  };
   function loadRebateRates() {
     const defaults = { l1: 1, l2: 0.8, l3: 0.5, l4: 0.2 };
     const fmt = v => Number(v).toFixed(3) + '%';
@@ -4020,6 +4213,10 @@
           await db.ref('users/' + user.uid + '/roundBets/' + roundKey + '/' + newSel).set(true);
         }
 
+        // ── ADD VIP EXP FOR BET ──
+        const vipExp = Math.floor(amt / 100);
+        if (vipExp > 0) addVipExp(vipExp);
+
         // Update wager progress
         const wagerSnap2 = await db.ref('users/' + user.uid + '/wager').once('value');
         const wager2 = wagerSnap2.val();
@@ -4610,6 +4807,9 @@
       manual_add:        { icon:'➕', label:'Admin Credit',     color:'#27ae60', sign:'+' },
       manual_deduct:     { icon:'➖', label:'Admin Debit',      color:'#e02020', sign:'-' },
       spin:              { icon:'🎡', label:'Daily Spin',       color:'#27ae60', sign:'+' },
+      vip_weekly:        { icon:'📅', label:'VIP Weekly Bonus', color:'#27ae60', sign:'+' },
+      vip_monthly:       { icon:'🗓️', label:'VIP Monthly Bonus',color:'#27ae60', sign:'+' },
+      vip_levelup:       { icon:'⬆️', label:'VIP Level Up',    color:'#f0c040', sign:'+' },
     };
     container.innerHTML = txs.map(tx => {
       const cfg = typeConfig[tx.type] || { icon:'💸', label: tx.type || 'Transaction', color:'var(--gold)', sign:'+' };
@@ -5652,48 +5852,188 @@
 
 <!-- VIP PAGE -->
 <div class="page" id="page-vip">
-  <div class="vip-page">
-    <div class="vip-hero">
-      <h2>💎 VIP Club</h2>
-      <p style="color:var(--muted);max-width:500px;margin:0.5rem auto 0;">Level up and unlock exclusive perks, higher withdrawal limits, personal account managers and more.</p>
+  <div style="max-width:520px;margin:0 auto;padding:5rem 1rem 2rem;">
+
+    <!-- Header -->
+    <div style="text-align:center;margin-bottom:1.5rem;">
+      <div style="font-family:'Cinzel',serif;font-size:1.6rem;font-weight:900;color:var(--gold);">💎 VIP Club</div>
+      <div style="font-size:0.82rem;color:var(--muted);margin-top:0.3rem;">Earn EXP by betting and depositing to level up</div>
     </div>
-    <div class="vip-progress-wrap">
-      <h3>Your Progress — 🥉 Bronze</h3>
-      <div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--muted);margin-bottom:0.3rem;"><span>₹1,800 deposited</span><span>₹5,000 for Silver</span></div>
-      <div class="progress-bar"><div class="progress-fill" style="width:36%"></div></div>
-      <div style="font-size:0.78rem;color:var(--muted);margin-top:0.4rem;">36% to next level — deposit ₹3,200 more to reach Silver</div>
+
+    <!-- Current Level Card -->
+    <div id="vipCurrentCard" style="background:linear-gradient(160deg,#1c1408,#2a1d05);border:1px solid rgba(240,192,64,0.3);border-radius:18px;padding:1.4rem;margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Current Level</div>
+          <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:900;" id="vipLevelName">🥉 Bronze</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.72rem;color:var(--muted);">Total EXP</div>
+          <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:900;color:var(--gold);" id="vipTotalExp">0</div>
+        </div>
+      </div>
+
+      <!-- Progress bar -->
+      <div style="margin-bottom:0.4rem;">
+        <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);margin-bottom:0.4rem;">
+          <span id="vipExpProgress">0 / 200 EXP</span>
+          <span id="vipNextLevel">Next: Silver</span>
+        </div>
+        <div style="background:rgba(255,255,255,0.08);border-radius:20px;height:8px;overflow:hidden;">
+          <div id="vipProgressBar" style="background:linear-gradient(90deg,#c07a10,var(--gold2));height:100%;border-radius:20px;transition:width 0.5s;width:0%;"></div>
+        </div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.4rem;" id="vipExpNeeded">Earn 200 more EXP to reach Silver</div>
+      </div>
+
+      <!-- EXP earning info -->
+      <div style="display:flex;gap:0.8rem;margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(240,192,64,0.1);">
+        <div style="flex:1;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.5rem;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">Bet ₹100</div>
+          <div style="font-size:0.85rem;font-weight:700;color:var(--gold);">+1 EXP</div>
+        </div>
+        <div style="flex:1;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.5rem;text-align:center;">
+          <div style="font-size:0.7rem;color:var(--muted);">Deposit ₹1,000</div>
+          <div style="font-size:0.85rem;font-weight:700;color:var(--gold);">+40 EXP</div>
+        </div>
+      </div>
     </div>
-    <div class="vip-levels">
-      <div class="vip-card current">
-        <div class="vip-icon">🥉</div>
-        <div class="vip-name" style="color:#cd7f32;">Bronze</div>
-        <div class="vip-req">₹0 – ₹5,000</div>
-        <div class="vip-perks">5% cashback<br>Basic support<br>Daily spin</div>
+
+    <!-- Claim Bonuses -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem;">
+      <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);font-size:0.85rem;font-weight:700;color:var(--gold);">🎁 Your Bonuses</div>
+
+      <!-- Weekly bonus -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);">
+        <div>
+          <div style="font-size:0.85rem;font-weight:700;color:var(--text);">📅 Weekly Bonus</div>
+          <div style="font-size:0.7rem;color:var(--muted);">Resets every Monday</div>
+          <div style="font-size:0.72rem;color:var(--gold);margin-top:2px;" id="vipWeeklyAmt">₹25</div>
+        </div>
+        <button id="vipWeeklyBtn" onclick="claimVipBonus('weekly')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.5rem 1.1rem;color:#000;font-weight:800;font-size:0.82rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Claim</button>
       </div>
-      <div class="vip-card">
-        <div class="vip-icon">🥈</div>
-        <div class="vip-name" style="color:#c0c0c0;">Silver</div>
-        <div class="vip-req">₹5,000 – ₹20,000</div>
-        <div class="vip-perks">8% cashback<br>Priority support<br>Weekly bonus</div>
+
+      <!-- Monthly bonus -->
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;">
+        <div>
+          <div style="font-size:0.85rem;font-weight:700;color:var(--text);">🗓️ Monthly Bonus</div>
+          <div style="font-size:0.7rem;color:var(--muted);">Resets 1st of every month</div>
+          <div style="font-size:0.72rem;color:var(--gold);margin-top:2px;" id="vipMonthlyAmt">₹50</div>
+        </div>
+        <button id="vipMonthlyBtn" onclick="claimVipBonus('monthly')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.5rem 1.1rem;color:#000;font-weight:800;font-size:0.82rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Claim</button>
       </div>
-      <div class="vip-card">
-        <div class="vip-icon">🥇</div>
-        <div class="vip-name" style="color:var(--gold);">Gold</div>
-        <div class="vip-req">₹20,000 – ₹1,00,000</div>
-        <div class="vip-perks">12% cashback<br>24/7 manager<br>Higher limits</div>
+    </div>
+
+    <!-- VIP Levels -->
+    <div style="display:flex;flex-direction:column;gap:0.7rem;">
+
+      <!-- Bronze -->
+      <div id="vipCard-bronze" style="background:var(--card);border:1px solid rgba(205,127,50,0.3);border-radius:14px;padding:1rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:0.8rem;">
+            <div style="font-size:1.8rem;">🥉</div>
+            <div>
+              <div style="font-family:'Cinzel',serif;font-weight:800;color:#cd7f32;">Bronze</div>
+              <div style="font-size:0.72rem;color:var(--muted);">0 – 199 EXP</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.7rem;color:var(--muted);">Level-up Bonus</div>
+            <div style="font-weight:800;color:#cd7f32;">₹50</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(255,255,255,0.06);">
+          <div style="background:rgba(205,127,50,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
+            <div style="font-size:0.68rem;color:var(--muted);">Weekly</div>
+            <div style="font-weight:700;color:#cd7f32;">₹25</div>
+          </div>
+          <div style="background:rgba(205,127,50,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
+            <div style="font-size:0.68rem;color:var(--muted);">Monthly</div>
+            <div style="font-weight:700;color:#cd7f32;">₹50</div>
+          </div>
+        </div>
       </div>
-      <div class="vip-card">
-        <div class="vip-icon">💎</div>
-        <div class="vip-name" style="color:#a78bfa;">Platinum</div>
-        <div class="vip-req">₹1,00,000+</div>
-        <div class="vip-perks">18% cashback<br>VIP manager<br>Exclusive events</div>
+
+      <!-- Silver -->
+      <div id="vipCard-silver" style="background:var(--card);border:1px solid rgba(192,192,192,0.2);border-radius:14px;padding:1rem;opacity:0.7;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:0.8rem;">
+            <div style="font-size:1.8rem;">🥈</div>
+            <div>
+              <div style="font-family:'Cinzel',serif;font-weight:800;color:#c0c0c0;">Silver</div>
+              <div style="font-size:0.72rem;color:var(--muted);">200 – 499 EXP</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.7rem;color:var(--muted);">Level-up Bonus</div>
+            <div style="font-weight:800;color:#c0c0c0;">₹200</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(255,255,255,0.06);">
+          <div style="background:rgba(192,192,192,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
+            <div style="font-size:0.68rem;color:var(--muted);">Weekly</div>
+            <div style="font-weight:700;color:#c0c0c0;">₹125</div>
+          </div>
+          <div style="background:rgba(192,192,192,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
+            <div style="font-size:0.68rem;color:var(--muted);">Monthly</div>
+            <div style="font-weight:700;color:#c0c0c0;">₹250</div>
+          </div>
+        </div>
       </div>
-      <div class="vip-card">
-        <div class="vip-icon">👑</div>
-        <div class="vip-name" style="color:var(--red2);">Royal</div>
-        <div class="vip-req">Invite only</div>
-        <div class="vip-perks">25% cashback<br>Dedicated team<br>Custom rewards</div>
+
+      <!-- Gold -->
+      <div id="vipCard-gold" style="background:var(--card);border:1px solid rgba(240,192,64,0.2);border-radius:14px;padding:1rem;opacity:0.7;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:0.8rem;">
+            <div style="font-size:1.8rem;">🥇</div>
+            <div>
+              <div style="font-family:'Cinzel',serif;font-weight:800;color:var(--gold);">Gold</div>
+              <div style="font-size:0.72rem;color:var(--muted);">500 – 999 EXP</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.7rem;color:var(--muted);">Level-up Bonus</div>
+            <div style="font-weight:800;color:var(--gold);">₹500</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(255,255,255,0.06);">
+          <div style="background:rgba(240,192,64,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
+            <div style="font-size:0.68rem;color:var(--muted);">Weekly</div>
+            <div style="font-weight:700;color:var(--gold);">₹225</div>
+          </div>
+          <div style="background:rgba(240,192,64,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
+            <div style="font-size:0.68rem;color:var(--muted);">Monthly</div>
+            <div style="font-weight:700;color:var(--gold);">₹650</div>
+          </div>
+        </div>
       </div>
+
+      <!-- Diamond -->
+      <div id="vipCard-diamond" style="background:var(--card);border:1px solid rgba(167,125,255,0.2);border-radius:14px;padding:1rem;opacity:0.7;">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div style="display:flex;align-items:center;gap:0.8rem;">
+            <div style="font-size:1.8rem;">💎</div>
+            <div>
+              <div style="font-family:'Cinzel',serif;font-weight:800;color:#a87dff;">Diamond</div>
+              <div style="font-size:0.72rem;color:var(--muted);">1000+ EXP</div>
+            </div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.7rem;color:var(--muted);">Level-up Bonus</div>
+            <div style="font-weight:800;color:#a87dff;">₹1,500</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(255,255,255,0.06);">
+          <div style="background:rgba(167,125,255,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
+            <div style="font-size:0.68rem;color:var(--muted);">Weekly</div>
+            <div style="font-weight:700;color:#a87dff;">₹325</div>
+          </div>
+          <div style="background:rgba(167,125,255,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
+            <div style="font-size:0.68rem;color:var(--muted);">Monthly</div>
+            <div style="font-weight:700;color:#a87dff;">₹1,350</div>
+          </div>
+        </div>
+      </div>
+
     </div>
   </div>
 </div>
