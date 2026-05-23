@@ -1566,6 +1566,19 @@
   </div>
 </div>
 
+<!-- DAILY SPIN WHEEL OVERLAY -->
+<div class="wheel-overlay" id="wheelOverlay">
+  <button class="wheel-close" onclick="closeWheel()">✕ Close</button>
+  <div class="wheel-title">🎡 Daily Free Spin</div>
+  <div class="wheel-sub">Spin once a day to win bonus cash!</div>
+  <div class="wheel-wrap">
+    <div class="wheel-pointer"></div>
+    <canvas class="wheel-canvas" id="wheelCanvas" width="280" height="280"></canvas>
+  </div>
+  <button class="btn btn-gold spin-btn" onclick="spinWheel()" id="spinBtn" style="padding:0.8rem 2.5rem;font-size:1rem;">🎰 SPIN!</button>
+  <div class="wheel-result" id="wheelResult"></div>
+</div>
+
 <script>
   let isLoggedIn = false;
 
