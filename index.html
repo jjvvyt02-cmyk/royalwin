@@ -4234,13 +4234,33 @@
     // Show result if bet placed
     // Only show popup and update UI for active timer
     if (isActiveTimer) {
-      // Update history display from this timer's history
       cgHistory = cgHistoryByTimer[timerMode];
-        renderHistRows();
+      renderHistRows();
 
       if (savedSelectedColor !== null || savedSelectedNum !== null || savedSelectedBS !== null) {
         showCGResult(won, winNum, winColor, winAmt, betAmt);
-        addBetToHistory('WinGo', betAmt, histColorLabel + ' / ' + winNum, winAmt.toFixed(0), won, timerRound.toString());
+
+        // ── CREDIT WIN TO FIREBASE BALANCE ──
+        try {
+          const db = window.fbDB || fbDB;
+          const user = window.currentUser;
+          if (db && user) {
+            const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
+            const currentBal = parseFloat(balSnap.val() || 0);
+            let finalBal = currentBal;
+            if (won && winAmt > 0) {
+              finalBal = parseFloat((currentBal + winAmt).toFixed(2));
+              await db.ref('users/' + user.uid + '/balance').set(finalBal);
+              updateBalanceDisplay(finalBal);
+            }
+            // Save bet history with balance snapshot
+            addBetToHistory('WinGo', betAmt, histColorLabel + ' / ' + winNum, winAmt.toFixed(0), won, timerRound.toString(), finalBal);
+          }
+        } catch(e) {
+          console.warn('Win credit error:', e);
+          addBetToHistory('WinGo', betAmt, histColorLabel + ' / ' + winNum, winAmt.toFixed(0), won, timerRound.toString(), 0);
+        }
+
         if (savedPendingBet) {
           cgMyBetsByTimer[timerMode].unshift({
             round: savedPendingBet.round, bet: savedPendingBet.bet,
@@ -4253,7 +4273,6 @@
         }
       }
     } else {
-      // Still store history for inactive timers
       cgHistoryByTimer[timerMode] = cgHistoryByTimer[timerMode] || [];
     }
 
@@ -4671,21 +4690,23 @@
   }
 
   // Add bet to history when round resolves — saves to Firebase
-  async function addBetToHistory(game, bet, result, profit, won, round) {
+  async function addBetToHistory(game, bet, result, profit, won, round, balanceAfter) {
     const now = new Date();
     const time = now.toLocaleDateString('en-IN', {day:'numeric', month:'short'}) + ', ' +
                  now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
 
-    // Get current balance for snapshot
-    let currentBal = 0;
-    try {
-      const db = window.fbDB || fbDB;
-      const user = window.currentUser;
-      if (db && user) {
-        const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
-        currentBal = parseFloat(balSnap.val() || 0);
-      }
-    } catch(e) {}
+    // Use passed balance or get current balance
+    let currentBal = balanceAfter || 0;
+    if (!balanceAfter) {
+      try {
+        const db = window.fbDB || fbDB;
+        const user = window.currentUser;
+        if (db && user) {
+          const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
+          currentBal = parseFloat(balSnap.val() || 0);
+        }
+      } catch(e) {}
+    }
 
     const entry = {
       game, icon:'🎯',
@@ -4694,7 +4715,7 @@
       profit: won ? parseFloat(profit) : -parseFloat(bet),
       won, time, round: round || '—',
       timestamp: Date.now(),
-      balance: currentBal  // ← balance AFTER the bet result
+      balance: currentBal
     };
     betHistoryData.unshift(entry);
     if (currentBetFilter !== undefined) renderBetHistory(currentBetFilter);
