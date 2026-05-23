@@ -4452,21 +4452,41 @@
       try {
         const depSnap = await db.ref('adminRequests/deposits').once('value');
         if (depSnap.val()) {
-          Object.values(depSnap.val())
+          // Get current balance to calculate running balance
+          const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
+          const currentBal = parseFloat(balSnap.val() || 0);
+
+          const approved = Object.values(depSnap.val())
             .filter(d => d.uid === user.uid && d.status === 'approved')
-            .forEach(d => {
-              const totalAmt = (d.amount || 0) + (d.bonusAmt || 0);
-              const details = d.bonusAmt > 0
-                ? 'Deposit + ' + d.bonusPct + '% bonus (₹' + d.bonusAmt + ')'
-                : 'Deposit approved';
-              txs.push({
-                type: 'deposit',
-                amount: totalAmt,
-                details: details,
-                balance: d.balanceAfter || 0,
-                timestamp: d.timestamp || 0
-              });
+            .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); // oldest first
+
+          // Calculate running balance for those missing balanceAfter
+          let runningBal = currentBal;
+          // Work backwards from current balance
+          for (let i = approved.length - 1; i >= 0; i--) {
+            const d = approved[i];
+            if (!d.balanceAfter) {
+              approved[i]._computedBal = parseFloat(runningBal.toFixed(2));
+            } else {
+              approved[i]._computedBal = d.balanceAfter;
+            }
+            const totalAmt = (d.amount || 0) + (d.bonusAmt || 0);
+            runningBal = parseFloat((runningBal - totalAmt).toFixed(2));
+          }
+
+          approved.forEach(d => {
+            const totalAmt = (d.amount || 0) + (d.bonusAmt || 0);
+            const details = d.bonusAmt > 0
+              ? 'Deposit + ' + d.bonusPct + '% bonus (₹' + d.bonusAmt + ')'
+              : 'Deposit approved';
+            txs.push({
+              type: 'deposit',
+              amount: totalAmt,
+              details: details,
+              balance: d._computedBal || d.balanceAfter || 0,
+              timestamp: d.timestamp || 0
             });
+          });
         }
       } catch(e) { console.warn('dep err:', e); }
 
@@ -4510,7 +4530,7 @@
         }
       } catch(e) { console.warn('tx err:', e); }
 
-      // 4. Bet history
+      // 4. Bet history — balance saved per entry
       try {
         const betSnap = await db.ref('users/' + user.uid + '/betHistory').once('value');
         if (betSnap.val()) {
@@ -4655,13 +4675,26 @@
     const now = new Date();
     const time = now.toLocaleDateString('en-IN', {day:'numeric', month:'short'}) + ', ' +
                  now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+
+    // Get current balance for snapshot
+    let currentBal = 0;
+    try {
+      const db = window.fbDB || fbDB;
+      const user = window.currentUser;
+      if (db && user) {
+        const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
+        currentBal = parseFloat(balSnap.val() || 0);
+      }
+    } catch(e) {}
+
     const entry = {
       game, icon:'🎯',
       color: won ? '#27ae60' : '#e02020',
       bet: parseFloat(bet), result,
       profit: won ? parseFloat(profit) : -parseFloat(bet),
       won, time, round: round || '—',
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      balance: currentBal  // ← balance AFTER the bet result
     };
     betHistoryData.unshift(entry);
     if (currentBetFilter !== undefined) renderBetHistory(currentBetFilter);
