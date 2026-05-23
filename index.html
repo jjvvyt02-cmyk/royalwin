@@ -4432,41 +4432,23 @@
     container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
     try {
       let txs = [];
+      const depositTimestamps = new Set(); // track deposit timestamps to avoid duplicates
 
-      // 1. User transactions (bonuses, commissions, admin credits)
-      try {
-        const txSnap = await db.ref('users/' + user.uid + '/transactions').once('value');
-        if (txSnap.val()) txs = txs.concat(Object.values(txSnap.val()));
-      } catch(e) { console.warn('tx load err:', e); }
-
-      // 2. Bet history
-      try {
-        const betSnap = await db.ref('users/' + user.uid + '/betHistory').once('value');
-        if (betSnap.val()) {
-          Object.values(betSnap.val()).forEach(b => {
-            txs.push({
-              type: b.won ? 'win' : 'loss',
-              amount: b.won ? parseFloat(b.profit||0) : -parseFloat(b.bet||0),
-              details: (b.game||'Game') + ' · ' + (b.result||''),
-              balance: b.balance || 0,
-              timestamp: b.timestamp || 0
-            });
-          });
-        }
-      } catch(e) { console.warn('bet load err:', e); }
-
-      // 3. Deposits from adminRequests — get all then filter by uid
+      // 1. Deposits from adminRequests (source of truth for status)
       try {
         const depSnap = await db.ref('adminRequests/deposits').once('value');
         if (depSnap.val()) {
           Object.values(depSnap.val()).filter(d => d.uid === user.uid).forEach(d => {
+            depositTimestamps.add(d.timestamp);
+            const statusLabel = d.status === 'approved' ? '✅ Approved' : d.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
             txs.push({
               type: 'deposit',
               amount: d.amount || 0,
-              details: (d.method || 'UPI') + (d.bonusPct ? ' · +' + d.bonusPct + '% bonus' : '') + ' · ' + (d.status || 'pending'),
-              balance: 0,
+              details: statusLabel + (d.bonusPct ? ' · +' + d.bonusPct + '% bonus' : ''),
+              balance: d.balanceAfter || 0,
               timestamp: d.timestamp || 0
             });
+            // Bonus as separate entry
             if (d.status === 'approved' && d.bonusAmt > 0) {
               txs.push({
                 type: 'deposit_bonus',
@@ -4478,30 +4460,60 @@
             }
           });
         }
-      } catch(e) { console.warn('dep load err:', e); }
+      } catch(e) { console.warn('dep err:', e); }
 
-      // 4. Withdrawals from adminRequests
+      // 2. Withdrawals from adminRequests
       try {
         const withSnap = await db.ref('adminRequests/withdrawals').once('value');
         if (withSnap.val()) {
           Object.values(withSnap.val()).filter(w => w.uid === user.uid).forEach(w => {
+            const statusLabel = w.status === 'approved' ? '✅ Approved' : w.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
             txs.push({
               type: 'withdrawal',
               amount: w.amount || 0,
-              details: (w.method || 'UPI') + ' · ' + (w.status || 'pending'),
-              balance: 0,
+              details: statusLabel + ' · ' + (w.method || 'UPI'),
+              balance: w.balanceAfter || 0,
               timestamp: w.timestamp || 0
             });
           });
         }
-      } catch(e) { console.warn('with load err:', e); }
+      } catch(e) { console.warn('with err:', e); }
+
+      // 3. User transactions (bonus, commission, admin credits) — skip duplicates
+      try {
+        const txSnap = await db.ref('users/' + user.uid + '/transactions').once('value');
+        if (txSnap.val()) {
+          Object.values(txSnap.val()).forEach(tx => {
+            // Skip deposit_bonus duplicates already added from adminRequests
+            if (tx.type === 'deposit' && depositTimestamps.has(tx.timestamp)) return;
+            if (tx.type === 'deposit_bonus') return; // already added above
+            txs.push(tx);
+          });
+        }
+      } catch(e) { console.warn('tx err:', e); }
+
+      // 4. Bet history
+      try {
+        const betSnap = await db.ref('users/' + user.uid + '/betHistory').once('value');
+        if (betSnap.val()) {
+          Object.values(betSnap.val()).forEach(b => {
+            txs.push({
+              type: b.won ? 'win' : 'loss',
+              amount: b.won ? parseFloat(b.profit || 0) : parseFloat(b.bet || 0),
+              details: (b.game || 'Game') + ' · ' + (b.result || ''),
+              balance: b.balance || 0,
+              timestamp: b.timestamp || 0
+            });
+          });
+        }
+      } catch(e) { console.warn('bet err:', e); }
 
       // Sort by timestamp desc
       allTransactions = txs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
       renderTxRows(allTransactions);
     } catch(e) {
       console.error('Transaction history error:', e);
-      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Failed to load: ' + e.message + '</div>';
+      container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Error: ' + e.message + '</div>';
     }
   }
 
@@ -4542,19 +4554,21 @@
       spin:          { icon:'🎡', label:'Daily Spin',     color:'#27ae60', sign:'+' },
     };
     container.innerHTML = txs.map(tx => {
-      const cfg = typeConfig[tx.type] || { icon:'💸', label: tx.type || 'Transaction', color:'var(--muted)', sign:'' };
+      const cfg = typeConfig[tx.type] || { icon:'💸', label: tx.type || 'Transaction', color:'var(--gold)', sign:'+' };
       const amt = Math.abs(tx.amount || 0);
-      const isCredit = cfg.sign === '+';
-      const time = tx.timestamp ? new Date(tx.timestamp).toLocaleString('en-IN', {day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) : '—';
-      return `<div class="bh-row">
-        <div class="bh-game">
-          <div class="bh-dot" style="background:${cfg.color};"></div>
-          <span>${cfg.icon} ${cfg.label}</span>
+      const time = tx.timestamp ? new Date(tx.timestamp).toLocaleString('en-IN', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : '—';
+      const balText = tx.balance > 0 ? '₹' + Number(tx.balance).toLocaleString('en-IN', {minimumFractionDigits:2}) : '—';
+      return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.6rem;display:flex;align-items:center;gap:0.8rem;">
+        <div style="width:36px;height:36px;border-radius:10px;background:${cfg.color}22;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">${cfg.icon}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:0.85rem;font-weight:700;color:var(--text);">${cfg.label}</div>
+          <div style="font-size:0.7rem;color:var(--muted);margin-top:1px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tx.details || tx.description || '—'}</div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:1px;">${time}</div>
         </div>
-        <div style="color:${cfg.color};font-weight:700;">${cfg.sign}₹${amt.toLocaleString('en-IN', {minimumFractionDigits:2})}</div>
-        <div style="color:var(--muted);font-size:0.75rem;">${tx.details || tx.game || '—'}</div>
-        <div style="color:var(--muted);font-size:0.75rem;">${time}</div>
-        <div style="color:var(--text);font-size:0.78rem;">₹${(tx.balance || 0).toLocaleString('en-IN', {minimumFractionDigits:2})}</div>
+        <div style="text-align:right;flex-shrink:0;">
+          <div style="font-weight:800;color:${cfg.color};font-size:0.92rem;">${cfg.sign}₹${amt.toLocaleString('en-IN', {minimumFractionDigits:2})}</div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">Bal: ${balText}</div>
+        </div>
       </div>`;
     }).join('');
   }
@@ -5364,12 +5378,15 @@
 <!-- TRANSACTION HISTORY PAGE -->
 <div class="page" id="page-history">
   <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 2rem;">
-    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
-      <button onclick="showPage('profile')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
-      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💸 Transaction History</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+      <div style="display:flex;align-items:center;gap:0.8rem;">
+        <button onclick="showPage('profile')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
+        <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💸 Transaction History</div>
+      </div>
+      <button onclick="loadTransactionHistory()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.8rem;color:var(--muted);cursor:pointer;font-size:0.78rem;font-family:'Exo 2',sans-serif;">🔄 Refresh</button>
     </div>
     <!-- Filter tabs -->
-    <div class="history-filters" style="display:flex;gap:0.5rem;margin-bottom:1rem;overflow-x:auto;padding-bottom:0.3rem;">
+    <div class="history-filters" style="display:flex;gap:0.5rem;margin-bottom:1rem;overflow-x:auto;padding-bottom:0.3rem;scrollbar-width:none;">
       <button class="hf-btn active" onclick="filterTx(this,'all')" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--gold);background:rgba(240,192,64,0.15);color:var(--gold);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">All</button>
       <button class="hf-btn" onclick="filterTx(this,'deposit')" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">⬇️ Deposits</button>
       <button class="hf-btn" onclick="filterTx(this,'withdrawal')" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">⬆️ Withdrawals</button>
