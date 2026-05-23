@@ -4448,30 +4448,24 @@
     try {
       let txs = [];
 
-      // 1. Only APPROVED deposits
+      // 1. Only APPROVED deposits — merge bonus into single row
       try {
         const depSnap = await db.ref('adminRequests/deposits').once('value');
         if (depSnap.val()) {
           Object.values(depSnap.val())
             .filter(d => d.uid === user.uid && d.status === 'approved')
             .forEach(d => {
+              const totalAmt = (d.amount || 0) + (d.bonusAmt || 0);
+              const details = d.bonusAmt > 0
+                ? 'Deposit + ' + d.bonusPct + '% bonus (₹' + d.bonusAmt + ')'
+                : 'Deposit approved';
               txs.push({
                 type: 'deposit',
-                amount: d.amount || 0,
-                details: d.bonusPct ? '+' + d.bonusPct + '% bonus included' : 'Deposit approved',
+                amount: totalAmt,
+                details: details,
                 balance: d.balanceAfter || 0,
                 timestamp: d.timestamp || 0
               });
-              // Bonus as separate line
-              if (d.bonusAmt > 0) {
-                txs.push({
-                  type: 'deposit_bonus',
-                  amount: d.bonusAmt,
-                  details: d.bonusPct + '% deposit bonus',
-                  balance: 0,
-                  timestamp: (d.timestamp || 0) + 1
-                });
-              }
             });
         }
       } catch(e) { console.warn('dep err:', e); }
