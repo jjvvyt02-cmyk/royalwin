@@ -2859,7 +2859,7 @@
     if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
     const db = window.fbDB || fbDB;
     try {
-      // Check wager requirement — BLOCK if not completed
+      // Check wager requirement
       const wagerSnap = await db.ref('users/' + window.currentUser.uid + '/wager').once('value');
       const wager = wagerSnap.val();
       if (wager && wager.required > 0 && wager.completed < wager.required) {
@@ -2867,38 +2867,53 @@
         showToast('❌ Wager incomplete! ₹' + remaining.toLocaleString('en-IN') + ' more to wager before withdrawing.');
         return;
       }
+
+      // Check balance
       const balSnap = await db.ref('users/' + window.currentUser.uid + '/balance').once('value');
       const bal = parseFloat(balSnap.val() || 0);
       if (amt > bal) { showToast('❌ Insufficient balance! Your balance: ₹' + bal.toLocaleString('en-IN')); return; }
-      // Save withdrawal request
-      await db.ref('users/' + window.currentUser.uid + '/withdrawRequests').push({
-        amount: amt, status: 'pending', timestamp: Date.now(), uid: window.currentUser.uid
-      });
+
+      // ── DEDUCT BALANCE IMMEDIATELY ──
+      const newBal = parseFloat((bal - amt).toFixed(2));
+      await db.ref('users/' + window.currentUser.uid + '/balance').set(newBal);
+      updateBalanceDisplay(newBal);
+
       // Check USDT restriction
       if (currentWithdrawMethod === 'usdt' && !window._userHasUsdtDeposit) {
+        // Refund immediately
+        await db.ref('users/' + window.currentUser.uid + '/balance').set(bal);
+        updateBalanceDisplay(bal);
         showToast('❌ USDT withdrawal only available if you deposited via USDT');
         return;
       }
+
       // Get saved details
       const savedSnap = await db.ref('users/' + window.currentUser.uid + '/withdrawDetails/' + currentWithdrawMethod).once('value');
       const saved = savedSnap.val();
-      if (!saved) { showToast('⚠️ Please save your ' + currentWithdrawMethod.toUpperCase() + ' details first'); return; }
+      if (!saved) {
+        // Refund immediately
+        await db.ref('users/' + window.currentUser.uid + '/balance').set(bal);
+        updateBalanceDisplay(bal);
+        showToast('⚠️ Please save your ' + currentWithdrawMethod.toUpperCase() + ' details first');
+        return;
+      }
+
       let upiId = '';
       if (currentWithdrawMethod === 'upi') upiId = saved.upiId;
       else if (currentWithdrawMethod === 'bank') upiId = `Acc: ${saved.acc} | IFSC: ${saved.ifsc} | Bank: ${saved.bank} | Name: ${saved.name}`;
       else upiId = `USDT TRC20: ${saved.addr}`;
+
+      // Save to adminRequests with balanceAfter
       await db.ref('adminRequests/withdrawals').push({
         amount: amt, status: 'pending', uid: window.currentUser.uid,
         username: window.userProfile ? window.userProfile.username : 'Unknown',
         contact: window.userProfile ? (window.userProfile.contact || '') : '',
         upiId, method: currentWithdrawMethod.toUpperCase(),
-        balance: bal, timestamp: Date.now()
+        balanceBefore: bal, balanceAfter: newBal,
+        timestamp: Date.now()
       });
-      await db.ref('users/' + window.currentUser.uid + '/withdrawRequests').push({
-        amount: amt, status: 'pending', method: currentWithdrawMethod.toUpperCase(),
-        upiId, timestamp: Date.now()
-      });
-      showToast('⬆️ Withdrawal of ₹' + amt.toLocaleString('en-IN') + ' submitted! Admin will process shortly.');
+
+      showToast('⬆️ Withdrawal of ₹' + amt.toLocaleString('en-IN') + ' submitted! Balance deducted. Admin will process shortly.');
       loadWithdrawHistory();
     } catch(e) { showToast('❌ Withdrawal failed: ' + e.message); }
   }
@@ -4432,61 +4447,70 @@
     container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
     try {
       let txs = [];
-      const depositTimestamps = new Set(); // track deposit timestamps to avoid duplicates
 
-      // 1. Deposits from adminRequests (source of truth for status)
+      // 1. Only APPROVED deposits
       try {
         const depSnap = await db.ref('adminRequests/deposits').once('value');
         if (depSnap.val()) {
-          Object.values(depSnap.val()).filter(d => d.uid === user.uid).forEach(d => {
-            depositTimestamps.add(d.timestamp);
-            const statusLabel = d.status === 'approved' ? '✅ Approved' : d.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
-            txs.push({
-              type: 'deposit',
-              amount: d.amount || 0,
-              details: statusLabel + (d.bonusPct ? ' · +' + d.bonusPct + '% bonus' : ''),
-              balance: d.balanceAfter || 0,
-              timestamp: d.timestamp || 0
-            });
-            // Bonus as separate entry
-            if (d.status === 'approved' && d.bonusAmt > 0) {
+          Object.values(depSnap.val())
+            .filter(d => d.uid === user.uid && d.status === 'approved')
+            .forEach(d => {
               txs.push({
-                type: 'deposit_bonus',
-                amount: d.bonusAmt,
-                details: d.bonusPct + '% deposit bonus',
-                balance: 0,
-                timestamp: (d.timestamp || 0) + 1
+                type: 'deposit',
+                amount: d.amount || 0,
+                details: d.bonusPct ? '+' + d.bonusPct + '% bonus included' : 'Deposit approved',
+                balance: d.balanceAfter || 0,
+                timestamp: d.timestamp || 0
               });
-            }
-          });
+              // Bonus as separate line
+              if (d.bonusAmt > 0) {
+                txs.push({
+                  type: 'deposit_bonus',
+                  amount: d.bonusAmt,
+                  details: d.bonusPct + '% deposit bonus',
+                  balance: 0,
+                  timestamp: (d.timestamp || 0) + 1
+                });
+              }
+            });
         }
       } catch(e) { console.warn('dep err:', e); }
 
-      // 2. Withdrawals from adminRequests
+      // 2. ALL withdrawals shown — balance already deducted on apply
       try {
         const withSnap = await db.ref('adminRequests/withdrawals').once('value');
         if (withSnap.val()) {
-          Object.values(withSnap.val()).filter(w => w.uid === user.uid).forEach(w => {
-            const statusLabel = w.status === 'approved' ? '✅ Approved' : w.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
-            txs.push({
-              type: 'withdrawal',
-              amount: w.amount || 0,
-              details: statusLabel + ' · ' + (w.method || 'UPI'),
-              balance: w.balanceAfter || 0,
-              timestamp: w.timestamp || 0
+          Object.values(withSnap.val())
+            .filter(w => w.uid === user.uid)
+            .forEach(w => {
+              const statusLabel = w.status === 'approved' ? '✅ Paid' : w.status === 'rejected' ? '❌ Failed' : '⏳ Processing';
+              txs.push({
+                type: 'withdrawal',
+                amount: w.amount || 0,
+                details: statusLabel + ' · ' + (w.method || 'UPI'),
+                balance: w.balanceAfter || 0,
+                timestamp: w.timestamp || 0
+              });
+              // If rejected, also show refund entry
+              if (w.status === 'rejected') {
+                txs.push({
+                  type: 'withdrawal_refund',
+                  amount: w.amount || 0,
+                  details: 'Withdrawal failed — amount refunded',
+                  balance: 0,
+                  timestamp: (w.timestamp || 0) + 2
+                });
+              }
             });
-          });
         }
       } catch(e) { console.warn('with err:', e); }
 
-      // 3. User transactions (bonus, commission, admin credits) — skip duplicates
+      // 3. Other transactions (commission, admin credits, bonuses) — skip deposit types
       try {
         const txSnap = await db.ref('users/' + user.uid + '/transactions').once('value');
         if (txSnap.val()) {
           Object.values(txSnap.val()).forEach(tx => {
-            // Skip deposit_bonus duplicates already added from adminRequests
-            if (tx.type === 'deposit' && depositTimestamps.has(tx.timestamp)) return;
-            if (tx.type === 'deposit_bonus') return; // already added above
+            if (tx.type === 'deposit' || tx.type === 'deposit_bonus') return; // skip, handled above
             txs.push(tx);
           });
         }
@@ -4542,16 +4566,17 @@
       return;
     }
     const typeConfig = {
-      deposit:       { icon:'⬇️', label:'Deposit',        color:'#27ae60', sign:'+' },
-      deposit_bonus: { icon:'🎁', label:'Deposit Bonus',  color:'#f0c040', sign:'+' },
-      withdrawal:    { icon:'⬆️', label:'Withdrawal',     color:'#e02020', sign:'-' },
-      win:           { icon:'🏆', label:'Win',            color:'#27ae60', sign:'+' },
-      loss:          { icon:'🎮', label:'Bet Loss',       color:'#e02020', sign:'-' },
-      commission:    { icon:'💰', label:'Commission',     color:'#27ae60', sign:'+' },
-      referral_bonus:{ icon:'👥', label:'Referral Bonus', color:'#27ae60', sign:'+' },
-      manual_add:    { icon:'➕', label:'Admin Credit',   color:'#27ae60', sign:'+' },
-      manual_deduct: { icon:'➖', label:'Admin Debit',    color:'#e02020', sign:'-' },
-      spin:          { icon:'🎡', label:'Daily Spin',     color:'#27ae60', sign:'+' },
+      deposit:           { icon:'⬇️', label:'Deposit',          color:'#27ae60', sign:'+' },
+      deposit_bonus:     { icon:'🎁', label:'Deposit Bonus',    color:'#f0c040', sign:'+' },
+      withdrawal:        { icon:'⬆️', label:'Withdrawal',       color:'#e02020', sign:'-' },
+      withdrawal_refund: { icon:'↩️', label:'Withdrawal Refund',color:'#27ae60', sign:'+' },
+      win:               { icon:'🏆', label:'Win',              color:'#27ae60', sign:'+' },
+      loss:              { icon:'🎮', label:'Bet Loss',         color:'#e02020', sign:'-' },
+      commission:        { icon:'💰', label:'Commission',       color:'#27ae60', sign:'+' },
+      referral_bonus:    { icon:'👥', label:'Referral Bonus',   color:'#27ae60', sign:'+' },
+      manual_add:        { icon:'➕', label:'Admin Credit',     color:'#27ae60', sign:'+' },
+      manual_deduct:     { icon:'➖', label:'Admin Debit',      color:'#e02020', sign:'-' },
+      spin:              { icon:'🎡', label:'Daily Spin',       color:'#27ae60', sign:'+' },
     };
     container.innerHTML = txs.map(tx => {
       const cfg = typeConfig[tx.type] || { icon:'💸', label: tx.type || 'Transaction', color:'var(--gold)', sign:'+' };
