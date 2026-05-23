@@ -1592,7 +1592,7 @@
       return;
     }
 
-    if (name === 'vip') { loadVipPage(); return; }
+    if (name === 'vip') { _showPageInternal('vip'); updateMobileNav('account'); loadVipPage(); return; }
     if (name === 'bonus100') {
       // Go to wallet deposit tab with 100% bonus locked
       _showPageInternal('wallet');
@@ -1955,38 +1955,54 @@
   async function loadVipPage() {
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
-    if (!user || !db) return;
-
+    if (!user || !db) {
+      // Not logged in — show default Bronze view
+      updateVipUI(0, { weeklyClaimedAt: 0, monthlyClaimedAt: 0 });
+      return;
+    }
     try {
       const snap = await db.ref('users/' + user.uid + '/vip').once('value');
-      const vipData = snap.val() || { exp: 0, level: 'Bronze', weeklyClaimedAt: 0, monthlyClaimedAt: 0, levelupClaimed: [] };
-      const exp = vipData.exp || 0;
+      const vipData = snap.val() || { exp: 0, weeklyClaimedAt: 0, monthlyClaimedAt: 0, levelupClaimed: [] };
+      updateVipUI(vipData.exp || 0, vipData);
+    } catch(e) {
+      console.warn('VIP load error:', e);
+      updateVipUI(0, { weeklyClaimedAt: 0, monthlyClaimedAt: 0 });
+    }
+  }
+
+  function updateVipUI(exp, vipData) {
       const level = getVipLevel(exp);
       const levelIdx = VIP_LEVELS.findIndex(l => l.name === level.name);
       const nextLevel = VIP_LEVELS[levelIdx + 1];
 
       // Update level name
-      document.getElementById('vipLevelName').textContent = level.icon + ' ' + level.name;
-      document.getElementById('vipLevelName').style.color = level.color;
-      document.getElementById('vipTotalExp').textContent = exp.toLocaleString('en-IN');
+      const nameEl = document.getElementById('vipLevelName');
+      if (nameEl) { nameEl.textContent = level.icon + ' ' + level.name; nameEl.style.color = level.color; }
+      const expEl = document.getElementById('vipTotalExp');
+      if (expEl) expEl.textContent = exp.toLocaleString('en-IN');
 
       // Progress bar
+      const barEl = document.getElementById('vipProgressBar');
+      const progressEl = document.getElementById('vipExpProgress');
+      const nextEl = document.getElementById('vipNextLevel');
+      const neededEl = document.getElementById('vipExpNeeded');
+
       if (nextLevel) {
         const progressExp = exp - level.minExp;
         const totalNeeded = nextLevel.minExp - level.minExp;
         const pct = Math.min(100, Math.round((progressExp / totalNeeded) * 100));
-        document.getElementById('vipProgressBar').style.width = pct + '%';
-        document.getElementById('vipExpProgress').textContent = exp + ' / ' + nextLevel.minExp + ' EXP';
-        document.getElementById('vipNextLevel').textContent = 'Next: ' + nextLevel.name;
-        document.getElementById('vipExpNeeded').textContent = 'Earn ' + (nextLevel.minExp - exp) + ' more EXP to reach ' + nextLevel.name;
+        if (barEl) barEl.style.width = pct + '%';
+        if (progressEl) progressEl.textContent = exp + ' / ' + nextLevel.minExp + ' EXP';
+        if (nextEl) nextEl.textContent = 'Next: ' + nextLevel.name;
+        if (neededEl) neededEl.textContent = 'Earn ' + (nextLevel.minExp - exp) + ' more EXP to reach ' + nextLevel.name;
       } else {
-        document.getElementById('vipProgressBar').style.width = '100%';
-        document.getElementById('vipExpProgress').textContent = exp + ' EXP';
-        document.getElementById('vipNextLevel').textContent = '👑 Max Level!';
-        document.getElementById('vipExpNeeded').textContent = 'You have reached the highest VIP level!';
+        if (barEl) barEl.style.width = '100%';
+        if (progressEl) progressEl.textContent = exp + ' EXP — Max Level!';
+        if (nextEl) nextEl.textContent = '👑 Max Level!';
+        if (neededEl) neededEl.textContent = 'You have reached the highest VIP level!';
       }
 
-      // Highlight current level card
+      // Highlight level cards
       ['bronze','silver','gold','diamond'].forEach((l, i) => {
         const card = document.getElementById('vipCard-' + l);
         if (!card) return;
@@ -1995,37 +2011,42 @@
           card.style.borderColor = level.color;
           card.style.boxShadow = '0 0 20px ' + level.color + '22';
         } else if (exp >= VIP_LEVELS[i].minExp) {
-          card.style.opacity = '1'; // unlocked
+          card.style.opacity = '1';
+          card.style.borderColor = '';
+          card.style.boxShadow = '';
         } else {
-          card.style.opacity = '0.5'; // locked
+          card.style.opacity = '0.5';
+          card.style.borderColor = '';
+          card.style.boxShadow = '';
         }
       });
 
-      // Bonus amounts for current level
-      document.getElementById('vipWeeklyAmt').textContent = '₹' + level.weekly;
-      document.getElementById('vipMonthlyAmt').textContent = '₹' + level.monthly;
+      // Bonus amounts
+      const weeklyAmtEl = document.getElementById('vipWeeklyAmt');
+      const monthlyAmtEl = document.getElementById('vipMonthlyAmt');
+      if (weeklyAmtEl) weeklyAmtEl.textContent = '₹' + level.weekly;
+      if (monthlyAmtEl) monthlyAmtEl.textContent = '₹' + level.monthly;
 
-      // Check weekly claim status
-      const now = Date.now();
+      // Claim buttons
       const weekStart = getWeekStart();
       const monthStart = getMonthStart();
       const weeklyBtn = document.getElementById('vipWeeklyBtn');
       const monthlyBtn = document.getElementById('vipMonthlyBtn');
 
-      if (vipData.weeklyClaimedAt >= weekStart) {
-        weeklyBtn.textContent = '✅ Claimed';
-        weeklyBtn.disabled = true;
-        weeklyBtn.style.background = 'var(--bg3)';
-        weeklyBtn.style.color = 'var(--muted)';
+      if (weeklyBtn && vipData.weeklyClaimedAt >= weekStart) {
+        weeklyBtn.textContent = '✅ Claimed'; weeklyBtn.disabled = true;
+        weeklyBtn.style.background = 'var(--bg3)'; weeklyBtn.style.color = 'var(--muted)';
+      } else if (weeklyBtn) {
+        weeklyBtn.textContent = 'Claim'; weeklyBtn.disabled = false;
+        weeklyBtn.style.background = ''; weeklyBtn.style.color = '';
       }
-      if (vipData.monthlyClaimedAt >= monthStart) {
-        monthlyBtn.textContent = '✅ Claimed';
-        monthlyBtn.disabled = true;
-        monthlyBtn.style.background = 'var(--bg3)';
-        monthlyBtn.style.color = 'var(--muted)';
+      if (monthlyBtn && vipData.monthlyClaimedAt >= monthStart) {
+        monthlyBtn.textContent = '✅ Claimed'; monthlyBtn.disabled = true;
+        monthlyBtn.style.background = 'var(--bg3)'; monthlyBtn.style.color = 'var(--muted)';
+      } else if (monthlyBtn) {
+        monthlyBtn.textContent = 'Claim'; monthlyBtn.disabled = false;
+        monthlyBtn.style.background = ''; monthlyBtn.style.color = '';
       }
-
-    } catch(e) { console.warn('VIP load error:', e); }
   }
 
   function getWeekStart() {
