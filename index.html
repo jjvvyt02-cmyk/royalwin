@@ -2021,8 +2021,10 @@
         }
       });
 
-      // Bonus amounts
-      const weeklyAmtEl = document.getElementById('vipWeeklyAmt');
+      // Scroll slider to current level
+      const levelNames = ['bronze','silver','gold','diamond'];
+      const currentIdx = levelNames.indexOf(level.name.toLowerCase());
+      if (currentIdx >= 0) setTimeout(() => scrollVipSlider(currentIdx), 300);
       const monthlyAmtEl = document.getElementById('vipMonthlyAmt');
       if (weeklyAmtEl) weeklyAmtEl.textContent = '₹' + level.weekly;
       if (monthlyAmtEl) monthlyAmtEl.textContent = '₹' + level.monthly;
@@ -2151,6 +2153,36 @@
     vip_monthly: { icon:'🗓️', label:'VIP Monthly Bonus', color:'#27ae60', sign:'+' },
     vip_levelup: { icon:'⬆️', label:'VIP Level Up',      color:'#f0c040', sign:'+' },
   };
+  function scrollVipSlider(idx) {
+    const slider = document.getElementById('vipSlider');
+    if (!slider) return;
+    const card = slider.children[idx];
+    if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    // Update dots
+    for (let i = 0; i < 4; i++) {
+      const dot = document.getElementById('vipDot' + i);
+      if (!dot) continue;
+      if (i === idx) { dot.style.width = '20px'; dot.style.background = 'var(--gold)'; }
+      else { dot.style.width = '6px'; dot.style.background = 'var(--border)'; }
+    }
+  }
+
+  // Auto-update dots on scroll
+  document.addEventListener('DOMContentLoaded', () => {
+    const slider = document.getElementById('vipSlider');
+    if (slider) {
+      slider.addEventListener('scroll', () => {
+        const idx = Math.round(slider.scrollLeft / (slider.children[0]?.offsetWidth + 8));
+        for (let i = 0; i < 4; i++) {
+          const dot = document.getElementById('vipDot' + i);
+          if (!dot) continue;
+          if (i === idx) { dot.style.width = '20px'; dot.style.background = 'var(--gold)'; }
+          else { dot.style.width = '6px'; dot.style.background = 'var(--border)'; }
+        }
+      });
+    }
+  });
+
   function loadRebateRates() {
     const defaults = { l1: 1, l2: 0.8, l3: 0.5, l4: 0.2 };
     const fmt = v => Number(v).toFixed(3) + '%';
@@ -5944,118 +5976,125 @@
       </div>
     </div>
 
-    <!-- VIP Levels -->
-    <div style="display:flex;flex-direction:column;gap:0.7rem;">
+    <!-- VIP Levels Slider -->
+    <div style="position:relative;margin:0 -1rem;">
+      <div id="vipSlider" style="display:flex;gap:0.8rem;overflow-x:auto;scroll-snap-type:x mandatory;padding:0.5rem 1rem 1rem;scrollbar-width:none;-webkit-overflow-scrolling:touch;">
 
-      <!-- Bronze -->
-      <div id="vipCard-bronze" style="background:var(--card);border:1px solid rgba(205,127,50,0.3);border-radius:14px;padding:1rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:0.8rem;">
-            <div style="font-size:1.8rem;">🥉</div>
+        <!-- Bronze -->
+        <div id="vipCard-bronze" class="vip-slide-card" style="min-width:280px;scroll-snap-align:center;background:linear-gradient(160deg,#2a1500,#1a0e00);border:2px solid #cd7f32;border-radius:18px;padding:1.2rem;flex-shrink:0;">
+          <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
+            <div style="font-size:2.5rem;">🥉</div>
             <div>
-              <div style="font-family:'Cinzel',serif;font-weight:800;color:#cd7f32;">Bronze</div>
-              <div style="font-size:0.72rem;color:var(--muted);">0 – 199 EXP</div>
+              <div style="font-family:'Cinzel',serif;font-size:1.2rem;font-weight:900;color:#cd7f32;">Bronze</div>
+              <div style="font-size:0.72rem;color:rgba(205,127,50,0.7);">0 – 199 EXP</div>
+            </div>
+            <div style="margin-left:auto;text-align:right;">
+              <div style="font-size:0.65rem;color:var(--muted);">Level-up</div>
+              <div style="font-weight:800;color:#cd7f32;font-size:1rem;">₹50</div>
             </div>
           </div>
-          <div style="text-align:right;">
-            <div style="font-size:0.7rem;color:var(--muted);">Level-up Bonus</div>
-            <div style="font-weight:800;color:#cd7f32;">₹50</div>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(255,255,255,0.06);">
-          <div style="background:rgba(205,127,50,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
-            <div style="font-size:0.68rem;color:var(--muted);">Weekly</div>
-            <div style="font-weight:700;color:#cd7f32;">₹25</div>
-          </div>
-          <div style="background:rgba(205,127,50,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
-            <div style="font-size:0.68rem;color:var(--muted);">Monthly</div>
-            <div style="font-weight:700;color:#cd7f32;">₹50</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Silver -->
-      <div id="vipCard-silver" style="background:var(--card);border:1px solid rgba(192,192,192,0.2);border-radius:14px;padding:1rem;opacity:0.7;">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:0.8rem;">
-            <div style="font-size:1.8rem;">🥈</div>
-            <div>
-              <div style="font-family:'Cinzel',serif;font-weight:800;color:#c0c0c0;">Silver</div>
-              <div style="font-size:0.72rem;color:var(--muted);">200 – 499 EXP</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+            <div style="background:rgba(205,127,50,0.12);border-radius:10px;padding:0.7rem;text-align:center;">
+              <div style="font-size:0.65rem;color:rgba(205,127,50,0.7);margin-bottom:2px;">📅 Weekly</div>
+              <div style="font-weight:800;color:#cd7f32;font-size:1.1rem;">₹25</div>
+            </div>
+            <div style="background:rgba(205,127,50,0.12);border-radius:10px;padding:0.7rem;text-align:center;">
+              <div style="font-size:0.65rem;color:rgba(205,127,50,0.7);margin-bottom:2px;">🗓️ Monthly</div>
+              <div style="font-weight:800;color:#cd7f32;font-size:1.1rem;">₹50</div>
             </div>
           </div>
-          <div style="text-align:right;">
-            <div style="font-size:0.7rem;color:var(--muted);">Level-up Bonus</div>
-            <div style="font-weight:800;color:#c0c0c0;">₹200</div>
-          </div>
+          <div style="margin-top:0.8rem;font-size:0.7rem;color:rgba(205,127,50,0.6);text-align:center;">Starting level — everyone begins here</div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(255,255,255,0.06);">
-          <div style="background:rgba(192,192,192,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
-            <div style="font-size:0.68rem;color:var(--muted);">Weekly</div>
-            <div style="font-weight:700;color:#c0c0c0;">₹125</div>
-          </div>
-          <div style="background:rgba(192,192,192,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
-            <div style="font-size:0.68rem;color:var(--muted);">Monthly</div>
-            <div style="font-weight:700;color:#c0c0c0;">₹250</div>
-          </div>
-        </div>
-      </div>
 
-      <!-- Gold -->
-      <div id="vipCard-gold" style="background:var(--card);border:1px solid rgba(240,192,64,0.2);border-radius:14px;padding:1rem;opacity:0.7;">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:0.8rem;">
-            <div style="font-size:1.8rem;">🥇</div>
+        <!-- Silver -->
+        <div id="vipCard-silver" class="vip-slide-card" style="min-width:280px;scroll-snap-align:center;background:linear-gradient(160deg,#1a1a1a,#0f0f0f);border:2px solid rgba(192,192,192,0.3);border-radius:18px;padding:1.2rem;flex-shrink:0;opacity:0.6;">
+          <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
+            <div style="font-size:2.5rem;">🥈</div>
             <div>
-              <div style="font-family:'Cinzel',serif;font-weight:800;color:var(--gold);">Gold</div>
-              <div style="font-size:0.72rem;color:var(--muted);">500 – 999 EXP</div>
+              <div style="font-family:'Cinzel',serif;font-size:1.2rem;font-weight:900;color:#c0c0c0;">Silver</div>
+              <div style="font-size:0.72rem;color:rgba(192,192,192,0.7);">200 – 499 EXP</div>
+            </div>
+            <div style="margin-left:auto;text-align:right;">
+              <div style="font-size:0.65rem;color:var(--muted);">Level-up</div>
+              <div style="font-weight:800;color:#c0c0c0;font-size:1rem;">₹200</div>
             </div>
           </div>
-          <div style="text-align:right;">
-            <div style="font-size:0.7rem;color:var(--muted);">Level-up Bonus</div>
-            <div style="font-weight:800;color:var(--gold);">₹500</div>
-          </div>
-        </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(255,255,255,0.06);">
-          <div style="background:rgba(240,192,64,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
-            <div style="font-size:0.68rem;color:var(--muted);">Weekly</div>
-            <div style="font-weight:700;color:var(--gold);">₹225</div>
-          </div>
-          <div style="background:rgba(240,192,64,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
-            <div style="font-size:0.68rem;color:var(--muted);">Monthly</div>
-            <div style="font-weight:700;color:var(--gold);">₹650</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Diamond -->
-      <div id="vipCard-diamond" style="background:var(--card);border:1px solid rgba(167,125,255,0.2);border-radius:14px;padding:1rem;opacity:0.7;">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:0.8rem;">
-            <div style="font-size:1.8rem;">💎</div>
-            <div>
-              <div style="font-family:'Cinzel',serif;font-weight:800;color:#a87dff;">Diamond</div>
-              <div style="font-size:0.72rem;color:var(--muted);">1000+ EXP</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+            <div style="background:rgba(192,192,192,0.08);border-radius:10px;padding:0.7rem;text-align:center;">
+              <div style="font-size:0.65rem;color:rgba(192,192,192,0.7);margin-bottom:2px;">📅 Weekly</div>
+              <div style="font-weight:800;color:#c0c0c0;font-size:1.1rem;">₹125</div>
+            </div>
+            <div style="background:rgba(192,192,192,0.08);border-radius:10px;padding:0.7rem;text-align:center;">
+              <div style="font-size:0.65rem;color:rgba(192,192,192,0.7);margin-bottom:2px;">🗓️ Monthly</div>
+              <div style="font-weight:800;color:#c0c0c0;font-size:1.1rem;">₹250</div>
             </div>
           </div>
-          <div style="text-align:right;">
-            <div style="font-size:0.7rem;color:var(--muted);">Level-up Bonus</div>
-            <div style="font-weight:800;color:#a87dff;">₹1,500</div>
-          </div>
+          <div style="margin-top:0.8rem;font-size:0.7rem;color:rgba(192,192,192,0.5);text-align:center;">Reach 200 EXP to unlock</div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(255,255,255,0.06);">
-          <div style="background:rgba(167,125,255,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
-            <div style="font-size:0.68rem;color:var(--muted);">Weekly</div>
-            <div style="font-weight:700;color:#a87dff;">₹325</div>
+
+        <!-- Gold -->
+        <div id="vipCard-gold" class="vip-slide-card" style="min-width:280px;scroll-snap-align:center;background:linear-gradient(160deg,#1c1408,#120e00);border:2px solid rgba(240,192,64,0.3);border-radius:18px;padding:1.2rem;flex-shrink:0;opacity:0.6;">
+          <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
+            <div style="font-size:2.5rem;">🥇</div>
+            <div>
+              <div style="font-family:'Cinzel',serif;font-size:1.2rem;font-weight:900;color:var(--gold);">Gold</div>
+              <div style="font-size:0.72rem;color:rgba(240,192,64,0.7);">500 – 999 EXP</div>
+            </div>
+            <div style="margin-left:auto;text-align:right;">
+              <div style="font-size:0.65rem;color:var(--muted);">Level-up</div>
+              <div style="font-weight:800;color:var(--gold);font-size:1rem;">₹500</div>
+            </div>
           </div>
-          <div style="background:rgba(167,125,255,0.08);border-radius:8px;padding:0.5rem;text-align:center;">
-            <div style="font-size:0.68rem;color:var(--muted);">Monthly</div>
-            <div style="font-weight:700;color:#a87dff;">₹1,350</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+            <div style="background:rgba(240,192,64,0.08);border-radius:10px;padding:0.7rem;text-align:center;">
+              <div style="font-size:0.65rem;color:rgba(240,192,64,0.7);margin-bottom:2px;">📅 Weekly</div>
+              <div style="font-weight:800;color:var(--gold);font-size:1.1rem;">₹225</div>
+            </div>
+            <div style="background:rgba(240,192,64,0.08);border-radius:10px;padding:0.7rem;text-align:center;">
+              <div style="font-size:0.65rem;color:rgba(240,192,64,0.7);margin-bottom:2px;">🗓️ Monthly</div>
+              <div style="font-weight:800;color:var(--gold);font-size:1.1rem;">₹650</div>
+            </div>
           </div>
+          <div style="margin-top:0.8rem;font-size:0.7rem;color:rgba(240,192,64,0.5);text-align:center;">Reach 500 EXP to unlock</div>
         </div>
+
+        <!-- Diamond -->
+        <div id="vipCard-diamond" class="vip-slide-card" style="min-width:280px;scroll-snap-align:center;background:linear-gradient(160deg,#0d0a1a,#080514);border:2px solid rgba(168,125,255,0.3);border-radius:18px;padding:1.2rem;flex-shrink:0;opacity:0.6;">
+          <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
+            <div style="font-size:2.5rem;">💎</div>
+            <div>
+              <div style="font-family:'Cinzel',serif;font-size:1.2rem;font-weight:900;color:#a87dff;">Diamond</div>
+              <div style="font-size:0.72rem;color:rgba(168,125,255,0.7);">1000+ EXP</div>
+            </div>
+            <div style="margin-left:auto;text-align:right;">
+              <div style="font-size:0.65rem;color:var(--muted);">Level-up</div>
+              <div style="font-weight:800;color:#a87dff;font-size:1rem;">₹1,500</div>
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+            <div style="background:rgba(168,125,255,0.08);border-radius:10px;padding:0.7rem;text-align:center;">
+              <div style="font-size:0.65rem;color:rgba(168,125,255,0.7);margin-bottom:2px;">📅 Weekly</div>
+              <div style="font-weight:800;color:#a87dff;font-size:1.1rem;">₹325</div>
+            </div>
+            <div style="background:rgba(168,125,255,0.08);border-radius:10px;padding:0.7rem;text-align:center;">
+              <div style="font-size:0.65rem;color:rgba(168,125,255,0.7);margin-bottom:2px;">🗓️ Monthly</div>
+              <div style="font-weight:800;color:#a87dff;font-size:1.1rem;">₹1,350</div>
+            </div>
+          </div>
+          <div style="margin-top:0.8rem;font-size:0.7rem;color:rgba(168,125,255,0.5);text-align:center;">Reach 1000 EXP to unlock</div>
+        </div>
+
       </div>
 
+      <!-- Dot indicators -->
+      <div style="display:flex;justify-content:center;gap:0.4rem;margin-top:0.2rem;">
+        <div class="vip-dot active" id="vipDot0" onclick="scrollVipSlider(0)" style="width:20px;height:6px;border-radius:3px;background:var(--gold);cursor:pointer;transition:all 0.3s;"></div>
+        <div class="vip-dot" id="vipDot1" onclick="scrollVipSlider(1)" style="width:6px;height:6px;border-radius:3px;background:var(--border);cursor:pointer;transition:all 0.3s;"></div>
+        <div class="vip-dot" id="vipDot2" onclick="scrollVipSlider(2)" style="width:6px;height:6px;border-radius:3px;background:var(--border);cursor:pointer;transition:all 0.3s;"></div>
+        <div class="vip-dot" id="vipDot3" onclick="scrollVipSlider(3)" style="width:6px;height:6px;border-radius:3px;background:var(--border);cursor:pointer;transition:all 0.3s;"></div>
+      </div>
     </div>
+
   </div>
 </div>
 
