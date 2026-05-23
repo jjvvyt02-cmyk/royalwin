@@ -3636,6 +3636,56 @@
 
 
 
+  function drawWheel(rotation) {
+    const canvas = document.getElementById('wheelCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const cx = canvas.width / 2;
+    const cy = canvas.height / 2;
+    const radius = cx - 5;
+    const slices = wheelPrizes.length;
+    const arc = (2 * Math.PI) / slices;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    for (let i = 0; i < slices; i++) {
+      const startAngle = rotation + i * arc;
+      const endAngle = startAngle + arc;
+
+      // Slice
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, radius, startAngle, endAngle);
+      ctx.closePath();
+      ctx.fillStyle = wheelColors[i];
+      ctx.fill();
+      ctx.strokeStyle = '#111';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Label
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.rotate(startAngle + arc / 2);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#fff';
+      ctx.font = 'bold 14px Exo 2, sans-serif';
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 4;
+      ctx.fillText(wheelPrizes[i], radius - 12, 5);
+      ctx.restore();
+    }
+
+    // Center circle
+    ctx.beginPath();
+    ctx.arc(cx, cy, 18, 0, 2 * Math.PI);
+    ctx.fillStyle = '#1a1000';
+    ctx.fill();
+    ctx.strokeStyle = 'var(--gold2)';
+    ctx.lineWidth = 3;
+    ctx.stroke();
+  }
+
   async function openWheel(fromLogin = false) {
     if (!isLoggedIn) { showToast('🔐 Please sign in first!'); showPage('login'); return; }
     const db = window.fbDB || fbDB;
@@ -3702,8 +3752,12 @@
             await db.ref('users/' + user.uid + '/balance').set(newBal);
             await db.ref('users/' + user.uid + '/lastSpinDate').set(new Date().toDateString());
             updateBalanceDisplay(newBal);
+            // Save transaction record
+            await db.ref('users/' + user.uid + '/transactions/' + Date.now()).set({
+              type: 'spin', amount: winAmt, details: '🎡 Daily spin win',
+              balance: newBal, timestamp: Date.now()
+            });
             showToast('💰 ₹' + winAmt + ' added to your wallet!');
-            // Auto close after 3 seconds
             setTimeout(() => closeWheel(), 5000);
           }
         } catch(e) { console.warn('Wheel error:', e); }
