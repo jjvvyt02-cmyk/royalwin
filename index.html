@@ -1,3 +1,13 @@
+<!-- LOADING SCREEN -->
+<div id="appLoader" style="position:fixed;inset:0;z-index:99999;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s;">
+  <div style="font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:var(--gold);margin-bottom:0.5rem;">ROYAL<span style="color:#e02020;">♠</span>WIN</div>
+  <div style="font-size:0.8rem;color:var(--muted);letter-spacing:2px;margin-bottom:2rem;">PREMIUM GAMING</div>
+  <div style="width:48px;height:48px;border:3px solid rgba(240,192,64,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+</div>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1925,16 +1935,39 @@
     }
   }
 
-  function copyCode() {
-    const code = document.getElementById('myRefCode').textContent;
-    navigator.clipboard.writeText(code).catch(() => {});
-    showToast('📋 Invitation code copied!');
+  function copyLink() {
+    const link = document.getElementById('refLink').textContent.trim();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(() => {
+        showToast('✅ Link copied!');
+      }).catch(() => {
+        fallbackCopy(link);
+      });
+    } else {
+      fallbackCopy(link);
+    }
   }
 
-  function copyLink() {
-    const link = document.getElementById('refLink').textContent;
-    navigator.clipboard.writeText(link).catch(() => {});
-    showToast('🔗 Referral link copied!');
+  function copyCode() {
+    const code = document.getElementById('myRefCode').textContent.trim();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(() => {
+        showToast('✅ Code copied: ' + code);
+      }).catch(() => fallbackCopy(code));
+    } else {
+      fallbackCopy(code);
+    }
+  }
+
+  function fallbackCopy(text) {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.cssText = 'position:fixed;top:-9999px;left:-9999px;opacity:0;';
+    document.body.appendChild(ta);
+    ta.focus(); ta.select();
+    try { document.execCommand('copy'); showToast('✅ Copied!'); }
+    catch(e) { showToast('❌ Copy failed. Please copy manually.'); }
+    document.body.removeChild(ta);
   }
 
   // ── VIP EXP SYSTEM ──
@@ -2618,31 +2651,59 @@
       startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     } else if (period === 'week') {
       const day = now.getDay();
-      startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() - day).getTime();
+      startTime = new Date(now.getFullYear(), now.getMonth(), now.getDate() - (day === 0 ? 6 : day - 1)).getTime();
     } else {
       startTime = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
     }
 
-    // Filter bet history by period
-    const filtered = betHistoryData.filter(d => (d.timestamp || 0) >= startTime);
+    // Load from Firebase if memory is empty
+    let data = betHistoryData;
+    if (data.length === 0) {
+      try {
+        const db = window.fbDB || fbDB;
+        const user = window.currentUser;
+        if (db && user) {
+          const snap = await db.ref('users/' + user.uid + '/betHistory').once('value');
+          if (snap.val()) data = Object.values(snap.val());
+        }
+      } catch(e) {}
+    }
 
-    const totalBets = filtered.length;
+    const filtered = data.filter(d => (d.timestamp || 0) >= startTime);
     const wins = filtered.filter(d => d.won);
     const losses = filtered.filter(d => !d.won);
+    const totalBets = filtered.length;
     const totalWon = wins.reduce((s,d) => s + parseFloat(d.profit || 0), 0);
     const totalLost = losses.reduce((s,d) => s + parseFloat(d.bet || 0), 0);
     const netProfit = totalWon - totalLost;
     const totalWagered = filtered.reduce((s,d) => s + parseFloat(d.bet || 0), 0);
     const winRate = totalBets > 0 ? Math.round(wins.length / totalBets * 100) : 0;
 
-    document.getElementById('gsTotalBets').textContent = totalBets;
-    document.getElementById('gsTotalWon').textContent = '₹' + totalWon.toLocaleString('en-IN');
-    document.getElementById('gsTotalLost').textContent = '₹' + totalLost.toLocaleString('en-IN');
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setText('gsTotalBets', totalBets);
+    setText('gsTotalWon', '₹' + totalWon.toLocaleString('en-IN', {minimumFractionDigits:2}));
+    setText('gsTotalLost', '₹' + totalLost.toLocaleString('en-IN', {minimumFractionDigits:2}));
+    setText('gsWinRate', winRate + '%');
+    setText('gsTotalWagered', '₹' + totalWagered.toLocaleString('en-IN', {minimumFractionDigits:2}));
     const netEl = document.getElementById('gsNetProfit');
-    if (netEl) { netEl.textContent = (netProfit >= 0 ? '+' : '') + '₹' + netProfit.toLocaleString('en-IN'); netEl.style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red2)'; }
-    document.getElementById('gsWinRate').textContent = winRate + '%';
-    document.getElementById('gsWinRateBar').style.width = winRate + '%';
-    document.getElementById('gsTotalWagered').textContent = '₹' + totalWagered.toLocaleString('en-IN');
+    if (netEl) { netEl.textContent = (netProfit >= 0 ? '+' : '') + '₹' + Math.abs(netProfit).toLocaleString('en-IN', {minimumFractionDigits:2}); netEl.style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red2)'; }
+    const barEl = document.getElementById('gsWinRateBar');
+    if (barEl) barEl.style.width = winRate + '%';
+
+    // VIP EXP display on gamestats
+    try {
+      const db = window.fbDB || fbDB;
+      const user = window.currentUser;
+      if (db && user) {
+        const vipSnap = await db.ref('users/' + user.uid + '/vip/exp').once('value');
+        const exp = parseFloat(vipSnap.val() || 0);
+        const vLevel = getVipLevel(exp);
+        const vipEl = document.getElementById('gsVipLevel');
+        const expEl = document.getElementById('gsVipExp');
+        if (vipEl) vipEl.textContent = vLevel.icon + ' ' + vLevel.name;
+        if (expEl) expEl.textContent = exp.toLocaleString('en-IN') + ' EXP';
+      }
+    } catch(e) {}
   }
 
   function showDepositHistory() {
@@ -5074,6 +5135,24 @@
       // Update balance
       updateBalanceDisplay(profile.balance || 0);
 
+      // ── VIP BADGE ON PROFILE ──
+      try {
+        const db = window.fbDB || fbDB;
+        const vipSnap = await db.ref('users/' + user.uid + '/vip/exp').once('value');
+        const exp = parseFloat(vipSnap.val() || 0);
+        const vLevel = getVipLevel(exp);
+        const badge = document.getElementById('profileVipBadge');
+        if (badge) {
+          badge.style.display = 'inline-block';
+          badge.textContent = vLevel.icon + ' ' + vLevel.name;
+          const colors = { Bronze:'rgba(205,127,50,0.2)', Silver:'rgba(192,192,192,0.2)', Gold:'rgba(240,192,64,0.2)', Diamond:'rgba(168,125,255,0.2)' };
+          const textColors = { Bronze:'#cd7f32', Silver:'#c0c0c0', Gold:'var(--gold)', Diamond:'#a87dff' };
+          badge.style.background = colors[vLevel.name] || colors.Bronze;
+          badge.style.color = textColors[vLevel.name] || textColors.Bronze;
+          badge.style.borderColor = textColors[vLevel.name] || textColors.Bronze;
+        }
+      } catch(e) {}
+
       // Update profile page if open
       updateProfilePage(profile);
 
@@ -5176,6 +5255,12 @@
       fbDB = firebase.database();
       window.fbDB = fbDB;
       window.fbAuth = firebase.auth();
+
+      // ── HIDE LOADER ──
+      setTimeout(() => {
+        const loader = document.getElementById('appLoader');
+        if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 500); }
+      }, 1200);
 
       // Listen for auth state changes
       firebase.auth().onAuthStateChanged((user) => {
@@ -5681,7 +5766,7 @@
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1.2rem;">
       <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center;">
         <div style="font-family:'Cinzel',serif;font-size:1.5rem;font-weight:800;" id="gsTotalBets">0</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;"><span data-t="bet.totalbets">Total Bets</span></div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">Total Bets</div>
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center;">
         <div style="font-family:'Cinzel',serif;font-size:1.5rem;font-weight:800;color:var(--green);" id="gsTotalWon">₹0</div>
@@ -5693,11 +5778,42 @@
       </div>
       <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center;">
         <div style="font-family:'Cinzel',serif;font-size:1.5rem;font-weight:800;color:var(--gold);" id="gsNetProfit">₹0</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;"><span data-t="bet.netprofit">Net Profit</span></div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">Net Profit</div>
       </div>
     </div>
 
-    <!-- Total wagered removed -->
+    <!-- Win Rate -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:0.8rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+        <div style="font-size:0.82rem;font-weight:700;color:var(--text);">🎯 Win Rate</div>
+        <div style="font-family:'Cinzel',serif;font-weight:800;color:var(--green);" id="gsWinRate">0%</div>
+      </div>
+      <div style="background:rgba(255,255,255,0.06);border-radius:20px;height:8px;overflow:hidden;">
+        <div id="gsWinRateBar" style="background:linear-gradient(90deg,var(--green),#00e676);height:100%;border-radius:20px;transition:width 0.5s;width:0%;"></div>
+      </div>
+    </div>
+
+    <!-- Total Wagered -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:0.8rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:0.82rem;color:var(--muted);">💰 Total Wagered</div>
+        <div style="font-weight:800;color:var(--text);" id="gsTotalWagered">₹0</div>
+      </div>
+    </div>
+
+    <!-- VIP EXP -->
+    <div style="background:linear-gradient(160deg,#1c1408,#2a1d05);border:1px solid rgba(240,192,64,0.2);border-radius:12px;padding:1rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:0.82rem;color:var(--muted);">⭐ VIP Level</div>
+          <div style="font-weight:800;color:var(--gold);font-size:1rem;margin-top:2px;" id="gsVipLevel">🥉 Bronze</div>
+        </div>
+        <div style="text-align:right;">
+          <div style="font-size:0.72rem;color:var(--muted);">Total EXP</div>
+          <div style="font-weight:800;color:var(--gold2);" id="gsVipExp">0 EXP</div>
+        </div>
+      </div>
+    </div>
 
   </div>
 </div>
@@ -5764,7 +5880,10 @@
       <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem;">
         <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#c07a10,var(--gold2));display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.8rem;font-weight:800;color:#000;flex-shrink:0;" id="profileAvatarBig">U</div>
         <div style="flex:1;">
-          <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--text);" id="profileUsernameDisplay">—</div>
+          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--text);" id="profileUsernameDisplay">—</div>
+            <div id="profileVipBadge" style="display:none;font-size:0.7rem;font-weight:800;padding:0.15rem 0.5rem;border-radius:20px;background:rgba(205,127,50,0.2);color:#cd7f32;border:1px solid rgba(205,127,50,0.4);">🥉 Bronze</div>
+          </div>
           <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;" id="profileUIDDisplay">UID: —</div>
           <div style="font-size:0.75rem;color:var(--muted);" id="profileContactDisplay">—</div>
         <div style="font-size:0.72rem;color:var(--muted);margin-top:0.15rem;" id="profileLastLogin"></div>
@@ -6460,5 +6579,5 @@
 
 
 <div id="recaptcha-container"></div>
-</body>
+
 </html>
