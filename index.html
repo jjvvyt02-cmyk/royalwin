@@ -4557,7 +4557,7 @@
             txs.push({
               type: b.won ? 'win' : 'loss',
               amount: b.won ? parseFloat(b.profit || 0) : parseFloat(b.bet || 0),
-              details: (b.game || 'Game') + ' · ' + (b.result || ''),
+              details: (b.game || 'Game') + ' · ' + (b.result || '') + (b.won ? '' : ' · Bet lost'),
               balance: b.balance || 0,
               timestamp: b.timestamp || 0
             });
