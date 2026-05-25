@@ -3746,7 +3746,7 @@
     ...Array(80).fill(18),  // 80%
     ...Array(15).fill(48),  // 15%
     ...Array(5).fill(88),   // 5%
-    // 288 and 488 = 0% — never win
+    // 288 and 488 = 0% — never win, pointer never stops here
   ];
   const prizeIndexMap = { 18: 0, 48: 1, 88: 2, 288: 3, 488: 4 };
   let spinning = false;
@@ -3766,7 +3766,8 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     for (let i = 0; i < slices; i++) {
-      const startAngle = rotation + i * arc;
+      // Start drawing from -PI/2 (top) so slice 0 is at the top initially
+      const startAngle = rotation + (-Math.PI / 2) + i * arc;
       const endAngle = startAngle + arc;
 
       // Slice
@@ -3832,33 +3833,45 @@
     document.getElementById('spinBtn').disabled = true;
     document.getElementById('wheelResult').style.display = 'none';
 
-    // Pick winner
+    // Pick winner from weighted pool (only ₹18, ₹48, ₹88 can win)
     const winAmt = wheelWeightedPool[Math.floor(Math.random() * wheelWeightedPool.length)];
-    const winIndex = prizeIndexMap[winAmt]; // 0=₹18, 1=₹48, 2=₹88
+    const winIndex = prizeIndexMap[winAmt];
+
     const slices = wheelPrizes.length; // 5
     const arc = (2 * Math.PI) / slices;
-    // Calculate angle so winning slice center aligns with top pointer
-    // Pointer is at top (270deg = -PI/2), wheel starts at rotation 0
-    // We need: rotation + winIndex*arc + arc/2 = -PI/2 (mod 2PI)
-    const extraSpins = 8; // spin around 8 times
-    const targetAngle = (2 * Math.PI * extraSpins) + (2 * Math.PI - winIndex * arc - arc / 2);
+
+    // Since drawWheel starts slices from -PI/2 + rotation,
+    // slice i center is at: rotation + (-PI/2) + i*arc + arc/2
+    // We want that to equal 0 (top = pointer position after accounting for -PI/2 offset)
+    // So: rotation = -(i*arc + arc/2)
+    // Add extra full spins
+    const extraSpins = 5 + Math.floor(Math.random() * 3);
+    const baseAngle = -(winIndex * arc + arc / 2);
+    const normalizedBase = ((baseAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
+    const targetAngle = extraSpins * 2 * Math.PI + normalizedBase;
+
     let start = null;
+    let currentRotation = 0;
 
     function animate(ts) {
       if (!start) start = ts;
       const elapsed = ts - start;
-      const duration = 4500;
+      const duration = 5000;
       const progress = Math.min(elapsed / duration, 1);
+      // Ease out — slow down near end
       const ease = 1 - Math.pow(1 - progress, 4);
-      drawWheel(targetAngle * ease);
+      currentRotation = targetAngle * ease;
+      drawWheel(currentRotation);
+
       if (progress < 1) { requestAnimationFrame(animate); return; }
 
+      // Done spinning
       spinning = false;
       const resultEl = document.getElementById('wheelResult');
-      resultEl.innerHTML = '🎉 You won <strong style="color:var(--gold);">₹' + winAmt + '</strong>!';
+      resultEl.innerHTML = '🎉 You won <strong style="color:var(--gold2);">₹' + winAmt + '</strong>!';
       resultEl.style.display = 'block';
 
-      // Add to real Firebase balance immediately + mark claimed
+      // Credit to Firebase
       (async () => {
         try {
           const db = window.fbDB || fbDB;
@@ -3869,11 +3882,11 @@
             await db.ref('users/' + user.uid + '/balance').set(newBal);
             await db.ref('users/' + user.uid + '/lastSpinDate').set(new Date().toDateString());
             updateBalanceDisplay(newBal);
-            // Save transaction record
             await db.ref('users/' + user.uid + '/transactions/' + Date.now()).set({
-              type: 'spin', amount: winAmt, details: '🎡 Daily spin win',
+              type: 'spin', amount: winAmt, details: '🎡 Daily spin win — ₹' + winAmt,
               balance: newBal, timestamp: Date.now()
             });
+            await pushNotification(user.uid, '🎡', 'Daily Spin Win!', 'You won ₹' + winAmt + ' from the daily spin!');
             showToast('💰 ₹' + winAmt + ' added to your wallet!');
             setTimeout(() => closeWheel(), 5000);
           }
