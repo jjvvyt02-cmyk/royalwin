@@ -1084,15 +1084,24 @@
   </div>
   <!-- Logged in nav — minimal, just notification bell -->
   <div class="nav-user" id="navUser" style="display:none;">
-    <div class="notif-bell" onclick="toggleNotif()" title="Notifications">🔔<span class="notif-badge" id="notifBadge">3</span></div>
+    <div class="notif-bell" onclick="toggleNotif()" title="Notifications">🔔<span class="notif-badge" id="notifBadge" style="display:none;">0</span></div>
     <div class="notif-dropdown" id="notifDropdown">
-      <div class="notif-title">Notifications</div>
-      <div class="notif-item unread">🎁 Welcome bonus credited!</div>
-      <div class="notif-item unread">📢 New promotion available</div>
+      <div class="notif-title">🔔 Notifications</div>
+      <div id="notifList"><div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;">No notifications yet</div></div>
+      <div style="text-align:center;padding:0.5rem;border-top:1px solid var(--border);"><button onclick="markAllRead()" style="background:none;border:none;color:var(--gold);font-size:0.75rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Mark all as read</button></div>
     </div>
   </div>
 </nav>
 
+
+<!-- ANNOUNCEMENT BANNER -->
+<div id="announcementBanner" style="display:none;background:linear-gradient(90deg,#c07a10,var(--gold2));padding:0.5rem 1rem;align-items:center;justify-content:space-between;gap:0.5rem;position:sticky;top:60px;z-index:100;">
+  <div style="display:flex;align-items:center;gap:0.5rem;flex:1;">
+    <span style="font-size:0.85rem;">📢</span>
+    <span id="announcementText" style="font-size:0.8rem;font-weight:700;color:#000;"></span>
+  </div>
+  <button onclick="document.getElementById('announcementBanner').style.display='none'" style="background:rgba(0,0,0,0.15);border:none;color:#000;border-radius:4px;padding:0.2rem 0.5rem;cursor:pointer;font-size:0.75rem;flex-shrink:0;">✕</button>
+</div>
 
 <!-- LIVE WINNER TICKER -->
 <div class="ticker-wrap" id="winnerTicker" style="display:none;">
@@ -1659,7 +1668,8 @@
     if (name === 'bethistory') renderBetHistory(currentBetFilter);
     if (name === 'history') loadTransactionHistory();
     if (name === 'profile') renderBetHistory(currentBetFilter || 'all');
-    if (name === 'gamestats') { renderBetHistory('all'); loadGameStats('today'); }
+    if (name === 'profile') { _showPageInternal('profile'); updateMobileNav('account'); loadProfileStats(); return; }
+    if (name === 'gamestats') { _showPageInternal('gamestats'); updateMobileNav('account'); renderBetHistory('all'); loadGameStats('today'); return; }
     if (name === 'support') setTimeout(initLiveChat, 300);
     if (name === 'deposithistory') loadDepositHistoryPage();
     if (name === 'withdrawhistory') loadWithdrawHistoryPage();
@@ -2186,6 +2196,8 @@
             details: '🎉 Level up! ' + oldLevel.name + ' → ' + newLevel.name,
             balance: newBal, timestamp: Date.now()
           });
+          // Push notification
+          await pushNotification(user.uid, newLevel.icon, 'VIP Level Up! ' + newLevel.name, '₹' + newLevel.levelupBonus + ' bonus credited to your wallet!');
           updateBalanceDisplay(newBal);
           showToast('🎉 Level Up! ' + newLevel.icon + ' ' + newLevel.name + ' — ₹' + newLevel.levelupBonus + ' bonus credited!');
         }
@@ -2228,6 +2240,109 @@
       });
     }
   });
+
+  // ── REAL NOTIFICATIONS SYSTEM ──
+  let _notifListener = null;
+
+  function loadNotifications() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    if (_notifListener) { db.ref('users/' + user.uid + '/notifications').off('value', _notifListener); _notifListener = null; }
+    _notifListener = db.ref('users/' + user.uid + '/notifications').orderByChild('timestamp').limitToLast(20).on('value', snap => {
+      const data = snap.val();
+      const listEl = document.getElementById('notifList');
+      const badge = document.getElementById('notifBadge');
+      if (!listEl) return;
+      if (!data) {
+        listEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;">No notifications yet</div>';
+        if (badge) badge.style.display = 'none';
+        return;
+      }
+      const notifs = Object.entries(data).map(([k,v]) => ({...v, key: k})).sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+      const unread = notifs.filter(n => !n.read).length;
+      if (badge) { badge.style.display = unread > 0 ? 'flex' : 'none'; badge.textContent = unread > 9 ? '9+' : unread; }
+      listEl.innerHTML = notifs.map(n => `
+        <div onclick="markNotifRead('${n.key}')" style="padding:0.7rem 1rem;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;background:${n.read?'transparent':'rgba(240,192,64,0.04)'};display:flex;gap:0.6rem;align-items:flex-start;">
+          <div style="font-size:1.1rem;flex-shrink:0;">${n.icon||'🔔'}</div>
+          <div style="flex:1;">
+            <div style="font-size:0.8rem;font-weight:${n.read?'400':'700'};color:${n.read?'var(--muted)':'var(--text)'};">${n.title||''}</div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${n.body||''}</div>
+            <div style="font-size:0.65rem;color:var(--muted);margin-top:2px;">${n.timestamp?new Date(n.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</div>
+          </div>
+          ${!n.read?'<div style="width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:4px;"></div>':''}
+        </div>`).join('');
+    });
+  }
+
+  async function markNotifRead(key) {
+    const user = window.currentUser; const db = window.fbDB || fbDB;
+    if (!user || !db || !key) return;
+    await db.ref('users/' + user.uid + '/notifications/' + key + '/read').set(true);
+  }
+
+  async function markAllRead() {
+    const user = window.currentUser; const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    const snap = await db.ref('users/' + user.uid + '/notifications').once('value');
+    const data = snap.val() || {};
+    const updates = {};
+    Object.keys(data).forEach(k => { updates[k + '/read'] = true; });
+    if (Object.keys(updates).length > 0) await db.ref('users/' + user.uid + '/notifications').update(updates);
+    showToast('✅ All notifications marked as read');
+  }
+
+  async function pushNotification(uid, icon, title, body) {
+    const db = window.fbDB || fbDB;
+    if (!db || !uid) return;
+    try { await db.ref('users/' + uid + '/notifications').push({ icon, title, body, read: false, timestamp: Date.now() }); }
+    catch(e) { console.warn('Push notif failed:', e); }
+  }
+
+  // ── ANNOUNCEMENT BANNER ──
+  function loadAnnouncement() {
+    const db = window.fbDB || fbDB;
+    if (!db) return;
+    db.ref('announcements/current').on('value', snap => {
+      const data = snap.val();
+      const banner = document.getElementById('announcementBanner');
+      if (!banner) return;
+      if (data && data.active && data.text) {
+        banner.style.display = 'flex';
+        const textEl = document.getElementById('announcementText');
+        if (textEl) textEl.textContent = data.text;
+      } else { banner.style.display = 'none'; }
+    });
+  }
+
+  // ── PROFILE STATS ──
+  async function loadProfileStats() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    try {
+      const [betSnap, depSnap, profileSnap] = await Promise.all([
+        db.ref('users/' + user.uid + '/betHistory').once('value'),
+        db.ref('adminRequests/deposits').once('value'),
+        db.ref('users/' + user.uid).once('value'),
+      ]);
+      const profile = profileSnap.val() || {};
+      const bets = betSnap.val() ? Object.values(betSnap.val()) : [];
+      const deps = depSnap.val() ? Object.values(depSnap.val()).filter(d => d.uid === user.uid && d.status === 'approved') : [];
+      const totalBets = bets.length;
+      const wins = bets.filter(b => b.won).length;
+      const winRate = totalBets > 0 ? Math.round(wins / totalBets * 100) : 0;
+      const totalDeposited = deps.reduce((s,d) => s + (d.amount||0), 0);
+      const joinedAt = profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
+
+      // Update profile stats elements
+      const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+      setText('profileMemberSince', 'Member since: ' + joinedAt);
+      setText('profileTotalBets', totalBets);
+      setText('profileWinRate', winRate + '%');
+      setText('profileTotalDeposited', '₹' + totalDeposited.toLocaleString('en-IN'));
+    } catch(e) { console.warn('Profile stats error:', e); }
+  }
 
   function loadRebateRates() {
     const defaults = { l1: 1, l2: 0.8, l3: 0.5, l4: 0.2 };
@@ -2777,7 +2892,8 @@
     const db = window.fbDB || fbDB;
     if (!user || !db) return;
     try {
-      const snap = await db.ref('users/' + user.uid + '/wager').once('value');
+      // Real-time wager listener
+      db.ref('users/' + user.uid + '/wager').on('value', async (snap) => {
       const wager = snap.val();
       const progressSection = document.getElementById('wagerProgressSection');
       const doneSection = document.getElementById('wagerDoneSection');
@@ -2815,6 +2931,7 @@
         document.getElementById('wagerRequired').textContent = '₹' + required.toLocaleString('en-IN');
         document.getElementById('wagerRemaining').textContent = '₹' + remaining.toLocaleString('en-IN');
       }
+      }); // end of .on listener
     } catch(e) { console.warn('Wager load failed:', e); }
   }
 
@@ -5335,6 +5452,8 @@
           window.currentUser = user;
           isLoggedIn = true;
           loadUserProfile(user.uid);
+          loadNotifications();
+          loadAnnouncement();
           document.getElementById('navGuest').style.display = 'none';
           document.getElementById('navUser').style.display = 'flex';
           document.getElementById('mobileNav').style.display = 'flex';
@@ -5953,12 +6072,13 @@
           </div>
           <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;" id="profileUIDDisplay">UID: —</div>
           <div style="font-size:0.75rem;color:var(--muted);" id="profileContactDisplay">—</div>
+          <div style="font-size:0.7rem;color:var(--muted);margin-top:0.15rem;" id="profileMemberSince"></div>
         <div style="font-size:0.72rem;color:var(--muted);margin-top:0.15rem;" id="profileLastLogin"></div>
         </div>
       </div>
 
       <!-- Balance card -->
-      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1rem;">
+      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:14px;padding:1rem 1.2rem;margin-bottom:0.8rem;">
         <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Total Balance</div>
         <div style="font-family:'Cinzel',serif;font-size:1.8rem;font-weight:800;color:var(--gold);margin-bottom:0.8rem;" id="profileBalance">₹0.00</div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;text-align:center;">
