@@ -1086,9 +1086,9 @@
   <div class="nav-user" id="navUser" style="display:none;">
     <div class="notif-bell" onclick="toggleNotif()" title="Notifications">🔔<span class="notif-badge" id="notifBadge" style="display:none;">0</span></div>
     <div class="notif-dropdown" id="notifDropdown">
-      <div class="notif-title">🔔 Notifications</div>
-      <div id="notifList"><div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;">No notifications yet</div></div>
-      <div style="text-align:center;padding:0.5rem;border-top:1px solid var(--border);"><button onclick="markAllRead()" style="background:none;border:none;color:var(--gold);font-size:0.75rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Mark all as read</button></div>
+      <div class="notif-title">🔔 <span data-t="notif.title">Notifications</span></div>
+      <div id="notifList"><div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;"><span data-t="notif.none">No notifications yet</span></div></div>
+      <div style="text-align:center;padding:0.5rem;border-top:1px solid var(--border);"><button onclick="markAllRead()" style="background:none;border:none;color:var(--gold);font-size:0.75rem;cursor:pointer;font-family:'Exo 2',sans-serif;"><span data-t="notif.markall">Mark all as read</span></button></div>
     </div>
   </div>
 </nav>
@@ -1281,7 +1281,7 @@
     <!-- Agency Header Card -->
     <div class="agency-card">
       <div class="agency-top">
-        <div class="agency-label">🏆 Agency</div>
+        <div class="agency-label"><span data-t="ref.agency">🏆 Agency</span></div>
       </div>
       <div class="agency-commission-val" id="agencyYesterdayComm">0.00</div>
       <div class="agency-commission-lbl">Yesterday's total commission (₹)</div>
@@ -1418,7 +1418,7 @@
   <div style="max-width:520px;margin:0 auto;padding:0 0 5rem;">
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:3.5rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
-      <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.3rem;font-family:'Exo 2',sans-serif;">‹ Back</button>
+      <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.3rem;font-family:'Exo 2',sans-serif;"><span data-t="common.back">‹ Back</span></button>
       <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Subordinate Data</div>
       <button onclick="loadSubData()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;">🔄</button>
     </div>
@@ -1493,7 +1493,7 @@
   <div style="max-width:520px;margin:0 auto;padding:0 0 5rem;">
     <!-- Header -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:3.5rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
-      <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.3rem;font-family:'Exo 2',sans-serif;">‹ Back</button>
+      <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.3rem;font-family:'Exo 2',sans-serif;"><span data-t="common.back">‹ Back</span></button>
       <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Commission Details</div>
       <button onclick="loadCommDetails()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;">🔄</button>
     </div>
@@ -1523,7 +1523,7 @@
 <div class="page" id="page-rebateratio">
   <div style="max-width:520px;margin:0 auto;padding:0 0 5rem;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:3.5rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
-      <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">‹ Back</button>
+      <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;"><span data-t="common.back">‹ Back</span></button>
       <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Rebate Ratio</div>
       <div style="width:40px;"></div>
     </div>
@@ -2255,7 +2255,7 @@
       const badge = document.getElementById('notifBadge');
       if (!listEl) return;
       if (!data) {
-        listEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;">No notifications yet</div>';
+        listEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;"><span data-t="notif.none">No notifications yet</span></div>';
         if (badge) badge.style.display = 'none';
         return;
       }
@@ -2708,7 +2708,7 @@
     const db = window.fbDB || fbDB;
     const el = document.getElementById('depositHistoryPageRows');
     if (!user || !db || !el) return;
-    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="common.loading">Loading...</span></div>';
     try {
       // Read from adminRequests/deposits (where admin updates status)
       const snap = await db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).once('value');
@@ -2737,7 +2737,7 @@
     const db = window.fbDB || fbDB;
     const el = document.getElementById('withdrawHistoryPageRows');
     if (!user || !db || !el) return;
-    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="common.loading">Loading...</span></div>';
     try {
       // Read from adminRequests/withdrawals where status is actually updated
       const snap = await db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(user.uid).once('value');
@@ -3846,7 +3846,9 @@
     // So: rotation = -(i*arc + arc/2)
     // Add extra full spins
     const extraSpins = 5 + Math.floor(Math.random() * 3);
-    const baseAngle = -(winIndex * arc + arc / 2);
+    // Land anywhere within the winning slice (not always dead center)
+    const sliceOffset = (Math.random() * 0.6 - 0.3) * arc; // ±30% of slice
+    const baseAngle = -(winIndex * arc + arc / 2) + sliceOffset;
     const normalizedBase = ((baseAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
     const targetAngle = extraSpins * 2 * Math.PI + normalizedBase;
 
@@ -4971,7 +4973,7 @@
       container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Please log in to view transactions</div>';
       return;
     }
-    container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
+    container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="common.loading">Loading...</span></div>';
     try {
       let txs = [];
 
@@ -5849,7 +5851,7 @@
     <div class="wallet-panel" id="panel-history">
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.95rem;margin-bottom:1rem;">📋 Deposit History</div>
       <div id="depositHistoryRows">
-        <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>
+        <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;"><span data-t="common.loading">Loading...</span></div>
       </div>
         <div class="tx-row"><div>⬇️ Deposit — Card</div><div class="tx-deposit">+₹2,000</div><div style="color:var(--muted);">8 May 2026</div><div><span class="badge badge-success">Success</span></div></div>
         <div class="tx-row"><div>⬆️ Withdraw — Bank</div><div class="tx-withdraw">-₹1,500</div><div style="color:var(--muted);">5 May 2026</div><div><span class="badge badge-pending">Pending</span></div></div>
@@ -6024,7 +6026,7 @@
         <button onclick="showPage('profile')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
         <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💸 Transaction History</div>
       </div>
-      <button onclick="loadTransactionHistory()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.8rem;color:var(--muted);cursor:pointer;font-size:0.78rem;font-family:'Exo 2',sans-serif;">🔄 Refresh</button>
+      <button onclick="loadTransactionHistory()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.8rem;color:var(--muted);cursor:pointer;font-size:0.78rem;font-family:'Exo 2',sans-serif;"><span data-t="common.refresh">🔄 Refresh</span></button>
     </div>
     <!-- Filter tabs -->
     <div class="history-filters" style="display:flex;gap:0.5rem;margin-bottom:1rem;overflow-x:auto;padding-bottom:0.3rem;scrollbar-width:none;">
@@ -6036,7 +6038,7 @@
     </div>
     <!-- Transaction rows -->
     <div id="txHistoryRows">
-      <div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>
+      <div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="common.loading">Loading...</span></div>
     </div>
   </div>
 </div>
@@ -6049,7 +6051,7 @@
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬇️ Deposit History</div>
     </div>
     <div id="depositHistoryPageRows">
-      <div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>
+      <div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="common.loading">Loading...</span></div>
     </div>
   </div>
 </div>
@@ -6062,7 +6064,7 @@
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬆️ Withdrawal History</div>
     </div>
     <div id="withdrawHistoryPageRows">
-      <div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>
+      <div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="common.loading">Loading...</span></div>
     </div>
   </div>
 </div>
@@ -6168,7 +6170,7 @@
 <div id="giftsModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:1.5rem 1.2rem 2rem;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">
-      <div style="font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);">🎁 Gifts</div>
+      <div style="font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);"><span data-t="gift.title">🎁 Gifts</span></div>
       <button onclick="closeGiftsModal()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;">✕</button>
     </div>
     <!-- Gift code input -->
@@ -6228,7 +6230,7 @@
 
     <!-- Header -->
     <div style="text-align:center;margin-bottom:1.5rem;">
-      <div style="font-family:'Cinzel',serif;font-size:1.6rem;font-weight:900;color:var(--gold);">💎 VIP Club</div>
+      <div style="font-family:'Cinzel',serif;font-size:1.6rem;font-weight:900;color:var(--gold);"><span data-t="vip.club">💎 VIP Club</span></div>
       <div style="font-size:0.82rem;color:var(--muted);margin-top:0.3rem;">Earn EXP by betting and depositing to level up</div>
     </div>
 
