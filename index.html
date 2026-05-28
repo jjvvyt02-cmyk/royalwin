@@ -4722,7 +4722,7 @@
     if (!cgHistoryByTimer[timerMode]) cgHistoryByTimer[timerMode] = [];
     cgHistoryByTimer[timerMode].unshift({ round: timerRound, num: winNum, color: histColorLabel, bigSmall, histBg });
     // Keep max 20 results in memory
-    if (cgHistoryByTimer[timerMode].length > 20) cgHistoryByTimer[timerMode].pop();
+    if (cgHistoryByTimer[timerMode].length > 50) cgHistoryByTimer[timerMode].pop();
 
     // Save to Firebase for persistence
     try {
@@ -4925,6 +4925,26 @@
       const circle = `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:${h.histBg};border:1px solid rgba(255,255,255,0.15);flex-shrink:0;"></span>`;
       return `<div class="cg-hist-row"><div>${h.round}</div><div style="font-weight:700;">${h.num}</div><div style="display:flex;align-items:center;">${circle}</div><div>${h.bigSmall}</div></div>`;
     }).join('');
+
+    // Update stats
+    const statsEl = document.getElementById('cgHistStats');
+    if (statsEl && total > 0) {
+      const greens = cgHistory.filter(h => h.color === 'Green').length;
+      const reds = cgHistory.filter(h => h.color === 'Red').length;
+      const violets = cgHistory.filter(h => h.color === 'Violet').length;
+      const bigs = cgHistory.filter(h => h.bigSmall === 'Big').length;
+      const smalls = cgHistory.filter(h => h.bigSmall === 'Small').length;
+      statsEl.innerHTML = `
+        <div style="display:flex;gap:0.8rem;flex-wrap:wrap;padding:0.6rem 1rem;font-size:0.72rem;border-top:1px solid var(--border);background:rgba(255,255,255,0.02);">
+          <span style="color:#27ae60;">🟢 Green: ${greens} (${Math.round(greens/total*100)}%)</span>
+          <span style="color:#e02020;">🔴 Red: ${reds} (${Math.round(reds/total*100)}%)</span>
+          <span style="color:#7c4dff;">🟣 Violet: ${violets} (${Math.round(violets/total*100)}%)</span>
+          <span style="color:var(--muted);">|</span>
+          <span style="color:var(--gold);">⬆️ Big: ${bigs} (${Math.round(bigs/total*100)}%)</span>
+          <span style="color:var(--muted);">⬇️ Small: ${smalls} (${Math.round(smalls/total*100)}%)</span>
+          <span style="color:var(--muted);">| Total: ${total}</span>
+        </div>`;
+    }
   }
 
   function cgHistNextPage() {
@@ -4938,7 +4958,29 @@
   }
 
 
-  // ── MOBILE BOTTOM NAV ──
+  // ── SESSION TIMEOUT (3 hours inactivity) ──
+  let _inactivityTimer = null;
+  const INACTIVITY_LIMIT = 3 * 60 * 60 * 1000; // 3 hours
+
+  function resetInactivityTimer() {
+    clearTimeout(_inactivityTimer);
+    _inactivityTimer = setTimeout(() => {
+      if (isLoggedIn) {
+        firebase.auth().signOut();
+        showToast('⏰ Logged out due to inactivity (3 hours)');
+        showPage('login');
+      }
+    }, INACTIVITY_LIMIT);
+  }
+
+  function initSessionTimeout() {
+    ['click','touchstart','keydown','scroll','mousemove'].forEach(evt => {
+      document.addEventListener(evt, resetInactivityTimer, { passive: true });
+    });
+    resetInactivityTimer();
+  }
+
+  initSessionTimeout();
   function mobileNav(page) {
     document.querySelectorAll('.mobile-nav-item').forEach(b => b.classList.remove('active'));
     const pageToNav = { home:'mn-home', promotions:'mn-activity', referral:'mn-promo', wallet:'mn-wallet', profile:'mn-account' };
@@ -6619,6 +6661,8 @@
           <div class="cg-hist-row head"><div>Period</div><div>Number</div><div>Color</div><div>Big/Small</div></div>
           <div id="cgHistRows"></div>
         </div>
+        <!-- Stats summary -->
+        <div id="cgHistStats"></div>
         <!-- Pagination -->
         <div style="display:flex;align-items:center;justify-content:center;padding:0.6rem 1rem;border-top:1px solid var(--border);gap:0.5rem;">
           <button onclick="cgHistPrevPage()" id="cgHistPrev" style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.7rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.8rem;">◀</button>
