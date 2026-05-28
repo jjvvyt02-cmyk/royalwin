@@ -1061,6 +1061,13 @@
   <div style="font-size:0.8rem;color:var(--muted);letter-spacing:2px;margin-bottom:2rem;">PREMIUM GAMING</div>
   <div style="width:48px;height:48px;border:3px solid rgba(240,192,64,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
 </div>
+<script>
+  // Emergency fallback — hide loader after 5 seconds no matter what
+  setTimeout(function() {
+    var loader = document.getElementById('appLoader');
+    if (loader) { loader.style.opacity = '0'; setTimeout(function(){ loader.style.display='none'; }, 500); }
+  }, 5000);
+</script>
 <style>
 @keyframes spin { to { transform: rotate(360deg); } }
 </style>
@@ -5497,10 +5504,13 @@
       window.fbAuth = firebase.auth();
 
       // ── HIDE LOADER ──
-      setTimeout(() => {
+      const hideLoader = () => {
         const loader = document.getElementById('appLoader');
         if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 500); }
-      }, 1200);
+      };
+      setTimeout(hideLoader, 1200);
+      // Force hide after 3 seconds no matter what
+      setTimeout(hideLoader, 3000);
 
       // Listen for auth state changes
       firebase.auth().onAuthStateChanged((user) => {
