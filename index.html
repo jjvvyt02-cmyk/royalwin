@@ -1607,6 +1607,10 @@
 
 <script>
   let isLoggedIn = false;
+  // Sync fbDB from head initialization
+  var fbDB = window.fbDB;
+  // Keep fbDB in sync if window.fbDB gets set later
+  setInterval(() => { if (window.fbDB && !fbDB) fbDB = window.fbDB; }, 500);
 
   function showPage(name) {
     // Internal function to actually show a page
@@ -5507,7 +5511,7 @@
           if (heroBanner) heroBanner.style.display = 'block';
           // Save last login time
           try {
-            const db = window.fbDB || fbDB;
+            const db = window.fbDB;
             if (db) db.ref('users/' + user.uid + '/lastLogin').set(Date.now());
           } catch(e) {}
           resetInactivityTimer();
