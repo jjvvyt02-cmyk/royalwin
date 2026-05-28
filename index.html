@@ -5460,21 +5460,8 @@
 
   // ── FIREBASE SETUP (Compat SDK) ──
   var fbDB, fbRef, fbSet, fbGet, fbOnValue;
-  // Auto-init Firebase — retry until SDK loads
-  function tryInitFirebase(attempts) {
-    if (typeof firebase !== 'undefined') {
-      initFirebase();
-    } else if (attempts > 0) {
-      setTimeout(() => tryInitFirebase(attempts - 1), 300);
-    } else {
-      console.error('Firebase SDK not loaded! Open via a web server, not file://');
-    }
-  }
-  window.addEventListener('load', () => tryInitFirebase(10));
 
   // ── FIREBASE CONFIG ──
-  // TODO: Replace these values with your own Firebase project config
-  // Get them from: https://console.firebase.google.com → Project Settings → Your Apps → SDK setup
   const FIREBASE_CONFIG = {
     apiKey: "AIzaSyBOw37okdtBnUv3rfnnUg8nE0Vb5LHyl6g",
     authDomain: "royalwin-32d97.firebaseapp.com",
@@ -5485,6 +5472,19 @@
     appId: "1:1056996003114:web:8c89f3af4a3b81fd582253",
     measurementId: "G-6Q7DX3EG1G"
   };
+
+  // Auto-init Firebase — retry until SDK loads
+  function tryInitFirebase(attempts) {
+
+    if (typeof firebase !== 'undefined') {
+      initFirebase();
+    } else if (attempts > 0) {
+      setTimeout(() => tryInitFirebase(attempts - 1), 300);
+    } else {
+      console.error('Firebase SDK not loaded! Open via a web server, not file://');
+    }
+  }
+  window.addEventListener('load', () => tryInitFirebase(10));
 
   // Initialize Firebase immediately
   function initFirebase() {
