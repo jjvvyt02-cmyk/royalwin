@@ -1219,7 +1219,7 @@
       </div>
       <div class="checkbox-row">
         <input type="checkbox" id="terms" checked>
-        <label for="terms">I agree to the <a href="#">Terms & Conditions</a> and <a href="#">Privacy Policy</a></label>
+        <label for="terms">I agree to the <a onclick="showPage('terms')" style="color:var(--gold);cursor:pointer;">Terms & Conditions</a> and <a onclick="showPage('privacy')" style="color:var(--gold);cursor:pointer;">Privacy Policy</a></label>
       </div>
       <button class="btn btn-gold btn-full" onclick="sendOTP()">🚀 Send OTP & Continue</button>
       </div>
@@ -6179,6 +6179,14 @@
     </div>
 
     <!-- Sign out -->
+    <!-- Legal Links -->
+    <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem;">
+      <button onclick="showPage('terms')" style="background:none;border:none;color:var(--muted);font-size:0.75rem;cursor:pointer;text-decoration:underline;font-family:'Exo 2',sans-serif;">Terms & Conditions</button>
+      <span style="color:var(--muted);font-size:0.75rem;">·</span>
+      <button onclick="showPage('privacy')" style="background:none;border:none;color:var(--muted);font-size:0.75rem;cursor:pointer;text-decoration:underline;font-family:'Exo 2',sans-serif;">Privacy Policy</button>
+      <span style="color:var(--muted);font-size:0.75rem;">·</span>
+      <button onclick="showPage('responsible')" style="background:none;border:none;color:var(--muted);font-size:0.75rem;cursor:pointer;text-decoration:underline;font-family:'Exo 2',sans-serif;">Responsible Gambling</button>
+    </div>
     <button onclick="logout()" style="width:100%;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.25);border-radius:12px;padding:0.9rem;color:var(--red2);font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:1rem;">🚪 <span data-t="account.signout">🚪 Sign Out</span></button>
 
   </div>
@@ -6801,3 +6809,176 @@
 <div id="recaptcha-container"></div>
 
 </html>
+
+<!-- ═══ TERMS & CONDITIONS PAGE ═══ -->
+<div class="page" id="page-terms">
+  <div style="max-width:700px;margin:0 auto;padding:5rem 1.2rem 3rem;">
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
+      <button onclick="history.back()||showPage('home')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">📋 Terms & Conditions</div>
+    </div>
+    <div style="color:var(--muted);font-size:0.75rem;margin-bottom:1.5rem;">Last updated: May 2026</div>
+
+    <div style="display:flex;flex-direction:column;gap:1.2rem;font-size:0.88rem;line-height:1.7;color:var(--text);">
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">1. Acceptance of Terms</div>
+        <p style="color:var(--muted);">By accessing or using RoyalWin ("the Platform"), you agree to be bound by these Terms and Conditions. If you do not agree, please do not use the Platform. We reserve the right to update these terms at any time without prior notice.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">2. Eligibility</div>
+        <p style="color:var(--muted);">You must be at least 18 years of age to use this Platform. By using RoyalWin, you confirm that you are 18 or older and legally permitted to participate in online gaming activities in your jurisdiction. The Platform is not available to residents where online gaming is prohibited by law.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">3. Account Registration</div>
+        <p style="color:var(--muted);">You may only create one account per person. Creating multiple accounts to exploit bonuses or promotions is strictly prohibited and will result in permanent suspension. You are responsible for maintaining the confidentiality of your account credentials. RoyalWin is not liable for any loss resulting from unauthorized access to your account.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">4. Deposits & Withdrawals</div>
+        <p style="color:var(--muted);">All deposits must be made from payment methods that belong to you. Minimum deposit is ₹100. Withdrawals are subject to identity verification. RoyalWin reserves the right to hold withdrawals pending verification. Bonus amounts are subject to wagering requirements before withdrawal. Processing time for withdrawals is 24–72 hours.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">5. Bonuses & Promotions</div>
+        <p style="color:var(--muted);">All bonuses are subject to wagering requirements as stated at the time of the offer. RoyalWin reserves the right to modify, cancel or withdraw any bonus or promotion at any time. Misuse of bonuses, including but not limited to bonus abuse, arbitrage betting, or exploitation of system errors, will result in account suspension and forfeiture of winnings.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">6. Prohibited Activities</div>
+        <p style="color:var(--muted);">The following are strictly prohibited: fraud, money laundering, use of bots or automated software, collusion, exploiting bugs or glitches, and any activity that damages the integrity of the Platform. Violation will result in immediate account suspension and forfeiture of all funds.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">7. Limitation of Liability</div>
+        <p style="color:var(--muted);">RoyalWin is not liable for any loss of data, funds, or profits arising from the use of the Platform. All games are provided "as is". Technical errors may occur and RoyalWin reserves the right to void any bets placed during such errors.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">8. Governing Law</div>
+        <p style="color:var(--muted);">These Terms shall be governed by and construed in accordance with applicable laws. Any disputes shall be resolved through binding arbitration. By using the Platform, you agree to this dispute resolution process.</p>
+      </div>
+
+      <div style="background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">Contact Us</div>
+        <p style="color:var(--muted);">For any queries regarding these Terms, please contact us via Telegram support or the Live Chat feature on the Platform.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ RESPONSIBLE GAMBLING PAGE ═══ -->
+<div class="page" id="page-responsible">
+  <div style="max-width:700px;margin:0 auto;padding:5rem 1.2rem 3rem;">
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
+      <button onclick="history.back()||showPage('home')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">🛡️ Responsible Gambling</div>
+    </div>
+
+    <div style="background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.2);border-radius:14px;padding:1.2rem;margin-bottom:1.2rem;text-align:center;">
+      <div style="font-size:2rem;margin-bottom:0.5rem;">⚠️</div>
+      <div style="font-weight:700;color:var(--red2);font-size:0.95rem;">Gambling can be addictive. Play responsibly.</div>
+      <div style="color:var(--muted);font-size:0.82rem;margin-top:0.3rem;">You must be 18+ to use this platform.</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:1.2rem;font-size:0.88rem;line-height:1.7;">
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">Our Commitment</div>
+        <p style="color:var(--muted);">RoyalWin is committed to promoting responsible gambling. We provide tools and resources to help our users maintain control over their gaming activity. Gambling should be entertaining, not a source of financial stress.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.8rem;">Signs of Problem Gambling</div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+          <div style="display:flex;align-items:flex-start;gap:0.5rem;color:var(--muted);"><span style="color:var(--red2);flex-shrink:0;">•</span> Spending more money than you can afford to lose</div>
+          <div style="display:flex;align-items:flex-start;gap:0.5rem;color:var(--muted);"><span style="color:var(--red2);flex-shrink:0;">•</span> Chasing losses by placing more bets</div>
+          <div style="display:flex;align-items:flex-start;gap:0.5rem;color:var(--muted);"><span style="color:var(--red2);flex-shrink:0;">•</span> Neglecting work, family, or personal responsibilities</div>
+          <div style="display:flex;align-items:flex-start;gap:0.5rem;color:var(--muted);"><span style="color:var(--red2);flex-shrink:0;">•</span> Borrowing money to gamble</div>
+          <div style="display:flex;align-items:flex-start;gap:0.5rem;color:var(--muted);"><span style="color:var(--red2);flex-shrink:0;">•</span> Feeling anxious or irritable when not gambling</div>
+          <div style="display:flex;align-items:flex-start;gap:0.5rem;color:var(--muted);"><span style="color:var(--red2);flex-shrink:0;">•</span> Lying to family or friends about gambling habits</div>
+        </div>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.8rem;">Tips for Safe Gambling</div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+          <div style="display:flex;align-items:flex-start;gap:0.5rem;color:var(--muted);"><span style="color:var(--green);flex-shrink:0;">✓</span> Set a budget before you start and stick to it</div>
+          <div style="display:flex;align-items:flex-start;gap:0.5rem;color:var(--muted);"><span style="color:var(--green);flex-shrink:0;">✓</span> Only gamble with money you can afford to lose</div>
+          <div style="display:flex;align-items:flex-start;gap:0.5rem;color:var(--muted);"><span style="color:var(--green);flex-shrink:0;">✓</span> Take regular breaks during gaming sessions</div>
+          <div style="display:flex;align-items:flex-start;gap:0.5rem;color:var(--muted);"><span style="color:var(--green);flex-shrink:0;">✓</span> Never chase your losses</div>
+          <div style="display:flex;align-items:flex-start;gap:0.5rem;color:var(--muted);"><span style="color:var(--green);flex-shrink:0;">✓</span> Do not gamble under the influence of alcohol or drugs</div>
+          <div style="display:flex;align-items:flex-start;gap:0.5rem;color:var(--muted);"><span style="color:var(--green);flex-shrink:0;">✓</span> Treat gambling as entertainment, not income</div>
+        </div>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">Self-Exclusion</div>
+        <p style="color:var(--muted);margin-bottom:0.8rem;">If you feel you need a break from gambling, you can request a self-exclusion period by contacting our support team. We will suspend your account for the requested duration.</p>
+        <button onclick="showPage('support')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.6rem 1.5rem;color:#000;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Contact Support</button>
+      </div>
+
+      <div style="background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">Need Help?</div>
+        <p style="color:var(--muted);">If you or someone you know has a gambling problem, please seek help. Contact iGaming helplines or counselling services available in your region. Remember: help is available and you are not alone.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PRIVACY POLICY PAGE ═══ -->
+<div class="page" id="page-privacy">
+  <div style="max-width:700px;margin:0 auto;padding:5rem 1.2rem 3rem;">
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
+      <button onclick="history.back()||showPage('home')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">🔒 Privacy Policy</div>
+    </div>
+    <div style="color:var(--muted);font-size:0.75rem;margin-bottom:1.5rem;">Last updated: May 2026</div>
+
+    <div style="display:flex;flex-direction:column;gap:1.2rem;font-size:0.88rem;line-height:1.7;color:var(--text);">
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">1. Information We Collect</div>
+        <p style="color:var(--muted);">We collect information you provide during registration including your name, mobile number, email address, and payment details. We also collect usage data such as game history, transaction records, and device information to improve our services.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">2. How We Use Your Information</div>
+        <p style="color:var(--muted);">Your information is used to: process transactions and withdrawals, verify your identity, provide customer support, send important account notifications, detect and prevent fraud, and improve our platform experience. We do not sell your personal data to third parties.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">3. Data Storage & Security</div>
+        <p style="color:var(--muted);">Your data is stored securely using Google Firebase, which employs industry-standard encryption. We implement technical and organizational measures to protect your personal information against unauthorized access, alteration, disclosure, or destruction.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">4. Cookies</div>
+        <p style="color:var(--muted);">We use cookies and similar technologies to maintain your session, remember your preferences, and analyze platform usage. By using RoyalWin, you consent to our use of cookies. You can disable cookies in your browser settings, though this may affect platform functionality.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">5. Third-Party Services</div>
+        <p style="color:var(--muted);">We use Google Firebase for authentication and database services. These services have their own privacy policies. We do not control and are not responsible for the privacy practices of third-party services.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">6. Your Rights</div>
+        <p style="color:var(--muted);">You have the right to access, correct, or delete your personal data. You may request account deletion by contacting our support team. Upon deletion, your personal data will be removed within 30 days, except where retention is required by law.</p>
+      </div>
+
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">7. Data Retention</div>
+        <p style="color:var(--muted);">We retain your personal data for as long as your account is active or as needed to provide services. Transaction records may be retained for up to 7 years for legal and regulatory compliance purposes.</p>
+      </div>
+
+      <div style="background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:14px;padding:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">Contact Us</div>
+        <p style="color:var(--muted);">For any privacy-related queries or to exercise your data rights, please contact us via our support channels.</p>
+        <button onclick="showPage('support')" style="margin-top:0.6rem;background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.6rem 1.5rem;color:#000;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Contact Support</button>
+      </div>
+    </div>
+  </div>
+</div>
