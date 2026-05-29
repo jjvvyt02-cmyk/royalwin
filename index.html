@@ -1431,6 +1431,8 @@
     if (name === 'deposithistory') loadDepositHistoryPage();
     if (name === 'withdrawhistory') loadWithdrawHistoryPage();
     if (name === 'referral') loadReferralData();
+    if (name === 'vip') { loadVipPage(); }
+    if (name === 'support') { setTimeout(initLiveChat, 400); }
     if (name === 'wallet') {
       switchWalletTab('deposit');
       checkDepositBonus();
@@ -4245,15 +4247,6 @@
     await db.ref('chats/'+user.uid+'/info').update({ lastMessage:isImage?'📷 Image':'📎 '+file.name, lastMessageTime:Date.now(), unreadByAdmin:true });
     input.value=''; showToast('✅ File sent!');
   };
-
-  // ── VIP PAGE INIT ──
-  const _origShowPage = showPage;
-  function showPage(name) {
-    if (name==='vip') { document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); const el=document.getElementById('page-vip'); if(el)el.classList.add('active'); window.scrollTo(0,0); loadVipPage(); return; }
-    if (name==='history') { document.querySelectorAll('.page').forEach(p=>p.classList.remove('active')); const el=document.getElementById('page-history'); if(el)el.classList.add('active'); window.scrollTo(0,0); loadTransactionHistory(); return; }
-    if (name==='support') { _origShowPage(name); setTimeout(initLiveChat, 400); return; }
-    _origShowPage(name);
-  }
 
   // ── CALL loadNotifications on login ──
   const _origLoadUserProfile = loadUserProfile;
