@@ -1009,13 +1009,6 @@
 </style>
 </head>
 <body>
-<div id="appLoader" style="position:fixed;inset:0;z-index:99999;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.6s;">
-  <div style="font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:#f0c040;margin-bottom:0.5rem;">ROYAL<span style="color:#e02020;">♠</span>WIN</div>
-  <div style="font-size:0.8rem;color:#888;letter-spacing:2px;margin-bottom:2rem;">PREMIUM GAMING</div>
-  <div style="width:48px;height:48px;border:3px solid rgba(240,192,64,0.2);border-top-color:#f0c040;border-radius:50%;animation:rw-spin 0.8s linear infinite;"></div>
-</div>
-<style>@keyframes rw-spin{to{transform:rotate(360deg)}}</style>
-<script>setTimeout(function(){var l=document.getElementById("appLoader");if(l){l.style.opacity="0";setTimeout(function(){l.remove()},600)}},5000);</script>
 
 <div class="bg-stars"></div>
 <div class="bg-grid"></div>
@@ -1034,11 +1027,11 @@
   </div>
   <!-- Logged in nav — minimal, just notification bell -->
   <div class="nav-user" id="navUser" style="display:none;">
-    <div class="notif-bell" onclick="toggleNotif()" title="Notifications">🔔<span class="notif-badge" id="notifBadge" style="display:none;">0</span></div>
+    <div class="notif-bell" onclick="toggleNotif()" title="Notifications">🔔<span class="notif-badge" id="notifBadge">3</span></div>
     <div class="notif-dropdown" id="notifDropdown">
-      <div class="notif-title">🔔 Notifications</div>
-      <div id="notifList"><div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;">No notifications yet</div></div>
-      <div style="text-align:center;padding:0.5rem;border-top:1px solid var(--border);"><button onclick="markAllNotifsRead()" style="background:none;border:none;color:var(--gold);font-size:0.75rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Mark all as read</button></div>
+      <div class="notif-title">Notifications</div>
+      <div class="notif-item unread">🎁 Welcome bonus credited!</div>
+      <div class="notif-item unread">📢 New promotion available</div>
     </div>
   </div>
 </nav>
@@ -1368,10 +1361,10 @@
   }
 
   function copyLink() {
-    const link = (document.getElementById('refLink')||{}).textContent||'';
-    if(navigator.clipboard){navigator.clipboard.writeText(link.trim()).then(()=>showToast('✅ Link copied!')).catch(()=>_fbCopy(link.trim()));}else{_fbCopy(link.trim());}
+    const link = document.getElementById('refLink').textContent;
+    navigator.clipboard.writeText(link).catch(() => {});
+    showToast('🔗 Referral link copied!');
   }
-  function _fbCopy(t){var ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;top:-9999px;opacity:0;';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');showToast('✅ Copied!');}catch(e){showToast('❌ Copy failed');}document.body.removeChild(ta);}
 
   async function loadReferralData() {
     const user = window.currentUser;
@@ -1932,19 +1925,17 @@
     try {
       const db = window.fbDB || fbDB;
       // Save deposit request to Firebase
-      let bonusPct=0,bonusAmt=0,wagerReq=0;
-      if(selectedBonusOption===1){bonusPct=8;bonusAmt=Math.round(amt*0.08);wagerReq=1;}
-      if(selectedBonusOption===2){bonusPct=15;bonusAmt=Math.round(amt*0.15);wagerReq=2.5;}
-      if(selectedBonusOption===0){try{const hd=await db.ref('users/'+window.currentUser.uid+'/hasDeposited').once('value');if(hd.val()){bonusPct=5;bonusAmt=Math.round(amt*0.05);wagerReq=1;}}catch(e){}}
-      await db.ref('adminRequests/deposits').push({
-        amount:amt,status:'pending',uid:window.currentUser.uid,
-        username:window.userProfile?window.userProfile.username:'Unknown',
-        contact:window.userProfile?(window.userProfile.contact||''):'',
-        method:bonusPct>0?'Manual · '+bonusPct+'% bonus':'Manual',
-        bonusPct,bonusAmt,wagerReq,timestamp:Date.now()
+      await db.ref('users/' + window.currentUser.uid + '/depositRequests').push({
+        amount: amt, status: 'pending', method: 'manual',
+        timestamp: Date.now(), uid: window.currentUser.uid
       });
-      const bMsg=bonusAmt>0?' + ₹'+bonusAmt+' ('+bonusPct+'% bonus) after approval.':' submitted!';
-      showToast('✅ Deposit of ₹'+amt.toLocaleString('en-IN')+bMsg);
+      // Also save to admin deposits node
+      await db.ref('adminRequests/deposits').push({
+        amount: amt, status: 'pending', uid: window.currentUser.uid,
+        username: window.userProfile ? window.userProfile.username : 'Unknown',
+        timestamp: Date.now()
+      });
+      showToast('✅ Deposit request of ₹' + amt.toLocaleString('en-IN') + ' submitted! Admin will approve shortly.');
     } catch(e) { showToast('❌ Deposit request failed: ' + e.message); }
   }
 
@@ -1983,17 +1974,18 @@
       if (currentWithdrawMethod === 'upi') upiId = saved.upiId;
       else if (currentWithdrawMethod === 'bank') upiId = `Acc: ${saved.acc} | IFSC: ${saved.ifsc} | Bank: ${saved.bank} | Name: ${saved.name}`;
       else upiId = `USDT TRC20: ${saved.addr}`;
-      const newBal = parseFloat((bal - amt).toFixed(2));
-      await db.ref('users/' + window.currentUser.uid + '/balance').set(newBal);
-      updateBalanceDisplay(newBal);
       await db.ref('adminRequests/withdrawals').push({
         amount: amt, status: 'pending', uid: window.currentUser.uid,
         username: window.userProfile ? window.userProfile.username : 'Unknown',
         contact: window.userProfile ? (window.userProfile.contact || '') : '',
         upiId, method: currentWithdrawMethod.toUpperCase(),
-        balanceBefore: bal, balanceAfter: newBal, timestamp: Date.now()
+        balance: bal, timestamp: Date.now()
       });
-      showToast('⬆️ Withdrawal of ₹' + amt.toLocaleString('en-IN') + ' submitted! Balance deducted.');
+      await db.ref('users/' + window.currentUser.uid + '/withdrawRequests').push({
+        amount: amt, status: 'pending', method: currentWithdrawMethod.toUpperCase(),
+        upiId, timestamp: Date.now()
+      });
+      showToast('⬆️ Withdrawal of ₹' + amt.toLocaleString('en-IN') + ' submitted! Admin will process shortly.');
       loadWithdrawHistory();
     } catch(e) { showToast('❌ Withdrawal failed: ' + e.message); }
   }
@@ -2402,30 +2394,21 @@
 
       // Save user profile to Firebase
       await firebase.database().ref('users/' + user.uid).set({
-        memberId, uid: user.uid, firstName, lastName, username,
-        email: isEmail ? contact : '', mobile: isEmail ? '' : contact, contact,
-        balance: 0, referralCode: myRefCode, referredBy: inviteCode || '',
-        createdAt: Date.now(), kycStatus: 'pending', isActive: true
+        memberId,
+        uid: user.uid,
+        firstName,
+        lastName,
+        username,
+        email: isEmail ? contact : '',
+        mobile: isEmail ? '' : contact,
+        contact,
+        balance: 0,
+        referralCode: myRefCode,
+        referredBy: inviteCode || '',
+        createdAt: Date.now(),
+        kycStatus: 'pending',
+        isActive: true
       });
-      if (inviteCode) {
-        try {
-          const allSnap = await firebase.database().ref('users').once('value');
-          const allUsers = allSnap.val() || {};
-          const codeMap = {};
-          Object.entries(allUsers).forEach(([uid,u]) => { if(u.referralCode) codeMap[u.referralCode]={uid,referredBy:u.referredBy||''}; });
-          const newInfo = { uid:user.uid, username, memberId, contact, joinedAt:Date.now() };
-          let cur = inviteCode;
-          const chain = {};
-          for (let lv=1; lv<=4; lv++) {
-            const ref = codeMap[cur]; if(!ref) break;
-            chain['l'+lv] = ref.uid;
-            const rk = lv===1?'referrals':'referrals_l'+lv;
-            await firebase.database().ref('users/'+ref.uid+'/'+rk+'/'+user.uid).set({...newInfo,level:lv});
-            cur = ref.referredBy; if(!cur) break;
-          }
-          if (Object.keys(chain).length > 0) await firebase.database().ref('users/'+user.uid+'/referrerChain').set(chain);
-        } catch(e) { console.warn('Referral chain error:',e); }
-      }
 
       // Update avatar with first letter of username
       const avatarEl = document.getElementById('userAvatar');
@@ -3601,7 +3584,6 @@
   // ── AUTO LOGOUT (6 hours inactivity) ──
   let inactivityTimer;
   const SIX_HOURS = 6 * 60 * 60 * 1000;
-  const INACTIVITY_LIMIT = 3 * 60 * 60 * 1000;
 
   function resetInactivityTimer() {
     clearTimeout(inactivityTimer);
@@ -3610,7 +3592,7 @@
         await logout();
         showPage('login');
       }
-    }, INACTIVITY_LIMIT);
+    }, SIX_HOURS);
   }
 
   // Reset on any user activity
@@ -3618,384 +3600,6 @@
     document.addEventListener(e, resetInactivityTimer, { passive: true });
   });
   resetInactivityTimer(); // Start timer on load
-
-
-  // ══════════════════════════════════════════
-  // VIP EXP SYSTEM
-  // ══════════════════════════════════════════
-  var VIP_LEVELS = [
-    { name:'Bronze',  icon:'🥉', color:'#cd7f32', minExp:0,    maxExp:199,  levelupBonus:50,   weekly:25,  monthly:50   },
-    { name:'Silver',  icon:'🥈', color:'#c0c0c0', minExp:200,  maxExp:499,  levelupBonus:200,  weekly:125, monthly:250  },
-    { name:'Gold',    icon:'🥇', color:'#f0c040', minExp:500,  maxExp:999,  levelupBonus:500,  weekly:225, monthly:650  },
-    { name:'Diamond', icon:'💎', color:'#a87dff', minExp:1000, maxExp:Infinity, levelupBonus:1500, weekly:325, monthly:1350 }
-  ];
-  function getVipLevel(exp) {
-    for (var i=VIP_LEVELS.length-1; i>=0; i--) { if(exp>=VIP_LEVELS[i].minExp) return VIP_LEVELS[i]; }
-    return VIP_LEVELS[0];
-  }
-  function addVipExp(expAmt) {
-    var user=window.currentUser; var db=window.fbDB||fbDB;
-    if(!user||!db) return;
-    db.ref('users/'+user.uid+'/vip').once('value').then(function(snap){
-      var vd=snap.val()||{exp:0,levelupClaimed:[]};
-      var oldExp=vd.exp||0; var newExp=oldExp+expAmt;
-      var oldLv=getVipLevel(oldExp); var newLv=getVipLevel(newExp);
-      db.ref('users/'+user.uid+'/vip/exp').set(newExp);
-      if(newLv.name!==oldLv.name){
-        var claimed=vd.levelupClaimed||[];
-        if(claimed.indexOf(newLv.name)<0){
-          db.ref('users/'+user.uid+'/balance').once('value').then(function(bs){
-            var nb=parseFloat(((bs.val()||0)+newLv.levelupBonus).toFixed(2));
-            db.ref('users/'+user.uid+'/balance').set(nb);
-            db.ref('users/'+user.uid+'/vip/levelupClaimed').set(claimed.concat([newLv.name]));
-            updateBalanceDisplay(nb);
-            showToast('🎉 Level Up! '+newLv.icon+' '+newLv.name+' — ₹'+newLv.levelupBonus+' credited!');
-          });
-        }
-      }
-    }).catch(function(e){console.warn('VIP exp error:',e);});
-  }
-  function claimVipBonus(type) {
-    var user=window.currentUser; var db=window.fbDB||fbDB;
-    if(!user||!db){showToast('🔐 Please sign in');return;}
-    db.ref('users/'+user.uid+'/vip').once('value').then(function(snap){
-      var vd=snap.val()||{exp:0,weeklyClaimedAt:0,monthlyClaimedAt:0};
-      var lv=getVipLevel(vd.exp||0);
-      var now=new Date(); var wd=new Date(now); wd.setDate(now.getDate()-((now.getDay()+6)%7)); wd.setHours(0,0,0,0);
-      var ms=new Date(now.getFullYear(),now.getMonth(),1).getTime();
-      var amt=type==='weekly'?lv.weekly:lv.monthly;
-      var lastClaim=type==='weekly'?(vd.weeklyClaimedAt||0):(vd.monthlyClaimedAt||0);
-      var threshold=type==='weekly'?wd.getTime():ms;
-      if(lastClaim>=threshold){showToast('⚠️ Already claimed this '+(type==='weekly'?'week':'month')+'!');return;}
-      db.ref('users/'+user.uid+'/balance').once('value').then(function(bs){
-        var nb=parseFloat(((bs.val()||0)+amt).toFixed(2));
-        db.ref('users/'+user.uid+'/balance').set(nb);
-        var upd={}; upd['vip/'+(type==='weekly'?'weeklyClaimedAt':'monthlyClaimedAt')]=Date.now();
-        db.ref('users/'+user.uid).update(upd);
-        updateBalanceDisplay(nb);
-        var btn=document.getElementById('vip'+type.charAt(0).toUpperCase()+type.slice(1)+'Btn');
-        if(btn){btn.textContent='✅ Claimed';btn.disabled=true;btn.style.opacity='0.5';}
-        showToast('🎁 ₹'+amt+' '+(type==='weekly'?'weekly':'monthly')+' bonus credited!');
-      });
-    }).catch(function(e){showToast('❌ Claim failed: '+e.message);});
-  }
-  function loadVipPage() {
-    var user=window.currentUser; var db=window.fbDB||fbDB;
-    var exp=0;
-    function _render(exp,vd) {
-      var lv=getVipLevel(exp); var idx=VIP_LEVELS.findIndex(function(l){return l.name===lv.name;}); var nxt=VIP_LEVELS[idx+1];
-      function st(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
-      function ss(id,p,v){var el=document.getElementById(id);if(el)el.style[p]=v;}
-      st('vipLevelName',lv.icon+' '+lv.name); ss('vipLevelName','color',lv.color);
-      st('vipTotalExp',exp.toLocaleString('en-IN'));
-      if(nxt){var pct=Math.min(100,Math.round((exp-lv.minExp)/(nxt.minExp-lv.minExp)*100));
-        ss('vipProgressBar','width',pct+'%'); st('vipExpProgress',exp+' / '+nxt.minExp+' EXP');
-        st('vipNextLevel','Next: '+nxt.name); st('vipExpNeeded','Earn '+(nxt.minExp-exp)+' more EXP to reach '+nxt.name);}
-      else{ss('vipProgressBar','width','100%');st('vipNextLevel','👑 Max Level!');}
-      st('vipWeeklyAmt','₹'+lv.weekly); st('vipMonthlyAmt','₹'+lv.monthly);
-      ['bronze','silver','gold','diamond'].forEach(function(l,i){
-        var card=document.getElementById('vipCard-'+l); if(!card)return;
-        if(VIP_LEVELS[i].name===lv.name){card.style.opacity='1';card.style.borderColor=lv.color;}
-        else if(exp>=VIP_LEVELS[i].minExp){card.style.opacity='1';}
-        else{card.style.opacity='0.5';}
-      });
-      var now=new Date(); var wd=new Date(now); wd.setDate(now.getDate()-((now.getDay()+6)%7)); wd.setHours(0,0,0,0);
-      var ms=new Date(now.getFullYear(),now.getMonth(),1).getTime();
-      var wb=document.getElementById('vipWeeklyBtn'); var mb=document.getElementById('vipMonthlyBtn');
-      if(wb&&(vd.weeklyClaimedAt||0)>=wd.getTime()){wb.textContent='✅ Claimed';wb.disabled=true;wb.style.opacity='0.5';}
-      else if(wb){wb.textContent='Claim';wb.disabled=false;wb.style.opacity='1';}
-      if(mb&&(vd.monthlyClaimedAt||0)>=ms){mb.textContent='✅ Claimed';mb.disabled=true;mb.style.opacity='0.5';}
-      else if(mb){mb.textContent='Claim';mb.disabled=false;mb.style.opacity='1';}
-    }
-    if(user&&db){
-      db.ref('users/'+user.uid+'/vip').once('value').then(function(snap){
-        var vd=snap.val()||{exp:0}; _render(vd.exp||0,vd);
-      }).catch(function(){_render(0,{});});
-    } else { _render(0,{}); }
-  }
-
-  // ══════════════════════════════════════════
-  // REAL NOTIFICATIONS
-  // ══════════════════════════════════════════
-  var _notifUnsub = null;
-  function loadNotifications() {
-    var user=window.currentUser; var db=window.fbDB||fbDB;
-    if(!user||!db) return;
-    if(_notifUnsub) try{db.ref('users/'+user.uid+'/notifications').off('value',_notifUnsub);}catch(e){}
-    _notifUnsub = db.ref('users/'+user.uid+'/notifications').limitToLast(20).on('value',function(snap){
-      var data=snap.val();
-      var listEl=document.getElementById('notifList');
-      var badge=document.getElementById('notifBadge');
-      if(!listEl) return;
-      if(!data){listEl.innerHTML='<div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;">No notifications yet</div>';if(badge)badge.style.display='none';return;}
-      var notifs=Object.entries(data).map(function(e){return Object.assign({},e[1],{key:e[0]});}).sort(function(a,b){return (b.timestamp||0)-(a.timestamp||0);});
-      var unread=notifs.filter(function(n){return !n.read;}).length;
-      if(badge){badge.style.display=unread>0?'flex':'none';badge.textContent=unread>9?'9+':unread;}
-      listEl.innerHTML=notifs.map(function(n){
-        var time=n.timestamp?new Date(n.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
-        return '<div onclick="markNotifRead(''+n.key+'')" style="padding:0.7rem 1rem;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;background:'+(n.read?'transparent':'rgba(240,192,64,0.04)')+';display:flex;gap:0.6rem;align-items:flex-start;"><div style="font-size:1.1rem;flex-shrink:0;">'+(n.icon||'🔔')+'</div><div style="flex:1;"><div style="font-size:0.8rem;font-weight:'+(n.read?'400':'700')+';color:'+(n.read?'var(--muted)':'var(--text)')+';">'+(n.title||'')+'</div><div style="font-size:0.72rem;color:var(--muted);">'+(n.body||'')+'</div><div style="font-size:0.65rem;color:var(--muted);">'+time+'</div></div>'+(n.read?'':'<div style="width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:4px;"></div>')+'</div>';
-      }).join('');
-    });
-  }
-  function markNotifRead(key) {
-    var user=window.currentUser; var db=window.fbDB||fbDB;
-    if(!user||!db||!key) return;
-    db.ref('users/'+user.uid+'/notifications/'+key+'/read').set(true);
-  }
-  function markAllNotifsRead() {
-    var user=window.currentUser; var db=window.fbDB||fbDB;
-    if(!user||!db) return;
-    db.ref('users/'+user.uid+'/notifications').once('value').then(function(snap){
-      var data=snap.val()||{}; var updates={};
-      Object.keys(data).forEach(function(k){updates[k+'/read']=true;});
-      if(Object.keys(updates).length>0) db.ref('users/'+user.uid+'/notifications').update(updates);
-    });
-    showToast('✅ All marked as read');
-  }
-
-  // ══════════════════════════════════════════
-  // TRANSACTION HISTORY
-  // ══════════════════════════════════════════
-  var _allTxs=[], _curTxFilter='all';
-  function loadTransactionHistory() {
-    var container=document.getElementById('txHistoryRows');
-    if(!container) return;
-    var user=window.currentUser; var db=window.fbDB||fbDB;
-    if(!user||!db){container.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">Please sign in</div>';return;}
-    container.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
-    var txs=[];
-    var p1=db.ref('adminRequests/deposits').once('value').then(function(snap){
-      if(!snap.val()) return;
-      Object.values(snap.val()).filter(function(d){return d.uid===user.uid&&d.status==='approved';}).forEach(function(d){
-        txs.push({type:'deposit',amount:(d.amount||0)+(d.bonusAmt||0),details:'Deposit'+(d.bonusPct?' +'+d.bonusPct+'% bonus':''),balance:d.balanceAfter||0,timestamp:d.timestamp||0});
-      });
-    }).catch(function(){});
-    var p2=db.ref('adminRequests/withdrawals').once('value').then(function(snap){
-      if(!snap.val()) return;
-      Object.values(snap.val()).filter(function(w){return w.uid===user.uid;}).forEach(function(w){
-        var st=w.status==='approved'?'✅ Paid':w.status==='rejected'?'❌ Failed':'⏳ Processing';
-        txs.push({type:'withdrawal',amount:w.amount||0,details:st+' · '+(w.method||'UPI'),balance:w.balanceAfter||0,timestamp:w.timestamp||0});
-        if(w.status==='rejected') txs.push({type:'refund',amount:w.amount||0,details:'Withdrawal failed — refunded',balance:0,timestamp:(w.timestamp||0)+1});
-      });
-    }).catch(function(){});
-    var p3=db.ref('users/'+user.uid+'/transactions').once('value').then(function(snap){
-      if(!snap.val()) return;
-      Object.values(snap.val()).forEach(function(tx){if(tx.type!=='deposit') txs.push(tx);});
-    }).catch(function(){});
-    var p4=db.ref('users/'+user.uid+'/betHistory').once('value').then(function(snap){
-      if(!snap.val()) return;
-      Object.values(snap.val()).forEach(function(b){
-        txs.push({type:b.won?'win':'loss',amount:b.won?parseFloat(b.profit||0):parseFloat(b.bet||0),details:(b.game||'Game')+' · '+(b.result||''),balance:b.balance||0,timestamp:b.timestamp||0});
-      });
-    }).catch(function(){});
-    Promise.all([p1,p2,p3,p4]).then(function(){
-      _allTxs=txs.sort(function(a,b){return (b.timestamp||0)-(a.timestamp||0);});
-      _renderTxRows(_curTxFilter);
-    });
-  }
-  function filterTxHistory(btn,filter) {
-    _curTxFilter=filter;
-    document.querySelectorAll('.tx-filter-btn').forEach(function(b){b.style.background='transparent';b.style.color='var(--muted)';b.style.borderColor='var(--border)';});
-    if(btn){btn.style.background='rgba(240,192,64,0.15)';btn.style.color='var(--gold)';btn.style.borderColor='var(--gold)';}
-    _renderTxRows(filter);
-  }
-  function _renderTxRows(filter) {
-    var container=document.getElementById('txHistoryRows'); if(!container) return;
-    var cfg={deposit:{icon:'⬇️',label:'Deposit',color:'#27ae60',sign:'+'},withdrawal:{icon:'⬆️',label:'Withdrawal',color:'#e02020',sign:'-'},refund:{icon:'↩️',label:'Refund',color:'#27ae60',sign:'+'},win:{icon:'🏆',label:'Win',color:'#27ae60',sign:'+'},loss:{icon:'🎮',label:'Bet Loss',color:'#e02020',sign:'-'},commission:{icon:'💰',label:'Commission',color:'#27ae60',sign:'+'},vip_levelup:{icon:'⬆️',label:'VIP Level Up',color:'#f0c040',sign:'+'},vip_weekly:{icon:'📅',label:'VIP Weekly',color:'#27ae60',sign:'+'},vip_monthly:{icon:'🗓️',label:'VIP Monthly',color:'#27ae60',sign:'+'},spin:{icon:'🎡',label:'Daily Spin',color:'#27ae60',sign:'+'},manual_add:{icon:'➕',label:'Admin Credit',color:'#27ae60',sign:'+'},manual_deduct:{icon:'➖',label:'Admin Debit',color:'#e02020',sign:'-'}};
-    var filtered=filter==='all'?_allTxs:_allTxs.filter(function(tx){return tx.type===filter;});
-    if(!filtered.length){container.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">No transactions found</div>';return;}
-    container.innerHTML=filtered.map(function(tx){
-      var c=cfg[tx.type]||{icon:'💸',label:tx.type||'Transaction',color:'var(--gold)',sign:'+'};
-      var amt=Math.abs(tx.amount||0);
-      var time=tx.timestamp?new Date(tx.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
-      var bal=tx.balance>0?'₹'+Number(tx.balance).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
-      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.6rem;display:flex;align-items:center;gap:0.8rem;"><div style="width:36px;height:36px;border-radius:10px;background:'+c.color+'22;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">'+c.icon+'</div><div style="flex:1;min-width:0;"><div style="font-size:0.85rem;font-weight:700;color:var(--text);">'+c.label+'</div><div style="font-size:0.7rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(tx.details||'—')+'</div><div style="font-size:0.68rem;color:var(--muted);">'+time+'</div></div><div style="text-align:right;flex-shrink:0;"><div style="font-weight:800;color:'+c.color+';font-size:0.92rem;">'+c.sign+'₹'+amt.toLocaleString('en-IN',{minimumFractionDigits:2})+'</div><div style="font-size:0.68rem;color:var(--muted);">Bal: '+bal+'</div></div></div>';
-    }).join('');
-  }
-
-  // ══════════════════════════════════════════
-  // LIVE CHAT (Firebase)
-  // ══════════════════════════════════════════
-  var _chatInited=false, _chatUnsub=null;
-  function initLiveChat() {
-    var user=window.currentUser; var db=window.fbDB||fbDB;
-    if(!user||!db||_chatInited) return;
-    _chatInited=true;
-    db.ref('chats/'+user.uid+'/info').set({uid:user.uid,username:window.userProfile?window.userProfile.username:'User',lastSeen:Date.now(),status:'open'});
-    var msgsEl=document.getElementById('chatMessages');
-    if(_chatUnsub) try{db.ref('chats/'+user.uid+'/messages').off('value',_chatUnsub);}catch(e){}
-    _chatUnsub=db.ref('chats/'+user.uid+'/messages').on('value',function(snap){
-      if(!msgsEl) return;
-      msgsEl.innerHTML='';
-      var welcome=document.createElement('div'); welcome.className='msg agent';
-      welcome.innerHTML='👋 Hello <b>'+(window.userProfile?window.userProfile.username:'there')+'</b>! How can I help you?';
-      msgsEl.appendChild(welcome);
-      var msgs=snap.val();
-      if(msgs){
-        Object.values(msgs).sort(function(a,b){return a.timestamp-b.timestamp;}).forEach(function(m){
-          var div=document.createElement('div'); div.className='msg '+(m.sender==='admin'?'agent':'user');
-          if(m.type==='image'&&m.fileData){var img=document.createElement('img');img.src=m.fileData;img.style.cssText='max-width:100%;max-height:200px;border-radius:8px;display:block;';div.appendChild(img);}
-          else{div.textContent=m.text||'';}
-          var t=document.createElement('div');t.style.cssText='font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:3px;text-align:'+(m.sender==='admin'?'left':'right');
-          t.textContent=new Date(m.timestamp).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
-          div.appendChild(t); msgsEl.appendChild(div);
-        });
-      }
-      msgsEl.scrollTop=msgsEl.scrollHeight;
-    });
-  }
-  // Override sendChat to use Firebase
-  window.sendChat = function() {
-    var inp=document.getElementById('chatInput'); var msg=inp?inp.value.trim():'';
-    if(!msg) return;
-    var user=window.currentUser; var db=window.fbDB||fbDB;
-    if(!user){showToast('🔐 Please sign in');showPage('login');return;}
-    if(!db){showToast('⏳ Please wait...');return;}
-    if(!_chatInited) initLiveChat();
-    if(inp) inp.value='';
-    db.ref('chats/'+user.uid+'/messages').push({text:msg,sender:'user',timestamp:Date.now()});
-    db.ref('chats/'+user.uid+'/info').update({lastMessage:msg,lastMessageTime:Date.now(),unreadByAdmin:true});
-  };
-
-  // ══════════════════════════════════════════
-  // COMMISSION via referrerChain
-  // ══════════════════════════════════════════
-  function _payCommission(userUid, betAmt, db) {
-    db.ref('users/'+userUid+'/referrerChain').once('value').then(function(snap){
-      var chain=snap.val(); if(!chain) return;
-      function getRate() {
-        if(window._commRates) return Promise.resolve(window._commRates);
-        return db.ref('settings/commissionRates').once('value').then(function(rs){
-          var r=rs.val()||{};
-          window._commRates={1:(r.l1!=null?r.l1:1)/100,2:(r.l2!=null?r.l2:0.8)/100,3:(r.l3!=null?r.l3:0.5)/100,4:(r.l4!=null?r.l4:0.2)/100};
-          setTimeout(function(){window._commRates=null;},600000);
-          return window._commRates;
-        });
-      }
-      getRate().then(function(rates){
-        for(var lv=1;lv<=4;lv++){
-          var ruid=chain['l'+lv]; if(!ruid) continue;
-          var comm=parseFloat((betAmt*rates[lv]).toFixed(2)); if(comm<=0) continue;
-          (function(ruid,comm,lv){
-            db.ref('users/'+ruid+'/balance').transaction(function(b){return parseFloat(((b||0)+comm).toFixed(2));});
-            var rk=lv===1?'referrals':'referrals_l'+lv;
-            db.ref('users/'+ruid+'/'+rk+'/'+userUid+'/commission').transaction(function(v){return parseFloat(((v||0)+comm).toFixed(2));});
-          })(ruid,comm,lv);
-        }
-      });
-    }).catch(function(){});
-  }
-
-  // ══════════════════════════════════════════
-  // VIP BADGE update in loadUserProfile
-  // ══════════════════════════════════════════
-  function _updateVipBadge(uid) {
-    var db=window.fbDB||fbDB; if(!db) return;
-    db.ref('users/'+uid+'/vip/exp').once('value').then(function(snap){
-      var exp=parseFloat(snap.val()||0); var lv=getVipLevel(exp);
-      var badge=document.getElementById('profileVipBadge'); if(!badge) return;
-      var colors={Bronze:'rgba(205,127,50,0.2)',Silver:'rgba(192,192,192,0.2)',Gold:'rgba(240,192,64,0.2)',Diamond:'rgba(168,125,255,0.2)'};
-      var tc={Bronze:'#cd7f32',Silver:'#c0c0c0',Gold:'var(--gold)',Diamond:'#a87dff'};
-      badge.style.display='inline-block'; badge.textContent=lv.icon+' '+lv.name;
-      badge.style.background=colors[lv.name]||colors.Bronze;
-      badge.style.color=tc[lv.name]||tc.Bronze;
-      badge.style.borderColor=tc[lv.name]||tc.Bronze;
-    }).catch(function(){});
-  }
-
-  // ══════════════════════════════════════════
-  // ANNOUNCEMENT BANNER
-  // ══════════════════════════════════════════
-  function loadAnnouncement() {
-    var db=window.fbDB||fbDB; if(!db) return;
-    db.ref('announcements/current').on('value',function(snap){
-      var data=snap.val();
-      var banner=document.getElementById('announcementBanner');
-      if(!banner){
-        banner=document.createElement('div'); banner.id='announcementBanner';
-        banner.style.cssText='position:sticky;top:60px;z-index:100;background:linear-gradient(90deg,#c07a10,#ffd700);padding:0.5rem 1rem;display:none;align-items:center;justify-content:space-between;gap:0.5rem;';
-        banner.innerHTML='<span id="announcementText" style="font-size:0.8rem;font-weight:700;color:#000;flex:1;"></span><button onclick="this.parentElement.style.display='none'" style="background:rgba(0,0,0,0.15);border:none;color:#000;border-radius:4px;padding:0.2rem 0.5rem;cursor:pointer;font-size:0.75rem;">✕</button>';
-        var body=document.body; if(body&&body.firstChild) body.insertBefore(banner,body.firstChild.nextSibling);
-      }
-      if(data&&data.active&&data.text){banner.style.display='flex';var t=document.getElementById('announcementText');if(t)t.textContent=data.text;}
-      else{banner.style.display='none';}
-    });
-  }
-
-  // ══════════════════════════════════════════
-  // GIFTS SYSTEM
-  // ══════════════════════════════════════════
-  function showGiftsModal() {
-    var m=document.getElementById('giftsModal'); if(!m) return;
-    m.style.display='flex'; _loadGiftHistory();
-  }
-  function closeGiftsModal() {
-    var m=document.getElementById('giftsModal'); if(m) m.style.display='none';
-  }
-  function _loadGiftHistory() {
-    var user=window.currentUser; var db=window.fbDB||fbDB;
-    var el=document.getElementById('giftHistoryList'); if(!el) return;
-    if(!user||!db){el.innerHTML='';return;}
-    db.ref('users/'+user.uid+'/redeemedGifts').once('value').then(function(snap){
-      var data=snap.val();
-      if(!data){el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">No gifts redeemed yet</div>';return;}
-      var gifts=Object.values(data).sort(function(a,b){return (b.redeemedAt||0)-(a.redeemedAt||0);});
-      el.innerHTML=gifts.map(function(g){return '<div style="background:var(--bg3);border-radius:10px;padding:0.7rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;color:var(--gold);">'+(g.code||'—')+'</div><div style="font-size:0.7rem;color:var(--muted);">'+(g.redeemedAt?new Date(g.redeemedAt).toLocaleDateString('en-IN'):'')+'</div></div><div style="font-weight:800;color:var(--green);">+₹'+(g.amount||0)+'</div></div>';}).join('');
-    }).catch(function(){});
-  }
-  function redeemGiftCode() {
-    var inp=document.getElementById('giftCodeInput'); var code=inp?inp.value.trim().toUpperCase():'';
-    var st=document.getElementById('giftRedeemStatus');
-    if(!code){showToast('⚠️ Enter a gift code');return;}
-    var user=window.currentUser; var db=window.fbDB||fbDB;
-    if(!user||!db){showToast('🔐 Please sign in');return;}
-    if(st){st.style.display='block';st.style.color='var(--muted)';st.textContent='⏳ Checking...';}
-    db.ref('giftCodes/'+code).once('value').then(function(snap){
-      var gd=snap.val();
-      if(!gd){if(st){st.style.color='var(--red2)';st.textContent='❌ Invalid gift code. Please check and try again.';}showToast('❌ Invalid code');return;}
-      if(!gd.active){if(st){st.style.color='var(--red2)';st.textContent='❌ This code has expired or been disabled.';}showToast('❌ Code expired');return;}
-      db.ref('users/'+user.uid+'/redeemedGifts/'+code).once('value').then(function(rs){
-        if(rs.val()){if(st){st.style.color='#f39c12';st.textContent='⚠️ You have already redeemed this code!';}showToast('⚠️ Already redeemed!');return;}
-        if(gd.maxUses&&(gd.usedCount||0)>=gd.maxUses){if(st){st.style.color='var(--red2)';st.textContent='❌ Code limit reached.';}showToast('❌ Code limit reached');return;}
-        db.ref('users/'+user.uid+'/balance').once('value').then(function(bs){
-          var nb=parseFloat(((bs.val()||0)+gd.amount).toFixed(2));
-          db.ref('users/'+user.uid+'/balance').set(nb);
-          updateBalanceDisplay(nb);
-          db.ref('users/'+user.uid+'/redeemedGifts/'+code).set({code:code,amount:gd.amount,redeemedAt:Date.now()});
-          db.ref('giftCodes/'+code+'/usedCount').set((gd.usedCount||0)+1);
-          if(inp) inp.value='';
-          if(st){st.style.color='var(--green)';st.textContent='✅ ₹'+gd.amount+' credited to your wallet!';}
-          showToast('🎁 Gift redeemed! +₹'+gd.amount);
-          _loadGiftHistory();
-        });
-      });
-    }).catch(function(e){if(st){st.style.color='var(--red2)';st.textContent='❌ Error: '+e.message;}});
-  }
-
-  // ══════════════════════════════════════════
-  // HOOKS — call new features from existing events
-  // ══════════════════════════════════════════
-  // Hook into showPage for VIP, history, support
-  var _sp0 = showPage;
-  showPage = function(name) {
-    _sp0(name);
-    if(name==='vip') loadVipPage();
-    if(name==='history') loadTransactionHistory();
-    if(name==='support') setTimeout(function(){initLiveChat();},400);
-  };
-  // Hook into loadUserProfile to add notifications + VIP badge
-  var _lup0 = loadUserProfile;
-  loadUserProfile = async function(uid) {
-    await _lup0(uid);
-    try { loadNotifications(); } catch(e) {}
-    try { _updateVipBadge(uid); } catch(e) {}
-  };
-  // Hook into Firebase init complete to start announcement
-  window.addEventListener('load', function(){setTimeout(function(){
-    var db=window.fbDB||fbDB; if(db) loadAnnouncement();
-    else setTimeout(function(){var db2=window.fbDB||fbDB;if(db2)loadAnnouncement();},3000);
-  },3000);});
-
 
 
   // ── FIREBASE SETUP (Compat SDK) ──
@@ -4036,7 +3640,6 @@
       fbDB = firebase.database();
       window.fbDB = fbDB;
       window.fbAuth = firebase.auth();
-      setTimeout(function(){var l=document.getElementById("appLoader");if(l){l.style.opacity="0";setTimeout(function(){l.remove()},600)}},1500);
 
       // Listen for auth state changes
       firebase.auth().onAuthStateChanged((user) => {
@@ -4611,10 +4214,7 @@
       <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem;">
         <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#c07a10,var(--gold2));display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.8rem;font-weight:800;color:#000;flex-shrink:0;" id="profileAvatarBig">U</div>
         <div style="flex:1;">
-          <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
-            <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--text);" id="profileUsernameDisplay">—</div>
-            <div id="profileVipBadge" style="display:none;font-size:0.7rem;font-weight:800;padding:0.15rem 0.5rem;border-radius:20px;background:rgba(205,127,50,0.2);color:#cd7f32;border:1px solid rgba(205,127,50,0.4);">🥉 Bronze</div>
-          </div>
+          <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--text);" id="profileUsernameDisplay">—</div>
           <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;" id="profileUIDDisplay">UID: —</div>
           <div style="font-size:0.75rem;color:var(--muted);" id="profileContactDisplay">—</div>
         <div style="font-size:0.72rem;color:var(--muted);margin-top:0.15rem;" id="profileLastLogin"></div>
@@ -4670,10 +4270,6 @@
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:0.8rem;">
       <div onclick="openWheel()" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎡</span><span style="font-size:0.88rem;">Daily Spin</span></div>
-        <span style="color:var(--muted);font-size:0.8rem;">›</span>
-      </div>
-      <div onclick="showGiftsModal()" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
-        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎁</span><span style="font-size:0.88rem;">Gifts</span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
       <div onclick="showPage('referral')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
@@ -4764,7 +4360,7 @@
         <div class="promo-body">
           <div class="promo-tag">Daily</div>
           <div class="promo-name">Daily Free Spin</div>
-          <div class="promo-desc">Spin the wheel every day for free and win up to ₹500 in bonus cash.</div>
+          <div class="promo-desc">Spin the wheel every day for free and win up to ₹5,000 in bonus cash.</div>
           <div class="promo-footer"><span class="promo-expiry">Every day</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="openWheel()">Spin!</button></div>
         </div>
       </div>
@@ -4800,7 +4396,7 @@
         <div class="promo-body">
           <div class="promo-tag">VIP</div>
           <div class="promo-name">VIP Reload Bonus</div>
-          <div class="promo-desc">Diamond VIP and above get a 15% reload bonus on every deposit. Auto-applied.</div>
+          <div class="promo-desc">Gold VIP and above get a 15% reload bonus on every deposit. Auto-applied.</div>
           <div class="promo-footer"><span class="promo-expiry">VIP Gold+</span><button class="btn btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem;border-color:var(--gold);color:var(--gold);" onclick="showPage('vip')">Upgrade</button></div>
         </div>
       </div>
@@ -5117,46 +4713,5 @@
 
 
 <div id="recaptcha-container"></div>
-
-<!-- TRANSACTION HISTORY PAGE -->
-<div class="page" id="page-history">
-  <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 2rem;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-      <div style="display:flex;align-items:center;gap:0.8rem;">
-        <button onclick="showPage('profile')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
-        <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💸 Transaction History</div>
-      </div>
-      <button onclick="loadTransactionHistory()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.8rem;color:var(--muted);cursor:pointer;font-size:0.78rem;font-family:'Exo 2',sans-serif;">🔄</button>
-    </div>
-    <div style="display:flex;gap:0.5rem;margin-bottom:1rem;overflow-x:auto;scrollbar-width:none;">
-      <button onclick="filterTxHistory(this,'all')" class="tx-filter-btn" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--gold);background:rgba(240,192,64,0.15);color:var(--gold);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">All</button>
-      <button onclick="filterTxHistory(this,'deposit')" class="tx-filter-btn" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:'Exo 2',sans-serif;">⬇️ Deposits</button>
-      <button onclick="filterTxHistory(this,'withdrawal')" class="tx-filter-btn" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:'Exo 2',sans-serif;">⬆️ Withdrawals</button>
-      <button onclick="filterTxHistory(this,'win')" class="tx-filter-btn" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:'Exo 2',sans-serif;">🏆 Wins</button>
-      <button onclick="filterTxHistory(this,'commission')" class="tx-filter-btn" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:'Exo 2',sans-serif;">💰 Commission</button>
-    </div>
-    <div id="txHistoryRows"><div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div></div>
-  </div>
-</div>
-
-<!-- GIFTS MODAL -->
-<div id="giftsModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;padding:1rem;">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.5rem;width:100%;max-width:440px;max-height:80vh;overflow-y:auto;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">
-      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">🎁 Gifts</div>
-      <button onclick="closeGiftsModal()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;">✕</button>
-    </div>
-    <div style="margin-bottom:1rem;">
-      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Enter Gift Code</div>
-      <div style="display:flex;gap:0.5rem;">
-        <input id="giftCodeInput" type="text" placeholder="e.g. ROYAL100" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;color:var(--text);font-size:0.88rem;font-family:'Exo 2',sans-serif;outline:none;" oninput="this.value=this.value.toUpperCase()">
-        <button onclick="redeemGiftCode()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.7rem 1.2rem;color:#000;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Redeem</button>
-      </div>
-      <div id="giftRedeemStatus" style="display:none;margin-top:0.6rem;font-size:0.82rem;font-weight:600;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border-radius:8px;"></div>
-    </div>
-    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Redeemed Gifts</div>
-    <div id="giftHistoryList"><div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">No gifts redeemed yet</div></div>
-  </div>
-</div>
 </body>
 </html>
