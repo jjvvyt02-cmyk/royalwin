@@ -1009,15 +1009,13 @@
 </style>
 </head>
 <body>
-<!-- LOADING SCREEN -->
-<div id="appLoader" style="position:fixed;inset:0;z-index:99999;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s;">
+<div id="appLoader" style="position:fixed;inset:0;z-index:99999;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.6s;">
   <div style="font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:#f0c040;margin-bottom:0.5rem;">ROYAL<span style="color:#e02020;">♠</span>WIN</div>
   <div style="font-size:0.8rem;color:#888;letter-spacing:2px;margin-bottom:2rem;">PREMIUM GAMING</div>
   <div style="width:48px;height:48px;border:3px solid rgba(240,192,64,0.2);border-top-color:#f0c040;border-radius:50%;animation:rw-spin 0.8s linear infinite;"></div>
 </div>
 <style>@keyframes rw-spin{to{transform:rotate(360deg)}}</style>
-<script>setTimeout(function(){var l=document.getElementById('appLoader');if(l){l.style.opacity='0';setTimeout(function(){l.style.display='none'},500)}},4000);</script>
-
+<script>setTimeout(function(){var l=document.getElementById("appLoader");if(l){l.style.opacity="0";setTimeout(function(){l.remove()},600)}},5000);</script>
 
 <div class="bg-stars"></div>
 <div class="bg-grid"></div>
@@ -1255,48 +1253,6 @@
   </div>
 </div>
 
-<!-- SUBORDINATE DATA PAGE -->
-<div class="page" id="page-subdata">
-  <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 2rem;">
-    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
-      <button onclick="showPage('referral')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
-      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">👥 Subordinate Data</div>
-    </div>
-    <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
-      <button onclick="filterSubLevel(this,1)" style="flex:1;padding:0.4rem;border-radius:8px;border:1px solid var(--gold);background:rgba(240,192,64,0.15);color:var(--gold);font-size:0.78rem;cursor:pointer;font-family:'Exo 2',sans-serif;">L1</button>
-      <button onclick="filterSubLevel(this,2)" style="flex:1;padding:0.4rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:'Exo 2',sans-serif;">L2</button>
-      <button onclick="filterSubLevel(this,3)" style="flex:1;padding:0.4rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:'Exo 2',sans-serif;">L3</button>
-      <button onclick="filterSubLevel(this,4)" style="flex:1;padding:0.4rem;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:'Exo 2',sans-serif;">L4</button>
-    </div>
-    <div id="subdataRows"><div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div></div>
-  </div>
-</div>
-
-<!-- REBATE RATIO PAGE -->
-<div class="page" id="page-rebateratio">
-  <div style="max-width:520px;margin:0 auto;padding:5rem 1rem 2rem;">
-    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
-      <button onclick="showPage('referral')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
-      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💰 Rebate Ratio</div>
-    </div>
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
-      <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);font-size:0.82rem;font-weight:700;color:var(--gold);">🎰 Lottery</div>
-      <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);font-size:0.82rem;color:var(--muted);">Rebate level L0</div>
-      ${['L1','L2','L3','L4'].map((l,i) => `
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid rgba(255,255,255,0.04);">
-        <div style="display:flex;align-items:center;gap:0.8rem;">
-          <div style="width:28px;height:28px;border-radius:6px;background:${['rgba(39,174,96,0.2)','rgba(240,192,64,0.2)','rgba(124,77,255,0.2)','rgba(224,32,32,0.2)'][i]};display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:${['#27ae60','#f0c040','#7c4dff','#e02020'][i]};">${l}</div>
-          <span style="font-size:0.82rem;color:var(--muted);">${i+1} level lower commission rebate</span>
-        </div>
-        <span style="font-weight:700;color:var(--gold);" id="rebate-l${i+1}">—</span>
-      </div>`).join('')}
-      <div style="padding:0.8rem 1rem;font-size:0.72rem;color:var(--muted);text-align:center;">Commission rates are set by the admin and may change.</div>
-    </div>
-  </div>
-</div>
-
-
-
 <script>
   let isLoggedIn = false;
 
@@ -1357,8 +1313,6 @@
     if (name === 'deposithistory') loadDepositHistoryPage();
     if (name === 'withdrawhistory') loadWithdrawHistoryPage();
     if (name === 'referral') loadReferralData();
-    if (name === 'vip') { loadVipPage(); }
-    if (name === 'support') { setTimeout(initLiveChat, 400); }
     if (name === 'wallet') {
       switchWalletTab('deposit');
       checkDepositBonus();
@@ -1414,17 +1368,10 @@
   }
 
   function copyLink() {
-    const link = (document.getElementById('refLink') || {}).textContent || '';
-    if (navigator.clipboard) { navigator.clipboard.writeText(link.trim()).then(() => showToast('✅ Link copied!')).catch(() => fallbackCopy(link.trim())); }
-    else { fallbackCopy(link.trim()); }
+    const link = (document.getElementById('refLink')||{}).textContent||'';
+    if(navigator.clipboard){navigator.clipboard.writeText(link.trim()).then(()=>showToast('✅ Link copied!')).catch(()=>_fbCopy(link.trim()));}else{_fbCopy(link.trim());}
   }
-  function fallbackCopy(text) {
-    const ta = document.createElement('textarea');
-    ta.value = text; ta.style.cssText = 'position:fixed;top:-9999px;opacity:0;';
-    document.body.appendChild(ta); ta.focus(); ta.select();
-    try { document.execCommand('copy'); showToast('✅ Copied!'); } catch(e) { showToast('❌ Copy failed'); }
-    document.body.removeChild(ta);
-  }
+  function _fbCopy(t){var ta=document.createElement('textarea');ta.value=t;ta.style.cssText='position:fixed;top:-9999px;opacity:0;';document.body.appendChild(ta);ta.focus();ta.select();try{document.execCommand('copy');showToast('✅ Copied!');}catch(e){showToast('❌ Copy failed');}document.body.removeChild(ta);}
 
   async function loadReferralData() {
     const user = window.currentUser;
@@ -1473,7 +1420,7 @@
     if (!user || !db || !el) return;
     el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
     try {
-      const snap = await db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).once('value');
+      const snap = await db.ref('users/' + user.uid + '/depositRequests').once('value');
       const data = snap.val();
       if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No deposits yet</div>'; return; }
       const rows = Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
@@ -1501,7 +1448,7 @@
     if (!user || !db || !el) return;
     el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
     try {
-      const snap = await db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(user.uid).once('value');
+      const snap = await db.ref('users/' + user.uid + '/withdrawRequests').once('value');
       const data = snap.val();
       if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No withdrawals yet</div>'; return; }
       const rows = Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
@@ -1762,7 +1709,7 @@
     const el = document.getElementById('depositHistoryRows');
     if (!user || !db || !el) return;
     try {
-      const snap = await db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).once('value');
+      const snap = await db.ref('users/' + user.uid + '/depositRequests').once('value');
       const data = snap.val();
       if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No deposits yet</div>'; return; }
       const rows = Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
@@ -1788,7 +1735,7 @@
     const el = document.getElementById('withdrawHistoryRows');
     if (!user || !db || !el) return;
     try {
-      const snap = await db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(user.uid).once('value');
+      const snap = await db.ref('users/' + user.uid + '/withdrawRequests').once('value');
       const data = snap.val();
       if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No withdrawals yet</div>'; return; }
       const rows = Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
@@ -1985,27 +1932,19 @@
     try {
       const db = window.fbDB || fbDB;
       // Save deposit request to Firebase
-      // Calculate bonus
-      let bonusPct = 0, bonusAmt = 0, wagerReq = 0;
-      if (selectedBonusOption === 1) { bonusPct = 8; bonusAmt = Math.round(amt * 0.08); wagerReq = 1; }
-      if (selectedBonusOption === 2) { bonusPct = 15; bonusAmt = Math.round(amt * 0.15); wagerReq = 2.5; }
-      // 5% recurring bonus for returning users
-      if (selectedBonusOption === 0) {
-        try {
-          const hasDepSnap = await db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value');
-          if (hasDepSnap.val()) { bonusPct = 5; bonusAmt = Math.round(amt * 0.05); wagerReq = 1; }
-        } catch(e) {}
-      }
-      const depositData = {
-        amount: amt, status: 'pending', uid: window.currentUser.uid,
-        username: window.userProfile ? window.userProfile.username : 'Unknown',
-        contact: window.userProfile ? (window.userProfile.contact || '') : '',
-        method: bonusPct > 0 ? 'Manual · ' + bonusPct + '% bonus' : 'Manual',
-        bonusPct, bonusAmt, wagerReq, timestamp: Date.now()
-      };
-      await db.ref('adminRequests/deposits').push(depositData);
-      const bonusMsg = bonusAmt > 0 ? ' + ₹' + bonusAmt + ' (' + bonusPct + '% bonus) after approval.' : ' submitted!';
-      showToast('✅ Deposit of ₹' + amt.toLocaleString('en-IN') + bonusMsg);
+      let bonusPct=0,bonusAmt=0,wagerReq=0;
+      if(selectedBonusOption===1){bonusPct=8;bonusAmt=Math.round(amt*0.08);wagerReq=1;}
+      if(selectedBonusOption===2){bonusPct=15;bonusAmt=Math.round(amt*0.15);wagerReq=2.5;}
+      if(selectedBonusOption===0){try{const hd=await db.ref('users/'+window.currentUser.uid+'/hasDeposited').once('value');if(hd.val()){bonusPct=5;bonusAmt=Math.round(amt*0.05);wagerReq=1;}}catch(e){}}
+      await db.ref('adminRequests/deposits').push({
+        amount:amt,status:'pending',uid:window.currentUser.uid,
+        username:window.userProfile?window.userProfile.username:'Unknown',
+        contact:window.userProfile?(window.userProfile.contact||''):'',
+        method:bonusPct>0?'Manual · '+bonusPct+'% bonus':'Manual',
+        bonusPct,bonusAmt,wagerReq,timestamp:Date.now()
+      });
+      const bMsg=bonusAmt>0?' + ₹'+bonusAmt+' ('+bonusPct+'% bonus) after approval.':' submitted!';
+      showToast('✅ Deposit of ₹'+amt.toLocaleString('en-IN')+bMsg);
     } catch(e) { showToast('❌ Deposit request failed: ' + e.message); }
   }
 
@@ -2044,7 +1983,6 @@
       if (currentWithdrawMethod === 'upi') upiId = saved.upiId;
       else if (currentWithdrawMethod === 'bank') upiId = `Acc: ${saved.acc} | IFSC: ${saved.ifsc} | Bank: ${saved.bank} | Name: ${saved.name}`;
       else upiId = `USDT TRC20: ${saved.addr}`;
-      // Deduct balance immediately
       const newBal = parseFloat((bal - amt).toFixed(2));
       await db.ref('users/' + window.currentUser.uid + '/balance').set(newBal);
       updateBalanceDisplay(newBal);
@@ -2464,45 +2402,29 @@
 
       // Save user profile to Firebase
       await firebase.database().ref('users/' + user.uid).set({
-        memberId,
-        uid: user.uid,
-        firstName,
-        lastName,
-        username,
-        email: isEmail ? contact : '',
-        mobile: isEmail ? '' : contact,
-        contact,
-        balance: 0,
-        referralCode: myRefCode,
-        referredBy: inviteCode || '',
-        createdAt: Date.now(),
-        kycStatus: 'pending',
-        isActive: true
+        memberId, uid: user.uid, firstName, lastName, username,
+        email: isEmail ? contact : '', mobile: isEmail ? '' : contact, contact,
+        balance: 0, referralCode: myRefCode, referredBy: inviteCode || '',
+        createdAt: Date.now(), kycStatus: 'pending', isActive: true
       });
-
-      // Build referrerChain for commission tracking
       if (inviteCode) {
         try {
-          const allUsersSnap = await firebase.database().ref('users').once('value');
-          const allUsers = allUsersSnap.val() || {};
-          const codeToUser = {};
-          Object.entries(allUsers).forEach(([uid, u]) => { if (u.referralCode) codeToUser[u.referralCode] = { uid, referredBy: u.referredBy || '' }; });
-          const newUserInfo = { uid: user.uid, username, memberId, contact, joinedAt: Date.now() };
-          let currentCode = inviteCode;
-          const referrerChain = {};
-          for (let level = 1; level <= 4; level++) {
-            const referrer = codeToUser[currentCode];
-            if (!referrer) break;
-            referrerChain['l' + level] = referrer.uid;
-            const refKey = level === 1 ? 'referrals' : 'referrals_l' + level;
-            await firebase.database().ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid).set({ ...newUserInfo, level });
-            currentCode = referrer.referredBy;
-            if (!currentCode) break;
+          const allSnap = await firebase.database().ref('users').once('value');
+          const allUsers = allSnap.val() || {};
+          const codeMap = {};
+          Object.entries(allUsers).forEach(([uid,u]) => { if(u.referralCode) codeMap[u.referralCode]={uid,referredBy:u.referredBy||''}; });
+          const newInfo = { uid:user.uid, username, memberId, contact, joinedAt:Date.now() };
+          let cur = inviteCode;
+          const chain = {};
+          for (let lv=1; lv<=4; lv++) {
+            const ref = codeMap[cur]; if(!ref) break;
+            chain['l'+lv] = ref.uid;
+            const rk = lv===1?'referrals':'referrals_l'+lv;
+            await firebase.database().ref('users/'+ref.uid+'/'+rk+'/'+user.uid).set({...newInfo,level:lv});
+            cur = ref.referredBy; if(!cur) break;
           }
-          if (Object.keys(referrerChain).length > 0) {
-            await firebase.database().ref('users/' + user.uid + '/referrerChain').set(referrerChain);
-          }
-        } catch(e) { console.warn('Referral chain error:', e); }
+          if (Object.keys(chain).length > 0) await firebase.database().ref('users/'+user.uid+'/referrerChain').set(chain);
+        } catch(e) { console.warn('Referral chain error:',e); }
       }
 
       // Update avatar with first letter of username
@@ -2981,32 +2903,7 @@
         await db.ref('users/' + user.uid + '/balance').set(parseFloat((currentBal - amt).toFixed(2)));
         updateBalanceDisplay(currentBal - amt);
 
-        // ── VIP EXP ──
-        try { const vipExp = Math.floor(amt/100); if(vipExp>0) addVipExp(vipExp); } catch(e){}
-
-        // ── COMMISSION via referrerChain ──
-        try {
-          const chainSnap = await db.ref('users/' + user.uid + '/referrerChain').once('value');
-          const chain = chainSnap.val();
-          if (chain) {
-            if (!window._commRates) {
-              const ratesSnap = await db.ref('settings/commissionRates').once('value');
-              const rates = ratesSnap.val() || {};
-              window._commRates = { 1:(rates.l1!=null?rates.l1:1)/100, 2:(rates.l2!=null?rates.l2:0.8)/100, 3:(rates.l3!=null?rates.l3:0.5)/100, 4:(rates.l4!=null?rates.l4:0.2)/100 };
-              setTimeout(()=>{ window._commRates=null; }, 600000);
-            }
-            for (let level = 1; level <= 4; level++) {
-              const referrerUid = chain['l' + level];
-              if (!referrerUid) continue;
-              const commAmt = parseFloat((amt * window._commRates[level]).toFixed(2));
-              if (commAmt > 0) {
-                await db.ref('users/' + referrerUid + '/balance').transaction(bal => parseFloat(((bal||0) + commAmt).toFixed(2)));
-                const refKey = level === 1 ? 'referrals' : 'referrals_l' + level;
-                await db.ref('users/' + referrerUid + '/' + refKey + '/' + user.uid + '/commission').transaction(v => parseFloat(((v||0) + commAmt).toFixed(2)));
-              }
-            }
-          }
-        } catch(refErr) { console.warn('Commission error:', refErr); }
+        // ── HEDGE BET DETECTION ──
         const roundKey = 'wingo' + cgTimer + 'min_round_' + cgRoundByTimer[cgTimer];
         const userBetsSnap = await db.ref('users/' + user.uid + '/roundBets/' + roundKey).once('value');
         const prevBets = userBetsSnap.val() || {};
@@ -3552,8 +3449,7 @@
       bet: parseFloat(bet), result,
       profit: won ? parseFloat(profit) : -parseFloat(bet),
       won, time, round: round || '—',
-      timestamp: Date.now(),
-      balance: 0
+      timestamp: Date.now()
     };
     betHistoryData.unshift(entry);
     if (currentBetFilter !== undefined) renderBetHistory(currentBetFilter);
@@ -3662,29 +3558,6 @@
       // Update profile page if open
       updateProfilePage(profile);
 
-      // Load notifications
-      try { loadNotifications(); } catch(e) {}
-
-      // VIP badge on profile
-      try {
-        const db2 = window.fbDB || fbDB;
-        if (db2) {
-          const vipSnap = await db2.ref('users/'+uid+'/vip/exp').once('value');
-          const exp = parseFloat(vipSnap.val()||0);
-          const vLevel = getVipLevel(exp);
-          const badge = document.getElementById('profileVipBadge');
-          if (badge) {
-            const colors={Bronze:'rgba(205,127,50,0.2)',Silver:'rgba(192,192,192,0.2)',Gold:'rgba(240,192,64,0.2)',Diamond:'rgba(168,125,255,0.2)'};
-            const textColors={Bronze:'#cd7f32',Silver:'#c0c0c0',Gold:'var(--gold)',Diamond:'#a87dff'};
-            badge.style.display='inline-block';
-            badge.textContent=vLevel.icon+' '+vLevel.name;
-            badge.style.background=colors[vLevel.name]||colors.Bronze;
-            badge.style.color=textColors[vLevel.name]||textColors.Bronze;
-            badge.style.borderColor=textColors[vLevel.name]||textColors.Bronze;
-          }
-        }
-      } catch(e) {}
-
       // Listen for balance changes
       firebase.database().ref('users/' + uid + '/balance').on('value', (snap) => {
         updateBalanceDisplay(snap.val() || 0);
@@ -3728,6 +3601,7 @@
   // ── AUTO LOGOUT (6 hours inactivity) ──
   let inactivityTimer;
   const SIX_HOURS = 6 * 60 * 60 * 1000;
+  const INACTIVITY_LIMIT = 3 * 60 * 60 * 1000;
 
   function resetInactivityTimer() {
     clearTimeout(inactivityTimer);
@@ -3736,7 +3610,7 @@
         await logout();
         showPage('login');
       }
-    }, SIX_HOURS);
+    }, INACTIVITY_LIMIT);
   }
 
   // Reset on any user activity
@@ -3744,6 +3618,384 @@
     document.addEventListener(e, resetInactivityTimer, { passive: true });
   });
   resetInactivityTimer(); // Start timer on load
+
+
+  // ══════════════════════════════════════════
+  // VIP EXP SYSTEM
+  // ══════════════════════════════════════════
+  var VIP_LEVELS = [
+    { name:'Bronze',  icon:'🥉', color:'#cd7f32', minExp:0,    maxExp:199,  levelupBonus:50,   weekly:25,  monthly:50   },
+    { name:'Silver',  icon:'🥈', color:'#c0c0c0', minExp:200,  maxExp:499,  levelupBonus:200,  weekly:125, monthly:250  },
+    { name:'Gold',    icon:'🥇', color:'#f0c040', minExp:500,  maxExp:999,  levelupBonus:500,  weekly:225, monthly:650  },
+    { name:'Diamond', icon:'💎', color:'#a87dff', minExp:1000, maxExp:Infinity, levelupBonus:1500, weekly:325, monthly:1350 }
+  ];
+  function getVipLevel(exp) {
+    for (var i=VIP_LEVELS.length-1; i>=0; i--) { if(exp>=VIP_LEVELS[i].minExp) return VIP_LEVELS[i]; }
+    return VIP_LEVELS[0];
+  }
+  function addVipExp(expAmt) {
+    var user=window.currentUser; var db=window.fbDB||fbDB;
+    if(!user||!db) return;
+    db.ref('users/'+user.uid+'/vip').once('value').then(function(snap){
+      var vd=snap.val()||{exp:0,levelupClaimed:[]};
+      var oldExp=vd.exp||0; var newExp=oldExp+expAmt;
+      var oldLv=getVipLevel(oldExp); var newLv=getVipLevel(newExp);
+      db.ref('users/'+user.uid+'/vip/exp').set(newExp);
+      if(newLv.name!==oldLv.name){
+        var claimed=vd.levelupClaimed||[];
+        if(claimed.indexOf(newLv.name)<0){
+          db.ref('users/'+user.uid+'/balance').once('value').then(function(bs){
+            var nb=parseFloat(((bs.val()||0)+newLv.levelupBonus).toFixed(2));
+            db.ref('users/'+user.uid+'/balance').set(nb);
+            db.ref('users/'+user.uid+'/vip/levelupClaimed').set(claimed.concat([newLv.name]));
+            updateBalanceDisplay(nb);
+            showToast('🎉 Level Up! '+newLv.icon+' '+newLv.name+' — ₹'+newLv.levelupBonus+' credited!');
+          });
+        }
+      }
+    }).catch(function(e){console.warn('VIP exp error:',e);});
+  }
+  function claimVipBonus(type) {
+    var user=window.currentUser; var db=window.fbDB||fbDB;
+    if(!user||!db){showToast('🔐 Please sign in');return;}
+    db.ref('users/'+user.uid+'/vip').once('value').then(function(snap){
+      var vd=snap.val()||{exp:0,weeklyClaimedAt:0,monthlyClaimedAt:0};
+      var lv=getVipLevel(vd.exp||0);
+      var now=new Date(); var wd=new Date(now); wd.setDate(now.getDate()-((now.getDay()+6)%7)); wd.setHours(0,0,0,0);
+      var ms=new Date(now.getFullYear(),now.getMonth(),1).getTime();
+      var amt=type==='weekly'?lv.weekly:lv.monthly;
+      var lastClaim=type==='weekly'?(vd.weeklyClaimedAt||0):(vd.monthlyClaimedAt||0);
+      var threshold=type==='weekly'?wd.getTime():ms;
+      if(lastClaim>=threshold){showToast('⚠️ Already claimed this '+(type==='weekly'?'week':'month')+'!');return;}
+      db.ref('users/'+user.uid+'/balance').once('value').then(function(bs){
+        var nb=parseFloat(((bs.val()||0)+amt).toFixed(2));
+        db.ref('users/'+user.uid+'/balance').set(nb);
+        var upd={}; upd['vip/'+(type==='weekly'?'weeklyClaimedAt':'monthlyClaimedAt')]=Date.now();
+        db.ref('users/'+user.uid).update(upd);
+        updateBalanceDisplay(nb);
+        var btn=document.getElementById('vip'+type.charAt(0).toUpperCase()+type.slice(1)+'Btn');
+        if(btn){btn.textContent='✅ Claimed';btn.disabled=true;btn.style.opacity='0.5';}
+        showToast('🎁 ₹'+amt+' '+(type==='weekly'?'weekly':'monthly')+' bonus credited!');
+      });
+    }).catch(function(e){showToast('❌ Claim failed: '+e.message);});
+  }
+  function loadVipPage() {
+    var user=window.currentUser; var db=window.fbDB||fbDB;
+    var exp=0;
+    function _render(exp,vd) {
+      var lv=getVipLevel(exp); var idx=VIP_LEVELS.findIndex(function(l){return l.name===lv.name;}); var nxt=VIP_LEVELS[idx+1];
+      function st(id,v){var el=document.getElementById(id);if(el)el.textContent=v;}
+      function ss(id,p,v){var el=document.getElementById(id);if(el)el.style[p]=v;}
+      st('vipLevelName',lv.icon+' '+lv.name); ss('vipLevelName','color',lv.color);
+      st('vipTotalExp',exp.toLocaleString('en-IN'));
+      if(nxt){var pct=Math.min(100,Math.round((exp-lv.minExp)/(nxt.minExp-lv.minExp)*100));
+        ss('vipProgressBar','width',pct+'%'); st('vipExpProgress',exp+' / '+nxt.minExp+' EXP');
+        st('vipNextLevel','Next: '+nxt.name); st('vipExpNeeded','Earn '+(nxt.minExp-exp)+' more EXP to reach '+nxt.name);}
+      else{ss('vipProgressBar','width','100%');st('vipNextLevel','👑 Max Level!');}
+      st('vipWeeklyAmt','₹'+lv.weekly); st('vipMonthlyAmt','₹'+lv.monthly);
+      ['bronze','silver','gold','diamond'].forEach(function(l,i){
+        var card=document.getElementById('vipCard-'+l); if(!card)return;
+        if(VIP_LEVELS[i].name===lv.name){card.style.opacity='1';card.style.borderColor=lv.color;}
+        else if(exp>=VIP_LEVELS[i].minExp){card.style.opacity='1';}
+        else{card.style.opacity='0.5';}
+      });
+      var now=new Date(); var wd=new Date(now); wd.setDate(now.getDate()-((now.getDay()+6)%7)); wd.setHours(0,0,0,0);
+      var ms=new Date(now.getFullYear(),now.getMonth(),1).getTime();
+      var wb=document.getElementById('vipWeeklyBtn'); var mb=document.getElementById('vipMonthlyBtn');
+      if(wb&&(vd.weeklyClaimedAt||0)>=wd.getTime()){wb.textContent='✅ Claimed';wb.disabled=true;wb.style.opacity='0.5';}
+      else if(wb){wb.textContent='Claim';wb.disabled=false;wb.style.opacity='1';}
+      if(mb&&(vd.monthlyClaimedAt||0)>=ms){mb.textContent='✅ Claimed';mb.disabled=true;mb.style.opacity='0.5';}
+      else if(mb){mb.textContent='Claim';mb.disabled=false;mb.style.opacity='1';}
+    }
+    if(user&&db){
+      db.ref('users/'+user.uid+'/vip').once('value').then(function(snap){
+        var vd=snap.val()||{exp:0}; _render(vd.exp||0,vd);
+      }).catch(function(){_render(0,{});});
+    } else { _render(0,{}); }
+  }
+
+  // ══════════════════════════════════════════
+  // REAL NOTIFICATIONS
+  // ══════════════════════════════════════════
+  var _notifUnsub = null;
+  function loadNotifications() {
+    var user=window.currentUser; var db=window.fbDB||fbDB;
+    if(!user||!db) return;
+    if(_notifUnsub) try{db.ref('users/'+user.uid+'/notifications').off('value',_notifUnsub);}catch(e){}
+    _notifUnsub = db.ref('users/'+user.uid+'/notifications').limitToLast(20).on('value',function(snap){
+      var data=snap.val();
+      var listEl=document.getElementById('notifList');
+      var badge=document.getElementById('notifBadge');
+      if(!listEl) return;
+      if(!data){listEl.innerHTML='<div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;">No notifications yet</div>';if(badge)badge.style.display='none';return;}
+      var notifs=Object.entries(data).map(function(e){return Object.assign({},e[1],{key:e[0]});}).sort(function(a,b){return (b.timestamp||0)-(a.timestamp||0);});
+      var unread=notifs.filter(function(n){return !n.read;}).length;
+      if(badge){badge.style.display=unread>0?'flex':'none';badge.textContent=unread>9?'9+':unread;}
+      listEl.innerHTML=notifs.map(function(n){
+        var time=n.timestamp?new Date(n.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+        return '<div onclick="markNotifRead(''+n.key+'')" style="padding:0.7rem 1rem;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;background:'+(n.read?'transparent':'rgba(240,192,64,0.04)')+';display:flex;gap:0.6rem;align-items:flex-start;"><div style="font-size:1.1rem;flex-shrink:0;">'+(n.icon||'🔔')+'</div><div style="flex:1;"><div style="font-size:0.8rem;font-weight:'+(n.read?'400':'700')+';color:'+(n.read?'var(--muted)':'var(--text)')+';">'+(n.title||'')+'</div><div style="font-size:0.72rem;color:var(--muted);">'+(n.body||'')+'</div><div style="font-size:0.65rem;color:var(--muted);">'+time+'</div></div>'+(n.read?'':'<div style="width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:4px;"></div>')+'</div>';
+      }).join('');
+    });
+  }
+  function markNotifRead(key) {
+    var user=window.currentUser; var db=window.fbDB||fbDB;
+    if(!user||!db||!key) return;
+    db.ref('users/'+user.uid+'/notifications/'+key+'/read').set(true);
+  }
+  function markAllNotifsRead() {
+    var user=window.currentUser; var db=window.fbDB||fbDB;
+    if(!user||!db) return;
+    db.ref('users/'+user.uid+'/notifications').once('value').then(function(snap){
+      var data=snap.val()||{}; var updates={};
+      Object.keys(data).forEach(function(k){updates[k+'/read']=true;});
+      if(Object.keys(updates).length>0) db.ref('users/'+user.uid+'/notifications').update(updates);
+    });
+    showToast('✅ All marked as read');
+  }
+
+  // ══════════════════════════════════════════
+  // TRANSACTION HISTORY
+  // ══════════════════════════════════════════
+  var _allTxs=[], _curTxFilter='all';
+  function loadTransactionHistory() {
+    var container=document.getElementById('txHistoryRows');
+    if(!container) return;
+    var user=window.currentUser; var db=window.fbDB||fbDB;
+    if(!user||!db){container.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">Please sign in</div>';return;}
+    container.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
+    var txs=[];
+    var p1=db.ref('adminRequests/deposits').once('value').then(function(snap){
+      if(!snap.val()) return;
+      Object.values(snap.val()).filter(function(d){return d.uid===user.uid&&d.status==='approved';}).forEach(function(d){
+        txs.push({type:'deposit',amount:(d.amount||0)+(d.bonusAmt||0),details:'Deposit'+(d.bonusPct?' +'+d.bonusPct+'% bonus':''),balance:d.balanceAfter||0,timestamp:d.timestamp||0});
+      });
+    }).catch(function(){});
+    var p2=db.ref('adminRequests/withdrawals').once('value').then(function(snap){
+      if(!snap.val()) return;
+      Object.values(snap.val()).filter(function(w){return w.uid===user.uid;}).forEach(function(w){
+        var st=w.status==='approved'?'✅ Paid':w.status==='rejected'?'❌ Failed':'⏳ Processing';
+        txs.push({type:'withdrawal',amount:w.amount||0,details:st+' · '+(w.method||'UPI'),balance:w.balanceAfter||0,timestamp:w.timestamp||0});
+        if(w.status==='rejected') txs.push({type:'refund',amount:w.amount||0,details:'Withdrawal failed — refunded',balance:0,timestamp:(w.timestamp||0)+1});
+      });
+    }).catch(function(){});
+    var p3=db.ref('users/'+user.uid+'/transactions').once('value').then(function(snap){
+      if(!snap.val()) return;
+      Object.values(snap.val()).forEach(function(tx){if(tx.type!=='deposit') txs.push(tx);});
+    }).catch(function(){});
+    var p4=db.ref('users/'+user.uid+'/betHistory').once('value').then(function(snap){
+      if(!snap.val()) return;
+      Object.values(snap.val()).forEach(function(b){
+        txs.push({type:b.won?'win':'loss',amount:b.won?parseFloat(b.profit||0):parseFloat(b.bet||0),details:(b.game||'Game')+' · '+(b.result||''),balance:b.balance||0,timestamp:b.timestamp||0});
+      });
+    }).catch(function(){});
+    Promise.all([p1,p2,p3,p4]).then(function(){
+      _allTxs=txs.sort(function(a,b){return (b.timestamp||0)-(a.timestamp||0);});
+      _renderTxRows(_curTxFilter);
+    });
+  }
+  function filterTxHistory(btn,filter) {
+    _curTxFilter=filter;
+    document.querySelectorAll('.tx-filter-btn').forEach(function(b){b.style.background='transparent';b.style.color='var(--muted)';b.style.borderColor='var(--border)';});
+    if(btn){btn.style.background='rgba(240,192,64,0.15)';btn.style.color='var(--gold)';btn.style.borderColor='var(--gold)';}
+    _renderTxRows(filter);
+  }
+  function _renderTxRows(filter) {
+    var container=document.getElementById('txHistoryRows'); if(!container) return;
+    var cfg={deposit:{icon:'⬇️',label:'Deposit',color:'#27ae60',sign:'+'},withdrawal:{icon:'⬆️',label:'Withdrawal',color:'#e02020',sign:'-'},refund:{icon:'↩️',label:'Refund',color:'#27ae60',sign:'+'},win:{icon:'🏆',label:'Win',color:'#27ae60',sign:'+'},loss:{icon:'🎮',label:'Bet Loss',color:'#e02020',sign:'-'},commission:{icon:'💰',label:'Commission',color:'#27ae60',sign:'+'},vip_levelup:{icon:'⬆️',label:'VIP Level Up',color:'#f0c040',sign:'+'},vip_weekly:{icon:'📅',label:'VIP Weekly',color:'#27ae60',sign:'+'},vip_monthly:{icon:'🗓️',label:'VIP Monthly',color:'#27ae60',sign:'+'},spin:{icon:'🎡',label:'Daily Spin',color:'#27ae60',sign:'+'},manual_add:{icon:'➕',label:'Admin Credit',color:'#27ae60',sign:'+'},manual_deduct:{icon:'➖',label:'Admin Debit',color:'#e02020',sign:'-'}};
+    var filtered=filter==='all'?_allTxs:_allTxs.filter(function(tx){return tx.type===filter;});
+    if(!filtered.length){container.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">No transactions found</div>';return;}
+    container.innerHTML=filtered.map(function(tx){
+      var c=cfg[tx.type]||{icon:'💸',label:tx.type||'Transaction',color:'var(--gold)',sign:'+'};
+      var amt=Math.abs(tx.amount||0);
+      var time=tx.timestamp?new Date(tx.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
+      var bal=tx.balance>0?'₹'+Number(tx.balance).toLocaleString('en-IN',{minimumFractionDigits:2}):'—';
+      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.6rem;display:flex;align-items:center;gap:0.8rem;"><div style="width:36px;height:36px;border-radius:10px;background:'+c.color+'22;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">'+c.icon+'</div><div style="flex:1;min-width:0;"><div style="font-size:0.85rem;font-weight:700;color:var(--text);">'+c.label+'</div><div style="font-size:0.7rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">'+(tx.details||'—')+'</div><div style="font-size:0.68rem;color:var(--muted);">'+time+'</div></div><div style="text-align:right;flex-shrink:0;"><div style="font-weight:800;color:'+c.color+';font-size:0.92rem;">'+c.sign+'₹'+amt.toLocaleString('en-IN',{minimumFractionDigits:2})+'</div><div style="font-size:0.68rem;color:var(--muted);">Bal: '+bal+'</div></div></div>';
+    }).join('');
+  }
+
+  // ══════════════════════════════════════════
+  // LIVE CHAT (Firebase)
+  // ══════════════════════════════════════════
+  var _chatInited=false, _chatUnsub=null;
+  function initLiveChat() {
+    var user=window.currentUser; var db=window.fbDB||fbDB;
+    if(!user||!db||_chatInited) return;
+    _chatInited=true;
+    db.ref('chats/'+user.uid+'/info').set({uid:user.uid,username:window.userProfile?window.userProfile.username:'User',lastSeen:Date.now(),status:'open'});
+    var msgsEl=document.getElementById('chatMessages');
+    if(_chatUnsub) try{db.ref('chats/'+user.uid+'/messages').off('value',_chatUnsub);}catch(e){}
+    _chatUnsub=db.ref('chats/'+user.uid+'/messages').on('value',function(snap){
+      if(!msgsEl) return;
+      msgsEl.innerHTML='';
+      var welcome=document.createElement('div'); welcome.className='msg agent';
+      welcome.innerHTML='👋 Hello <b>'+(window.userProfile?window.userProfile.username:'there')+'</b>! How can I help you?';
+      msgsEl.appendChild(welcome);
+      var msgs=snap.val();
+      if(msgs){
+        Object.values(msgs).sort(function(a,b){return a.timestamp-b.timestamp;}).forEach(function(m){
+          var div=document.createElement('div'); div.className='msg '+(m.sender==='admin'?'agent':'user');
+          if(m.type==='image'&&m.fileData){var img=document.createElement('img');img.src=m.fileData;img.style.cssText='max-width:100%;max-height:200px;border-radius:8px;display:block;';div.appendChild(img);}
+          else{div.textContent=m.text||'';}
+          var t=document.createElement('div');t.style.cssText='font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:3px;text-align:'+(m.sender==='admin'?'left':'right');
+          t.textContent=new Date(m.timestamp).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+          div.appendChild(t); msgsEl.appendChild(div);
+        });
+      }
+      msgsEl.scrollTop=msgsEl.scrollHeight;
+    });
+  }
+  // Override sendChat to use Firebase
+  window.sendChat = function() {
+    var inp=document.getElementById('chatInput'); var msg=inp?inp.value.trim():'';
+    if(!msg) return;
+    var user=window.currentUser; var db=window.fbDB||fbDB;
+    if(!user){showToast('🔐 Please sign in');showPage('login');return;}
+    if(!db){showToast('⏳ Please wait...');return;}
+    if(!_chatInited) initLiveChat();
+    if(inp) inp.value='';
+    db.ref('chats/'+user.uid+'/messages').push({text:msg,sender:'user',timestamp:Date.now()});
+    db.ref('chats/'+user.uid+'/info').update({lastMessage:msg,lastMessageTime:Date.now(),unreadByAdmin:true});
+  };
+
+  // ══════════════════════════════════════════
+  // COMMISSION via referrerChain
+  // ══════════════════════════════════════════
+  function _payCommission(userUid, betAmt, db) {
+    db.ref('users/'+userUid+'/referrerChain').once('value').then(function(snap){
+      var chain=snap.val(); if(!chain) return;
+      function getRate() {
+        if(window._commRates) return Promise.resolve(window._commRates);
+        return db.ref('settings/commissionRates').once('value').then(function(rs){
+          var r=rs.val()||{};
+          window._commRates={1:(r.l1!=null?r.l1:1)/100,2:(r.l2!=null?r.l2:0.8)/100,3:(r.l3!=null?r.l3:0.5)/100,4:(r.l4!=null?r.l4:0.2)/100};
+          setTimeout(function(){window._commRates=null;},600000);
+          return window._commRates;
+        });
+      }
+      getRate().then(function(rates){
+        for(var lv=1;lv<=4;lv++){
+          var ruid=chain['l'+lv]; if(!ruid) continue;
+          var comm=parseFloat((betAmt*rates[lv]).toFixed(2)); if(comm<=0) continue;
+          (function(ruid,comm,lv){
+            db.ref('users/'+ruid+'/balance').transaction(function(b){return parseFloat(((b||0)+comm).toFixed(2));});
+            var rk=lv===1?'referrals':'referrals_l'+lv;
+            db.ref('users/'+ruid+'/'+rk+'/'+userUid+'/commission').transaction(function(v){return parseFloat(((v||0)+comm).toFixed(2));});
+          })(ruid,comm,lv);
+        }
+      });
+    }).catch(function(){});
+  }
+
+  // ══════════════════════════════════════════
+  // VIP BADGE update in loadUserProfile
+  // ══════════════════════════════════════════
+  function _updateVipBadge(uid) {
+    var db=window.fbDB||fbDB; if(!db) return;
+    db.ref('users/'+uid+'/vip/exp').once('value').then(function(snap){
+      var exp=parseFloat(snap.val()||0); var lv=getVipLevel(exp);
+      var badge=document.getElementById('profileVipBadge'); if(!badge) return;
+      var colors={Bronze:'rgba(205,127,50,0.2)',Silver:'rgba(192,192,192,0.2)',Gold:'rgba(240,192,64,0.2)',Diamond:'rgba(168,125,255,0.2)'};
+      var tc={Bronze:'#cd7f32',Silver:'#c0c0c0',Gold:'var(--gold)',Diamond:'#a87dff'};
+      badge.style.display='inline-block'; badge.textContent=lv.icon+' '+lv.name;
+      badge.style.background=colors[lv.name]||colors.Bronze;
+      badge.style.color=tc[lv.name]||tc.Bronze;
+      badge.style.borderColor=tc[lv.name]||tc.Bronze;
+    }).catch(function(){});
+  }
+
+  // ══════════════════════════════════════════
+  // ANNOUNCEMENT BANNER
+  // ══════════════════════════════════════════
+  function loadAnnouncement() {
+    var db=window.fbDB||fbDB; if(!db) return;
+    db.ref('announcements/current').on('value',function(snap){
+      var data=snap.val();
+      var banner=document.getElementById('announcementBanner');
+      if(!banner){
+        banner=document.createElement('div'); banner.id='announcementBanner';
+        banner.style.cssText='position:sticky;top:60px;z-index:100;background:linear-gradient(90deg,#c07a10,#ffd700);padding:0.5rem 1rem;display:none;align-items:center;justify-content:space-between;gap:0.5rem;';
+        banner.innerHTML='<span id="announcementText" style="font-size:0.8rem;font-weight:700;color:#000;flex:1;"></span><button onclick="this.parentElement.style.display='none'" style="background:rgba(0,0,0,0.15);border:none;color:#000;border-radius:4px;padding:0.2rem 0.5rem;cursor:pointer;font-size:0.75rem;">✕</button>';
+        var body=document.body; if(body&&body.firstChild) body.insertBefore(banner,body.firstChild.nextSibling);
+      }
+      if(data&&data.active&&data.text){banner.style.display='flex';var t=document.getElementById('announcementText');if(t)t.textContent=data.text;}
+      else{banner.style.display='none';}
+    });
+  }
+
+  // ══════════════════════════════════════════
+  // GIFTS SYSTEM
+  // ══════════════════════════════════════════
+  function showGiftsModal() {
+    var m=document.getElementById('giftsModal'); if(!m) return;
+    m.style.display='flex'; _loadGiftHistory();
+  }
+  function closeGiftsModal() {
+    var m=document.getElementById('giftsModal'); if(m) m.style.display='none';
+  }
+  function _loadGiftHistory() {
+    var user=window.currentUser; var db=window.fbDB||fbDB;
+    var el=document.getElementById('giftHistoryList'); if(!el) return;
+    if(!user||!db){el.innerHTML='';return;}
+    db.ref('users/'+user.uid+'/redeemedGifts').once('value').then(function(snap){
+      var data=snap.val();
+      if(!data){el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">No gifts redeemed yet</div>';return;}
+      var gifts=Object.values(data).sort(function(a,b){return (b.redeemedAt||0)-(a.redeemedAt||0);});
+      el.innerHTML=gifts.map(function(g){return '<div style="background:var(--bg3);border-radius:10px;padding:0.7rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;"><div><div style="font-weight:700;color:var(--gold);">'+(g.code||'—')+'</div><div style="font-size:0.7rem;color:var(--muted);">'+(g.redeemedAt?new Date(g.redeemedAt).toLocaleDateString('en-IN'):'')+'</div></div><div style="font-weight:800;color:var(--green);">+₹'+(g.amount||0)+'</div></div>';}).join('');
+    }).catch(function(){});
+  }
+  function redeemGiftCode() {
+    var inp=document.getElementById('giftCodeInput'); var code=inp?inp.value.trim().toUpperCase():'';
+    var st=document.getElementById('giftRedeemStatus');
+    if(!code){showToast('⚠️ Enter a gift code');return;}
+    var user=window.currentUser; var db=window.fbDB||fbDB;
+    if(!user||!db){showToast('🔐 Please sign in');return;}
+    if(st){st.style.display='block';st.style.color='var(--muted)';st.textContent='⏳ Checking...';}
+    db.ref('giftCodes/'+code).once('value').then(function(snap){
+      var gd=snap.val();
+      if(!gd){if(st){st.style.color='var(--red2)';st.textContent='❌ Invalid gift code. Please check and try again.';}showToast('❌ Invalid code');return;}
+      if(!gd.active){if(st){st.style.color='var(--red2)';st.textContent='❌ This code has expired or been disabled.';}showToast('❌ Code expired');return;}
+      db.ref('users/'+user.uid+'/redeemedGifts/'+code).once('value').then(function(rs){
+        if(rs.val()){if(st){st.style.color='#f39c12';st.textContent='⚠️ You have already redeemed this code!';}showToast('⚠️ Already redeemed!');return;}
+        if(gd.maxUses&&(gd.usedCount||0)>=gd.maxUses){if(st){st.style.color='var(--red2)';st.textContent='❌ Code limit reached.';}showToast('❌ Code limit reached');return;}
+        db.ref('users/'+user.uid+'/balance').once('value').then(function(bs){
+          var nb=parseFloat(((bs.val()||0)+gd.amount).toFixed(2));
+          db.ref('users/'+user.uid+'/balance').set(nb);
+          updateBalanceDisplay(nb);
+          db.ref('users/'+user.uid+'/redeemedGifts/'+code).set({code:code,amount:gd.amount,redeemedAt:Date.now()});
+          db.ref('giftCodes/'+code+'/usedCount').set((gd.usedCount||0)+1);
+          if(inp) inp.value='';
+          if(st){st.style.color='var(--green)';st.textContent='✅ ₹'+gd.amount+' credited to your wallet!';}
+          showToast('🎁 Gift redeemed! +₹'+gd.amount);
+          _loadGiftHistory();
+        });
+      });
+    }).catch(function(e){if(st){st.style.color='var(--red2)';st.textContent='❌ Error: '+e.message;}});
+  }
+
+  // ══════════════════════════════════════════
+  // HOOKS — call new features from existing events
+  // ══════════════════════════════════════════
+  // Hook into showPage for VIP, history, support
+  var _sp0 = showPage;
+  showPage = function(name) {
+    _sp0(name);
+    if(name==='vip') loadVipPage();
+    if(name==='history') loadTransactionHistory();
+    if(name==='support') setTimeout(function(){initLiveChat();},400);
+  };
+  // Hook into loadUserProfile to add notifications + VIP badge
+  var _lup0 = loadUserProfile;
+  loadUserProfile = async function(uid) {
+    await _lup0(uid);
+    try { loadNotifications(); } catch(e) {}
+    try { _updateVipBadge(uid); } catch(e) {}
+  };
+  // Hook into Firebase init complete to start announcement
+  window.addEventListener('load', function(){setTimeout(function(){
+    var db=window.fbDB||fbDB; if(db) loadAnnouncement();
+    else setTimeout(function(){var db2=window.fbDB||fbDB;if(db2)loadAnnouncement();},3000);
+  },3000);});
+
 
 
   // ── FIREBASE SETUP (Compat SDK) ──
@@ -3784,8 +4036,7 @@
       fbDB = firebase.database();
       window.fbDB = fbDB;
       window.fbAuth = firebase.auth();
-      // Hide loader
-      setTimeout(function(){var l=document.getElementById('appLoader');if(l){l.style.opacity='0';setTimeout(function(){l.style.display='none'},500)}},1500);
+      setTimeout(function(){var l=document.getElementById("appLoader");if(l){l.style.opacity="0";setTimeout(function(){l.remove()},600)}},1500);
 
       // Listen for auth state changes
       firebase.auth().onAuthStateChanged((user) => {
@@ -3898,467 +4149,6 @@
       console.log('Firebase initialized!');
     } catch(e) {
       console.warn('Firebase error:', e.message);
-    }
-  }
-
-
-  // ── SESSION TIMEOUT (3 hours inactivity) ──
-  let _inactivityTimer = null;
-  const INACTIVITY_LIMIT = 3 * 60 * 60 * 1000; // 3 hours
-  function resetInactivityTimer() {
-    clearTimeout(_inactivityTimer);
-    _inactivityTimer = setTimeout(() => {
-      if (isLoggedIn) {
-        firebase.auth().signOut();
-        showToast('⏰ Logged out due to 3 hours of inactivity');
-        showPage('login');
-      }
-    }, INACTIVITY_LIMIT);
-  }
-  function initSessionTimeout() {
-    ['click','touchstart','keydown','scroll','mousemove'].forEach(evt => {
-      document.addEventListener(evt, resetInactivityTimer, { passive: true });
-    });
-    resetInactivityTimer();
-  }
-  initSessionTimeout();
-
-  // ── VIP EXP SYSTEM ──
-  const VIP_LEVELS = [
-    { name:'Bronze',  icon:'🥉', color:'#cd7f32', minExp:0,    maxExp:199,  levelupBonus:50,   weekly:25,  monthly:50   },
-    { name:'Silver',  icon:'🥈', color:'#c0c0c0', minExp:200,  maxExp:499,  levelupBonus:200,  weekly:125, monthly:250  },
-    { name:'Gold',    icon:'🥇', color:'#f0c040', minExp:500,  maxExp:999,  levelupBonus:500,  weekly:225, monthly:650  },
-    { name:'Diamond', icon:'💎', color:'#a87dff', minExp:1000, maxExp:Infinity, levelupBonus:1500, weekly:325, monthly:1350 },
-  ];
-  function getVipLevel(exp) {
-    for (let i = VIP_LEVELS.length-1; i >= 0; i--) { if (exp >= VIP_LEVELS[i].minExp) return VIP_LEVELS[i]; }
-    return VIP_LEVELS[0];
-  }
-  async function addVipExp(exp) {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db) return;
-    try {
-      const snap = await db.ref('users/'+user.uid+'/vip').once('value');
-      const vipData = snap.val() || { exp:0, levelupClaimed:[] };
-      const oldExp = vipData.exp || 0;
-      const newExp = oldExp + exp;
-      const oldLevel = getVipLevel(oldExp);
-      const newLevel = getVipLevel(newExp);
-      await db.ref('users/'+user.uid+'/vip/exp').set(newExp);
-      if (newLevel.name !== oldLevel.name) {
-        const claimed = vipData.levelupClaimed || [];
-        if (!claimed.includes(newLevel.name)) {
-          const balSnap = await db.ref('users/'+user.uid+'/balance').once('value');
-          const newBal = parseFloat(((balSnap.val()||0) + newLevel.levelupBonus).toFixed(2));
-          await db.ref('users/'+user.uid+'/balance').set(newBal);
-          await db.ref('users/'+user.uid+'/vip/levelupClaimed').set([...claimed, newLevel.name]);
-          updateBalanceDisplay(newBal);
-          showToast('🎉 Level Up! '+newLevel.icon+' '+newLevel.name+' — ₹'+newLevel.levelupBonus+' credited!');
-        }
-      }
-    } catch(e) { console.warn('VIP exp error:', e); }
-  }
-  async function claimVipBonus(type) {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db) { showToast('🔐 Please sign in'); return; }
-    try {
-      const snap = await db.ref('users/'+user.uid+'/vip').once('value');
-      const vipData = snap.val() || { exp:0, weeklyClaimedAt:0, monthlyClaimedAt:0 };
-      const exp = vipData.exp || 0;
-      const level = getVipLevel(exp);
-      const now = new Date();
-      const weekStart = new Date(now); weekStart.setDate(now.getDate() - ((now.getDay()+6)%7)); weekStart.setHours(0,0,0,0);
-      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-      if (type === 'weekly') {
-        if ((vipData.weeklyClaimedAt||0) >= weekStart.getTime()) { showToast('⚠️ Already claimed this week!'); return; }
-        const amt = level.weekly;
-        const balSnap = await db.ref('users/'+user.uid+'/balance').once('value');
-        const newBal = parseFloat(((balSnap.val()||0) + amt).toFixed(2));
-        await db.ref('users/'+user.uid+'/balance').set(newBal);
-        await db.ref('users/'+user.uid+'/vip/weeklyClaimedAt').set(Date.now());
-        updateBalanceDisplay(newBal);
-        const btn = document.getElementById('vipWeeklyBtn');
-        if (btn) { btn.textContent='✅ Claimed'; btn.disabled=true; btn.style.opacity='0.5'; }
-        showToast('🎁 ₹'+amt+' weekly bonus credited!');
-      } else if (type === 'monthly') {
-        if ((vipData.monthlyClaimedAt||0) >= monthStart) { showToast('⚠️ Already claimed this month!'); return; }
-        const amt = level.monthly;
-        const balSnap = await db.ref('users/'+user.uid+'/balance').once('value');
-        const newBal = parseFloat(((balSnap.val()||0) + amt).toFixed(2));
-        await db.ref('users/'+user.uid+'/balance').set(newBal);
-        await db.ref('users/'+user.uid+'/vip/monthlyClaimedAt').set(Date.now());
-        updateBalanceDisplay(newBal);
-        const btn = document.getElementById('vipMonthlyBtn');
-        if (btn) { btn.textContent='✅ Claimed'; btn.disabled=true; btn.style.opacity='0.5'; }
-        showToast('🎁 ₹'+amt+' monthly bonus credited!');
-      }
-    } catch(e) { showToast('❌ Claim failed: '+e.message); }
-  }
-  async function loadVipPage() {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    const exp = user && db ? parseFloat((await db.ref('users/'+user.uid+'/vip/exp').once('value').catch(()=>({val:()=>0}))).val()||0) : 0;
-    const level = getVipLevel(exp);
-    const levelIdx = VIP_LEVELS.findIndex(l => l.name === level.name);
-    const nextLevel = VIP_LEVELS[levelIdx+1];
-    const setText = (id,v) => { const el=document.getElementById(id); if(el) el.textContent=v; };
-    const setStyle = (id,p,v) => { const el=document.getElementById(id); if(el) el.style[p]=v; };
-    setText('vipLevelName', level.icon+' '+level.name);
-    setStyle('vipLevelName','color',level.color);
-    setText('vipTotalExp', exp.toLocaleString('en-IN'));
-    if (nextLevel) {
-      const pct = Math.min(100, Math.round((exp-level.minExp)/(nextLevel.minExp-level.minExp)*100));
-      setStyle('vipProgressBar','width',pct+'%');
-      setText('vipExpProgress', exp+' / '+nextLevel.minExp+' EXP');
-      setText('vipNextLevel','Next: '+nextLevel.name);
-      setText('vipExpNeeded','Earn '+(nextLevel.minExp-exp)+' more EXP to reach '+nextLevel.name);
-    } else {
-      setStyle('vipProgressBar','width','100%');
-      setText('vipExpProgress',exp+' EXP');
-      setText('vipNextLevel','👑 Max Level!');
-      setText('vipExpNeeded','You have reached the highest VIP level!');
-    }
-    setText('vipWeeklyAmt','₹'+level.weekly);
-    setText('vipMonthlyAmt','₹'+level.monthly);
-    ['bronze','silver','gold','diamond'].forEach((l,i) => {
-      const card = document.getElementById('vipCard-'+l);
-      if (!card) return;
-      if (VIP_LEVELS[i].name === level.name) { card.style.opacity='1'; card.style.borderColor=level.color; }
-      else if (exp >= VIP_LEVELS[i].minExp) { card.style.opacity='1'; }
-      else { card.style.opacity='0.5'; }
-    });
-  }
-
-  // ── NOTIFICATIONS ──
-  let _notifListener = null;
-  function loadNotifications() {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db) return;
-    if (_notifListener) { try { db.ref('users/'+user.uid+'/notifications').off('value', _notifListener); } catch(e){} }
-    _notifListener = db.ref('users/'+user.uid+'/notifications').limitToLast(20).on('value', snap => {
-      const data = snap.val();
-      const listEl = document.getElementById('notifList');
-      const badge = document.getElementById('notifBadge');
-      if (!listEl) return;
-      if (!data) { listEl.innerHTML='<div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;">No notifications yet</div>'; if(badge){badge.style.display='none';} return; }
-      const notifs = Object.entries(data).map(([k,v])=>({...v,key:k})).sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
-      const unread = notifs.filter(n=>!n.read).length;
-      if (badge) { badge.style.display=unread>0?'flex':'none'; badge.textContent=unread>9?'9+':unread; }
-      listEl.innerHTML = notifs.map(n=>`<div onclick="markNotifRead('${n.key}')" style="padding:0.7rem 1rem;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;background:${n.read?'transparent':'rgba(240,192,64,0.04)'};display:flex;gap:0.6rem;align-items:flex-start;">
-        <div style="font-size:1.1rem;flex-shrink:0;">${n.icon||'🔔'}</div>
-        <div style="flex:1;"><div style="font-size:0.8rem;font-weight:${n.read?'400':'700'};color:${n.read?'var(--muted)':'var(--text)'};">${n.title||''}</div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${n.body||''}</div>
-        <div style="font-size:0.65rem;color:var(--muted);margin-top:2px;">${n.timestamp?new Date(n.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</div></div>
-        ${!n.read?'<div style="width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:4px;"></div>':''}</div>`).join('');
-    });
-  }
-  async function markNotifRead(key) {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db || !key) return;
-    await db.ref('users/'+user.uid+'/notifications/'+key+'/read').set(true);
-  }
-  async function markAllNotifsRead() {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db) return;
-    const snap = await db.ref('users/'+user.uid+'/notifications').once('value');
-    const data = snap.val() || {};
-    const updates = {};
-    Object.keys(data).forEach(k => { updates[k+'/read']=true; });
-    if (Object.keys(updates).length > 0) await db.ref('users/'+user.uid+'/notifications').update(updates);
-    showToast('✅ All marked as read');
-  }
-
-  // ── TRANSACTION HISTORY ──
-  let _allTxs = [], _currentTxFilter = 'all';
-  async function loadTransactionHistory() {
-    const container = document.getElementById('txHistoryRows');
-    if (!container) return;
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db) { container.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">Please log in</div>'; return; }
-    container.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
-    let txs = [];
-    try {
-      // Deposits (approved only)
-      try {
-        const depSnap = await db.ref('adminRequests/deposits').once('value');
-        if (depSnap.val()) Object.values(depSnap.val()).filter(d=>d.uid===user.uid&&d.status==='approved').forEach(d=>{
-          txs.push({ type:'deposit', amount:(d.amount||0)+(d.bonusAmt||0), details:'Deposit'+(d.bonusPct?' +'+d.bonusPct+'% bonus':''), balance:d.balanceAfter||0, timestamp:d.timestamp||0 });
-        });
-      } catch(e){}
-      // Withdrawals (all)
-      try {
-        const withSnap = await db.ref('adminRequests/withdrawals').once('value');
-        if (withSnap.val()) Object.values(withSnap.val()).filter(w=>w.uid===user.uid).forEach(w=>{
-          const st = w.status==='approved'?'✅ Paid':w.status==='rejected'?'❌ Failed':'⏳ Processing';
-          txs.push({ type:'withdrawal', amount:w.amount||0, details:st+' · '+(w.method||'UPI'), balance:w.balanceAfter||0, timestamp:w.timestamp||0 });
-          if (w.status==='rejected') txs.push({ type:'refund', amount:w.amount||0, details:'Withdrawal failed — refunded', balance:0, timestamp:(w.timestamp||0)+1 });
-        });
-      } catch(e){}
-      // User transactions (commission, bonuses, VIP)
-      try {
-        const txSnap = await db.ref('users/'+user.uid+'/transactions').once('value');
-        if (txSnap.val()) Object.values(txSnap.val()).forEach(tx=>{ if(tx.type!=='deposit') txs.push(tx); });
-      } catch(e){}
-      // Bets
-      try {
-        const betSnap = await db.ref('users/'+user.uid+'/betHistory').once('value');
-        if (betSnap.val()) Object.values(betSnap.val()).forEach(b=>{ txs.push({ type:b.won?'win':'loss', amount:b.won?parseFloat(b.profit||0):parseFloat(b.bet||0), details:(b.game||'Game')+' · '+(b.result||''), balance:b.balance||0, timestamp:b.timestamp||0 }); });
-      } catch(e){}
-    } catch(e){}
-    _allTxs = txs.sort((a,b)=>(b.timestamp||0)-(a.timestamp||0));
-    renderTxRows(_currentTxFilter);
-  }
-  function filterTxHistory(btn, filter) {
-    _currentTxFilter = filter;
-    document.querySelectorAll('.tx-filter-btn').forEach(b=>{ b.style.background='transparent'; b.style.color='var(--muted)'; b.style.borderColor='var(--border)'; });
-    if (btn) { btn.style.background='rgba(240,192,64,0.15)'; btn.style.color='var(--gold)'; btn.style.borderColor='var(--gold)'; }
-    renderTxRows(filter);
-  }
-  function renderTxRows(filter) {
-    const container = document.getElementById('txHistoryRows');
-    if (!container) return;
-    const cfg = { deposit:{icon:'⬇️',label:'Deposit',color:'#27ae60',sign:'+'}, withdrawal:{icon:'⬆️',label:'Withdrawal',color:'#e02020',sign:'-'}, refund:{icon:'↩️',label:'Refund',color:'#27ae60',sign:'+'}, win:{icon:'🏆',label:'Win',color:'#27ae60',sign:'+'}, loss:{icon:'🎮',label:'Bet Loss',color:'#e02020',sign:'-'}, commission:{icon:'💰',label:'Commission',color:'#27ae60',sign:'+'}, vip_levelup:{icon:'⬆️',label:'VIP Level Up',color:'#f0c040',sign:'+'}, vip_weekly:{icon:'📅',label:'VIP Weekly',color:'#27ae60',sign:'+'}, vip_monthly:{icon:'🗓️',label:'VIP Monthly',color:'#27ae60',sign:'+'}, spin:{icon:'🎡',label:'Daily Spin',color:'#27ae60',sign:'+'}, manual_add:{icon:'➕',label:'Admin Credit',color:'#27ae60',sign:'+'}, manual_deduct:{icon:'➖',label:'Admin Debit',color:'#e02020',sign:'-'} };
-    const filtered = filter==='all' ? _allTxs : _allTxs.filter(tx=>tx.type===filter||(filter==='deposit'&&tx.type==='refund'));
-    if (!filtered.length) { container.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">No transactions found</div>'; return; }
-    container.innerHTML = filtered.map(tx=>{
-      const c = cfg[tx.type]||{icon:'💸',label:tx.type||'Transaction',color:'var(--gold)',sign:'+'};
-      const amt = Math.abs(tx.amount||0);
-      const time = tx.timestamp ? new Date(tx.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-      const bal = tx.balance > 0 ? '₹'+Number(tx.balance).toLocaleString('en-IN',{minimumFractionDigits:2}) : '—';
-      return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.6rem;display:flex;align-items:center;gap:0.8rem;">
-        <div style="width:36px;height:36px;border-radius:10px;background:${c.color}22;display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;">${c.icon}</div>
-        <div style="flex:1;min-width:0;">
-          <div style="font-size:0.85rem;font-weight:700;color:var(--text);">${c.label}</div>
-          <div style="font-size:0.7rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${tx.details||'—'}</div>
-          <div style="font-size:0.68rem;color:var(--muted);">${time}</div>
-        </div>
-        <div style="text-align:right;flex-shrink:0;">
-          <div style="font-weight:800;color:${c.color};font-size:0.92rem;">${c.sign}₹${amt.toLocaleString('en-IN',{minimumFractionDigits:2})}</div>
-          <div style="font-size:0.68rem;color:var(--muted);">Bal: ${bal}</div>
-        </div>
-      </div>`;
-    }).join('');
-  }
-
-  // ── REAL LIVE CHAT (Firebase) ──
-  let _chatListener = null;
-  async function initLiveChat() {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db) return;
-    if (_chatListener) { try { db.ref('chats/'+user.uid+'/messages').off('value', _chatListener); } catch(e){} }
-    window._chatInitialized = true;
-    await db.ref('chats/'+user.uid+'/info').set({ uid:user.uid, username:window.userProfile?.username||'User', memberId:window.userProfile?.memberId||'', lastSeen:Date.now(), status:'open' });
-    const msgsEl = document.getElementById('chatMessages');
-    _chatListener = db.ref('chats/'+user.uid+'/messages').on('value', snap => {
-      const messages = snap.val();
-      if (!msgsEl) return;
-      msgsEl.innerHTML = '';
-      const welcome = document.createElement('div'); welcome.className='msg agent';
-      welcome.innerHTML='👋 Hello <b>'+(window.userProfile?.username||'there')+'</b>! How can I help you?';
-      msgsEl.appendChild(welcome);
-      if (messages) {
-        Object.values(messages).sort((a,b)=>a.timestamp-b.timestamp).forEach(m=>{
-          const div = document.createElement('div'); div.className='msg '+(m.sender==='admin'?'agent':'user');
-          if (m.type==='image'&&m.fileData) { const img=document.createElement('img'); img.src=m.fileData; img.style.cssText='max-width:100%;max-height:200px;border-radius:8px;display:block;cursor:pointer;'; img.onclick=()=>window.open(m.fileData,'_blank'); div.appendChild(img); }
-          else { div.textContent=m.text||''; }
-          const time=document.createElement('div'); time.style.cssText='font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:3px;text-align:'+(m.sender==='admin'?'left':'right');
-          time.textContent=new Date(m.timestamp).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}); div.appendChild(time); msgsEl.appendChild(div);
-        });
-      }
-      msgsEl.scrollTop=msgsEl.scrollHeight;
-    });
-  }
-
-  // Override the fake sendChat with real Firebase one
-  window.sendChat = async function() {
-    const inp = document.getElementById('chatInput');
-    const msg = inp ? inp.value.trim() : '';
-    if (!msg) return;
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user) { showToast('🔐 Please sign in to use Live Chat'); showPage('login'); return; }
-    if (!db) { showToast('⏳ Connecting... try again'); return; }
-    if (!window._chatInitialized) await initLiveChat();
-    if (inp) inp.value = '';
-    try {
-      await db.ref('chats/'+user.uid+'/messages').push({ text:msg, sender:'user', timestamp:Date.now(), readByAdmin:false });
-      await db.ref('chats/'+user.uid+'/info').update({ lastMessage:msg, lastMessageTime:Date.now(), unreadByAdmin:true });
-    } catch(e) { showToast('❌ Failed to send: '+e.message); }
-  };
-  // File upload for chat
-  window.sendChatFile = async function(input) {
-    const file = input.files[0]; if (!file) return;
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db) return;
-    if (file.size > 5*1024*1024) { showToast('❌ Max 5MB'); return; }
-    showToast('📤 Uploading...');
-    const base64 = await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); });
-    const isImage = file.type.startsWith('image/');
-    await db.ref('chats/'+user.uid+'/messages').push({ type:isImage?'image':'file', fileName:file.name, fileData:base64, sender:'user', timestamp:Date.now() });
-    await db.ref('chats/'+user.uid+'/info').update({ lastMessage:isImage?'📷 Image':'📎 '+file.name, lastMessageTime:Date.now(), unreadByAdmin:true });
-    input.value=''; showToast('✅ File sent!');
-  };
-
-  // ── CALL loadNotifications on login ──
-  // (merged into loadUserProfile above)
-
-  // Announcement banner
-  function loadAnnouncement() {
-    const db = window.fbDB || fbDB; if (!db) return;
-    db.ref('announcements/current').on('value', snap => {
-      const data = snap.val(); let banner = document.getElementById('announcementBanner');
-      if (!banner) { banner=document.createElement('div'); banner.id='announcementBanner'; banner.style.cssText='position:sticky;top:60px;z-index:100;background:linear-gradient(90deg,#c07a10,#ffd700);padding:0.5rem 1rem;display:none;align-items:center;justify-content:space-between;gap:0.5rem;'; banner.innerHTML='<span id="announcementText" style="font-size:0.8rem;font-weight:700;color:#000;flex:1;"></span><button onclick="this.parentElement.style.display=\'none\'" style="background:rgba(0,0,0,0.15);border:none;color:#000;border-radius:4px;padding:0.2rem 0.5rem;cursor:pointer;font-size:0.75rem;">✕</button>'; document.body.insertBefore(banner, document.body.firstChild.nextSibling); }
-      if (data && data.active && data.text) { banner.style.display='flex'; const t=document.getElementById('announcementText'); if(t)t.textContent=data.text; }
-      else { banner.style.display='none'; }
-    });
-  }
-  // Call announcement on load
-  window.addEventListener('load', () => { setTimeout(loadAnnouncement, 2000); });
-
-
-
-  // ── VIP SLIDER ──
-  function vipSlide(idx) {
-    const slider = document.getElementById('vipSlider');
-    if (!slider) return;
-    const card = slider.children[idx];
-    if (card) card.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
-    for (let i=0; i<4; i++) {
-      const dot = document.getElementById('vipDot'+i);
-      if (!dot) continue;
-      dot.style.width = i===idx ? '20px' : '6px';
-      dot.style.background = i===idx ? 'var(--gold)' : 'var(--border)';
-    }
-  }
-  // Auto-update dots on scroll
-  setTimeout(() => {
-    const slider = document.getElementById('vipSlider');
-    if (slider) slider.addEventListener('scroll', () => {
-      const idx = Math.round(slider.scrollLeft / (slider.children[0]?.offsetWidth + 8 || 278));
-      vipSlide(idx);
-    });
-  }, 1000);
-
-  // ── REBATE RATES ──
-  function loadRebateRates() {
-    const defaults = { l1:1, l2:0.8, l3:0.5, l4:0.2 };
-    const fmt = v => Number(v).toFixed(3) + '%';
-    ['l1','l2','l3','l4'].forEach(l => { const el=document.getElementById('rebate-'+l); if(el) el.textContent=fmt(defaults[l]); });
-    const tryFB = () => {
-      const db = window.fbDB || fbDB; if(!db){setTimeout(tryFB,500);return;}
-      db.ref('settings/commissionRates').on('value', snap => {
-        const rates = snap.val() || {};
-        ['l1','l2','l3','l4'].forEach(l => { const el=document.getElementById('rebate-'+l); if(el) el.textContent=fmt(rates[l]!=null?rates[l]:defaults[l]); });
-      });
-    };
-    tryFB();
-  }
-
-  // ── SUBORDINATE DATA ──
-  let _subdataLevel = 1;
-  function filterSubLevel(btn, level) {
-    _subdataLevel = level;
-    document.querySelectorAll('#page-subdata button').forEach(b => { b.style.background='transparent'; b.style.color='var(--muted)'; b.style.borderColor='var(--border)'; });
-    btn.style.background='rgba(240,192,64,0.15)'; btn.style.color='var(--gold)'; btn.style.borderColor='var(--gold)';
-    loadSubData();
-  }
-  async function loadSubData() {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    const el = document.getElementById('subdataRows');
-    if (!user || !db || !el) return;
-    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
-    try {
-      const refKey = _subdataLevel===1?'referrals':'referrals_l'+_subdataLevel;
-      const snap = await db.ref('users/'+user.uid+'/'+refKey).once('value');
-      const data = snap.val();
-      if (!data) { el.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">No L'+_subdataLevel+' subordinates yet</div>'; return; }
-      const rows = Object.values(data).sort((a,b)=>(b.joinedAt||0)-(a.joinedAt||0));
-      el.innerHTML = rows.map(r => `
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.6rem;display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div style="font-weight:700;font-size:0.85rem;">${r.username||'User'}</div>
-            <div style="font-size:0.7rem;color:var(--muted);">ID: ${r.memberId||r.uid?.substring(0,8)||'—'}</div>
-            <div style="font-size:0.68rem;color:var(--muted);">${r.joinedAt?new Date(r.joinedAt).toLocaleDateString('en-IN'):''}</div>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-size:0.78rem;color:var(--green);">₹${(r.totalBet||0).toLocaleString('en-IN')}</div>
-            <div style="font-size:0.68rem;color:var(--muted);">Total bet</div>
-            <div style="font-size:0.78rem;color:var(--gold);">₹${(r.commission||0).toLocaleString('en-IN')}</div>
-            <div style="font-size:0.68rem;color:var(--muted);">Commission</div>
-          </div>
-        </div>`).join('');
-    } catch(e) { el.innerHTML='<div style="text-align:center;color:var(--red2);padding:2rem;">Failed to load</div>'; }
-  }
-
-
-  // ── GIFTS SYSTEM ──
-  function showGiftsModal() {
-    const m = document.getElementById('giftsModal');
-    if (m) { m.style.display='flex'; loadGiftHistory(); }
-  }
-  function closeGiftsModal() {
-    const m = document.getElementById('giftsModal');
-    if (m) m.style.display='none';
-  }
-  async function loadGiftHistory() {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    const el = document.getElementById('giftHistoryList');
-    if (!user || !db || !el) return;
-    try {
-      const snap = await db.ref('users/'+user.uid+'/redeemedGifts').once('value');
-      const data = snap.val();
-      if (!data) { el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">No gifts redeemed yet</div>'; return; }
-      const gifts = Object.values(data).sort((a,b)=>(b.redeemedAt||0)-(a.redeemedAt||0));
-      el.innerHTML = gifts.map(g=>`
-        <div style="background:var(--bg3);border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div style="font-weight:700;color:var(--gold);font-size:0.85rem;">${g.code||'—'}</div>
-            <div style="font-size:0.7rem;color:var(--muted);">${g.redeemedAt?new Date(g.redeemedAt).toLocaleDateString('en-IN'):''}</div>
-          </div>
-          <div style="font-weight:800;color:var(--green);">+₹${g.amount||0}</div>
-        </div>`).join('');
-    } catch(e) {}
-  }
-  async function redeemGiftCode() {
-    const input = document.getElementById('giftCodeInput');
-    const code = input ? input.value.trim().toUpperCase() : '';
-    const statusEl = document.getElementById('giftRedeemStatus');
-    if (!code) { showToast('⚠️ Enter a gift code'); return; }
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db) { showToast('🔐 Please sign in'); return; }
-    if (statusEl) { statusEl.style.display='block'; statusEl.style.color='var(--muted)'; statusEl.textContent='⏳ Checking code...'; }
-    try {
-      const codeSnap = await db.ref('giftCodes/'+code).once('value');
-      const giftData = codeSnap.val();
-      if (!giftData) {
-        if (statusEl) { statusEl.style.color='var(--red2)'; statusEl.textContent='❌ Invalid gift code. Please check and try again.'; }
-        showToast('❌ Invalid gift code'); return;
-      }
-      if (!giftData.active) {
-        if (statusEl) { statusEl.style.color='var(--red2)'; statusEl.textContent='❌ This code has expired or been disabled.'; }
-        showToast('❌ Code expired'); return;
-      }
-      const redeemedSnap = await db.ref('users/'+user.uid+'/redeemedGifts/'+code).once('value');
-      if (redeemedSnap.val()) {
-        if (statusEl) { statusEl.style.color='#f39c12'; statusEl.textContent='⚠️ You have already redeemed this code! Each code can only be used once per account.'; }
-        showToast('⚠️ Already redeemed!'); return;
-      }
-      if (giftData.maxUses && (giftData.usedCount||0) >= giftData.maxUses) {
-        if (statusEl) { statusEl.style.color='var(--red2)'; statusEl.textContent='❌ This code has reached its maximum usage limit.'; }
-        showToast('❌ Code limit reached'); return;
-      }
-      // Credit balance
-      const balSnap = await db.ref('users/'+user.uid+'/balance').once('value');
-      const newBal = parseFloat(((balSnap.val()||0) + giftData.amount).toFixed(2));
-      await db.ref('users/'+user.uid+'/balance').set(newBal);
-      updateBalanceDisplay(newBal);
-      await db.ref('users/'+user.uid+'/redeemedGifts/'+code).set({ code, amount:giftData.amount, redeemedAt:Date.now() });
-      await db.ref('giftCodes/'+code+'/usedCount').set((giftData.usedCount||0)+1);
-      if (input) input.value='';
-      if (statusEl) { statusEl.style.color='var(--green)'; statusEl.textContent='✅ ₹'+giftData.amount+' credited to your wallet!'; }
-      showToast('🎁 Gift redeemed! +₹'+giftData.amount);
-      loadGiftHistory();
-    } catch(e) {
-      if (statusEl) { statusEl.style.color='var(--red2)'; statusEl.textContent='❌ Error: '+e.message; }
-      showToast('❌ Redemption failed');
     }
   }
 
@@ -4908,100 +4698,47 @@
 
 <!-- VIP PAGE -->
 <div class="page" id="page-vip">
-  <div style="max-width:520px;margin:0 auto;padding:5rem 1rem 2rem;">
-    <div style="text-align:center;margin-bottom:1.5rem;">
-      <div style="font-family:'Cinzel',serif;font-size:1.6rem;font-weight:900;color:var(--gold);">💎 VIP Club</div>
-      <div style="font-size:0.82rem;color:var(--muted);margin-top:0.3rem;">Earn EXP by betting and depositing to level up</div>
+  <div class="vip-page">
+    <div class="vip-hero">
+      <h2>💎 VIP Club</h2>
+      <p style="color:var(--muted);max-width:500px;margin:0.5rem auto 0;">Level up and unlock exclusive perks, higher withdrawal limits, personal account managers and more.</p>
     </div>
-    <!-- Current Level Card -->
-    <div style="background:linear-gradient(160deg,#1c1408,#2a1d05);border:1px solid rgba(240,192,64,0.3);border-radius:18px;padding:1.4rem;margin-bottom:1rem;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-        <div>
-          <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">Current Level</div>
-          <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:900;" id="vipLevelName">🥉 Bronze</div>
-        </div>
-        <div style="text-align:right;">
-          <div style="font-size:0.72rem;color:var(--muted);">Total EXP</div>
-          <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:900;color:var(--gold);" id="vipTotalExp">0</div>
-        </div>
-      </div>
-      <div>
-        <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);margin-bottom:0.4rem;">
-          <span id="vipExpProgress">0 / 200 EXP</span><span id="vipNextLevel">Next: Silver</span>
-        </div>
-        <div style="background:rgba(255,255,255,0.08);border-radius:20px;height:8px;overflow:hidden;">
-          <div id="vipProgressBar" style="background:linear-gradient(90deg,#c07a10,var(--gold2));height:100%;border-radius:20px;transition:width 0.5s;width:0%;"></div>
-        </div>
-        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.4rem;" id="vipExpNeeded">Earn 200 more EXP to reach Silver</div>
-      </div>
-      <div style="display:flex;gap:0.8rem;margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(240,192,64,0.1);">
-        <div style="flex:1;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.5rem;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">Bet ₹100</div>
-          <div style="font-size:0.85rem;font-weight:700;color:var(--gold);">+1 EXP</div>
-        </div>
-        <div style="flex:1;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.5rem;text-align:center;">
-          <div style="font-size:0.7rem;color:var(--muted);">Deposit ₹1,000</div>
-          <div style="font-size:0.85rem;font-weight:700;color:var(--gold);">+40 EXP</div>
-        </div>
-      </div>
+    <div class="vip-progress-wrap">
+      <h3>Your Progress — 🥉 Bronze</h3>
+      <div style="display:flex;justify-content:space-between;font-size:0.82rem;color:var(--muted);margin-bottom:0.3rem;"><span>₹1,800 deposited</span><span>₹5,000 for Silver</span></div>
+      <div class="progress-bar"><div class="progress-fill" style="width:36%"></div></div>
+      <div style="font-size:0.78rem;color:var(--muted);margin-top:0.4rem;">36% to next level — deposit ₹3,200 more to reach Silver</div>
     </div>
-    <!-- Claim Bonuses -->
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem;">
-      <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);font-size:0.85rem;font-weight:700;color:var(--gold);">🎁 Your Bonuses</div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);">
-        <div>
-          <div style="font-size:0.85rem;font-weight:700;">📅 Weekly Bonus</div>
-          <div style="font-size:0.7rem;color:var(--muted);">Resets every Monday</div>
-          <div style="font-size:0.72rem;color:var(--gold);margin-top:2px;" id="vipWeeklyAmt">₹25</div>
-        </div>
-        <button id="vipWeeklyBtn" onclick="claimVipBonus('weekly')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.5rem 1.1rem;color:#000;font-weight:800;font-size:0.82rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Claim</button>
+    <div class="vip-levels">
+      <div class="vip-card current">
+        <div class="vip-icon">🥉</div>
+        <div class="vip-name" style="color:#cd7f32;">Bronze</div>
+        <div class="vip-req">₹0 – ₹5,000</div>
+        <div class="vip-perks">5% cashback<br>Basic support<br>Daily spin</div>
       </div>
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;">
-        <div>
-          <div style="font-size:0.85rem;font-weight:700;">🗓️ Monthly Bonus</div>
-          <div style="font-size:0.7rem;color:var(--muted);">Resets 1st of every month</div>
-          <div style="font-size:0.72rem;color:var(--gold);margin-top:2px;" id="vipMonthlyAmt">₹50</div>
-        </div>
-        <button id="vipMonthlyBtn" onclick="claimVipBonus('monthly')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.5rem 1.1rem;color:#000;font-weight:800;font-size:0.82rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Claim</button>
+      <div class="vip-card">
+        <div class="vip-icon">🥈</div>
+        <div class="vip-name" style="color:#c0c0c0;">Silver</div>
+        <div class="vip-req">₹5,000 – ₹20,000</div>
+        <div class="vip-perks">8% cashback<br>Priority support<br>Weekly bonus</div>
       </div>
-    </div>
-    <!-- VIP Level Cards Slider -->
-    <div style="position:relative;margin:0 -1rem;">
-      <div id="vipSlider" style="display:flex;gap:0.8rem;overflow-x:auto;scroll-snap-type:x mandatory;padding:0.5rem 1rem 1rem;scrollbar-width:none;">
-        <div id="vipCard-bronze" style="min-width:270px;scroll-snap-align:center;background:linear-gradient(160deg,#2a1500,#1a0e00);border:2px solid #cd7f32;border-radius:18px;padding:1.2rem;flex-shrink:0;">
-          <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;"><div style="font-size:2.2rem;">🥉</div><div><div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:900;color:#cd7f32;">Bronze</div><div style="font-size:0.72rem;color:rgba(205,127,50,0.7);">0 – 199 EXP</div></div><div style="margin-left:auto;text-align:right;"><div style="font-size:0.65rem;color:var(--muted);">Level-up</div><div style="font-weight:800;color:#cd7f32;">₹50</div></div></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
-            <div style="background:rgba(205,127,50,0.12);border-radius:10px;padding:0.6rem;text-align:center;"><div style="font-size:0.65rem;color:rgba(205,127,50,0.7);">📅 Weekly</div><div style="font-weight:800;color:#cd7f32;">₹25</div></div>
-            <div style="background:rgba(205,127,50,0.12);border-radius:10px;padding:0.6rem;text-align:center;"><div style="font-size:0.65rem;color:rgba(205,127,50,0.7);">🗓️ Monthly</div><div style="font-weight:800;color:#cd7f32;">₹50</div></div>
-          </div>
-        </div>
-        <div id="vipCard-silver" style="min-width:270px;scroll-snap-align:center;background:linear-gradient(160deg,#1a1a1a,#0f0f0f);border:2px solid rgba(192,192,192,0.3);border-radius:18px;padding:1.2rem;flex-shrink:0;opacity:0.6;">
-          <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;"><div style="font-size:2.2rem;">🥈</div><div><div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:900;color:#c0c0c0;">Silver</div><div style="font-size:0.72rem;color:rgba(192,192,192,0.7);">200 – 499 EXP</div></div><div style="margin-left:auto;text-align:right;"><div style="font-size:0.65rem;color:var(--muted);">Level-up</div><div style="font-weight:800;color:#c0c0c0;">₹200</div></div></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
-            <div style="background:rgba(192,192,192,0.08);border-radius:10px;padding:0.6rem;text-align:center;"><div style="font-size:0.65rem;color:rgba(192,192,192,0.7);">📅 Weekly</div><div style="font-weight:800;color:#c0c0c0;">₹125</div></div>
-            <div style="background:rgba(192,192,192,0.08);border-radius:10px;padding:0.6rem;text-align:center;"><div style="font-size:0.65rem;color:rgba(192,192,192,0.7);">🗓️ Monthly</div><div style="font-weight:800;color:#c0c0c0;">₹250</div></div>
-          </div>
-        </div>
-        <div id="vipCard-gold" style="min-width:270px;scroll-snap-align:center;background:linear-gradient(160deg,#1c1408,#120e00);border:2px solid rgba(240,192,64,0.3);border-radius:18px;padding:1.2rem;flex-shrink:0;opacity:0.6;">
-          <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;"><div style="font-size:2.2rem;">🥇</div><div><div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:900;color:var(--gold);">Gold</div><div style="font-size:0.72rem;color:rgba(240,192,64,0.7);">500 – 999 EXP</div></div><div style="margin-left:auto;text-align:right;"><div style="font-size:0.65rem;color:var(--muted);">Level-up</div><div style="font-weight:800;color:var(--gold);">₹500</div></div></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
-            <div style="background:rgba(240,192,64,0.08);border-radius:10px;padding:0.6rem;text-align:center;"><div style="font-size:0.65rem;color:rgba(240,192,64,0.7);">📅 Weekly</div><div style="font-weight:800;color:var(--gold);">₹225</div></div>
-            <div style="background:rgba(240,192,64,0.08);border-radius:10px;padding:0.6rem;text-align:center;"><div style="font-size:0.65rem;color:rgba(240,192,64,0.7);">🗓️ Monthly</div><div style="font-weight:800;color:var(--gold);">₹650</div></div>
-          </div>
-        </div>
-        <div id="vipCard-diamond" style="min-width:270px;scroll-snap-align:center;background:linear-gradient(160deg,#0d0a1a,#080514);border:2px solid rgba(168,125,255,0.3);border-radius:18px;padding:1.2rem;flex-shrink:0;opacity:0.6;">
-          <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;"><div style="font-size:2.2rem;">💎</div><div><div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:900;color:#a87dff;">Diamond</div><div style="font-size:0.72rem;color:rgba(168,125,255,0.7);">1000+ EXP</div></div><div style="margin-left:auto;text-align:right;"><div style="font-size:0.65rem;color:var(--muted);">Level-up</div><div style="font-weight:800;color:#a87dff;">₹1,500</div></div></div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
-            <div style="background:rgba(168,125,255,0.08);border-radius:10px;padding:0.6rem;text-align:center;"><div style="font-size:0.65rem;color:rgba(168,125,255,0.7);">📅 Weekly</div><div style="font-weight:800;color:#a87dff;">₹325</div></div>
-            <div style="background:rgba(168,125,255,0.08);border-radius:10px;padding:0.6rem;text-align:center;"><div style="font-size:0.65rem;color:rgba(168,125,255,0.7);">🗓️ Monthly</div><div style="font-weight:800;color:#a87dff;">₹1,350</div></div>
-          </div>
-        </div>
+      <div class="vip-card">
+        <div class="vip-icon">🥇</div>
+        <div class="vip-name" style="color:var(--gold);">Gold</div>
+        <div class="vip-req">₹20,000 – ₹1,00,000</div>
+        <div class="vip-perks">12% cashback<br>24/7 manager<br>Higher limits</div>
       </div>
-      <div style="display:flex;justify-content:center;gap:0.4rem;margin-top:0.2rem;">
-        <div id="vipDot0" onclick="vipSlide(0)" style="width:20px;height:6px;border-radius:3px;background:var(--gold);cursor:pointer;transition:all 0.3s;"></div>
-        <div id="vipDot1" onclick="vipSlide(1)" style="width:6px;height:6px;border-radius:3px;background:var(--border);cursor:pointer;transition:all 0.3s;"></div>
-        <div id="vipDot2" onclick="vipSlide(2)" style="width:6px;height:6px;border-radius:3px;background:var(--border);cursor:pointer;transition:all 0.3s;"></div>
-        <div id="vipDot3" onclick="vipSlide(3)" style="width:6px;height:6px;border-radius:3px;background:var(--border);cursor:pointer;transition:all 0.3s;"></div>
+      <div class="vip-card">
+        <div class="vip-icon">💎</div>
+        <div class="vip-name" style="color:#a78bfa;">Platinum</div>
+        <div class="vip-req">₹1,00,000+</div>
+        <div class="vip-perks">18% cashback<br>VIP manager<br>Exclusive events</div>
+      </div>
+      <div class="vip-card">
+        <div class="vip-icon">👑</div>
+        <div class="vip-name" style="color:var(--red2);">Royal</div>
+        <div class="vip-req">Invite only</div>
+        <div class="vip-perks">25% cashback<br>Dedicated team<br>Custom rewards</div>
       </div>
     </div>
   </div>
@@ -5077,18 +4814,10 @@
     <div class="section-title" style="margin-bottom:0.4rem;">💬 Support Center</div>
     <div class="section-sub" style="margin-bottom:2rem;">We're here 24/7 to help you</div>
     <div class="support-options">
-      <div class="support-opt" onclick="window.open('https://t.me/royalwinsupport','_blank')">
-        <div class="icon">
-          <svg width="34" height="34" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="24" cy="24" r="24" fill="#29B6F6"/>
-            <path d="M10.5 23.5L35.5 13.5L28.5 37.5L22 30L34 18L16 28.5L10.5 23.5Z" fill="white"/>
-          </svg>
-        </div>
-        <div class="lbl">Telegram</div><div class="sub">Instant reply</div>
-      </div>
-      <div class="support-opt" onclick="document.getElementById('liveChatSection').scrollIntoView({behavior:'smooth'})">
-        <div class="icon">💬</div><div class="lbl">Live Chat</div><div class="sub">Online now</div>
-      </div>
+      <div class="support-opt" onclick="showToast('📱 Opening WhatsApp...')"><div class="icon">📱</div><div class="lbl">WhatsApp</div><div class="sub">Instant reply</div></div>
+      <div class="support-opt" onclick="showToast('📧 Email support@royalwin.com')"><div class="icon">📧</div><div class="lbl">Email</div><div class="sub">support@royalwin.com</div></div>
+      <div class="support-opt" onclick="showToast('📞 Calling support...')"><div class="icon">📞</div><div class="lbl">Phone</div><div class="sub">+91 99999 00000</div></div>
+      <div class="support-opt" onclick="showPage('support')"><div class="icon">💬</div><div class="lbl">Live Chat</div><div class="sub">Online now</div></div>
     </div>
     <div class="chat-window">
       <div class="chat-header">
@@ -5100,8 +4829,6 @@
         <div class="msg agent">You can ask me about deposits, withdrawals, bonuses, or any issue you face.</div>
       </div>
       <div class="chat-input-row">
-        <input type="file" id="chatFileInput" accept="image/*" style="display:none;" onchange="sendChatFile(this)">
-        <button onclick="document.getElementById('chatFileInput').click()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.7rem;color:var(--muted);cursor:pointer;flex-shrink:0;">📎</button>
         <input class="chat-input" id="chatInput" placeholder="Type your message..." onkeydown="if(event.key==='Enter')sendChat()">
         <button class="chat-send" onclick="sendChat()">➤</button>
       </div>
@@ -5390,34 +5117,8 @@
 
 
 <div id="recaptcha-container"></div>
-<!-- GIFTS MODAL -->
-<div id="giftsModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);align-items:center;justify-content:center;padding:1rem;">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.5rem;width:100%;max-width:440px;max-height:80vh;overflow-y:auto;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">
-      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">🎁 Gifts</div>
-      <button onclick="closeGiftsModal()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;">✕</button>
-    </div>
-    <div style="margin-bottom:1rem;">
-      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Enter Gift Code</div>
-      <div style="display:flex;gap:0.5rem;">
-        <input id="giftCodeInput" type="text" placeholder="e.g. ROYAL100" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;color:var(--text);font-size:0.88rem;font-family:'Exo 2',sans-serif;outline:none;" oninput="this.value=this.value.toUpperCase();document.getElementById('giftRedeemStatus').style.display='none'">
-        <button onclick="redeemGiftCode()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.7rem 1.2rem;color:#000;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Redeem</button>
-      </div>
-      <div id="giftRedeemStatus" style="display:none;margin-top:0.6rem;font-size:0.82rem;font-weight:600;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border-radius:8px;"></div>
-    </div>
-    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Redeemed Gifts</div>
-    <div id="giftHistoryList"><div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">No gifts redeemed yet</div></div>
-  </div>
-</div>
 
-
-
-</body>
-</html>
-
-<!-- ═══════════════════════════════
-     TRANSACTION HISTORY PAGE
-═══════════════════════════════ -->
+<!-- TRANSACTION HISTORY PAGE -->
 <div class="page" id="page-history">
   <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 2rem;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
@@ -5425,9 +5126,9 @@
         <button onclick="showPage('profile')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
         <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💸 Transaction History</div>
       </div>
-      <button onclick="loadTransactionHistory()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.8rem;color:var(--muted);cursor:pointer;font-size:0.78rem;font-family:'Exo 2',sans-serif;">🔄 Refresh</button>
+      <button onclick="loadTransactionHistory()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.8rem;color:var(--muted);cursor:pointer;font-size:0.78rem;font-family:'Exo 2',sans-serif;">🔄</button>
     </div>
-    <div style="display:flex;gap:0.5rem;margin-bottom:1rem;overflow-x:auto;padding-bottom:0.3rem;scrollbar-width:none;">
+    <div style="display:flex;gap:0.5rem;margin-bottom:1rem;overflow-x:auto;scrollbar-width:none;">
       <button onclick="filterTxHistory(this,'all')" class="tx-filter-btn" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--gold);background:rgba(240,192,64,0.15);color:var(--gold);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">All</button>
       <button onclick="filterTxHistory(this,'deposit')" class="tx-filter-btn" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:'Exo 2',sans-serif;">⬇️ Deposits</button>
       <button onclick="filterTxHistory(this,'withdrawal')" class="tx-filter-btn" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:'Exo 2',sans-serif;">⬆️ Withdrawals</button>
@@ -5438,3 +5139,24 @@
   </div>
 </div>
 
+<!-- GIFTS MODAL -->
+<div id="giftsModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.75);align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.5rem;width:100%;max-width:440px;max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">🎁 Gifts</div>
+      <button onclick="closeGiftsModal()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;">✕</button>
+    </div>
+    <div style="margin-bottom:1rem;">
+      <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Enter Gift Code</div>
+      <div style="display:flex;gap:0.5rem;">
+        <input id="giftCodeInput" type="text" placeholder="e.g. ROYAL100" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;color:var(--text);font-size:0.88rem;font-family:'Exo 2',sans-serif;outline:none;" oninput="this.value=this.value.toUpperCase()">
+        <button onclick="redeemGiftCode()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.7rem 1.2rem;color:#000;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Redeem</button>
+      </div>
+      <div id="giftRedeemStatus" style="display:none;margin-top:0.6rem;font-size:0.82rem;font-weight:600;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border-radius:8px;"></div>
+    </div>
+    <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;">Redeemed Gifts</div>
+    <div id="giftHistoryList"><div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">No gifts redeemed yet</div></div>
+  </div>
+</div>
+</body>
+</html>
