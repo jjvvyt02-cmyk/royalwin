@@ -3662,6 +3662,29 @@
       // Update profile page if open
       updateProfilePage(profile);
 
+      // Load notifications
+      try { loadNotifications(); } catch(e) {}
+
+      // VIP badge on profile
+      try {
+        const db2 = window.fbDB || fbDB;
+        if (db2) {
+          const vipSnap = await db2.ref('users/'+uid+'/vip/exp').once('value');
+          const exp = parseFloat(vipSnap.val()||0);
+          const vLevel = getVipLevel(exp);
+          const badge = document.getElementById('profileVipBadge');
+          if (badge) {
+            const colors={Bronze:'rgba(205,127,50,0.2)',Silver:'rgba(192,192,192,0.2)',Gold:'rgba(240,192,64,0.2)',Diamond:'rgba(168,125,255,0.2)'};
+            const textColors={Bronze:'#cd7f32',Silver:'#c0c0c0',Gold:'var(--gold)',Diamond:'#a87dff'};
+            badge.style.display='inline-block';
+            badge.textContent=vLevel.icon+' '+vLevel.name;
+            badge.style.background=colors[vLevel.name]||colors.Bronze;
+            badge.style.color=textColors[vLevel.name]||textColors.Bronze;
+            badge.style.borderColor=textColors[vLevel.name]||textColors.Bronze;
+          }
+        }
+      } catch(e) {}
+
       // Listen for balance changes
       firebase.database().ref('users/' + uid + '/balance').on('value', (snap) => {
         updateBalanceDisplay(snap.val() || 0);
@@ -4175,22 +4198,7 @@
   };
 
   // ── CALL loadNotifications on login ──
-  const _origLoadUserProfile = loadUserProfile;
-  async function loadUserProfile(uid) {
-    await _origLoadUserProfile(uid);
-    loadNotifications();
-    // VIP badge on profile
-    try {
-      const db = window.fbDB || fbDB;
-      if (db) {
-        const vipSnap = await db.ref('users/'+uid+'/vip/exp').once('value');
-        const exp = parseFloat(vipSnap.val()||0);
-        const vLevel = getVipLevel(exp);
-        const badge = document.getElementById('profileVipBadge');
-        if (badge) { const colors={Bronze:'rgba(205,127,50,0.2)',Silver:'rgba(192,192,192,0.2)',Gold:'rgba(240,192,64,0.2)',Diamond:'rgba(168,125,255,0.2)'}; const textColors={Bronze:'#cd7f32',Silver:'#c0c0c0',Gold:'var(--gold)',Diamond:'#a87dff'}; badge.style.display='inline-block'; badge.textContent=vLevel.icon+' '+vLevel.name; badge.style.background=colors[vLevel.name]||colors.Bronze; badge.style.color=textColors[vLevel.name]||textColors.Bronze; badge.style.borderColor=textColors[vLevel.name]||textColors.Bronze; }
-      }
-    } catch(e){}
-  }
+  // (merged into loadUserProfile above)
 
   // Announcement banner
   function loadAnnouncement() {
