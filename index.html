@@ -8,7 +8,6 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800;900&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -1296,80 +1295,7 @@
   </div>
 </div>
 
-<script>
-  // ── VIP SLIDER ──
-  function vipSlide(idx) {
-    const slider = document.getElementById('vipSlider');
-    if (!slider) return;
-    const card = slider.children[idx];
-    if (card) card.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
-    for (let i=0; i<4; i++) {
-      const dot = document.getElementById('vipDot'+i);
-      if (!dot) continue;
-      dot.style.width = i===idx ? '20px' : '6px';
-      dot.style.background = i===idx ? 'var(--gold)' : 'var(--border)';
-    }
-  }
-  // Auto-update dots on scroll
-  setTimeout(() => {
-    const slider = document.getElementById('vipSlider');
-    if (slider) slider.addEventListener('scroll', () => {
-      const idx = Math.round(slider.scrollLeft / (slider.children[0]?.offsetWidth + 8 || 278));
-      vipSlide(idx);
-    });
-  }, 1000);
 
-  // ── REBATE RATES ──
-  function loadRebateRates() {
-    const defaults = { l1:1, l2:0.8, l3:0.5, l4:0.2 };
-    const fmt = v => Number(v).toFixed(3) + '%';
-    ['l1','l2','l3','l4'].forEach(l => { const el=document.getElementById('rebate-'+l); if(el) el.textContent=fmt(defaults[l]); });
-    const tryFB = () => {
-      const db = window.fbDB || fbDB; if(!db){setTimeout(tryFB,500);return;}
-      db.ref('settings/commissionRates').on('value', snap => {
-        const rates = snap.val() || {};
-        ['l1','l2','l3','l4'].forEach(l => { const el=document.getElementById('rebate-'+l); if(el) el.textContent=fmt(rates[l]!=null?rates[l]:defaults[l]); });
-      });
-    };
-    tryFB();
-  }
-
-  // ── SUBORDINATE DATA ──
-  let _subdataLevel = 1;
-  function filterSubLevel(btn, level) {
-    _subdataLevel = level;
-    document.querySelectorAll('#page-subdata button').forEach(b => { b.style.background='transparent'; b.style.color='var(--muted)'; b.style.borderColor='var(--border)'; });
-    btn.style.background='rgba(240,192,64,0.15)'; btn.style.color='var(--gold)'; btn.style.borderColor='var(--gold)';
-    loadSubData();
-  }
-  async function loadSubData() {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    const el = document.getElementById('subdataRows');
-    if (!user || !db || !el) return;
-    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
-    try {
-      const refKey = _subdataLevel===1?'referrals':'referrals_l'+_subdataLevel;
-      const snap = await db.ref('users/'+user.uid+'/'+refKey).once('value');
-      const data = snap.val();
-      if (!data) { el.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">No L'+_subdataLevel+' subordinates yet</div>'; return; }
-      const rows = Object.values(data).sort((a,b)=>(b.joinedAt||0)-(a.joinedAt||0));
-      el.innerHTML = rows.map(r => `
-        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.6rem;display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div style="font-weight:700;font-size:0.85rem;">${r.username||'User'}</div>
-            <div style="font-size:0.7rem;color:var(--muted);">ID: ${r.memberId||r.uid?.substring(0,8)||'—'}</div>
-            <div style="font-size:0.68rem;color:var(--muted);">${r.joinedAt?new Date(r.joinedAt).toLocaleDateString('en-IN'):''}</div>
-          </div>
-          <div style="text-align:right;">
-            <div style="font-size:0.78rem;color:var(--green);">₹${(r.totalBet||0).toLocaleString('en-IN')}</div>
-            <div style="font-size:0.68rem;color:var(--muted);">Total bet</div>
-            <div style="font-size:0.78rem;color:var(--gold);">₹${(r.commission||0).toLocaleString('en-IN')}</div>
-            <div style="font-size:0.68rem;color:var(--muted);">Commission</div>
-          </div>
-        </div>`).join('');
-    } catch(e) { el.innerHTML='<div style="text-align:center;color:var(--red2);padding:2rem;">Failed to load</div>'; }
-  }
-</script>
 
 <script>
   let isLoggedIn = false;
@@ -4279,6 +4205,155 @@
   // Call announcement on load
   window.addEventListener('load', () => { setTimeout(loadAnnouncement, 2000); });
 
+
+
+  // ── VIP SLIDER ──
+  function vipSlide(idx) {
+    const slider = document.getElementById('vipSlider');
+    if (!slider) return;
+    const card = slider.children[idx];
+    if (card) card.scrollIntoView({ behavior:'smooth', block:'nearest', inline:'center' });
+    for (let i=0; i<4; i++) {
+      const dot = document.getElementById('vipDot'+i);
+      if (!dot) continue;
+      dot.style.width = i===idx ? '20px' : '6px';
+      dot.style.background = i===idx ? 'var(--gold)' : 'var(--border)';
+    }
+  }
+  // Auto-update dots on scroll
+  setTimeout(() => {
+    const slider = document.getElementById('vipSlider');
+    if (slider) slider.addEventListener('scroll', () => {
+      const idx = Math.round(slider.scrollLeft / (slider.children[0]?.offsetWidth + 8 || 278));
+      vipSlide(idx);
+    });
+  }, 1000);
+
+  // ── REBATE RATES ──
+  function loadRebateRates() {
+    const defaults = { l1:1, l2:0.8, l3:0.5, l4:0.2 };
+    const fmt = v => Number(v).toFixed(3) + '%';
+    ['l1','l2','l3','l4'].forEach(l => { const el=document.getElementById('rebate-'+l); if(el) el.textContent=fmt(defaults[l]); });
+    const tryFB = () => {
+      const db = window.fbDB || fbDB; if(!db){setTimeout(tryFB,500);return;}
+      db.ref('settings/commissionRates').on('value', snap => {
+        const rates = snap.val() || {};
+        ['l1','l2','l3','l4'].forEach(l => { const el=document.getElementById('rebate-'+l); if(el) el.textContent=fmt(rates[l]!=null?rates[l]:defaults[l]); });
+      });
+    };
+    tryFB();
+  }
+
+  // ── SUBORDINATE DATA ──
+  let _subdataLevel = 1;
+  function filterSubLevel(btn, level) {
+    _subdataLevel = level;
+    document.querySelectorAll('#page-subdata button').forEach(b => { b.style.background='transparent'; b.style.color='var(--muted)'; b.style.borderColor='var(--border)'; });
+    btn.style.background='rgba(240,192,64,0.15)'; btn.style.color='var(--gold)'; btn.style.borderColor='var(--gold)';
+    loadSubData();
+  }
+  async function loadSubData() {
+    const user = window.currentUser; const db = window.fbDB || fbDB;
+    const el = document.getElementById('subdataRows');
+    if (!user || !db || !el) return;
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
+    try {
+      const refKey = _subdataLevel===1?'referrals':'referrals_l'+_subdataLevel;
+      const snap = await db.ref('users/'+user.uid+'/'+refKey).once('value');
+      const data = snap.val();
+      if (!data) { el.innerHTML='<div style="text-align:center;color:var(--muted);padding:2rem;">No L'+_subdataLevel+' subordinates yet</div>'; return; }
+      const rows = Object.values(data).sort((a,b)=>(b.joinedAt||0)-(a.joinedAt||0));
+      el.innerHTML = rows.map(r => `
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.6rem;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:700;font-size:0.85rem;">${r.username||'User'}</div>
+            <div style="font-size:0.7rem;color:var(--muted);">ID: ${r.memberId||r.uid?.substring(0,8)||'—'}</div>
+            <div style="font-size:0.68rem;color:var(--muted);">${r.joinedAt?new Date(r.joinedAt).toLocaleDateString('en-IN'):''}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.78rem;color:var(--green);">₹${(r.totalBet||0).toLocaleString('en-IN')}</div>
+            <div style="font-size:0.68rem;color:var(--muted);">Total bet</div>
+            <div style="font-size:0.78rem;color:var(--gold);">₹${(r.commission||0).toLocaleString('en-IN')}</div>
+            <div style="font-size:0.68rem;color:var(--muted);">Commission</div>
+          </div>
+        </div>`).join('');
+    } catch(e) { el.innerHTML='<div style="text-align:center;color:var(--red2);padding:2rem;">Failed to load</div>'; }
+  }
+
+
+  // ── GIFTS SYSTEM ──
+  function showGiftsModal() {
+    const m = document.getElementById('giftsModal');
+    if (m) { m.style.display='flex'; loadGiftHistory(); }
+  }
+  function closeGiftsModal() {
+    const m = document.getElementById('giftsModal');
+    if (m) m.style.display='none';
+  }
+  async function loadGiftHistory() {
+    const user = window.currentUser; const db = window.fbDB || fbDB;
+    const el = document.getElementById('giftHistoryList');
+    if (!user || !db || !el) return;
+    try {
+      const snap = await db.ref('users/'+user.uid+'/redeemedGifts').once('value');
+      const data = snap.val();
+      if (!data) { el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">No gifts redeemed yet</div>'; return; }
+      const gifts = Object.values(data).sort((a,b)=>(b.redeemedAt||0)-(a.redeemedAt||0));
+      el.innerHTML = gifts.map(g=>`
+        <div style="background:var(--bg3);border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:700;color:var(--gold);font-size:0.85rem;">${g.code||'—'}</div>
+            <div style="font-size:0.7rem;color:var(--muted);">${g.redeemedAt?new Date(g.redeemedAt).toLocaleDateString('en-IN'):''}</div>
+          </div>
+          <div style="font-weight:800;color:var(--green);">+₹${g.amount||0}</div>
+        </div>`).join('');
+    } catch(e) {}
+  }
+  async function redeemGiftCode() {
+    const input = document.getElementById('giftCodeInput');
+    const code = input ? input.value.trim().toUpperCase() : '';
+    const statusEl = document.getElementById('giftRedeemStatus');
+    if (!code) { showToast('⚠️ Enter a gift code'); return; }
+    const user = window.currentUser; const db = window.fbDB || fbDB;
+    if (!user || !db) { showToast('🔐 Please sign in'); return; }
+    if (statusEl) { statusEl.style.display='block'; statusEl.style.color='var(--muted)'; statusEl.textContent='⏳ Checking code...'; }
+    try {
+      const codeSnap = await db.ref('giftCodes/'+code).once('value');
+      const giftData = codeSnap.val();
+      if (!giftData) {
+        if (statusEl) { statusEl.style.color='var(--red2)'; statusEl.textContent='❌ Invalid gift code. Please check and try again.'; }
+        showToast('❌ Invalid gift code'); return;
+      }
+      if (!giftData.active) {
+        if (statusEl) { statusEl.style.color='var(--red2)'; statusEl.textContent='❌ This code has expired or been disabled.'; }
+        showToast('❌ Code expired'); return;
+      }
+      const redeemedSnap = await db.ref('users/'+user.uid+'/redeemedGifts/'+code).once('value');
+      if (redeemedSnap.val()) {
+        if (statusEl) { statusEl.style.color='#f39c12'; statusEl.textContent='⚠️ You have already redeemed this code! Each code can only be used once per account.'; }
+        showToast('⚠️ Already redeemed!'); return;
+      }
+      if (giftData.maxUses && (giftData.usedCount||0) >= giftData.maxUses) {
+        if (statusEl) { statusEl.style.color='var(--red2)'; statusEl.textContent='❌ This code has reached its maximum usage limit.'; }
+        showToast('❌ Code limit reached'); return;
+      }
+      // Credit balance
+      const balSnap = await db.ref('users/'+user.uid+'/balance').once('value');
+      const newBal = parseFloat(((balSnap.val()||0) + giftData.amount).toFixed(2));
+      await db.ref('users/'+user.uid+'/balance').set(newBal);
+      updateBalanceDisplay(newBal);
+      await db.ref('users/'+user.uid+'/redeemedGifts/'+code).set({ code, amount:giftData.amount, redeemedAt:Date.now() });
+      await db.ref('giftCodes/'+code+'/usedCount').set((giftData.usedCount||0)+1);
+      if (input) input.value='';
+      if (statusEl) { statusEl.style.color='var(--green)'; statusEl.textContent='✅ ₹'+giftData.amount+' credited to your wallet!'; }
+      showToast('🎁 Gift redeemed! +₹'+giftData.amount);
+      loadGiftHistory();
+    } catch(e) {
+      if (statusEl) { statusEl.style.color='var(--red2)'; statusEl.textContent='❌ Error: '+e.message; }
+      showToast('❌ Redemption failed');
+    }
+  }
+
 </script>
 
 <!-- ══════════════════════════════════════
@@ -5327,80 +5402,7 @@
   </div>
 </div>
 
-<script>
-  // ── GIFTS SYSTEM ──
-  function showGiftsModal() {
-    const m = document.getElementById('giftsModal');
-    if (m) { m.style.display='flex'; loadGiftHistory(); }
-  }
-  function closeGiftsModal() {
-    const m = document.getElementById('giftsModal');
-    if (m) m.style.display='none';
-  }
-  async function loadGiftHistory() {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    const el = document.getElementById('giftHistoryList');
-    if (!user || !db || !el) return;
-    try {
-      const snap = await db.ref('users/'+user.uid+'/redeemedGifts').once('value');
-      const data = snap.val();
-      if (!data) { el.innerHTML='<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">No gifts redeemed yet</div>'; return; }
-      const gifts = Object.values(data).sort((a,b)=>(b.redeemedAt||0)-(a.redeemedAt||0));
-      el.innerHTML = gifts.map(g=>`
-        <div style="background:var(--bg3);border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div style="font-weight:700;color:var(--gold);font-size:0.85rem;">${g.code||'—'}</div>
-            <div style="font-size:0.7rem;color:var(--muted);">${g.redeemedAt?new Date(g.redeemedAt).toLocaleDateString('en-IN'):''}</div>
-          </div>
-          <div style="font-weight:800;color:var(--green);">+₹${g.amount||0}</div>
-        </div>`).join('');
-    } catch(e) {}
-  }
-  async function redeemGiftCode() {
-    const input = document.getElementById('giftCodeInput');
-    const code = input ? input.value.trim().toUpperCase() : '';
-    const statusEl = document.getElementById('giftRedeemStatus');
-    if (!code) { showToast('⚠️ Enter a gift code'); return; }
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db) { showToast('🔐 Please sign in'); return; }
-    if (statusEl) { statusEl.style.display='block'; statusEl.style.color='var(--muted)'; statusEl.textContent='⏳ Checking code...'; }
-    try {
-      const codeSnap = await db.ref('giftCodes/'+code).once('value');
-      const giftData = codeSnap.val();
-      if (!giftData) {
-        if (statusEl) { statusEl.style.color='var(--red2)'; statusEl.textContent='❌ Invalid gift code. Please check and try again.'; }
-        showToast('❌ Invalid gift code'); return;
-      }
-      if (!giftData.active) {
-        if (statusEl) { statusEl.style.color='var(--red2)'; statusEl.textContent='❌ This code has expired or been disabled.'; }
-        showToast('❌ Code expired'); return;
-      }
-      const redeemedSnap = await db.ref('users/'+user.uid+'/redeemedGifts/'+code).once('value');
-      if (redeemedSnap.val()) {
-        if (statusEl) { statusEl.style.color='#f39c12'; statusEl.textContent='⚠️ You have already redeemed this code! Each code can only be used once per account.'; }
-        showToast('⚠️ Already redeemed!'); return;
-      }
-      if (giftData.maxUses && (giftData.usedCount||0) >= giftData.maxUses) {
-        if (statusEl) { statusEl.style.color='var(--red2)'; statusEl.textContent='❌ This code has reached its maximum usage limit.'; }
-        showToast('❌ Code limit reached'); return;
-      }
-      // Credit balance
-      const balSnap = await db.ref('users/'+user.uid+'/balance').once('value');
-      const newBal = parseFloat(((balSnap.val()||0) + giftData.amount).toFixed(2));
-      await db.ref('users/'+user.uid+'/balance').set(newBal);
-      updateBalanceDisplay(newBal);
-      await db.ref('users/'+user.uid+'/redeemedGifts/'+code).set({ code, amount:giftData.amount, redeemedAt:Date.now() });
-      await db.ref('giftCodes/'+code+'/usedCount').set((giftData.usedCount||0)+1);
-      if (input) input.value='';
-      if (statusEl) { statusEl.style.color='var(--green)'; statusEl.textContent='✅ ₹'+giftData.amount+' credited to your wallet!'; }
-      showToast('🎁 Gift redeemed! +₹'+giftData.amount);
-      loadGiftHistory();
-    } catch(e) {
-      if (statusEl) { statusEl.style.color='var(--red2)'; statusEl.textContent='❌ Error: '+e.message; }
-      showToast('❌ Redemption failed');
-    }
-  }
-</script>
+
 
 </body>
 </html>
