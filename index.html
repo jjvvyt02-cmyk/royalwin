@@ -3553,12 +3553,29 @@
       showToast('❌ ' + (e.message || 'Failed to send OTP'));
     }
   }
-  function doResetPassword() {
+  async function doResetPassword() {
     const otp = ['fotp1','fotp2','fotp3','fotp4','fotp5','fotp6'].map(id => document.getElementById(id).value).join('');
     if (otp.length < 6) { showToast('⚠️ Enter full 6-digit OTP'); return; }
-    if (!document.getElementById('newPass').value) { showToast('⚠️ Enter a new password'); return; }
-    showToast('✅ Password reset successfully!');
-    setTimeout(() => showPage('login'), 1200);
+    const newPass = document.getElementById('newPass') ? document.getElementById('newPass').value : '';
+    if (!newPass || newPass.length < 6) { showToast('⚠️ Password must be at least 6 characters'); return; }
+    try {
+      if (window._forgotConfirmResult) {
+        // Phone OTP — verify and update password
+        const cred = await window._forgotConfirmResult.confirm(otp);
+        await cred.user.updatePassword(newPass);
+        showToast('✅ Password reset successfully!');
+        await firebase.auth().signOut();
+        setTimeout(() => showPage('login'), 1200);
+      } else {
+        // Email reset — already sent, just confirm
+        showToast('✅ Check your email for the reset link!');
+        setTimeout(() => showPage('login'), 1200);
+      }
+    } catch(e) {
+      const msg = e.code === 'auth/invalid-verification-code' ? 'Invalid OTP. Please try again.' :
+                  e.code === 'auth/weak-password' ? 'Password too weak. Use at least 6 characters.' : e.message;
+      showToast('❌ ' + msg);
+    }
   }
 
   // ── LIVE CHAT (Firebase Real-time) ──
