@@ -3105,13 +3105,22 @@
   function selectMethod(el, method) {
     el.closest('.deposit-methods').querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
+    window._currentDepositMethod = method;
     // Auto-set minimum amount based on method
     const depositAmtInput = document.getElementById('depositAmount');
     if (method === 'usdt' && depositAmtInput) {
       const current = parseFloat(depositAmtInput.value || 0);
-      if (current < 1000) {
-        depositAmtInput.value = 1000;
-        updateBonusPreview();
+      if (current < 1000) { depositAmtInput.value = 1000; updateBonusPreview(); }
+    }
+    // Switch button
+    const btn = document.getElementById('depositActionBtn');
+    if (btn) {
+      if (method === 'usdt') {
+        btn.textContent = '💚 Deposit via USDT';
+        btn.onclick = openUSDTModal;
+      } else {
+        btn.textContent = '📱 Pay via UPI QR';
+        btn.onclick = openQR;
       }
     }
   }
@@ -5735,13 +5744,8 @@
         <label class="form-label">Or enter custom amount (₹300 – ₹20,000)</label>
         <input class="form-input" type="number" id="depositAmount" placeholder="Enter amount in ₹" value="300" min="300" max="20000" oninput="updateBonusPreview()" onchange="updateBonusPreview()">
       </div>
-      <div class="form-group" style="max-width:400px;">
-        <label class="form-label">UPI ID</label>
-        <input class="form-input" type="text" id="depositUpiId" placeholder="yourname@upi">
-      </div>
       <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-        <button class="btn btn-gold" style="padding:0.8rem 2rem;" onclick="openQR()">📱 Pay via UPI QR</button>
-        <button class="btn btn-outline" style="padding:0.8rem 2rem;border-color:var(--gold);color:var(--gold);" onclick="doDeposit()">Manual Deposit</button>
+        <button id="depositActionBtn" class="btn btn-gold" style="padding:0.8rem 2rem;" onclick="openQR()">📱 Pay via UPI QR</button>
       </div>
 
       <!-- Deposit History -->
@@ -7041,3 +7045,102 @@
     </div>
   </div>
 </div>
+
+<!-- USDT DEPOSIT MODAL -->
+<div id="usdtModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.5rem;width:100%;max-width:420px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">
+      <div style="font-family:'Cinzel',serif;color:#26a17b;font-size:1.1rem;">💚 USDT Deposit (TRC20)</div>
+      <button onclick="closeUSDTModal()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;">✕</button>
+    </div>
+    <div style="background:rgba(38,161,123,0.08);border:1px solid rgba(38,161,123,0.25);border-radius:12px;padding:1rem;margin-bottom:1rem;text-align:center;">
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem;">Send USDT (TRC20) to this address:</div>
+      <div id="usdtAddressDisplay" style="font-size:0.78rem;font-weight:700;color:#26a17b;word-break:break-all;margin-bottom:0.7rem;line-height:1.5;">Loading...</div>
+      <button onclick="copyUSDTAddress()" style="background:rgba(38,161,123,0.15);border:1px solid rgba(38,161,123,0.3);color:#26a17b;border-radius:8px;padding:0.4rem 1rem;cursor:pointer;font-size:0.8rem;font-family:'Exo 2',sans-serif;">📋 Copy Address</button>
+    </div>
+    <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:0.8rem;margin-bottom:1rem;">
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;font-weight:700;">⚠️ Important:</div>
+      <div style="font-size:0.72rem;color:var(--muted);line-height:1.7;">
+        • Only send <strong style="color:#26a17b;">USDT TRC20</strong> to this address<br>
+        • Minimum: ₹1,000 equivalent in USDT<br>
+        • After sending, click "I've Sent" below<br>
+        • Balance credited after admin verification
+      </div>
+    </div>
+    <div id="usdtConfirmed" style="display:none;background:rgba(39,174,96,0.1);border:1px solid rgba(39,174,96,0.3);border-radius:10px;padding:0.8rem;text-align:center;margin-bottom:1rem;">
+      <div style="color:var(--green);font-weight:700;">✅ Submitted!</div>
+      <div id="usdtConfirmMsg" style="font-size:0.78rem;color:var(--muted);margin-top:0.3rem;"></div>
+    </div>
+    <button onclick="confirmUSDTPayment()" style="width:100%;background:linear-gradient(135deg,#1a7a5c,#26a17b);border:none;border-radius:12px;padding:0.9rem;color:#fff;font-weight:800;font-size:0.9rem;cursor:pointer;font-family:'Exo 2',sans-serif;">✅ I've Sent USDT</button>
+  </div>
+</div>
+
+<script>
+var _activeUsdtAddress = '';
+
+function getAssignedUsdtAddress() {
+  return new Promise(function(resolve) {
+    var db = window.fbDB || fbDB;
+    if (!db) { resolve(''); return; }
+    db.ref('settings/usdtAddresses').once('value').then(function(snap) {
+      var data = snap.val();
+      if (data && typeof data === 'object') {
+        var addrs = Object.values(data).filter(function(a) { return a.active && a.address; });
+        if (addrs.length > 0) {
+          var random = addrs[Math.floor(Math.random() * addrs.length)];
+          resolve(random.address); return;
+        }
+      }
+      db.ref('settings/usdtAddress').once('value').then(function(s) { resolve(s.val() || ''); });
+    }).catch(function() { resolve(''); });
+  });
+}
+
+function openUSDTModal() {
+  if (!isLoggedIn) { showToast('🔐 Please sign in first!'); showPage('login'); return; }
+  var modal = document.getElementById('usdtModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  document.getElementById('usdtConfirmed').style.display = 'none';
+  var addrEl = document.getElementById('usdtAddressDisplay');
+  if (addrEl) addrEl.textContent = 'Loading...';
+  getAssignedUsdtAddress().then(function(addr) {
+    _activeUsdtAddress = addr;
+    if (addrEl) addrEl.textContent = addr || 'No USDT address configured. Contact support.';
+  });
+}
+
+function closeUSDTModal() {
+  var modal = document.getElementById('usdtModal');
+  if (modal) modal.style.display = 'none';
+}
+
+function copyUSDTAddress() {
+  if (!_activeUsdtAddress) { showToast('⚠️ No address to copy'); return; }
+  if (navigator.clipboard) { navigator.clipboard.writeText(_activeUsdtAddress).then(function() { showToast('📋 USDT address copied!'); }).catch(function() { _fbCopy(_activeUsdtAddress); }); }
+  else { _fbCopy(_activeUsdtAddress); }
+}
+
+async function confirmUSDTPayment() {
+  if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
+  var amt = parseFloat(document.getElementById('depositAmount').value || 1000);
+  if (amt < 1000) { showToast('⚠️ Minimum USDT deposit is ₹1,000'); return; }
+  var db = window.fbDB || fbDB;
+  if (!db) { showToast('❌ Connection error'); return; }
+  try {
+    await db.ref('adminRequests/deposits').push({
+      amount: amt, status: 'pending', method: 'USDT TRC20',
+      uid: window.currentUser.uid,
+      username: window.userProfile ? window.userProfile.username : 'Unknown',
+      contact: window.userProfile ? (window.userProfile.contact || '') : '',
+      assignedUsdtAddress: _activeUsdtAddress,
+      isFirstDeposit: window.userProfile ? !window.userProfile.hasDeposited : true,
+      timestamp: Date.now()
+    });
+    document.getElementById('usdtConfirmed').style.display = 'block';
+    document.getElementById('usdtConfirmMsg').textContent = '₹' + amt.toLocaleString('en-IN') + ' USDT deposit submitted! Admin will verify and credit shortly.';
+    showToast('✅ USDT deposit submitted!');
+    setTimeout(function() { closeUSDTModal(); }, 4000);
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+}
+</script>
