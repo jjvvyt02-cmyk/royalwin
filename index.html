@@ -4143,14 +4143,59 @@
     ctx.fillText('R', 10.5*mod, 10.5*mod);
   }
 
+  // Load admin UPI ID from Firebase settings
+  var _activeUpiId = 'royalwin@upi';
+
+  // ── ROUND-ROBIN UPI ASSIGNMENT ──
+  // Each user gets assigned one UPI ID based on their memberId
+  // Assignment is stored in Firebase so it's consistent across sessions
+  function loadAdminUpiIds(cb) {
+    const db = window.fbDB || fbDB;
+    if (!db) { cb([{id:'royalwin@upi', label:'Default'}]); return; }
+    db.ref('settings/upiIds').once('value').then(snap => {
+      const data = snap.val();
+      if (data && typeof data === 'object') {
+        const ids = Object.values(data).filter(u => u.active && u.id);
+        if (ids.length > 0) { cb(ids); return; }
+      }
+      db.ref('settings/upiId').once('value').then(s => {
+        cb([{id: s.val() || 'royalwin@upi', label:'Default'}]);
+      });
+    }).catch(() => cb([{id:'royalwin@upi', label:'Default'}]));
+  }
+
+  async function getAssignedUpiId() {
+    const db = window.fbDB || fbDB;
+    if (!db) return 'royalwin@upi';
+    try {
+      const snap = await db.ref('settings/upiIds').once('value');
+      const data = snap.val();
+      if (data && typeof data === 'object') {
+        const ids = Object.values(data).filter(u => u.active && u.id);
+        if (ids.length > 0) {
+          // Pick a random active UPI ID each time
+          const random = ids[Math.floor(Math.random() * ids.length)];
+          return random.id;
+        }
+      }
+      // Fallback to single upiId
+      const single = await db.ref('settings/upiId').once('value');
+      return single.val() || 'royalwin@upi';
+    } catch(e) {
+      return 'royalwin@upi';
+    }
+  }
+
   function openQR() {
     if (!isLoggedIn) { showToast('🔐 Please sign in first!'); showPage('login'); return; }
     document.getElementById('qrModal').classList.add('open');
     document.getElementById('qrConfirmed').style.display = 'none';
     const amt = document.getElementById('depositAmount') ? document.getElementById('depositAmount').value : 500;
     document.getElementById('qrAmount').value = amt || 500;
-    const upi = 'royalwin@upi&am=' + (amt || 500);
-    drawQRCode(upi);
+    // Hide selector — user never sees it
+    const selector = document.getElementById('upiSelector');
+    if (selector) selector.style.display = 'none';
+    updateQR();
     startQRTimer();
   }
 
@@ -4160,16 +4205,23 @@
   }
 
   function updateQR() {
-    const amt = document.getElementById('qrAmount').value;
+    const amt = parseInt(document.getElementById('qrAmount').value) || 500;
     if (amt < 300) { showToast('⚠️ Minimum deposit is ₹300'); return; }
     if (amt > 20000) { showToast('⚠️ Maximum deposit is ₹20,000'); return; }
-    drawQRCode('royalwin@upi&am=' + amt);
-    showToast('✅ QR updated for ₹' + parseInt(amt).toLocaleString());
+    getAssignedUpiId().then(function(upiId) {
+      _activeUpiId = upiId;
+      const el = document.getElementById('qrUpiDisplay');
+      if (el) el.textContent = upiId;
+      const stepEl = document.getElementById('qrUpiStep');
+      if (stepEl) stepEl.textContent = upiId;
+      drawQRCode(upiId + '&am=' + amt);
+    });
   }
 
   function copyUPI() {
-    navigator.clipboard.writeText('royalwin@upi').catch(() => {});
-    showToast('📋 UPI ID copied: royalwin@upi');
+    const id = _activeUpiId || 'royalwin@upi';
+    if (navigator.clipboard) { navigator.clipboard.writeText(id).then(() => showToast('📋 Copied: ' + id)).catch(() => _fbCopy(id)); }
+    else { _fbCopy(id); }
   }
 
   function startQRTimer() {
@@ -4202,6 +4254,7 @@
         contact: window.userProfile ? (window.userProfile.contact || window.userProfile.mobile || window.userProfile.email || '') : '',
         referredBy: window.userProfile ? (window.userProfile.referredBy || '') : '',
         isFirstDeposit: window.userProfile ? !window.userProfile.hasDeposited : true,
+        assignedUpiId: _activeUpiId || 'royalwin@upi',
         timestamp: Date.now()
       });
       await db.ref('users/' + window.currentUser.uid + '/depositRequests').push({
@@ -6685,6 +6738,12 @@
     <div class="qr-title">📱 UPI Deposit</div>
     <div class="qr-sub">Scan QR code or copy UPI ID to pay</div>
 
+    <!-- UPI selector -->
+    <div id="upiSelector" style="display:none;margin-bottom:0.8rem;">
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Select payment account:</div>
+      <div id="upiOptions" style="display:flex;flex-direction:column;gap:0.4rem;"></div>
+    </div>
+
     <div class="qr-amt-row">
       <input class="qr-amt-input" type="number" id="qrAmount" placeholder="Enter amount (₹300–₹20,000)" min="300" max="20000" value="500">
       <button class="btn btn-gold" style="padding:0.6rem 1rem;font-size:0.85rem;white-space:nowrap;" onclick="updateQR()">Set</button>
@@ -6695,7 +6754,7 @@
     </div>
 
     <div class="qr-upi-id">
-      <div class="qr-upi-text" id="qrUpiDisplay">royalwin@upi</div>
+      <div class="qr-upi-text" id="qrUpiDisplay">Loading...</div>
       <button class="copy-btn" onclick="copyUPI()">📋 Copy</button>
     </div>
 
@@ -6704,7 +6763,7 @@
     <div class="qr-steps">
       <h4><span data-t="wallet.howtopay">How to Pay</span></h4>
       <div class="qr-step"><div class="qr-step-num">1</div><div>Open any UPI app (GPay, PhonePe, Paytm, BHIM)</div></div>
-      <div class="qr-step"><div class="qr-step-num">2</div><div>Scan the QR code or send to <strong>royalwin@upi</strong></div></div>
+      <div class="qr-step"><div class="qr-step-num">2</div><div>Scan the QR code or send to <strong id="qrUpiStep">royalwin@upi</strong></div></div>
       <div class="qr-step"><div class="qr-step-num">3</div><div>Enter the exact amount and complete payment</div></div>
       <div class="qr-step"><div class="qr-step-num">4</div><div>Click "I've Paid" below — balance credits in seconds</div></div>
     </div>
