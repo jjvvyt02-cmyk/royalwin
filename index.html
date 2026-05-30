@@ -15,7 +15,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RoyalWin — Premium Gaming Platform</title>
 <!-- Firebase Compat SDK — load first -->
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800;900&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -3106,12 +3106,40 @@
     el.closest('.deposit-methods').querySelectorAll('.method-card').forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
     window._currentDepositMethod = method;
-    // Auto-set minimum amount based on method
-    const depositAmtInput = document.getElementById('depositAmount');
-    if (method === 'usdt' && depositAmtInput) {
-      const current = parseFloat(depositAmtInput.value || 0);
-      if (current < 1000) { depositAmtInput.value = 1000; updateBonusPreview(); }
+
+    const presetsEl = document.getElementById('amountPresets');
+    const amtInput = document.getElementById('depositAmount');
+    const labelEl = document.getElementById('depositAmtLabel');
+    const usdtEq = document.getElementById('usdtEquivalent');
+
+    if (method === 'usdt') {
+      // USDT presets — start from ₹1,000
+      if (presetsEl) presetsEl.innerHTML = `
+        <div class="amount-preset selected" onclick="setAmount(this,'1000')">₹1,000</div>
+        <div class="amount-preset" onclick="setAmount(this,'2000')">₹2,000</div>
+        <div class="amount-preset" onclick="setAmount(this,'5000')">₹5,000</div>
+        <div class="amount-preset" onclick="setAmount(this,'10000')">₹10,000</div>
+        <div class="amount-preset" onclick="setAmount(this,'20000')">₹20,000</div>
+        <div class="amount-preset" onclick="setAmount(this,'50000')">₹50,000</div>`;
+      if (amtInput) { amtInput.min = 1000; amtInput.value = 1000; amtInput.placeholder = 'Enter amount in ₹'; }
+      if (labelEl) labelEl.textContent = 'Or enter custom amount (Min ₹1,000)';
+      if (usdtEq) { usdtEq.style.display = 'block'; _updateUsdtEquivalent(); }
+    } else {
+      // UPI presets — start from ₹300
+      if (presetsEl) presetsEl.innerHTML = `
+        <div class="amount-preset selected" onclick="setAmount(this,'300')">₹300</div>
+        <div class="amount-preset" onclick="setAmount(this,'500')">₹500</div>
+        <div class="amount-preset" onclick="setAmount(this,'1000')">₹1,000</div>
+        <div class="amount-preset" onclick="setAmount(this,'2000')">₹2,000</div>
+        <div class="amount-preset" onclick="setAmount(this,'5000')">₹5,000</div>
+        <div class="amount-preset" onclick="setAmount(this,'10000')">₹10,000</div>
+        <div class="amount-preset" onclick="setAmount(this,'20000')">₹20,000</div>`;
+      if (amtInput) { amtInput.min = 300; amtInput.value = 300; amtInput.placeholder = 'Enter amount in ₹'; }
+      if (labelEl) labelEl.textContent = 'Or enter custom amount (₹300 – ₹20,000)';
+      if (usdtEq) usdtEq.style.display = 'none';
     }
+    updateBonusPreview();
+
     // Switch button
     const btn = document.getElementById('depositActionBtn');
     if (btn) {
@@ -3123,6 +3151,13 @@
         btn.onclick = openQR;
       }
     }
+  }
+
+  function _updateUsdtEquivalent() {
+    const amt = parseFloat(document.getElementById('depositAmount').value) || 0;
+    const usdt = (amt / 100).toFixed(2);
+    const el = document.getElementById('usdtAmountDisplay');
+    if (el) el.textContent = usdt + ' USDT';
   }
 
   function setAmount(el, val) {
@@ -3192,6 +3227,12 @@
 
   function updateBonusPreview() {
     const amt = parseFloat(document.getElementById('depositAmount')?.value || 0);
+    // Update USDT equivalent if USDT method selected
+    if (window._currentDepositMethod === 'usdt') {
+      const usdt = amt > 0 ? (amt / 100).toFixed(2) : '0';
+      const el = document.getElementById('usdtAmountDisplay');
+      if (el) el.textContent = usdt + ' USDT';
+    }
     if (!amt || selectedBonusOption === 0) {
       const infoEl = document.getElementById('selectedBonusInfo');
       if (infoEl) infoEl.style.display = 'none';
@@ -4109,47 +4150,21 @@
   // ── QR DEPOSIT ──
   let qrTimerInterval = null;
 
-  function drawQRCode(upiString) {
-    const canvas = document.getElementById('qrCanvas');
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    const size = 180;
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, size, size);
-
-    // Generate a visual QR-like pattern based on string hash
-    const hash = upiString.split('').reduce((a, c) => ((a << 5) - a + c.charCodeAt(0)) | 0, 0);
-    const modules = 21;
-    const mod = size / modules;
-    ctx.fillStyle = '#000000';
-
-    // Finder patterns (corners)
-    [[0,0],[0,14],[14,0]].forEach(([r,c]) => {
-      ctx.fillRect(c*mod, r*mod, 7*mod, 7*mod);
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect((c+1)*mod, (r+1)*mod, 5*mod, 5*mod);
-      ctx.fillStyle = '#000000';
-      ctx.fillRect((c+2)*mod, (r+2)*mod, 3*mod, 3*mod);
-    });
-
-    // Data modules (pseudo-random based on hash)
-    for (let r = 0; r < modules; r++) {
-      for (let c = 0; c < modules; c++) {
-        if ((r < 9 && c < 9) || (r < 9 && c > 11) || (r > 11 && c < 9)) continue;
-        const bit = ((hash * (r * 31 + c * 17) + r * c) & 1);
-        if (bit) { ctx.fillStyle = '#000000'; ctx.fillRect(c * mod, r * mod, mod, mod); }
+  var _qrInstance = null;
+  function drawQRCode(data) {
+    const container = document.getElementById('qrCanvas');
+    if (!container) return;
+    try {
+      container.innerHTML = '';
+      if (typeof QRCode !== 'undefined') {
+        _qrInstance = new QRCode(container, {
+          text: 'upi://pay?pa=' + data,
+          width: 180, height: 180,
+          colorDark: '#000000', colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
       }
-    }
-
-    // Center logo
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(7*mod, 7*mod, 7*mod, 7*mod);
-    ctx.fillStyle = '#c07a10';
-    ctx.fillRect(8*mod, 8*mod, 5*mod, 5*mod);
-    ctx.fillStyle = '#ffffff';
-    ctx.font = `bold ${mod*1.5}px Cinzel, serif`;
-    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-    ctx.fillText('R', 10.5*mod, 10.5*mod);
+    } catch(e) { console.warn('QR error:', e); }
   }
 
   // Load admin UPI ID from Firebase settings
@@ -4223,7 +4238,17 @@
       if (el) el.textContent = upiId;
       const stepEl = document.getElementById('qrUpiStep');
       if (stepEl) stepEl.textContent = upiId;
-      drawQRCode(upiId + '&am=' + amt);
+      // Generate real QR code
+      const qrContainer = document.getElementById('qrCanvas');
+      if (qrContainer && typeof QRCode !== 'undefined') {
+        qrContainer.innerHTML = '';
+        new QRCode(qrContainer, {
+          text: 'upi://pay?pa=' + upiId + '&am=' + amt + '&cu=INR',
+          width: 180, height: 180,
+          colorDark: '#000000', colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
     });
   }
 
@@ -5731,7 +5756,7 @@
       </div>
 
       <div class="section-title" style="font-size:1.1rem;margin-bottom:1rem;">Select Amount</div>
-      <div class="amount-presets">
+      <div class="amount-presets" id="amountPresets">
         <div class="amount-preset selected" onclick="setAmount(this,'300')">₹300</div>
         <div class="amount-preset" onclick="setAmount(this,'500')">₹500</div>
         <div class="amount-preset" onclick="setAmount(this,'1000')">₹1,000</div>
@@ -5741,8 +5766,16 @@
         <div class="amount-preset" onclick="setAmount(this,'20000')">₹20,000</div>
       </div>
       <div class="form-group" style="max-width:400px;">
-        <label class="form-label">Or enter custom amount (₹300 – ₹20,000)</label>
+        <label class="form-label" id="depositAmtLabel">Or enter custom amount (₹300 – ₹20,000)</label>
         <input class="form-input" type="number" id="depositAmount" placeholder="Enter amount in ₹" value="300" min="300" max="20000" oninput="updateBonusPreview()" onchange="updateBonusPreview()">
+      </div>
+      <!-- USDT equivalent display -->
+      <div id="usdtEquivalent" style="display:none;background:rgba(38,161,123,0.08);border:1px solid rgba(38,161,123,0.25);border-radius:10px;padding:0.7rem 1rem;max-width:400px;margin-top:0.5rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:0.82rem;color:var(--muted);">You need to send:</span>
+          <span style="font-size:1rem;font-weight:800;color:#26a17b;" id="usdtAmountDisplay">0 USDT</span>
+        </div>
+        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;">Rate: ₹100 = 1 USDT (TRC20)</div>
       </div>
       <div style="display:flex;gap:1rem;flex-wrap:wrap;">
         <button id="depositActionBtn" class="btn btn-gold" style="padding:0.8rem 2rem;" onclick="openQR()">📱 Pay via UPI QR</button>
@@ -6754,7 +6787,7 @@
     </div>
 
     <div class="qr-box">
-      <canvas id="qrCanvas" width="180" height="180"></canvas>
+      <div id="qrCanvas" style="width:180px;height:180px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;"></div>
     </div>
 
     <div class="qr-upi-id">
@@ -7053,9 +7086,14 @@
       <div style="font-family:'Cinzel',serif;color:#26a17b;font-size:1.1rem;">💚 USDT Deposit (TRC20)</div>
       <button onclick="closeUSDTModal()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;">✕</button>
     </div>
+    <!-- USDT amount summary -->
+    <div id="usdtModalAmount" style="text-align:center;font-size:0.85rem;font-weight:700;color:#26a17b;background:rgba(38,161,123,0.1);border-radius:10px;padding:0.6rem;margin-bottom:1rem;"></div>
     <div style="background:rgba(38,161,123,0.08);border:1px solid rgba(38,161,123,0.25);border-radius:12px;padding:1rem;margin-bottom:1rem;text-align:center;">
-      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem;">Send USDT (TRC20) to this address:</div>
-      <div id="usdtAddressDisplay" style="font-size:0.78rem;font-weight:700;color:#26a17b;word-break:break-all;margin-bottom:0.7rem;line-height:1.5;">Loading...</div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.8rem;">Scan QR or copy address below:</div>
+      <!-- USDT QR Code -->
+      <div id="usdtQrCode" style="width:180px;height:180px;background:#fff;border-radius:8px;margin:0 auto 0.8rem;display:flex;align-items:center;justify-content:center;"></div>
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem;">Or copy address:</div>
+      <div id="usdtAddressDisplay" style="font-size:0.75rem;font-weight:700;color:#26a17b;word-break:break-all;margin-bottom:0.7rem;line-height:1.5;padding:0.5rem;background:rgba(0,0,0,0.2);border-radius:8px;">Loading...</div>
       <button onclick="copyUSDTAddress()" style="background:rgba(38,161,123,0.15);border:1px solid rgba(38,161,123,0.3);color:#26a17b;border-radius:8px;padding:0.4rem 1rem;cursor:pointer;font-size:0.8rem;font-family:'Exo 2',sans-serif;">📋 Copy Address</button>
     </div>
     <div style="background:rgba(255,255,255,0.03);border-radius:10px;padding:0.8rem;margin-bottom:1rem;">
@@ -7063,8 +7101,9 @@
       <div style="font-size:0.72rem;color:var(--muted);line-height:1.7;">
         • Only send <strong style="color:#26a17b;">USDT TRC20</strong> to this address<br>
         • Minimum: ₹1,000 equivalent in USDT<br>
+        • Rate: <strong style="color:#26a17b;">₹100 = 1 USDT</strong><br>
         • After sending, click "I've Sent" below<br>
-        • Balance credited after admin verification
+        • Balance credited after blockchain verification
       </div>
     </div>
     <div id="usdtConfirmed" style="display:none;background:rgba(39,174,96,0.1);border:1px solid rgba(39,174,96,0.3);border-radius:10px;padding:0.8rem;text-align:center;margin-bottom:1rem;">
@@ -7102,11 +7141,28 @@ function openUSDTModal() {
   if (!modal) return;
   modal.style.display = 'flex';
   document.getElementById('usdtConfirmed').style.display = 'none';
+  // Show USDT amount
+  var amt = parseFloat(document.getElementById('depositAmount').value) || 1000;
+  var usdt = (amt / 100).toFixed(2);
+  var amtEl = document.getElementById('usdtModalAmount');
+  if (amtEl) amtEl.textContent = 'Send exactly ' + usdt + ' USDT for ₹' + amt.toLocaleString('en-IN') + ' deposit';
   var addrEl = document.getElementById('usdtAddressDisplay');
+  var qrEl = document.getElementById('usdtQrCode');
   if (addrEl) addrEl.textContent = 'Loading...';
+  if (qrEl) qrEl.innerHTML = '';
   getAssignedUsdtAddress().then(function(addr) {
     _activeUsdtAddress = addr;
     if (addrEl) addrEl.textContent = addr || 'No USDT address configured. Contact support.';
+    // Generate QR code for the TRC20 address
+    if (addr && qrEl && typeof QRCode !== 'undefined') {
+      qrEl.innerHTML = '';
+      new QRCode(qrEl, {
+        text: addr,
+        width: 180, height: 180,
+        colorDark: '#000000', colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.M
+      });
+    }
   });
 }
 
