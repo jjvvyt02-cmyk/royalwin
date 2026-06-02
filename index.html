@@ -7424,7 +7424,7 @@ async function confirmUSDTPayment() {
 var ATTEND_REWARDS = [5, 8, 16, 25, 45, 90, 188];
 
 function loadAttendancePage() {
-  var user = window.currentUser; var db = window.fbDB;
+  var user = window.currentUser; var db = window.fbDB || (typeof fbDB !== "undefined" ? fbDB : null);
   if (!user || !db) return;
   db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
     var data = snap.val() || { streak: 0, lastCheckin: 0, totalEarned: 0 };
@@ -7466,7 +7466,7 @@ function loadAttendancePage() {
 }
 
 function claimAttendance() {
-  var user = window.currentUser; var db = window.fbDB;
+  var user = window.currentUser; var db = window.fbDB || (typeof fbDB !== "undefined" ? fbDB : null);
   if (!user || !db) { showToast('🔐 Please sign in'); return; }
   db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
     var data = snap.val() || { streak: 0, lastCheckin: 0, totalEarned: 0 };
@@ -7534,7 +7534,7 @@ var INVITE_TIERS = [
 ];
 
 function loadInvitationBonusPage() {
-  var user = window.currentUser; var db = window.fbDB;
+  var user = window.currentUser; var db = window.fbDB || (typeof fbDB !== "undefined" ? fbDB : null);
   if (!user || !db) return;
 
   // Get L1 referrals who deposited
@@ -7582,7 +7582,7 @@ function loadInvitationBonusPage() {
 }
 
 function claimInviteTier(tierNum, reward) {
-  var user = window.currentUser; var db = window.fbDB;
+  var user = window.currentUser; var db = window.fbDB || (typeof fbDB !== "undefined" ? fbDB : null);
   if (!user || !db) return;
   db.ref('users/' + user.uid + '/claimedInviteTiers/tier' + tierNum).once('value').then(function(snap) {
     if (snap.val()) { showToast('⚠️ Already claimed!'); return; }
@@ -7614,7 +7614,7 @@ var ACTIVITY_TASKS = [
 ];
 
 function loadActivityAwardPage() {
-  var user = window.currentUser; var db = window.fbDB;
+  var user = window.currentUser; var db = window.fbDB || (typeof fbDB !== "undefined" ? fbDB : null);
   if (!user || !db) return;
   var todayKey = new Date().toISOString().split('T')[0];
 
@@ -7664,7 +7664,7 @@ function loadActivityAwardPage() {
 }
 
 function claimActivityTask(taskId, reward) {
-  var user = window.currentUser; var db = window.fbDB;
+  var user = window.currentUser; var db = window.fbDB || (typeof fbDB !== "undefined" ? fbDB : null);
   if (!user || !db) return;
   var todayKey = new Date().toISOString().split('T')[0];
   db.ref('users/' + user.uid + '/claimedActivityTasks/' + todayKey + '/task' + taskId).once('value').then(function(snap) {
@@ -7689,7 +7689,7 @@ function claimActivityTask(taskId, reward) {
 // TRACK DAILY BETS (call this from placeBet)
 // ═══════════════════════════════════════════
 function trackDailyBet(amount) {
-  var user = window.currentUser; var db = window.fbDB;
+  var user = window.currentUser; var db = window.fbDB || (typeof fbDB !== "undefined" ? fbDB : null);
   if (!user || !db) return;
   var todayKey = new Date().toISOString().split('T')[0];
   db.ref('users/' + user.uid + '/dailyBets/' + todayKey).transaction(function(val) {
