@@ -13,6 +13,11 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/royalwin/manifest.json">
+  <meta name="theme-color" content="#f0c040">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="RoyalWin">
 <title>RoyalWin — Premium Gaming Platform</title>
 <!-- Firebase Compat SDK — load first -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -2716,29 +2721,47 @@
     const db = window.fbDB || fbDB;
     const el = document.getElementById('depositHistoryPageRows');
     if (!user || !db || !el) return;
-    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="common.loading">Loading...</span></div>';
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
     try {
-      // Read from adminRequests/deposits (where admin updates status)
       const snap = await db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).once('value');
       const data = snap.val();
       if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No deposits yet</div>'; return; }
       const rows = Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+
+      // Show pending banner if any pending deposits
+      const pending = rows.filter(r => r.status === 'pending');
+      const banner = document.getElementById('pendingDepositBanner');
+      const bannerText = document.getElementById('pendingDepositText');
+      if (banner && pending.length > 0) {
+        banner.style.display = 'flex';
+        if (bannerText) bannerText.textContent = pending.length + ' deposit(s) pending verification. Balance will be credited once approved.';
+      } else if (banner) {
+        banner.style.display = 'none';
+      }
+
       el.innerHTML = rows.map(r => {
         const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN', {day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
-        const statusColor = r.status === 'approved' ? 'var(--green)' : r.status === 'rejected' ? 'var(--red2)' : 'var(--gold)';
+        const statusColor = r.status === 'approved' ? 'var(--green)' : r.status === 'rejected' ? 'var(--red2)' : '#f0c040';
         const statusText = r.status === 'approved' ? '✅ Approved' : r.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
+        const statusBg = r.status === 'approved' ? 'rgba(39,174,96,0.1)' : r.status === 'rejected' ? 'rgba(224,32,32,0.1)' : 'rgba(240,192,64,0.1)';
         const bonusText = r.bonusPct ? `<span style="font-size:0.7rem;color:var(--gold);margin-left:0.4rem;">+${r.bonusPct}% bonus</span>` : '';
-        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.7rem;display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div style="font-weight:700;color:var(--green);font-size:1rem;">+₹${(r.amount||0).toLocaleString('en-IN')}${bonusText}</div>
-            <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">${r.method || 'UPI'}</div>
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.7rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.4rem;">
+            <div style="font-weight:800;color:var(--green);font-size:1rem;">+₹${(r.amount||0).toLocaleString('en-IN')}${bonusText}</div>
+            <div style="font-size:0.78rem;font-weight:700;color:${statusColor};background:${statusBg};padding:0.2rem 0.6rem;border-radius:20px;">${statusText}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:0.72rem;color:var(--muted);">${r.method || 'UPI'}</div>
             <div style="font-size:0.7rem;color:var(--muted);">${time}</div>
           </div>
-          <div style="font-size:0.8rem;font-weight:700;color:${statusColor};">${statusText}</div>
+          ${r.status === 'pending' ? '<div style="font-size:0.7rem;color:var(--gold);margin-top:0.3rem;">⏳ Verification in progress. Please wait...</div>' : ''}
         </div>`;
       }).join('');
     } catch(e) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Failed to load</div>'; }
   }
+
+  // Alias for refresh button
+  function loadDepositHistory() { loadDepositHistoryPage(); }
 
   async function loadWithdrawHistoryPage() {
     const user = window.currentUser;
@@ -6214,12 +6237,23 @@
 <!-- DEPOSIT HISTORY PAGE -->
 <div class="page" id="page-deposithistory">
   <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 2rem;">
-    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
-      <button onclick="showPage('profile')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
-      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬇️ Deposit History</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">
+      <div style="display:flex;align-items:center;gap:0.8rem;">
+        <button onclick="showPage('profile')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
+        <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬇️ Deposit History</div>
+      </div>
+      <button onclick="loadDepositHistory()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.8rem;color:var(--muted);cursor:pointer;font-size:0.78rem;">🔄 Refresh</button>
+    </div>
+    <!-- Pending deposits banner -->
+    <div id="pendingDepositBanner" style="display:none;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.25);border-radius:12px;padding:0.8rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.6rem;">
+      <div style="font-size:1.2rem;">⏳</div>
+      <div>
+        <div style="font-size:0.82rem;font-weight:700;color:var(--gold);">Pending Deposit</div>
+        <div style="font-size:0.72rem;color:var(--muted);" id="pendingDepositText">Verification in progress...</div>
+      </div>
     </div>
     <div id="depositHistoryPageRows">
-      <div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="common.loading">Loading...</span></div>
+      <div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>
     </div>
   </div>
 </div>
@@ -7790,3 +7824,15 @@ showPage = function(name) {
   if (name === 'activity-award') setTimeout(loadActivityAwardPage, 200);
 };
 </script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/royalwin/sw.js').then(function(reg) {
+      console.log('SW registered');
+    }).catch(function(err) {
+      console.log('SW failed:', err);
+    });
+  });
+}
+</script>
+
