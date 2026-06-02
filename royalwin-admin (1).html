@@ -1,0 +1,2492 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RoyalWin — Admin Panel</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #f0c040; --gold2: #ffd700; --red: #e02020; --red2: #ff3a3a;
+    --bg: #0a0a0f; --bg2: #10101a; --bg3: #16162a; --card: #1a1a2e; --card2: #1f1f38;
+    --border: rgba(240,192,64,0.18); --text: #f0ead8; --muted: #8a8099;
+    --green: #00e676; --purple: #7c4dff;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:'Exo 2',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+
+  /* LOGIN */
+  .login-wrap {
+    min-height:100vh; display:flex; align-items:center; justify-content:center; padding:1rem;
+    background: radial-gradient(ellipse at 50% 50%, rgba(240,192,64,0.04) 0%, transparent 70%);
+  }
+  .login-card {
+    background:var(--card); border:1px solid var(--border); border-radius:16px;
+    padding:2.5rem; width:100%; max-width:380px;
+    box-shadow:0 24px 80px rgba(0,0,0,0.6);
+  }
+  .login-logo { font-family:'Cinzel',serif; font-size:1.4rem; font-weight:900; text-align:center; margin-bottom:0.3rem;
+    background:linear-gradient(135deg,var(--gold),var(--gold2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .login-sub { text-align:center; color:var(--muted); font-size:0.82rem; margin-bottom:2rem; }
+  .form-group { margin-bottom:1rem; }
+  .form-label { display:block; font-size:0.78rem; color:var(--muted); margin-bottom:0.4rem; text-transform:uppercase; letter-spacing:0.5px; }
+  .form-input {
+    width:100%; background:var(--bg3); border:1px solid rgba(255,255,255,0.08);
+    border-radius:8px; padding:0.75rem 1rem; color:var(--text);
+    font-family:'Exo 2',sans-serif; font-size:0.95rem; outline:none; transition:border 0.2s;
+  }
+  .form-input:focus { border-color:rgba(240,192,64,0.4); }
+  .form-input::placeholder { color:rgba(138,128,153,0.5); }
+  .btn {
+    padding:0.8rem 2rem; border-radius:8px; font-family:'Exo 2',sans-serif;
+    font-size:0.95rem; font-weight:700; cursor:pointer; transition:all 0.25s; border:none;
+  }
+  .btn-gold { background:linear-gradient(135deg,#c07a10,var(--gold2)); color:#000; }
+  .btn-gold:hover { filter:brightness(1.1); transform:translateY(-1px); }
+  .btn-outline { background:transparent; border:1px solid var(--border); color:var(--text); }
+  .btn-outline:hover { border-color:var(--gold); color:var(--gold); }
+  .btn-red { background:linear-gradient(135deg,#7a1a1a,var(--red2)); color:#fff; }
+  .btn-full { width:100%; }
+  .error-msg { color:var(--red2); font-size:0.82rem; text-align:center; margin-top:0.8rem; display:none; }
+
+  /* ADMIN LAYOUT */
+  .admin-wrap { display:none; min-height:100vh; }
+  .admin-nav {
+    position:fixed; top:0; left:0; right:0; z-index:100;
+    background:rgba(10,10,15,0.98); border-bottom:1px solid var(--border);
+    backdrop-filter:blur(20px); display:flex; align-items:center;
+    justify-content:space-between; padding:0 2rem; height:60px;
+  }
+  .admin-logo { font-family:'Cinzel',serif; font-weight:900; font-size:1.1rem;
+    background:linear-gradient(135deg,var(--gold),var(--gold2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+  .admin-nav-right { display:flex; align-items:center; gap:1rem; }
+  .admin-badge { background:rgba(224,32,32,0.15); border:1px solid rgba(224,32,32,0.3); color:var(--red2); border-radius:20px; padding:0.25rem 0.8rem; font-size:0.75rem; font-weight:700; }
+  .admin-main { padding:80px 2rem 2rem; max-width:1100px; margin:0 auto; }
+
+  /* STATUS BAR */
+  .status-bar {
+    display:grid; grid-template-columns:repeat(4,1fr); gap:1rem; margin-bottom:2rem;
+  }
+  .status-card {
+    background:var(--card); border:1px solid var(--border); border-radius:12px;
+    padding:0.9rem; display:flex; align-items:center; gap:0.7rem;
+  }
+  .status-icon { font-size:1.8rem; }
+  .status-val { font-family:'Cinzel',serif; font-size:1.4rem; font-weight:800; }
+  .status-lbl { font-size:0.75rem; color:var(--muted); margin-top:2px; }
+
+  /* TABS */
+  .admin-tabs { display:flex; gap:0; background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden; margin-bottom:2rem; }
+  .admin-tab {
+    flex:1; padding:0.8rem; text-align:center; cursor:pointer; font-size:0.88rem;
+    font-family:'Exo 2',sans-serif; font-weight:600; color:var(--muted);
+    background:none; border:none; transition:all 0.2s;
+  }
+  .admin-tab.active { background:linear-gradient(135deg,#c07a10,var(--gold2)); color:#000; }
+
+  .admin-panel { display:none; }
+  .admin-panel.active { display:block; }
+
+  /* RESULT CONTROL */
+  .result-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+  .control-card { background:var(--card); border:1px solid var(--border); border-radius:14px; padding:1.5rem; }
+  .control-card h3 { font-family:'Cinzel',serif; color:var(--gold); font-size:1rem; margin-bottom:1.2rem; }
+  .num-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:0.6rem; margin-bottom:1.2rem; }
+  .num-btn {
+    aspect-ratio:1; border-radius:8px; border:2px solid transparent;
+    cursor:pointer; font-weight:800; font-size:0.95rem; font-family:'Cinzel',serif;
+    transition:all 0.2s; display:flex; align-items:center; justify-content:center; color:#fff;
+  }
+  .num-btn:hover { transform:scale(1.08); }
+  .num-btn.selected { border-color:#fff; transform:scale(1.12); box-shadow:0 0 16px rgba(255,255,255,0.3); }
+  .current-result-display {
+    background:var(--bg3); border:2px solid var(--border); border-radius:12px;
+    padding:1.5rem; text-align:center; margin-bottom:1rem;
+  }
+  .cur-num { font-family:'Cinzel',serif; font-size:3rem; font-weight:900; }
+  .cur-lbl { color:var(--muted); font-size:0.8rem; margin-top:0.3rem; }
+  .live-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--green); margin-right:5px; animation:pulse 1.5s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.4;} }
+
+  /* SCHEDULE */
+  .schedule-grid { display:grid; grid-template-columns:repeat(5,1fr); gap:0.6rem; margin-bottom:1.2rem; }
+  .schedule-slot {
+    background:var(--bg3); border:1px solid var(--border); border-radius:8px;
+    padding:0.6rem; text-align:center; cursor:pointer; transition:all 0.2s;
+  }
+  .schedule-slot:hover { border-color:var(--gold); }
+  .slot-round { font-size:0.65rem; color:var(--muted); margin-bottom:0.3rem; }
+  .slot-num { font-family:'Cinzel',serif; font-size:1.2rem; font-weight:800; }
+  .slot-empty { color:var(--muted); font-size:0.8rem; }
+
+  /* AUTO MODE */
+  .toggle-wrap { display:flex; align-items:center; justify-content:space-between; padding:1rem; background:var(--bg3); border-radius:10px; margin-bottom:1rem; }
+  .toggle-label { font-size:0.9rem; font-weight:600; }
+  .toggle { position:relative; width:52px; height:28px; }
+  .toggle input { opacity:0; width:0; height:0; }
+  .toggle-slider {
+    position:absolute; inset:0; background:rgba(255,255,255,0.1); border-radius:28px;
+    cursor:pointer; transition:0.3s;
+  }
+  .toggle-slider::before {
+    content:''; position:absolute; height:22px; width:22px; left:3px; bottom:3px;
+    background:#fff; border-radius:50%; transition:0.3s;
+  }
+  input:checked + .toggle-slider { background:var(--green); }
+  input:checked + .toggle-slider::before { transform:translateX(24px); }
+
+  /* BETS TABLE */
+  .bets-table { background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden; }
+  .bt-row {
+    display:grid; grid-template-columns:1.5fr 1fr 1fr 1fr 1fr 1fr;
+    gap:0.5rem; padding:0.8rem 1.2rem; border-bottom:1px solid rgba(255,255,255,0.04);
+    font-size:0.82rem; align-items:center;
+  }
+  .bt-row.head { background:rgba(255,255,255,0.03); color:var(--muted); font-size:0.72rem; text-transform:uppercase; letter-spacing:1px; }
+  .win-tag { color:var(--green); font-weight:700; }
+  .lose-tag { color:var(--red2); font-weight:700; }
+
+  /* SETTINGS */
+  .settings-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; }
+  .setting-row { display:flex; justify-content:space-between; align-items:center; padding:0.8rem 0; border-bottom:1px solid rgba(255,255,255,0.05); }
+  .setting-row:last-child { border:none; }
+  .setting-name { font-size:0.88rem; font-weight:600; }
+  .setting-desc { font-size:0.75rem; color:var(--muted); margin-top:2px; }
+
+  /* TOAST */
+  .toast {
+    position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px);
+    background:var(--card2); border:1px solid var(--border); border-radius:8px;
+    padding:0.8rem 1.5rem; color:var(--gold); font-size:0.9rem;
+    transition:transform 0.3s; z-index:999; pointer-events:none; white-space:nowrap;
+  }
+  .toast.show { transform:translateX(-50%) translateY(0); }
+
+  /* FIREBASE STATUS */
+  .fb-status { display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; }
+  .fb-dot { width:8px; height:8px; border-radius:50%; background:var(--muted); }
+  .fb-dot.connected { background:var(--green); }
+  .fb-dot.error { background:var(--red2); }
+
+  @media (max-width:768px) {
+    .status-bar { grid-template-columns:repeat(2,1fr); }
+    .result-grid, .settings-grid { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="toast" id="toast"></div>
+
+<!-- ── LOGIN SCREEN ── -->
+<div class="login-wrap" id="loginWrap">
+  <div class="login-card">
+    <div class="login-logo">ROYAL♠WIN</div>
+    <div class="login-sub">🔐 Admin Panel — Authorized Access Only</div>
+    <div class="form-group">
+      <label class="form-label">Admin Email</label>
+      <input class="form-input" type="email" id="adminEmail" placeholder="admin@royalwin.com">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Password</label>
+      <input class="form-input" type="password" id="adminPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()">
+    </div>
+    <button class="btn btn-gold btn-full" onclick="doAdminLogin()">🔐 Sign In to Admin</button>
+    <div class="error-msg" id="loginError">❌ Invalid credentials. Access denied.</div>
+    <div style="margin-top:1.5rem;padding:1rem;background:var(--bg3);border-radius:8px;font-size:0.78rem;color:var(--muted);line-height:1.7;">
+      <strong style="color:var(--gold);">Setup required:</strong><br>
+      1. Create Firebase project at <a href="https://console.firebase.google.com" target="_blank" style="color:var(--gold);">firebase.google.com</a><br>
+      2. Enable Authentication (Email/Password)<br>
+      3. Enable Realtime Database<br>
+      4. Paste your config in both HTML files
+    </div>
+  </div>
+</div>
+
+<!-- ── ADMIN PANEL ── -->
+<div class="admin-wrap" id="adminWrap">
+  <nav class="admin-nav">
+    <div class="admin-logo">ROYAL♠WIN ADMIN</div>
+    <div class="admin-nav-right">
+      <div class="fb-status"><div class="fb-dot" id="fbDot"></div><span id="fbStatusText">Connecting...</span></div>
+      <div class="admin-badge">👑 OWNER</div>
+      <button class="btn btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="doAdminLogout()">Sign Out</button>
+    </div>
+  </nav>
+
+  <div class="admin-main">
+
+    <!-- Status Bar -->
+    <!-- Real-time Period Tracker -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1.5rem;">
+
+      <!-- 1 Min -->
+      <div class="status-card" style="flex-direction:column;align-items:flex-start;gap:0.5rem;">
+        <!-- Row 1: Timer circle + Period + AUTO badge -->
+        <div style="display:flex;align-items:center;gap:0.6rem;width:100%;">
+          <!-- Timer circle -->
+          <div style="position:relative;width:46px;height:46px;flex-shrink:0;">
+            <svg width="46" height="46" style="transform:rotate(-90deg);">
+              <circle cx="23" cy="23" r="19" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+              <circle id="timerCircle1min" cx="23" cy="23" r="19" fill="none" stroke="var(--gold2)" stroke-width="3" stroke-dasharray="119.4" stroke-dashoffset="0" style="transition:stroke-dashoffset 1s linear;"/>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+              <span style="font-family:'Cinzel',serif;font-size:0.65rem;font-weight:800;color:var(--gold2);" id="timer1min">—</span>
+            </div>
+          </div>
+          <!-- Period + mode info -->
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.15rem;">
+              <span style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.82rem;">1 Min</span>
+              <div class="admin-badge" style="font-size:0.62rem;padding:0.15rem 0.5rem;cursor:pointer;" id="mode1badge" onclick="toggleAutoForMode(1, document.getElementById('autoToggle1min') ? !document.getElementById('autoToggle1min').checked : true)">AUTO</div>
+              <input type="checkbox" id="autoToggle1min" checked style="display:none;" onchange="toggleAutoForMode(1, this.checked)">
+            </div>
+            <div style="font-family:'Cinzel',serif;font-size:0.8rem;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="period1min">—</div>
+          </div>
+        </div>
+        <!-- Row 2: Progress bar -->
+        <div style="width:100%;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+          <div id="bar1min" style="height:100%;background:linear-gradient(90deg,#c07a10,var(--gold2));border-radius:2px;transition:width 1s linear;width:100%;"></div>
+        </div>
+        <!-- Row 3: Next result + Bets + Auto toggle all in one line -->
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+          <div style="font-size:0.7rem;color:var(--muted);">Next: <strong style="color:var(--gold);" id="next1min">Auto</strong></div>
+          <div style="font-size:0.7rem;color:var(--green);font-family:'Cinzel',serif;font-weight:700;" id="bets1min">0 bets</div>
+        </div>
+        <!-- Bet Summary -->
+        <div style="width:100%;border-top:1px solid var(--border);padding-top:0.4rem;">
+          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.5px;">💰 Bets this round</div>
+          <div id="betSummary1min" style="font-size:0.72rem;color:var(--muted);text-align:center;">No bets yet</div>
+        </div>
+        <!-- Quick number picker -->
+        <div style="width:100%;border-top:1px solid var(--border);padding-top:0.7rem;">
+          <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.5rem;">Set Next Result</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.3rem;margin-bottom:0.5rem;">
+            <button onclick="quickSetResult(1,0)" id="qbtn1_0" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">0</button><button onclick="quickSetResult(1,1)" id="qbtn1_1" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">1</button><button onclick="quickSetResult(1,2)" id="qbtn1_2" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">2</button><button onclick="quickSetResult(1,3)" id="qbtn1_3" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">3</button><button onclick="quickSetResult(1,4)" id="qbtn1_4" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">4</button><button onclick="quickSetResult(1,5)" id="qbtn1_5" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">5</button><button onclick="quickSetResult(1,6)" id="qbtn1_6" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">6</button><button onclick="quickSetResult(1,7)" id="qbtn1_7" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">7</button><button onclick="quickSetResult(1,8)" id="qbtn1_8" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">8</button><button onclick="quickSetResult(1,9)" id="qbtn1_9" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">9</button>
+          </div>
+          <div style="display:flex;gap:0.4rem;margin-bottom:0.4rem;">
+            <button onclick="quickConfirmResult(1)" style="flex:1;background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:6px;padding:0.3rem;font-family:Exo 2,sans-serif;font-size:0.75rem;font-weight:700;color:#000;cursor:pointer;">✅ Set</button>
+            <button onclick="quickClearResult(1)" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.3rem;font-family:Exo 2,sans-serif;font-size:0.75rem;color:var(--muted);cursor:pointer;">🔄 Clear</button>
+          </div>
+          <div style="display:flex;gap:0.4rem;">
+            <button onclick="toggleLock(1)" id="lockBtn1" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.3rem;font-family:Exo 2,sans-serif;font-size:0.72rem;color:var(--muted);cursor:pointer;">🔓 Unlock</button>
+            <button onclick="forceResolve(1)" style="flex:1;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.2);border-radius:6px;padding:0.3rem;font-family:Exo 2,sans-serif;font-size:0.72rem;color:var(--red2);cursor:pointer;">⚡ Force</button>
+          </div>
+        </div>
+        <div style="width:100%;border-top:1px solid var(--border);padding-top:0.5rem;margin-bottom:0.5rem;">
+          <div style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.4rem;">📊 Last 5</div>
+          <div id="lastResults1min"></div>
+        </div>
+        <div style="width:100%;border-top:1px solid var(--border);padding-top:0.5rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.4rem;">
+            <span style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">📅 Next 5</span>
+            <div style="display:flex;gap:0.25rem;">
+              <button onclick="randomFillMode(1)" style="background:none;border:1px solid var(--border);border-radius:4px;padding:0.15rem 0.4rem;font-size:0.65rem;color:var(--muted);cursor:pointer;">🎲</button>
+              <button onclick="clearScheduleMode(1)" style="background:none;border:1px solid var(--border);border-radius:4px;padding:0.15rem 0.4rem;font-size:0.65rem;color:var(--muted);cursor:pointer;">🗑️</button>
+              <button onclick="saveScheduleMode(1)" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:4px;padding:0.15rem 0.4rem;font-size:0.65rem;color:#000;font-weight:700;cursor:pointer;">💾</button>
+            </div>
+          </div>
+          <div id="scheduleGrid1"></div>
+        </div>
+      </div>
+
+      <!-- 3 Min -->
+      <div class="status-card" style="flex-direction:column;align-items:flex-start;gap:0.5rem;">
+        <!-- Row 1: Timer circle + Period + AUTO badge -->
+        <div style="display:flex;align-items:center;gap:0.6rem;width:100%;">
+          <!-- Timer circle -->
+          <div style="position:relative;width:46px;height:46px;flex-shrink:0;">
+            <svg width="46" height="46" style="transform:rotate(-90deg);">
+              <circle cx="23" cy="23" r="19" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+              <circle id="timerCircle3min" cx="23" cy="23" r="19" fill="none" stroke="var(--gold2)" stroke-width="3" stroke-dasharray="119.4" stroke-dashoffset="0" style="transition:stroke-dashoffset 1s linear;"/>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+              <span style="font-family:'Cinzel',serif;font-size:0.65rem;font-weight:800;color:var(--gold2);" id="timer3min">—</span>
+            </div>
+          </div>
+          <!-- Period + mode info -->
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.15rem;">
+              <span style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.82rem;">3 Min</span>
+              <div class="admin-badge" style="font-size:0.62rem;padding:0.15rem 0.5rem;cursor:pointer;" id="mode3badge" onclick="toggleAutoForMode(3, document.getElementById('autoToggle3min') ? !document.getElementById('autoToggle3min').checked : true)">AUTO</div>
+              <input type="checkbox" id="autoToggle3min" checked style="display:none;" onchange="toggleAutoForMode(3, this.checked)">
+            </div>
+            <div style="font-family:'Cinzel',serif;font-size:0.8rem;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="period3min">—</div>
+          </div>
+        </div>
+        <!-- Row 2: Progress bar -->
+        <div style="width:100%;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+          <div id="bar3min" style="height:100%;background:linear-gradient(90deg,#c07a10,var(--gold2));border-radius:2px;transition:width 1s linear;width:100%;"></div>
+        </div>
+        <!-- Row 3: Next result + Bets + Auto toggle all in one line -->
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+          <div style="font-size:0.7rem;color:var(--muted);">Next: <strong style="color:var(--gold);" id="next3min">Auto</strong></div>
+          <div style="font-size:0.7rem;color:var(--green);font-family:'Cinzel',serif;font-weight:700;" id="bets3min">0 bets</div>
+        </div>
+        <!-- Bet Summary -->
+        <div style="width:100%;border-top:1px solid var(--border);padding-top:0.4rem;">
+          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.5px;">💰 Bets this round</div>
+          <div id="betSummary3min" style="font-size:0.72rem;color:var(--muted);text-align:center;">No bets yet</div>
+        </div>
+        <!-- Quick number picker -->
+        <div style="width:100%;border-top:1px solid var(--border);padding-top:0.7rem;">
+          <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.5rem;">Set Next Result</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.3rem;margin-bottom:0.5rem;">
+            <button onclick="quickSetResult(3,0)" id="qbtn3_0" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">0</button><button onclick="quickSetResult(3,1)" id="qbtn3_1" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">1</button><button onclick="quickSetResult(3,2)" id="qbtn3_2" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">2</button><button onclick="quickSetResult(3,3)" id="qbtn3_3" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">3</button><button onclick="quickSetResult(3,4)" id="qbtn3_4" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">4</button><button onclick="quickSetResult(3,5)" id="qbtn3_5" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">5</button><button onclick="quickSetResult(3,6)" id="qbtn3_6" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">6</button><button onclick="quickSetResult(3,7)" id="qbtn3_7" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">7</button><button onclick="quickSetResult(3,8)" id="qbtn3_8" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">8</button><button onclick="quickSetResult(3,9)" id="qbtn3_9" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">9</button>
+          </div>
+          <div style="display:flex;gap:0.4rem;margin-bottom:0.4rem;">
+            <button onclick="quickConfirmResult(3)" style="flex:1;background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:6px;padding:0.3rem;font-family:Exo 2,sans-serif;font-size:0.75rem;font-weight:700;color:#000;cursor:pointer;">✅ Set</button>
+            <button onclick="quickClearResult(3)" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.3rem;font-family:Exo 2,sans-serif;font-size:0.75rem;color:var(--muted);cursor:pointer;">🔄 Clear</button>
+          </div>
+          <div style="display:flex;gap:0.4rem;">
+            <button onclick="toggleLock(3)" id="lockBtn3" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.3rem;font-family:Exo 2,sans-serif;font-size:0.72rem;color:var(--muted);cursor:pointer;">🔓 Unlock</button>
+            <button onclick="forceResolve(3)" style="flex:1;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.2);border-radius:6px;padding:0.3rem;font-family:Exo 2,sans-serif;font-size:0.72rem;color:var(--red2);cursor:pointer;">⚡ Force</button>
+          </div>
+        </div>
+        <div style="width:100%;border-top:1px solid var(--border);padding-top:0.5rem;margin-bottom:0.5rem;">
+          <div style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.4rem;">📊 Last 5</div>
+          <div id="lastResults3min"></div>
+        </div>
+        <div style="width:100%;border-top:1px solid var(--border);padding-top:0.7rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+            <span style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">📅 Next 5 Schedule</span>
+            <div style="display:flex;gap:0.3rem;">
+              <button onclick="randomFillMode(3)"" style="background:none;border:1px solid var(--border);border-radius:4px;padding:0.2rem 0.5rem;font-size:0.68rem;color:var(--muted);cursor:pointer;">🎲</button>
+              <button onclick="clearScheduleMode(3)" style="background:none;border:1px solid var(--border);border-radius:4px;padding:0.2rem 0.5rem;font-size:0.68rem;color:var(--muted);cursor:pointer;">🗑️</button>
+              <button onclick="saveScheduleMode(3)" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:4px;padding:0.2rem 0.5rem;font-size:0.68rem;color:#000;font-weight:700;cursor:pointer;">💾</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0.3rem;" id="scheduleGrid3"></div>
+        </div>
+      </div>
+
+      <!-- 5 Min -->
+      <div class="status-card" style="flex-direction:column;align-items:flex-start;gap:0.5rem;">
+        <!-- Row 1: Timer circle + Period + AUTO badge -->
+        <div style="display:flex;align-items:center;gap:0.6rem;width:100%;">
+          <!-- Timer circle -->
+          <div style="position:relative;width:46px;height:46px;flex-shrink:0;">
+            <svg width="46" height="46" style="transform:rotate(-90deg);">
+              <circle cx="23" cy="23" r="19" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+              <circle id="timerCircle5min" cx="23" cy="23" r="19" fill="none" stroke="var(--gold2)" stroke-width="3" stroke-dasharray="119.4" stroke-dashoffset="0" style="transition:stroke-dashoffset 1s linear;"/>
+            </svg>
+            <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+              <span style="font-family:'Cinzel',serif;font-size:0.65rem;font-weight:800;color:var(--gold2);" id="timer5min">—</span>
+            </div>
+          </div>
+          <!-- Period + mode info -->
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.15rem;">
+              <span style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.82rem;">5 Min</span>
+              <div class="admin-badge" style="font-size:0.62rem;padding:0.15rem 0.5rem;cursor:pointer;" id="mode5badge" onclick="toggleAutoForMode(5, document.getElementById('autoToggle5min') ? !document.getElementById('autoToggle5min').checked : true)">AUTO</div>
+              <input type="checkbox" id="autoToggle5min" checked style="display:none;" onchange="toggleAutoForMode(5, this.checked)">
+            </div>
+            <div style="font-family:'Cinzel',serif;font-size:0.8rem;font-weight:800;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="period5min">—</div>
+          </div>
+        </div>
+        <!-- Row 2: Progress bar -->
+        <div style="width:100%;height:3px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+          <div id="bar5min" style="height:100%;background:linear-gradient(90deg,#c07a10,var(--gold2));border-radius:2px;transition:width 1s linear;width:100%;"></div>
+        </div>
+        <!-- Row 3: Next result + Bets + Auto toggle all in one line -->
+        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+          <div style="font-size:0.7rem;color:var(--muted);">Next: <strong style="color:var(--gold);" id="next5min">Auto</strong></div>
+          <div style="font-size:0.7rem;color:var(--green);font-family:'Cinzel',serif;font-weight:700;" id="bets5min">0 bets</div>
+        </div>
+        <!-- Bet Summary -->
+        <div style="width:100%;border-top:1px solid var(--border);padding-top:0.4rem;">
+          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.3rem;text-transform:uppercase;letter-spacing:0.5px;">💰 Bets this round</div>
+          <div id="betSummary5min" style="font-size:0.72rem;color:var(--muted);text-align:center;">No bets yet</div>
+        </div>
+        <!-- Quick number picker -->
+        <div style="width:100%;border-top:1px solid var(--border);padding-top:0.7rem;">
+          <div style="font-size:0.7rem;color:var(--muted);margin-bottom:0.5rem;">Set Next Result</div>
+          <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:0.3rem;margin-bottom:0.5rem;">
+            <button onclick="quickSetResult(5,0)" id="qbtn5_0" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">0</button><button onclick="quickSetResult(5,1)" id="qbtn5_1" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">1</button><button onclick="quickSetResult(5,2)" id="qbtn5_2" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">2</button><button onclick="quickSetResult(5,3)" id="qbtn5_3" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">3</button><button onclick="quickSetResult(5,4)" id="qbtn5_4" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">4</button><button onclick="quickSetResult(5,5)" id="qbtn5_5" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">5</button><button onclick="quickSetResult(5,6)" id="qbtn5_6" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">6</button><button onclick="quickSetResult(5,7)" id="qbtn5_7" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">7</button><button onclick="quickSetResult(5,8)" id="qbtn5_8" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">8</button><button onclick="quickSetResult(5,9)" id="qbtn5_9" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.35rem 0;font-family:Cinzel,serif;font-size:0.85rem;font-weight:800;color:var(--text);cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="if(!this.classList.contains('qsel'))this.style.borderColor='var(--border)'">9</button>
+          </div>
+          <div style="display:flex;gap:0.4rem;margin-bottom:0.4rem;">
+            <button onclick="quickConfirmResult(5)" style="flex:1;background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:6px;padding:0.3rem;font-family:Exo 2,sans-serif;font-size:0.75rem;font-weight:700;color:#000;cursor:pointer;">✅ Set</button>
+            <button onclick="quickClearResult(5)" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.3rem;font-family:Exo 2,sans-serif;font-size:0.75rem;color:var(--muted);cursor:pointer;">🔄 Clear</button>
+          </div>
+          <div style="display:flex;gap:0.4rem;">
+            <button onclick="toggleLock(5)" id="lockBtn5" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.3rem;font-family:Exo 2,sans-serif;font-size:0.72rem;color:var(--muted);cursor:pointer;">🔓 Unlock</button>
+            <button onclick="forceResolve(5)" style="flex:1;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.2);border-radius:6px;padding:0.3rem;font-family:Exo 2,sans-serif;font-size:0.72rem;color:var(--red2);cursor:pointer;">⚡ Force</button>
+          </div>
+        </div>
+        <div style="width:100%;border-top:1px solid var(--border);padding-top:0.5rem;margin-bottom:0.5rem;">
+          <div style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.4rem;">📊 Last 5</div>
+          <div id="lastResults5min"></div>
+        </div>
+        <div style="width:100%;border-top:1px solid var(--border);padding-top:0.7rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
+            <span style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">📅 Next 5 Schedule</span>
+            <div style="display:flex;gap:0.3rem;">
+              <button onclick="randomFillMode(5)"" style="background:none;border:1px solid var(--border);border-radius:4px;padding:0.2rem 0.5rem;font-size:0.68rem;color:var(--muted);cursor:pointer;">🎲</button>
+              <button onclick="clearScheduleMode(5)" style="background:none;border:1px solid var(--border);border-radius:4px;padding:0.2rem 0.5rem;font-size:0.68rem;color:var(--muted);cursor:pointer;">🗑️</button>
+              <button onclick="saveScheduleMode(5)" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:4px;padding:0.2rem 0.5rem;font-size:0.68rem;color:#000;font-weight:700;cursor:pointer;">💾</button>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:0.3rem;" id="scheduleGrid5"></div>
+        </div>
+      </div>
+
+    </div>
+
+
+
+    <!-- Tabs -->
+    <div class="admin-tabs">
+      <button class="admin-tab active" onclick="switchTab('bets')">📋 Live Bets</button>
+      <button class="admin-tab" onclick="switchTab('finance')">💰 Finance</button>
+      <button class="admin-tab" onclick="switchTab('users')">👥 Users</button>
+      <button class="admin-tab" onclick="switchTab('chat')">💬 Live Chat <span id="chatUnreadBadge" style="display:none;background:#e02020;color:#fff;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.7rem;margin-left:4px;">0</span></button>
+      <button class="admin-tab" onclick="switchTab('settings')">⚙️ Settings</button>
+    </div>
+
+
+    <!-- ── FINANCE TAB ── -->
+    <div class="admin-panel" id="panel-finance">
+
+      <!-- Revenue Dashboard at top of Finance -->
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1.5rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <h3 style="margin:0;color:var(--gold);font-size:1rem;">📊 Revenue Dashboard</h3>
+          <div style="display:flex;gap:0.4rem;">
+            <button onclick="loadRevenueStats('today')" id="revBtn-today" style="padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--gold);background:rgba(240,192,64,0.15);color:var(--gold);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-weight:700;">Today</button>
+            <button onclick="loadRevenueStats('week')" id="revBtn-week" style="padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Week</button>
+            <button onclick="loadRevenueStats('month')" id="revBtn-month" style="padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Month</button>
+            <button onclick="loadRevenueStats('all')" id="revBtn-all" style="padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">All</button>
+            <button onclick="loadRevenueStats()" style="padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">🔄</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-bottom:1rem;">
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Deposits</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--green);font-weight:700;" id="statTotalDeposits">₹0</div>
+            <div style="font-size:0.65rem;color:var(--muted);" id="statDepCount">0 approved</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Withdrawals</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--red2);font-weight:700;" id="statTotalWithdrawals">₹0</div>
+            <div style="font-size:0.65rem;color:var(--muted);" id="statWithCount">0 approved</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Net Revenue</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;" id="statNetRevenue">₹0</div>
+            <div style="font-size:0.65rem;color:var(--muted);">deposits - withdrawals</div>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-bottom:1rem;">
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Total Users</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);font-weight:700;" id="statTotalUsers">0</div>
+            <div style="font-size:0.65rem;color:var(--muted);" id="statNewUsers">0 new</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Total Bets</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);font-weight:700;" id="statTotalBets">0</div>
+            <div style="font-size:0.65rem;color:var(--muted);" id="statTotalWagered">₹0 wagered</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Pending</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);font-weight:700;" id="statPending">0</div>
+            <div style="font-size:0.65rem;color:var(--muted);">requests</div>
+          </div>
+        </div>
+        <!-- 7-day chart -->
+        <div style="background:var(--bg3);border-radius:10px;padding:1rem;">
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.8rem;">📈 Last 7 Days — Deposits vs Withdrawals</div>
+          <div id="revChart" style="display:flex;align-items:flex-end;gap:0.3rem;height:80px;"></div>
+          <div id="revChartLabels" style="display:flex;gap:0.3rem;margin-top:0.3rem;"></div>
+          <div style="display:flex;gap:1rem;margin-top:0.5rem;font-size:0.65rem;">
+            <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:3px;"></span>Deposits</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:var(--red2);border-radius:2px;margin-right:3px;"></span>Withdrawals</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+
+        <!-- Deposit Requests -->
+        <div>
+          <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;margin-bottom:1rem;">⬇️ Deposit Requests</div>
+          <div id="depositRequests" style="display:flex;flex-direction:column;gap:0.6rem;">
+            <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending deposits</div>
+          </div>
+        </div>
+
+        <!-- Withdrawal Requests -->
+        <div>
+          <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;margin-bottom:1rem;">⬆️ Withdrawal Requests</div>
+          <div id="withdrawRequests" style="display:flex;flex-direction:column;gap:0.6rem;">
+            <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending withdrawals</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Manual Balance Add -->
+      <div class="control-card" style="margin-top:1.5rem;">
+        <h3>💳 Manually Add/Deduct Balance</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:0.8rem;align-items:end;">
+          <div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">User UID</div>
+            <input class="form-input" type="text" id="manualUid" placeholder="Paste user UID" style="font-size:0.82rem;">
+          </div>
+          <div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Amount (₹)</div>
+            <input class="form-input" type="number" id="manualAmt" placeholder="500" style="font-size:0.82rem;">
+          </div>
+          <div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Type</div>
+            <select id="manualType" class="form-input" style="font-size:0.82rem;cursor:pointer;">
+              <option value="add">➕ Add</option>
+              <option value="deduct">➖ Deduct</option>
+            </select>
+          </div>
+          <button class="btn btn-gold" onclick="manualBalance()" style="padding:0.75rem 1rem;font-size:0.85rem;">Apply</button>
+        </div>
+
+        <!-- Wager Adjustment -->
+        <h3 style="margin-top:1.5rem;">🎯 Manually Adjust Wager</h3>
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.8rem;">Set or increase the wager completed amount for a user. Useful if you need to manually credit wager progress.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:0.8rem;align-items:end;">
+          <div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">User UID</div>
+            <input class="form-input" type="text" id="wagerUid" placeholder="Paste user UID" style="font-size:0.82rem;">
+          </div>
+          <div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Amount (₹)</div>
+            <input class="form-input" type="number" id="wagerAdjAmt" placeholder="1000" style="font-size:0.82rem;">
+          </div>
+          <div>
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Action</div>
+            <select id="wagerAdjType" class="form-input" style="font-size:0.82rem;cursor:pointer;">
+              <option value="add">➕ Add to Completed</option>
+              <option value="set">🔄 Set Completed to</option>
+              <option value="reset">🗑️ Reset Wager</option>
+            </select>
+          </div>
+          <button class="btn btn-gold" onclick="adjustWager()" style="padding:0.75rem 1rem;font-size:0.85rem;">Apply</button>
+        </div>
+        <div id="wagerCurrentInfo" style="margin-top:0.8rem;font-size:0.8rem;color:var(--muted);"></div>
+      </div>
+    </div>
+
+    <!-- ── USERS TAB ── -->
+    <div class="admin-panel" id="panel-users">
+
+      <!-- Fraud Alerts -->
+      <div style="background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.2);border-radius:12px;padding:1rem;margin-bottom:1.2rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+          <div style="font-family:'Cinzel',serif;color:var(--red2);font-size:0.9rem;">🚨 Fraud Alerts</div>
+          <button onclick="loadFraudAlerts()" style="font-size:0.72rem;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.2);border-radius:6px;padding:0.2rem 0.6rem;color:var(--red2);cursor:pointer;">Refresh</button>
+        </div>
+        <div id="fraudAlertsList" style="font-size:0.8rem;color:var(--muted);">Loading...</div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.8rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">👥 Registered Users (<span id="userCount">0</span>)</div>
+        <input class="form-input" type="text" id="userSearch" placeholder="🔍 Search by username, UID or phone..." style="max-width:320px;font-size:0.85rem;" oninput="filterUsers(this.value)">
+      </div>
+      <div id="usersList" style="display:flex;flex-direction:column;gap:0.6rem;">
+        <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">Loading users...</div>
+      </div>
+    </div>
+
+    <!-- ── LIVE BETS TAB ── -->
+    <div class="admin-panel active" id="panel-bets">
+      <div style="margin-bottom:1.2rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;margin-bottom:0.3rem;">💰 Live Bet Summary</div>
+        <div style="font-size:0.8rem;color:var(--muted);">Real-time bets placed this round — per timer mode</div>
+      </div>
+
+      <!-- 3 mode summaries -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+
+        <!-- 1 Min -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+          <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.88rem;">⏱ 1 Min</span>
+            <span style="font-size:0.75rem;color:var(--green);font-weight:700;" id="liveTotalAmt1min">₹0 · 0 bets</span>
+          </div>
+          <div id="liveSummary1min" style="padding:0.6rem 1rem;font-size:0.8rem;color:var(--muted);text-align:center;min-height:60px;display:flex;align-items:center;justify-content:center;">No bets yet</div>
+        </div>
+
+        <!-- 3 Min -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+          <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.88rem;">⏱ 3 Min</span>
+            <span style="font-size:0.75rem;color:var(--green);font-weight:700;" id="liveTotalAmt3min">₹0 · 0 bets</span>
+          </div>
+          <div id="liveSummary3min" style="padding:0.6rem 1rem;font-size:0.8rem;color:var(--muted);text-align:center;min-height:60px;display:flex;align-items:center;justify-content:center;">No bets yet</div>
+        </div>
+
+        <!-- 5 Min -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;">
+          <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.88rem;">⏱ 5 Min</span>
+            <span style="font-size:0.75rem;color:var(--green);font-weight:700;" id="liveTotalAmt5min">₹0 · 0 bets</span>
+          </div>
+          <div id="liveSummary5min" style="padding:0.6rem 1rem;font-size:0.8rem;color:var(--muted);text-align:center;min-height:60px;display:flex;align-items:center;justify-content:center;">No bets yet</div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- ── SETTINGS TAB ── -->
+    <!-- ── LIVE CHAT TAB ── -->
+    <div class="admin-panel" id="panel-chat">
+      <div style="margin-bottom:0.8rem;display:flex;align-items:center;gap:0.8rem;">
+        <button onclick="debugLoadChat()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.5rem 1rem;color:#000;font-weight:700;cursor:pointer;font-size:0.82rem;">🔄 Refresh Conversations</button>
+        <span id="chatDebugInfo" style="font-size:0.75rem;color:var(--muted);"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:280px 1fr;gap:1.5rem;height:580px;">
+
+        <!-- Conversation list -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);font-weight:700;color:var(--gold);font-size:0.85rem;">💬 Conversations</div>
+          <div id="chatUserList" style="flex:1;overflow-y:auto;"></div>
+        </div>
+
+        <!-- Chat window -->
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;display:flex;flex-direction:column;">
+          <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+            <div>
+              <div style="font-weight:700;color:var(--text);font-size:0.9rem;" id="adminChatName">Select a conversation</div>
+              <div style="font-size:0.72rem;color:var(--muted);" id="adminChatUid">—</div>
+            </div>
+            <div id="adminChatStatus" style="font-size:0.72rem;color:var(--green);display:none;">● Online</div>
+          </div>
+
+          <!-- Messages -->
+          <div id="adminChatMessages" style="flex:1;overflow-y:auto;padding:1rem;display:flex;flex-direction:column;gap:0.6rem;">
+            <div style="text-align:center;color:var(--muted);font-size:0.82rem;margin-top:2rem;">Select a user to start chatting</div>
+          </div>
+
+          <!-- Input -->
+          <div style="padding:0.8rem;border-top:1px solid var(--border);display:flex;gap:0.5rem;">
+            <input id="adminChatInput" type="text" placeholder="Type a reply..." onkeydown="if(event.key==='Enter')adminSendChat()"
+              style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.9rem;color:var(--text);font-family:'Exo 2',sans-serif;font-size:0.85rem;outline:none;">
+            <button onclick="adminSendChat()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.6rem 1.2rem;color:#000;font-weight:800;cursor:pointer;font-family:'Exo 2',sans-serif;">Send</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="admin-panel" id="panel-settings">
+
+      <!-- USDT Address Manager -->
+      <div class="control-card" style="margin-bottom:1.5rem;">
+        <h3>💚 USDT TRC20 Addresses</h3>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Add multiple USDT wallet addresses. Each deposit shows a random address.</p>
+        <div id="usdtAddressList" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;"></div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+          <input class="form-input" type="text" id="newUsdtAddress" placeholder="TRC20 wallet address" style="flex:2;min-width:160px;font-size:0.82rem;">
+          <input class="form-input" type="text" id="newUsdtLabel" placeholder="Label (e.g. Wallet 1)" style="flex:1;min-width:100px;font-size:0.85rem;">
+          <button class="btn btn-gold" onclick="addUsdtAddress()" style="white-space:nowrap;">➕ Add</button>
+        </div>
+      </div>
+
+      <!-- UPI ID Manager -->
+      <div class="control-card" style="margin-bottom:1.5rem;">
+        <h3>💳 Payment UPI IDs</h3>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Add multiple UPI IDs. Users can choose which one to pay to.</p>
+        <div id="upiIdList" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;"></div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+          <input class="form-input" type="text" id="newUpiId" placeholder="UPI ID (e.g. name@ybl)" style="flex:2;min-width:140px;font-size:0.85rem;">
+          <input class="form-input" type="text" id="newUpiLabel" placeholder="Label (e.g. GPay)" style="flex:1;min-width:100px;font-size:0.85rem;">
+          <button class="btn btn-gold" onclick="addUpiId()" style="white-space:nowrap;">➕ Add</button>
+        </div>
+      </div>
+
+      <!-- Announcement Manager -->
+      <div class="control-card" style="margin-bottom:1.5rem;">
+        <h3>📢 Announcement Banner</h3>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Show a banner message to all users on the home page.</p>
+        <div style="display:flex;gap:0.6rem;margin-bottom:0.6rem;">
+          <input class="form-input" type="text" id="announcementText" placeholder="e.g. 🎉 New game launching soon! Stay tuned." style="flex:1;font-size:0.85rem;">
+        </div>
+        <div style="display:flex;gap:0.6rem;">
+          <button class="btn btn-gold" onclick="saveAnnouncement(true)" style="flex:1;">📢 Publish</button>
+          <button class="btn" onclick="saveAnnouncement(false)" style="flex:1;background:rgba(224,32,32,0.1);border-color:rgba(224,32,32,0.3);color:var(--red2);">🗑️ Remove</button>
+        </div>
+        <div id="announcementStatus" style="font-size:0.75rem;color:var(--muted);margin-top:0.5rem;"></div>
+      </div>
+
+      <!-- Gift Code Manager -->
+      <div class="control-card" style="margin-bottom:1.5rem;">
+        <h3>🎁 Gift Code Manager</h3>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Create and manage gift codes for users to redeem.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:0.6rem;margin-bottom:0.8rem;align-items:end;">
+          <div>
+            <label class="form-label">Code</label>
+            <input class="form-input" type="text" id="giftCode" placeholder="ROYAL100" oninput="this.value=this.value.toUpperCase()" style="font-size:0.85rem;">
+          </div>
+          <div>
+            <label class="form-label">Amount (₹)</label>
+            <input class="form-input" type="number" id="giftAmount" placeholder="100" style="font-size:0.85rem;">
+          </div>
+          <div>
+            <label class="form-label">Max Uses</label>
+            <input class="form-input" type="number" id="giftMaxUses" placeholder="100" style="font-size:0.85rem;">
+          </div>
+          <button class="btn btn-gold" onclick="createGiftCode()" style="white-space:nowrap;height:42px;">➕ Create</button>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;">
+          <div id="giftCodesList" style="background:var(--bg3);border-radius:10px;overflow:hidden;flex:1;">
+            <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.82rem;">Loading...</div>
+          </div>
+        </div>
+        <button onclick="loadGiftCodes()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.4rem 1rem;color:var(--muted);cursor:pointer;font-size:0.78rem;margin-top:0.4rem;">🔄 Refresh List</button>
+      </div>
+
+      <!-- Commission Rates -->
+      <div class="control-card" style="margin-bottom:1.5rem;">
+        <h3>💰 Commission Rates (Referral)</h3>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Set commission % credited to referrers on every bet.</p>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.6rem;margin-bottom:0.8rem;">
+          <div><label class="form-label">L1 %</label><input class="form-input" type="number" id="rateL1" placeholder="1" step="0.1" style="font-size:0.85rem;"></div>
+          <div><label class="form-label">L2 %</label><input class="form-input" type="number" id="rateL2" placeholder="0.8" step="0.1" style="font-size:0.85rem;"></div>
+          <div><label class="form-label">L3 %</label><input class="form-input" type="number" id="rateL3" placeholder="0.5" step="0.1" style="font-size:0.85rem;"></div>
+          <div><label class="form-label">L4 %</label><input class="form-input" type="number" id="rateL4" placeholder="0.2" step="0.1" style="font-size:0.85rem;"></div>
+        </div>
+        <button class="btn btn-gold" onclick="saveCommissionRates()">💾 Save Rates</button>
+        <div id="ratesStatus" style="margin-top:0.6rem;font-size:0.78rem;color:var(--muted);"></div>
+      </div>
+
+      <!-- Announcement Banner -->
+      <div class="control-card" style="margin-bottom:1.5rem;">
+        <h3>📢 Announcement Banner</h3>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Shows a banner on the game site for all players.</p>
+        <div class="form-group">
+          <label class="form-label">Message</label>
+          <input class="form-input" type="text" id="announcementMsg" placeholder="🎉 Special bonus today! Deposit now and get 50% extra!">
+        </div>
+        <div style="display:flex;gap:0.8rem;margin-top:0.5rem;">
+          <button class="btn btn-gold" style="flex:1;" onclick="saveAnnouncement()">📢 Publish</button>
+          <button class="btn btn-outline" style="flex:1;" onclick="clearAnnouncement()">🗑️ Clear</button>
+        </div>
+        <div style="margin-top:0.8rem;padding:0.7rem;background:var(--bg3);border-radius:8px;font-size:0.78rem;color:var(--muted);">
+          Current: <span id="currentAnnouncement" style="color:var(--gold);">None</span>
+        </div>
+      </div>
+
+      <!-- Maintenance Mode -->
+      <div class="control-card" style="margin-bottom:1.5rem;">
+        <h3>🔧 Maintenance Mode</h3>
+        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">When ON, players see a maintenance message and cannot play.</p>
+        <div class="toggle-wrap">
+          <div>
+            <div class="toggle-label">🔧 Maintenance Mode</div>
+            <div style="font-size:0.75rem;color:var(--muted);">Disables game for all users</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="maintenanceToggle" onchange="toggleMaintenance(this.checked)">
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <div class="form-group" style="margin-top:0.8rem;">
+          <label class="form-label">Maintenance Message</label>
+          <input class="form-input" type="text" id="maintenanceMsg" value="🔧 Site under maintenance. Back soon!">
+        </div>
+      </div>
+
+      <!-- Revenue Dashboard -->
+      <div class="control-card" style="margin-bottom:1.5rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <h3 style="margin:0;">📊 Revenue Dashboard</h3>
+          <div style="display:flex;gap:0.4rem;">
+            <button onclick="loadRevenueStats('today')" id="revBtn-today" style="padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--gold);background:rgba(240,192,64,0.15);color:var(--gold);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-weight:700;">Today</button>
+            <button onclick="loadRevenueStats('week')" id="revBtn-week" style="padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Week</button>
+            <button onclick="loadRevenueStats('month')" id="revBtn-month" style="padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Month</button>
+            <button onclick="loadRevenueStats('all')" id="revBtn-all" style="padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">All Time</button>
+          </div>
+        </div>
+
+        <!-- Key metrics -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;margin-bottom:1rem;">
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Deposits</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--green);font-weight:700;" id="statTotalDeposits">₹0</div>
+            <div style="font-size:0.65rem;color:var(--muted);" id="statDepCount">0 txns</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Withdrawals</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--red2);font-weight:700;" id="statTotalWithdrawals">₹0</div>
+            <div style="font-size:0.65rem;color:var(--muted);" id="statWithCount">0 txns</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Net Revenue</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;" id="statNetRevenue">₹0</div>
+            <div style="font-size:0.65rem;color:var(--muted);">deposits - withdrawals</div>
+          </div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;margin-bottom:1rem;">
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Total Users</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);font-weight:700;" id="statTotalUsers">0</div>
+            <div style="font-size:0.65rem;color:var(--muted);" id="statNewUsers">0 new</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Total Bets</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);font-weight:700;" id="statTotalBets">0</div>
+            <div style="font-size:0.65rem;color:var(--muted);" id="statTotalWagered">₹0 wagered</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Pending</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);font-weight:700;" id="statPending">0</div>
+            <div style="font-size:0.65rem;color:var(--muted);">requests</div>
+          </div>
+        </div>
+
+        <!-- Daily chart (last 7 days) -->
+        <div style="background:var(--bg3);border-radius:10px;padding:1rem;">
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.8rem;text-transform:uppercase;letter-spacing:0.5px;">Last 7 Days — Deposits vs Withdrawals</div>
+          <div id="revChart" style="display:flex;align-items:flex-end;gap:0.3rem;height:80px;"></div>
+          <div id="revChartLabels" style="display:flex;gap:0.3rem;margin-top:0.3rem;"></div>
+          <div style="display:flex;gap:1rem;margin-top:0.5rem;font-size:0.65rem;">
+            <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:3px;"></span>Deposits</span>
+            <span><span style="display:inline-block;width:10px;height:10px;background:var(--red2);border-radius:2px;margin-right:3px;"></span>Withdrawals</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-grid">
+        <div class="control-card">
+          <h3>⚙️ Game Settings</h3>
+          <div class="setting-row">
+            <div><div class="setting-name">Platform Fee</div><div class="setting-desc">Deducted from each bet</div></div>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <input type="number" value="4" min="0" max="20" id="feeInput" style="width:60px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;color:var(--text);font-family:'Exo 2',sans-serif;text-align:center;outline:none;">
+              <span style="color:var(--muted);">%</span>
+            </div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-name">Min Bet Amount</div><div class="setting-desc">Minimum per round</div></div>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <span style="color:var(--muted);">₹</span>
+              <input type="number" value="10" min="1" id="minBetInput" style="width:80px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;color:var(--text);font-family:'Exo 2',sans-serif;text-align:center;outline:none;">
+            </div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-name">Max Bet Amount</div><div class="setting-desc">Maximum per round</div></div>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <span style="color:var(--muted);">₹</span>
+              <input type="number" value="50000" id="maxBetInput" style="width:80px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;color:var(--text);font-family:'Exo 2',sans-serif;text-align:center;outline:none;">
+            </div>
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-name">Green/Red Payout</div><div class="setting-desc">Multiplier for color bets</div></div>
+            <input type="number" value="2" step="0.1" id="colorPayout" style="width:70px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;color:var(--text);font-family:'Exo 2',sans-serif;text-align:center;outline:none;">
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-name">Violet Payout</div><div class="setting-desc">Multiplier for violet bets</div></div>
+            <input type="number" value="4.5" step="0.1" id="violetPayout" style="width:70px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;color:var(--text);font-family:'Exo 2',sans-serif;text-align:center;outline:none;">
+          </div>
+          <div class="setting-row">
+            <div><div class="setting-name">Number Payout</div><div class="setting-desc">Multiplier for number bets</div></div>
+            <input type="number" value="9" step="0.5" id="numPayout" style="width:70px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;color:var(--text);font-family:'Exo 2',sans-serif;text-align:center;outline:none;">
+          </div>
+          <button class="btn btn-gold btn-full" style="margin-top:1rem;" onclick="saveSettings()">💾 Save Settings</button>
+        </div>
+
+        <div class="control-card">
+          <h3>🔐 Admin Security</h3>
+          <div class="form-group" style="margin-top:0.5rem;">
+            <label class="form-label">New Admin Password</label>
+            <input class="form-input" type="password" id="newAdminPass" placeholder="Enter new password">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirm Password</label>
+            <input class="form-input" type="password" id="confirmAdminPass" placeholder="Confirm new password">
+          </div>
+          <button class="btn btn-outline btn-full" onclick="changeAdminPass()">🔒 Change Password</button>
+
+          <div style="margin-top:1.5rem;">
+            <h3 style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;margin-bottom:1rem;">🔥 Firebase Status</h3>
+            <div style="background:var(--bg3);border-radius:10px;padding:1rem;font-size:0.82rem;line-height:2;">
+              <div>Status: <span id="fbStatusDetail" style="color:var(--green);">Connected</span></div>
+              <div>Database: <span style="color:var(--muted);" id="fbDbUrl">—</span></div>
+              <div>Auth: <span id="fbAuthStatus" style="color:var(--muted);">—</span></div>
+            </div>
+          </div>
+
+          <div style="margin-top:1.5rem;">
+            <h3 style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;margin-bottom:1rem;">⚠️ Danger Zone</h3>
+            <button class="btn btn-red btn-full" style="margin-bottom:0.8rem;" onclick="resetAllRounds()">🗑️ Reset All Round Data</button>
+            <button class="btn btn-red btn-full" onclick="resetAllBets()">💀 Clear All Bet History</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, push, remove, update, off } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+// ── FIREBASE CONFIG ──
+// TODO: Replace with your Firebase project config
+// Get from: https://console.firebase.google.com → Project Settings → Your Apps
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBOw37okdtBnUv3rfnnUg8nE0Vb5LHyl6g",
+  authDomain: "royalwin-32d97.firebaseapp.com",
+  databaseURL: "https://royalwin-32d97-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "royalwin-32d97",
+  storageBucket: "royalwin-32d97.firebasestorage.app",
+  messagingSenderId: "1056996003114",
+  appId: "1:1056996003114:web:8c89f3af4a3b81fd582253",
+  measurementId: "G-6Q7DX3EG1G"
+};
+
+const app = initializeApp(FIREBASE_CONFIG);
+const db = getDatabase(app);
+const auth = getAuth(app);
+
+// ── STATE ──
+let selectedNum = null;
+const scheduleDataByTimer = {1: Array(5).fill(null), 3: Array(5).fill(null), 5: Array(5).fill(null)};
+let weightData = { 0:10,1:10,2:10,3:10,4:10,5:10,6:10,7:10,8:10,9:10 };
+let currentRound = 20250513001;
+
+// ── FIREBASE CONNECTION STATUS ──
+onValue(ref(db, '.info/connected'), (snap) => {
+  const connected = snap.val();
+  const dot = document.getElementById('fbDot');
+  const txt = document.getElementById('fbStatusText');
+  const detail = document.getElementById('fbStatusDetail');
+  const dbUrl = document.getElementById('fbDbUrl');
+  if (dot) { dot.className = 'fb-dot ' + (connected ? 'connected' : 'error'); }
+  if (txt) txt.textContent = connected ? 'Firebase Connected' : 'Disconnected';
+  if (detail) { detail.textContent = connected ? 'Connected' : 'Disconnected'; detail.style.color = connected ? 'var(--green)' : 'var(--red2)'; }
+  if (dbUrl) dbUrl.textContent = FIREBASE_CONFIG.databaseURL;
+});
+
+// ── AUTH ──
+onAuthStateChanged(auth, (user) => {
+  if (user) {
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('adminWrap').style.display = 'block';
+    document.getElementById('fbAuthStatus').textContent = user.email;
+    initAdmin();
+  } else {
+    document.getElementById('loginWrap').style.display = 'flex';
+    document.getElementById('adminWrap').style.display = 'none';
+  }
+});
+
+window.doAdminLogin = async function() {
+  const email = document.getElementById('adminEmail').value;
+  const pass = document.getElementById('adminPassword').value;
+  const errEl = document.getElementById('loginError');
+  errEl.style.display = 'none';
+  try {
+    await signInWithEmailAndPassword(auth, email, pass);
+  } catch(e) {
+    errEl.style.display = 'block';
+    errEl.textContent = '❌ ' + (e.code === 'auth/wrong-password' ? 'Wrong password.' : e.code === 'auth/user-not-found' ? 'Admin not found.' : 'Login failed: ' + e.message);
+  }
+};
+
+window.doAdminLogout = async function() {
+  await signOut(auth);
+  showToast('👋 Signed out');
+};
+
+// ── INIT ADMIN ──
+function initAdmin() {
+  buildNumGrid();
+  buildScheduleGrid();
+  buildWeightSliders();
+  loadLiveData();
+  loadBets();
+  startPeriodTracker();
+  updateNextResultBadges();
+  loadFinance();
+  loadRevenueStats();
+  // Pre-load settings data
+  setTimeout(() => { loadGiftCodes(); loadCommissionRates(); }, 1000);
+}
+
+// ── REAL-TIME PERIOD TRACKER ──
+function startPeriodTracker() {
+  function tick() {
+    const now = Date.now();
+    const nowDate = new Date(now);
+    const year = nowDate.getFullYear();
+    const month = String(nowDate.getMonth() + 1).padStart(2, '0');
+    const day = String(nowDate.getDate()).padStart(2, '0');
+    const dateStr = '' + year + month + day;
+    const minutesSinceMidnight = nowDate.getHours() * 60 + nowDate.getMinutes();
+
+    [1, 3, 5].forEach(mins => {
+      const periodMs = mins * 60 * 1000;
+      const elapsed = now % periodMs;
+      const remaining = Math.ceil((periodMs - elapsed) / 1000);
+      const serial = Math.floor(minutesSinceMidnight / mins);
+      const serialStr = String(serial).padStart(4, '0');
+      const periodId = dateStr + serialStr;
+      const pct = ((periodMs - elapsed) / periodMs * 100).toFixed(1);
+      const mm = String(Math.floor(remaining / 60)).padStart(2, '0');
+      const ss = String(remaining % 60).padStart(2, '0');
+
+      const periodEl = document.getElementById('period' + mins + 'min');
+      const timerEl = document.getElementById('timer' + mins + 'min');
+      const barEl = document.getElementById('bar' + mins + 'min');
+
+      if (periodEl) periodEl.textContent = periodId;
+      if (timerEl) timerEl.textContent = mm + ':' + ss;
+      if (barEl) {
+        barEl.style.width = pct + '%';
+        barEl.style.background = remaining <= 5
+          ? 'linear-gradient(90deg,#7a1a1a,var(--red2))'
+          : 'linear-gradient(90deg,#c07a10,var(--gold2))';
+      }
+      // Update SVG circle
+      const circleEl = document.getElementById('timerCircle' + mins + 'min');
+      if (circleEl) {
+        const circumference = 119.4;
+        const offset = circumference - (parseFloat(pct) / 100 * circumference);
+        circleEl.style.strokeDashoffset = offset;
+        circleEl.style.stroke = remaining <= 5 ? 'var(--red2)' : 'var(--gold2)';
+      }
+    });
+  }
+  tick();
+  setInterval(tick, 1000);
+}
+
+const quickSelected = {1: null, 3: null, 5: null};
+
+window.quickSetResult = function(mins, num) {
+  quickSelected[mins] = num;
+  // Highlight selected button
+  for (let i = 0; i <= 9; i++) {
+    const btn = document.getElementById('qbtn' + mins + '_' + i);
+    if (btn) {
+      btn.classList.remove('qsel');
+      btn.style.background = 'var(--bg3)';
+      btn.style.borderColor = 'var(--border)';
+      btn.style.color = 'var(--text)';
+    }
+  }
+  const selBtn = document.getElementById('qbtn' + mins + '_' + num);
+  if (selBtn) {
+    selBtn.classList.add('qsel');
+    selBtn.style.background = 'linear-gradient(135deg,#c07a10,var(--gold2))';
+    selBtn.style.borderColor = 'var(--gold)';
+    selBtn.style.color = '#000';
+  }
+};
+
+window.quickConfirmResult = async function(mins) {
+  const num = quickSelected[mins];
+  if (num === null) { showToast('⚠️ Select a number first for ' + mins + ' Min!'); return; }
+  const path = 'wingo/wingo' + mins + 'min';
+  await set(ref(db, path + '/currentResult'), num);
+  await set(ref(db, path + '/mode'), 'manual');
+  showToast('✅ [' + mins + ' Min] Result ' + num + ' set!');
+  // Update status displays
+  const nextEl = document.getElementById('next' + mins + 'min');
+  if (nextEl) nextEl.textContent = num;
+};
+
+window.quickClearResult = async function(mins) {
+  const path = 'wingo/wingo' + mins + 'min';
+  await set(ref(db, path + '/currentResult'), -1);
+  await set(ref(db, path + '/mode'), 'auto');
+  quickSelected[mins] = null;
+  for (let i = 0; i <= 9; i++) {
+    const btn = document.getElementById('qbtn' + mins + '_' + i);
+    if (btn) {
+      btn.classList.remove('qsel');
+      btn.style.background = 'var(--bg3)';
+      btn.style.borderColor = 'var(--border)';
+      btn.style.color = 'var(--text)';
+    }
+  }
+  const nextEl = document.getElementById('next' + mins + 'min');
+  if (nextEl) nextEl.textContent = 'Auto';
+  showToast('🔄 [' + mins + ' Min] Override cleared');
+};
+
+const lockState = {1: false, 3: false, 5: false};
+
+window.toggleLock = async function(mins) {
+  lockState[mins] = !lockState[mins];
+  const path = 'wingo/wingo' + mins + 'min';
+  await set(ref(db, path + '/bettinglocked'), lockState[mins]);
+  const btn = document.getElementById('lockBtn' + mins);
+  if (btn) {
+    btn.textContent = lockState[mins] ? '🔒 Locked' : '🔓 Unlock';
+    btn.style.color = lockState[mins] ? 'var(--red2)' : 'var(--muted)';
+    btn.style.borderColor = lockState[mins] ? 'rgba(224,32,32,0.3)' : 'var(--border)';
+  }
+  showToast((lockState[mins] ? '🔒' : '🔓') + ' [' + mins + ' Min] Betting ' + (lockState[mins] ? 'locked' : 'unlocked'));
+};
+
+window.forceResolve = async function(mins) {
+  if (!confirm('Force resolve ' + mins + ' Min round now?')) return;
+  const path = 'wingo/wingo' + mins + 'min';
+  await set(ref(db, path + '/forceResolve'), Date.now());
+  showToast('⚡ [' + mins + ' Min] Force resolve triggered!');
+};
+
+window.toggleAutoForMode = async function(mins, isAuto) {
+  const path = 'wingo/wingo' + mins + 'min';
+  await set(ref(db, path + '/automode'), isAuto);
+  await set(ref(db, path + '/mode'), isAuto ? 'auto' : 'manual');
+  const toggle = document.getElementById('autoToggle' + mins + 'min');
+  if (toggle) toggle.checked = isAuto;
+  const badge = document.getElementById('mode' + mins + 'badge');
+  if (badge) {
+    badge.textContent = isAuto ? 'AUTO' : 'MANUAL';
+    badge.style.background = isAuto ? 'rgba(240,192,64,0.1)' : 'rgba(224,32,32,0.15)';
+    badge.style.color = isAuto ? 'var(--gold)' : 'var(--red2)';
+    badge.style.border = isAuto ? '1px solid rgba(240,192,64,0.2)' : '1px solid rgba(224,32,32,0.3)';
+    badge.setAttribute('onclick', `toggleAutoForMode(${mins}, ${!isAuto})`);
+  }
+  showToast((isAuto ? '🤖' : '👑') + ' ' + mins + ' Min: Auto ' + (isAuto ? 'ON' : 'OFF'));
+};
+
+function renderLastResults(mins, history) {
+  const el = document.getElementById('lastResults' + mins + 'min');
+  if (!el) return;
+  if (!history || history.length === 0) {
+    el.innerHTML = '<div style="font-size:0.72rem;color:var(--muted);text-align:center;padding:0.3rem;">No results yet</div>';
+    return;
+  }
+  const colorMap = { 'violet': '#7c4dff', 'red': '#e02020', 'green': '#27ae60' };
+  // Compact horizontal chips
+  el.innerHTML = '<div style="display:flex;gap:0.3rem;flex-wrap:wrap;">' +
+    history.slice(0, 5).map(h => {
+      const bg = colorMap[h.color] || '#7c4dff';
+      const bs = h.bigSmall === 'Big' ? 'B' : 'S';
+      const bsColor = h.bigSmall === 'Big' ? 'var(--gold)' : '#60a5fa';
+      return `<div style="display:flex;flex-direction:column;align-items:center;gap:0.1rem;background:var(--bg3);border-radius:6px;padding:0.25rem 0.4rem;min-width:30px;">
+        <div style="width:20px;height:20px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:800;color:#fff;">${h.num}</div>
+        <span style="font-size:0.62rem;font-weight:700;color:${bsColor};">${bs}</span>
+      </div>`;
+    }).join('') + '</div>';
+}
+
+function updateNextResultBadges() {
+  [1, 3, 5].forEach(mins => {
+    // Listen for schedule per mode
+    onValue(ref(db, 'wingo/wingo' + mins + 'min/schedule'), (snap) => {
+      if (snap.val()) {
+        const vals = Object.values(snap.val());
+        scheduleDataByTimer[mins] = vals.length >= 5 ? vals.slice(0,5) : [...vals, ...Array(5-vals.length).fill(null)];
+        buildScheduleGridForMode(mins);
+      }
+    });
+    // Listen for last results per mode
+    onValue(ref(db, 'wingo/wingo' + mins + 'min/history'), (snap) => {
+      const history = snap.val() ? Object.values(snap.val()) : [];
+      renderLastResults(mins, history);
+    });
+    // Listen for bet summary per mode
+    onValue(ref(db, 'wingo/wingo' + mins + 'min/betSummary'), (snap) => {
+      const summary = snap.val();
+      const summaryEl = document.getElementById('betSummary' + mins + 'min');
+      const betsEl = document.getElementById('bets' + mins + 'min');
+      if (!summary) {
+        if (summaryEl) summaryEl.innerHTML = '<span style="color:var(--muted);">No bets yet</span>';
+        if (betsEl) betsEl.textContent = '0 bets';
+        return;
+      }
+      const entries = Object.values(summary);
+      const totalBets = entries.reduce((s, e) => s + e.count, 0);
+      const totalAmt = entries.reduce((s, e) => s + e.totalAmount, 0);
+      if (betsEl) betsEl.textContent = totalBets + ' bets · ₹' + totalAmt.toLocaleString('en-IN');
+      if (summaryEl) {
+        const colorMap = { green:'#27ae60', red:'#e02020', violet:'#7c4dff', big:'var(--gold)', small:'#2563eb' };
+        summaryEl.innerHTML = entries.map(e => {
+          const key = e.selection.toLowerCase().replace(' ', '_');
+          const col = colorMap[e.selection.toLowerCase()] || 'var(--muted)';
+          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.2rem 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+            <span style="color:${col};font-weight:700;">${e.selection}</span>
+            <span style="color:var(--text);">₹${e.totalAmount.toLocaleString('en-IN')} <span style="color:var(--muted);">(${e.count})</span></span>
+          </div>`;
+        }).join('');
+      }
+    });
+    // Listen for automode per mode
+    onValue(ref(db, 'wingo/wingo' + mins + 'min/automode'), (snap) => {
+      const isAuto = snap.val() !== false;
+      const toggle = document.getElementById('autoToggle' + mins + 'min');
+      if (toggle) toggle.checked = isAuto;
+    });
+    onValue(ref(db, 'wingo/wingo' + mins + 'min/currentResult'), (snap) => {
+      const val = snap.val();
+      const nextEl = document.getElementById('next' + mins + 'min');
+      const badgeEl = document.getElementById('mode' + mins + 'badge');
+      if (nextEl) nextEl.textContent = (val !== null && val >= 0) ? val : 'Auto';
+      if (badgeEl) {
+        badgeEl.textContent = (val !== null && val >= 0) ? 'MANUAL' : 'AUTO';
+        badgeEl.style.background = (val !== null && val >= 0) ? 'rgba(224,32,32,0.15)' : 'rgba(240,192,64,0.1)';
+        badgeEl.style.color = (val !== null && val >= 0) ? 'var(--red2)' : 'var(--gold)';
+        badgeEl.style.border = (val !== null && val >= 0) ? '1px solid rgba(224,32,32,0.3)' : '1px solid rgba(240,192,64,0.2)';
+      }
+    });
+  });
+}
+
+// ── LIVE DATA ──
+function loadLiveData() {
+  // Listen to each timer path separately
+  [1,3,5].forEach(mins => {
+    const path = 'wingo/wingo' + mins + 'min';
+    onValue(ref(db, path), (snap) => {
+      const data = snap.val() || {};
+      const statusEl = document.getElementById('status' + mins + 'min');
+      if (statusEl) {
+        if (data.currentResult >= 0) {
+          statusEl.textContent = data.currentResult;
+          statusEl.style.color = 'var(--gold)';
+        } else {
+          statusEl.textContent = 'Auto';
+          statusEl.style.color = 'var(--muted)';
+        }
+      }
+      // Update main display for selected timer
+      if (mins === selectedTimerMode) {
+        if (data.mode) document.getElementById('statMode').textContent = data.mode === 'auto' ? '🤖 Auto' : '👑 Manual';
+        if (data.lastresult !== undefined && data.lastresult >= 0) {
+          document.getElementById('lastResultNum').textContent = data.lastresult;
+          const colors = ['violet+red','green','red','green','red','violet+green','red','green','red','green'];
+          document.getElementById('lastResultColor').textContent = colors[data.lastresult] || '—';
+          document.getElementById('lastResultTime').textContent = 'at ' + new Date().toLocaleTimeString();
+        }
+      }
+    });
+  });
+  // Listen for bets
+  onValue(ref(db, 'wingo/bets'), (snap) => {
+    const bets = snap.val() ? Object.values(snap.val()) : [];
+    document.getElementById('statBets').textContent = bets.length;
+    renderLiveBets(bets);
+  });
+}
+
+// ── NUM GRID ──
+const numColors = ['linear-gradient(135deg,#7c4dff 50%,#e02020 50%)','linear-gradient(135deg,#1a5c1a,#27ae60)','linear-gradient(135deg,#6e1a1a,#e02020)','linear-gradient(135deg,#1a5c1a,#27ae60)','linear-gradient(135deg,#6e1a1a,#e02020)','linear-gradient(135deg,#7c4dff 50%,#27ae60 50%)','linear-gradient(135deg,#6e1a1a,#e02020)','linear-gradient(135deg,#1a5c1a,#27ae60)','linear-gradient(135deg,#6e1a1a,#e02020)','linear-gradient(135deg,#1a5c1a,#27ae60)'];
+
+function buildNumGrid() {
+  const grid = document.getElementById('adminNumGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  for (let i = 0; i <= 9; i++) {
+    const btn = document.createElement('button');
+    btn.className = 'num-btn'; btn.textContent = i; btn.id = 'admNum' + i;
+    btn.style.background = numColors[i];
+    btn.onclick = () => { selectedNum = i; highlightNum(i); };
+    grid.appendChild(btn);
+  }
+}
+
+function highlightNum(n) {
+  document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
+  const el = document.getElementById('admNum' + n);
+  if (el) el.classList.add('selected');
+}
+
+let selectedTimerMode = 1;
+window.selectTimerTab = function(mins) {
+  selectedTimerMode = mins;
+  [1,3,5].forEach(m => document.getElementById('atab'+m).classList.toggle('active', m === mins));
+  document.getElementById('adminTimerLabel').innerHTML = 'Setting result for: <strong style="color:var(--gold);">' + mins + ' Min</strong> mode';
+  document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
+  selectedNum = null;
+  document.getElementById('overrideStatus').textContent = 'No override set — auto generating';
+  document.getElementById('overrideStatus').style.color = 'var(--muted)';
+};
+
+window.setNextResult = async function() {
+  if (selectedNum === null) { showToast('⚠️ Select a number first!'); return; }
+  const path = 'wingo/wingo' + selectedTimerMode + 'min';
+  await set(ref(db, path + '/currentResult'), selectedNum);
+  await set(ref(db, path + '/mode'), 'manual');
+  document.getElementById('overrideStatus').textContent = '✅ [' + selectedTimerMode + ' Min] Number ' + selectedNum + ' set as next result';
+  document.getElementById('overrideStatus').style.color = 'var(--gold)';
+  document.getElementById('status' + selectedTimerMode + 'min').textContent = selectedNum;
+  showToast('✅ [' + selectedTimerMode + ' Min] Result ' + selectedNum + ' set!');
+};
+
+window.clearNextResult = async function() {
+  const path = 'wingo/wingo' + selectedTimerMode + 'min';
+  await set(ref(db, path + '/currentResult'), -1);
+  await set(ref(db, path + '/mode'), 'auto');
+  selectedNum = null;
+  document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
+  document.getElementById('overrideStatus').textContent = 'No override set — auto generating';
+  document.getElementById('overrideStatus').style.color = 'var(--muted)';
+  document.getElementById('status' + selectedTimerMode + 'min').textContent = '—';
+  showToast('🔄 [' + selectedTimerMode + ' Min] Override cleared');
+};
+
+window.toggleAutoMode = async function() {
+  const on = document.getElementById('autoToggle').checked;
+  await set(ref(db, 'wingo/automode'), on);
+  document.getElementById('statMode').textContent = on ? '🤖 Auto' : '👑 Manual';
+  showToast(on ? '🤖 Auto mode ON' : '👑 Manual mode ON');
+};
+
+window.toggleBettingLock = async function() {
+  const locked = document.getElementById('lockToggle').checked;
+  await set(ref(db, 'wingo/bettinglocked'), locked);
+  showToast(locked ? '🔒 Betting locked for all users' : '🔓 Betting unlocked');
+};
+
+window.forceResolveNow = async function() {
+  if (!confirm('Force resolve the current round immediately?')) return;
+  await set(ref(db, 'wingo/forceResolve'), Date.now());
+  showToast('⚡ Force resolve triggered!');
+};
+
+// ── SCHEDULE ──
+function buildScheduleGrid() {
+  [1,3,5].forEach(mins => buildScheduleGridForMode(mins));
+}
+
+function buildScheduleGridForMode(mins) {
+  const grid = document.getElementById('scheduleGrid' + mins);
+  if (!grid) return;
+  const data = scheduleDataByTimer[mins];
+  // Compact horizontal chips like results
+  grid.innerHTML = '<div style="display:flex;gap:0.3rem;flex-wrap:wrap;">' +
+    Array(5).fill(0).map((_, i) => {
+      const val = data[i];
+      const bg = (val !== null && val >= 0) ? numColors[val] : 'var(--bg3)';
+      const txt = (val !== null && val >= 0) ? val : '+' + (i+1);
+      const txtColor = (val !== null && val >= 0) ? '#fff' : 'var(--muted)';
+      const border = (val !== null && val >= 0) ? '2px solid var(--gold)' : '1px solid var(--border)';
+      return `<div onclick="editSlotMode(${mins},${i})" style="display:flex;flex-direction:column;align-items:center;gap:0.2rem;background:var(--bg3);border:${border};border-radius:8px;padding:0.35rem 0.5rem;min-width:36px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--gold)'" onmouseout="this.style.borderColor='${(val !== null && val >= 0) ? 'var(--gold)' : 'var(--border)'}'">
+        <div style="width:22px;height:22px;border-radius:50%;background:${bg};display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:${txtColor};">${txt}</div>
+        <span style="font-size:0.6rem;color:var(--muted);">${(val !== null && val >= 0) ? 'set' : 'auto'}</span>
+      </div>`;
+    }).join('') + '</div>';
+}
+
+window.editSlotMode = function(mins, i) {
+  const val = prompt('Set result for slot +' + (i+1) + ' in ' + mins + ' Min mode (0-9, blank = auto):');
+  if (val === null) return;
+  if (val === '') { scheduleDataByTimer[mins][i] = null; }
+  else if (!isNaN(val) && parseInt(val) >= 0 && parseInt(val) <= 9) { scheduleDataByTimer[mins][i] = parseInt(val); }
+  else { showToast('⚠️ Enter a number 0–9'); return; }
+  buildScheduleGridForMode(mins);
+};
+
+window.saveScheduleMode = async function(mins) {
+  await set(ref(db, 'wingo/wingo' + mins + 'min/schedule'), scheduleDataByTimer[mins]);
+  showToast('💾 [' + mins + ' Min] Schedule saved!');
+};
+
+window.clearScheduleMode = function(mins) {
+  scheduleDataByTimer[mins] = Array(5).fill(null);
+  buildScheduleGridForMode(mins);
+  showToast('🗑️ [' + mins + ' Min] Schedule cleared');
+};
+
+window.randomFillMode = function(mins) {
+  scheduleDataByTimer[mins] = Array(5).fill(0).map(() => Math.floor(Math.random() * 10));
+  buildScheduleGridForMode(mins);
+  showToast('🎲 [' + mins + ' Min] Schedule auto-filled');
+};
+
+// ── WEIGHT SLIDERS ──
+function buildWeightSliders() {
+  const wrap = document.getElementById('weightSliders');
+  if (!wrap) return;
+  wrap.innerHTML = Object.entries(weightData).map(([num, w]) => `
+    <div style="display:flex;align-items:center;gap:1rem;margin-bottom:0.7rem;">
+      <div style="width:28px;height:28px;border-radius:50%;background:${numColors[num]};display:flex;align-items:center;justify-content:center;font-weight:800;font-family:Cinzel,serif;font-size:0.85rem;flex-shrink:0;">${num}</div>
+      <input type="range" min="0" max="50" value="${w}" id="weight${num}" style="flex:1;accent-color:var(--gold);" oninput="document.getElementById('wval${num}').textContent=this.value">
+      <span style="width:30px;text-align:right;color:var(--gold);font-weight:700;" id="wval${num}">${w}</span>
+    </div>
+  `).join('');
+}
+
+window.saveWeights = async function() {
+  const weights = {};
+  for (let i = 0; i <= 9; i++) {
+    const el = document.getElementById('weight' + i);
+    if (el) weights[i] = parseInt(el.value);
+  }
+  await set(ref(db, 'wingo/weights'), weights);
+  showToast('💾 Probability weights saved!');
+};
+
+// ── LIVE BETS ──
+function loadBets() {
+  const colorMap = { green:'#27ae60', red:'#e02020', violet:'#7c4dff', big:'var(--gold)', small:'#2563eb' };
+  [1, 3, 5].forEach(mins => {
+    onValue(ref(db, 'wingo/wingo' + mins + 'min/betSummary'), (snap) => {
+      const summary = snap.val();
+      const summaryEl = document.getElementById('liveSummary' + mins + 'min');
+      const totalEl = document.getElementById('liveTotalAmt' + mins + 'min');
+      if (!summary || Object.keys(summary).length === 0) {
+        if (summaryEl) summaryEl.innerHTML = '<span style="color:var(--muted);">No bets yet</span>';
+        if (totalEl) totalEl.textContent = '₹0 · 0 bets';
+        return;
+      }
+      const entries = Object.values(summary);
+      const totalAmt = entries.reduce((s, e) => s + (e.totalAmount || 0), 0);
+      const totalCount = entries.reduce((s, e) => s + (e.count || 0), 0);
+      if (totalEl) totalEl.textContent = '₹' + totalAmt.toLocaleString('en-IN') + ' · ' + totalCount + ' bets';
+      if (summaryEl) {
+        summaryEl.style.display = 'block';
+        summaryEl.style.textAlign = 'left';
+        summaryEl.innerHTML = entries.map(e => {
+          const col = colorMap[e.selection ? e.selection.toLowerCase() : ''] || 'var(--text)';
+          const pct = totalAmt > 0 ? Math.round(e.totalAmount / totalAmt * 100) : 0;
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid rgba(255,255,255,0.04);">
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <span style="color:${col};font-weight:700;font-size:0.82rem;">${e.selection}</span>
+              <span style="color:var(--muted);font-size:0.72rem;">(${e.count})</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:0.5rem;">
+              <div style="width:50px;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
+                <div style="width:${pct}%;height:100%;background:${col};border-radius:2px;"></div>
+              </div>
+              <span style="color:var(--text);font-size:0.82rem;font-weight:600;">₹${e.totalAmount.toLocaleString('en-IN')}</span>
+            </div>
+          </div>`;
+        }).join('');
+      }
+    });
+  });
+}
+
+window.refreshBets = function() { showToast('🔄 Refreshed'); };
+
+// ── SETTINGS ──
+window.saveSettings = async function() {
+  const settings = {
+    fee: parseFloat(document.getElementById('feeInput').value),
+    minBet: parseFloat(document.getElementById('minBetInput').value),
+    maxBet: parseFloat(document.getElementById('maxBetInput').value),
+    colorPayout: parseFloat(document.getElementById('colorPayout').value),
+    violetPayout: parseFloat(document.getElementById('violetPayout').value),
+    numPayout: parseFloat(document.getElementById('numPayout').value),
+  };
+  await set(ref(db, 'wingo/settings'), settings);
+  showToast('💾 Settings saved to Firebase!');
+};
+
+window.changeAdminPass = async function() {
+  const p1 = document.getElementById('newAdminPass').value;
+  const p2 = document.getElementById('confirmAdminPass').value;
+  if (!p1) { showToast('⚠️ Enter a new password'); return; }
+  if (p1 !== p2) { showToast('⚠️ Passwords do not match'); return; }
+  try {
+    await updatePassword(auth.currentUser, p1);
+    showToast('✅ Password changed!');
+  } catch(e) { showToast('❌ ' + e.message); }
+};
+
+window.resetAllRounds = async function() {
+  if (!confirm('⚠️ This will delete ALL round history. Continue?')) return;
+  await remove(ref(db, 'wingo/history'));
+  showToast('🗑️ Round data cleared');
+};
+
+window.resetAllBets = async function() {
+  if (!confirm('⚠️ This will delete ALL bet records. Continue?')) return;
+  await remove(ref(db, 'wingo/bets'));
+  showToast('💀 Bet history cleared');
+};
+
+// ── TABS ──
+
+
+// ── ANNOUNCEMENT ──
+window.saveAnnouncement = async function() {
+  const msg = document.getElementById('announcementMsg').value.trim();
+  if (!msg) { showToast('⚠️ Enter a message'); return; }
+  await set(ref(db, 'announcement'), { message: msg, timestamp: Date.now(), active: true });
+  document.getElementById('currentAnnouncement').textContent = msg;
+  showToast('📢 Announcement published!');
+};
+
+window.clearAnnouncement = async function() {
+  await set(ref(db, 'announcement'), { message: '', active: false });
+  document.getElementById('currentAnnouncement').textContent = 'None';
+  document.getElementById('announcementMsg').value = '';
+  showToast('🗑️ Announcement cleared');
+};
+
+// ── MAINTENANCE MODE ──
+window.toggleMaintenance = async function(isOn) {
+  const msg = document.getElementById('maintenanceMsg').value;
+  await set(ref(db, 'maintenance'), { active: isOn, message: msg, timestamp: Date.now() });
+  showToast(isOn ? '🔧 Maintenance mode ON — players cannot access game' : '✅ Maintenance mode OFF — site is live');
+};
+
+// ── REVENUE DASHBOARD ──
+async function loadRevenueStats(period = 'today') {
+  // Update period buttons
+  ['today','week','month','all'].forEach(p => {
+    const btn = document.getElementById('revBtn-' + p);
+    if (!btn) return;
+    if (p === period) {
+      btn.style.background = 'rgba(240,192,64,0.15)';
+      btn.style.borderColor = 'var(--gold)';
+      btn.style.color = 'var(--gold)';
+      btn.style.fontWeight = '700';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.borderColor = 'var(--border)';
+      btn.style.color = 'var(--muted)';
+      btn.style.fontWeight = '400';
+    }
+  });
+
+  const now = Date.now();
+  const today = new Date(); today.setHours(0,0,0,0);
+  let startTime = 0;
+  if (period === 'today') startTime = today.getTime();
+  else if (period === 'week') { const d = new Date(today); d.setDate(d.getDate() - 7); startTime = d.getTime(); }
+  else if (period === 'month') { const d = new Date(today); d.setDate(1); startTime = d.getTime(); }
+
+  try {
+    const [depSnap, withSnap, usersSnap] = await Promise.all([
+      get(ref(db, 'adminRequests/deposits')),
+      get(ref(db, 'adminRequests/withdrawals')),
+      get(ref(db, 'users'))
+    ]);
+
+    const deps = depSnap.val() ? Object.values(depSnap.val()) : [];
+    const withs = withSnap.val() ? Object.values(withSnap.val()) : [];
+    const users = usersSnap.val() ? Object.values(usersSnap.val()) : [];
+
+    // Filter by period
+    const filteredDeps = deps.filter(d => d.status === 'approved' && (startTime === 0 || (d.timestamp||0) >= startTime));
+    const filteredWiths = withs.filter(w => w.status === 'approved' && (startTime === 0 || (w.timestamp||0) >= startTime));
+    const newUsers = users.filter(u => startTime === 0 || (u.createdAt||0) >= startTime);
+
+    const totalDep = filteredDeps.reduce((s,d) => s + (d.amount||0), 0);
+    const totalWith = filteredWiths.reduce((s,w) => s + (w.amount||0), 0);
+    const netRev = totalDep - totalWith;
+
+    // Pending requests
+    const pendingDeps = deps.filter(d => d.status === 'pending').length;
+    const pendingWiths = withs.filter(w => w.status === 'pending').length;
+
+    // Total bets from all users
+    let totalBets = 0, totalWagered = 0;
+    users.forEach(u => {
+      if (u.betHistory) {
+        const bets = Object.values(u.betHistory).filter(b => startTime === 0 || (b.timestamp||0) >= startTime);
+        totalBets += bets.length;
+        totalWagered += bets.reduce((s,b) => s + (b.bet||0), 0);
+      }
+    });
+
+    // Update UI
+    const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    setText('statTotalDeposits', '₹' + totalDep.toLocaleString('en-IN'));
+    setText('statDepCount', filteredDeps.length + ' approved');
+    setText('statTotalWithdrawals', '₹' + totalWith.toLocaleString('en-IN'));
+    setText('statWithCount', filteredWiths.length + ' approved');
+    const netEl = document.getElementById('statNetRevenue');
+    if (netEl) { netEl.textContent = '₹' + Math.abs(netRev).toLocaleString('en-IN'); netEl.style.color = netRev >= 0 ? 'var(--green)' : 'var(--red2)'; }
+    setText('statTotalUsers', users.length);
+    setText('statNewUsers', newUsers.length + ' new');
+    setText('statTotalBets', totalBets.toLocaleString('en-IN'));
+    setText('statTotalWagered', '₹' + totalWagered.toLocaleString('en-IN') + ' wagered');
+    setText('statPending', (pendingDeps + pendingWiths));
+    const countEl = document.getElementById('userCount');
+    if (countEl) countEl.textContent = users.length;
+
+    // ── 7-DAY CHART ──
+    const chartEl = document.getElementById('revChart');
+    const labelsEl = document.getElementById('revChartLabels');
+    if (chartEl && labelsEl) {
+      const days = 7;
+      const dayData = [];
+      for (let i = days - 1; i >= 0; i--) {
+        const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - i);
+        const start = d.getTime();
+        const end = start + 86400000;
+        const dep = deps.filter(x => x.status === 'approved' && (x.timestamp||0) >= start && (x.timestamp||0) < end).reduce((s,x) => s + (x.amount||0), 0);
+        const wit = withs.filter(x => x.status === 'approved' && (x.timestamp||0) >= start && (x.timestamp||0) < end).reduce((s,x) => s + (x.amount||0), 0);
+        dayData.push({ label: d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}), dep, wit });
+      }
+      const maxVal = Math.max(...dayData.map(d => Math.max(d.dep, d.wit)), 1);
+      chartEl.innerHTML = dayData.map(d => `
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;">
+          <div style="flex:1;width:100%;display:flex;align-items:flex-end;gap:1px;">
+            <div style="flex:1;background:var(--green);border-radius:2px 2px 0 0;height:${Math.max(4, Math.round(d.dep/maxVal*70))}px;opacity:0.8;" title="Dep: ₹${d.dep}"></div>
+            <div style="flex:1;background:var(--red2);border-radius:2px 2px 0 0;height:${Math.max(4, Math.round(d.wit/maxVal*70))}px;opacity:0.8;" title="With: ₹${d.wit}"></div>
+          </div>
+        </div>`).join('');
+      labelsEl.innerHTML = dayData.map(d => `<div style="flex:1;text-align:center;font-size:0.58rem;color:var(--muted);">${d.label}</div>`).join('');
+    }
+
+  } catch(e) { console.error('Revenue stats error:', e); }
+}
+
+  // Load announcement
+  onValue(ref(db, 'announcement'), (snap) => {
+    const data = snap.val();
+    const el = document.getElementById('currentAnnouncement');
+    if (el) el.textContent = (data && data.active && data.message) ? data.message : 'None';
+    const input = document.getElementById('announcementMsg');
+    if (input && data && data.message) input.value = data.message;
+  });
+
+  // Load maintenance
+  onValue(ref(db, 'maintenance'), (snap) => {
+    const data = snap.val();
+    const toggle = document.getElementById('maintenanceToggle');
+    if (toggle && data) toggle.checked = data.active || false;
+  });
+}
+
+// ── USER SEARCH + BLOCK ──
+let allUsers = [];
+
+function loadUsers() {
+  onValue(ref(db, 'users'), (snap) => {
+    const data = snap.val();
+    if (!data) { 
+      document.getElementById('usersList').innerHTML = '<div style="text-align:center;color:var(--muted);">No users yet</div>'; 
+      return; 
+    }
+    allUsers = Object.entries(data).map(([uid, u]) => ({ uid, ...u }));
+    renderUsers(allUsers);
+  });
+}
+
+function getAdminVipLevel(exp) {
+  if (exp >= 1000) return { name: 'Diamond', icon: '💎', color: '#a87dff' };
+  if (exp >= 500) return { name: 'Gold', icon: '🥇', color: '#f0c040' };
+  if (exp >= 200) return { name: 'Silver', icon: '🥈', color: '#c0c0c0' };
+  return { name: 'Bronze', icon: '🥉', color: '#cd7f32' };
+}
+
+function renderUsers(users) {
+  const el = document.getElementById('usersList');
+  if (!el) return;
+  if (!users || users.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;">No users found</div>';
+    return;
+  }
+  el.innerHTML = users.map(u => {
+    const exp = u.vip?.exp || 0;
+    const vipLevel = getAdminVipLevel(exp);
+    return `
+    <div style="background:var(--card);border:1px solid ${u.isBlocked ? 'rgba(224,32,32,0.3)' : 'var(--border)'};border-radius:10px;padding:0.8rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+      <div>
+        <div style="display:flex;align-items:center;gap:0.5rem;">
+          <span style="font-weight:700;">${u.username || 'Unknown'}</span>
+          <span style="font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:4px;border:1px solid ${vipLevel.color}33;background:${vipLevel.color}18;color:${vipLevel.color};">${vipLevel.icon} ${vipLevel.name}</span>
+          ${u.isBlocked ? '<span style="background:rgba(224,32,32,0.15);color:var(--red2);font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:4px;border:1px solid rgba(224,32,32,0.3);">BLOCKED</span>' : ''}
+        </div>
+        <div style="font-size:0.72rem;color:var(--gold);">UID: ${u.memberId || u.uid?.substring(0,8) || '—'} · <span style="color:${vipLevel.color};">${exp} EXP</span></div>
+        <div style="font-size:0.72rem;color:var(--muted);">${u.contact || u.mobile || u.email || '—'}</div>
+        <div style="font-size:0.7rem;color:var(--muted);">Joined: ${u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN') : '—'} · Ref: ${u.referralCode || '—'}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--green);font-weight:700;">₹${(u.balance || 0).toLocaleString('en-IN')}</div>
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end;">
+          <button onclick="document.getElementById('manualUid').value='${u.uid}';switchTab('finance');" style="font-size:0.68rem;background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:4px;padding:0.2rem 0.5rem;color:var(--gold);cursor:pointer;">💰 Balance</button>
+          <button onclick="toggleBlockUser('${u.uid}', ${!u.isBlocked})" style="font-size:0.68rem;background:${u.isBlocked ? 'rgba(0,230,118,0.1)' : 'rgba(224,32,32,0.1)'};border:1px solid ${u.isBlocked ? 'rgba(0,230,118,0.2)' : 'rgba(224,32,32,0.2)'};border-radius:4px;padding:0.2rem 0.5rem;color:${u.isBlocked ? 'var(--green)' : 'var(--red2)'};cursor:pointer;">${u.isBlocked ? '✅ Unblock' : '🚫 Block'}</button>
+          <button onclick="resetWithdrawDetails('${u.uid}')" style="font-size:0.68rem;background:rgba(124,77,255,0.1);border:1px solid rgba(124,77,255,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:#7c4dff;cursor:pointer;">🔓 Reset Withdraw</button>
+          <button onclick="deleteUser('${u.uid}', '${u.username || 'Unknown'}')" style="font-size:0.68rem;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:4px;padding:0.2rem 0.5rem;color:var(--red2);cursor:pointer;">🗑️ Delete</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+window.filterUsers = function(query) {
+  if (!query) { renderUsers(allUsers); return; }
+  const q = query.toLowerCase();
+  const qDigits = query.replace(/\D/g, '');
+  const filtered = allUsers.filter(u =>
+    (u.username || '').toLowerCase().includes(q) ||
+    (u.contact || '').toLowerCase().includes(q) ||
+    (u.mobile || '').toLowerCase().includes(q) ||
+    (u.email || '').toLowerCase().includes(q) ||
+    (u.memberId || '').toLowerCase().includes(q) ||
+    (u.uid || '').toLowerCase().includes(q) ||
+    (qDigits.length >= 5 && (u.contact || '').replace(/\D/g,'').includes(qDigits)) ||
+    (qDigits.length >= 5 && (u.mobile || '').replace(/\D/g,'').includes(qDigits))
+  );
+  renderUsers(filtered);
+};
+
+
+window.resetWithdrawDetails = async function(uid) {
+  if (!confirm('Reset saved withdrawal details for this user? They will need to re-enter their details.')) return;
+  try {
+    await remove(ref(db, 'users/' + uid + '/withdrawDetails'));
+    showToast('✅ Withdrawal details reset for user');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
+
+window.loadFraudAlerts = async function() {
+  const el = document.getElementById('fraudAlertsList');
+  if (!el) return;
+  try {
+    const snap = await get(ref(db, 'users'));
+    const allUsers = snap.val() || {};
+    const alerts = [];
+    for (const [uid, u] of Object.entries(allUsers)) {
+      if (u.fraudLog) {
+        for (const [ts, log] of Object.entries(u.fraudLog)) {
+          alerts.push({ uid, username: u.username || 'Unknown', memberId: u.memberId || uid.substring(0,8), ...log });
+        }
+      }
+    }
+    alerts.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+    if (alerts.length === 0) { el.innerHTML = '<span style="color:var(--green);">✅ No fraud detected</span>'; return; }
+    el.innerHTML = alerts.slice(0,10).map(a => {
+      const time = a.timestamp ? new Date(a.timestamp).toLocaleString('en-IN', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+      return `<div style="background:var(--card);border:1px solid rgba(224,32,32,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.4rem;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <span style="color:var(--red2);font-weight:700;">${a.username}</span>
+          <span style="color:var(--muted);font-size:0.72rem;margin-left:0.4rem;">UID: ${a.memberId}</span>
+          <div style="font-size:0.72rem;color:var(--muted);">${a.detail} · ${a.mode} · ${time}</div>
+        </div>
+        <div style="color:var(--red2);font-size:0.78rem;font-weight:700;white-space:nowrap;">+₹${(a.penalty||0).toLocaleString('en-IN')} wager</div>
+      </div>`;
+    }).join('') + (alerts.length > 10 ? `<div style="font-size:0.72rem;color:var(--muted);text-align:center;">+${alerts.length-10} more</div>` : '');
+  } catch(e) { if(el) el.innerHTML = 'Failed to load'; }
+};
+
+window.adjustWager = async function() {
+  const uid = document.getElementById('wagerUid').value.trim();
+  const amt = parseFloat(document.getElementById('wagerAdjAmt').value);
+  const type = document.getElementById('wagerAdjType').value;
+  if (!uid) { showToast('⚠️ Enter user UID'); return; }
+
+  try {
+    const wagerSnap = await get(ref(db, 'users/' + uid + '/wager'));
+    const wager = wagerSnap.val() || { required: 0, completed: 0 };
+    const infoEl = document.getElementById('wagerCurrentInfo');
+
+    if (type === 'reset') {
+      await set(ref(db, 'users/' + uid + '/wager'), { required: 0, completed: 0 });
+      showToast('✅ Wager reset for user');
+      if (infoEl) infoEl.textContent = 'Wager reset — Required: ₹0, Completed: ₹0';
+      return;
+    }
+
+    if (!amt || isNaN(amt)) { showToast('⚠️ Enter a valid amount'); return; }
+
+    let newCompleted;
+    if (type === 'add') {
+      newCompleted = parseFloat((parseFloat(wager.completed || 0) + amt).toFixed(2));
+    } else {
+      newCompleted = parseFloat(amt.toFixed(2));
+    }
+
+    await update(ref(db, 'users/' + uid + '/wager'), { completed: newCompleted });
+    showToast('✅ Wager updated! Completed: ₹' + newCompleted.toLocaleString('en-IN') + ' / Required: ₹' + (wager.required || 0).toLocaleString('en-IN'));
+    if (infoEl) infoEl.textContent = `Current — Required: ₹${(wager.required||0).toLocaleString('en-IN')} · Completed: ₹${newCompleted.toLocaleString('en-IN')} · Remaining: ₹${Math.max(0, (wager.required||0) - newCompleted).toLocaleString('en-IN')}`;
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
+window.toggleBlockUser = async function(uid, block) {
+  await update(ref(db, 'users/' + uid), { isBlocked: block });
+  showToast(block ? '🚫 User blocked!' : '✅ User unblocked!');
+};
+
+window.deleteUser = async function(uid, username) {
+  if (!confirm('⚠️ Delete user "' + username + '"? This will remove all their data. Cannot be undone!')) return;
+  try {
+    // Delete from Realtime Database
+    await remove(ref(db, 'users/' + uid));
+    // Note: Deleting from Firebase Auth requires Admin SDK (server-side)
+    // For now we remove from database and block access
+    showToast('🗑️ User "' + username + '" deleted from database!');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
+
+// ── FINANCE ──
+function loadFinance() {
+  // Listen for deposit requests
+  // Deposit sound alert
+  var _lastDepCount = 0;
+  function _playAlertSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [800, 1000, 1200].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine'; osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.2);
+        osc.start(ctx.currentTime + i * 0.15);
+        osc.stop(ctx.currentTime + i * 0.15 + 0.2);
+      });
+    } catch(e) {}
+  }
+
+  onValue(ref(db, 'adminRequests/deposits'), (snap) => {
+    const el = document.getElementById('depositRequests');
+    if (!el) return;
+    const data = snap.val();
+    if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending deposits</div>'; return; }
+    const requests = Object.entries(data).reverse();
+    const pendingCount = requests.filter(([,r]) => r.status === 'pending').length;
+    if (_lastDepCount > 0 && pendingCount > _lastDepCount) {
+      _playAlertSound();
+      showToast('🔔 New deposit request!');
+    }
+    _lastDepCount = pendingCount;
+          <div style="font-size:0.68rem;color:var(--muted);">UID: ${r.uid ? r.uid.substring(0,12) + '...' : '—'}</div>
+          <div style="font-size:0.68rem;color:var(--muted);">${new Date(r.timestamp).toLocaleString('en-IN')}</div>
+        </div>
+        <div style="display:flex;gap:0.4rem;flex-shrink:0;">
+          ${r.status === 'pending' ? `
+          <button onclick="approveDeposit('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:6px;padding:0.3rem 0.7rem;color:#000;font-size:0.75rem;font-weight:700;cursor:pointer;">✅ Approve</button>
+          <button onclick="rejectRequest('deposits','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:6px;padding:0.3rem 0.7rem;color:var(--red2);font-size:0.75rem;cursor:pointer;">❌ Reject</button>
+          ` : `<span style="font-size:0.75rem;color:var(--muted);">${r.status}</span>`}
+        </div>
+      </div>`).join('');
+  });
+
+  // Listen for withdrawal requests
+  onValue(ref(db, 'adminRequests/withdrawals'), (snap) => {
+    const el = document.getElementById('withdrawRequests');
+    if (!el) return;
+    const data = snap.val();
+    if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending withdrawals</div>'; return; }
+    const requests = Object.entries(data).reverse();
+    const pendingWith = requests.filter(([,r]) => r.status === 'pending').length;
+    if (typeof _lastWithCount !== 'undefined' && _lastWithCount > 0 && pendingWith > _lastWithCount) {
+      _playAlertSound(); showToast('🔔 New withdrawal request!');
+    }
+    window._lastWithCount = pendingWith;
+    el.innerHTML = requests.map(([key, r]) => `
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+        <div>
+          <div style="font-weight:700;color:var(--red2);">₹${r.amount?.toLocaleString('en-IN')}</div>
+          <div style="font-size:0.72rem;color:var(--text);font-weight:600;">${r.username || 'Unknown'}</div>
+          <div style="font-size:0.7rem;color:var(--muted);">${r.contact || r.mobile || r.email || '—'} · Bal: ₹${r.balance?.toLocaleString('en-IN') || 0}</div>
+          ${r.assignedUpiId ? `<div style="font-size:0.7rem;color:var(--gold);">💳 ${r.assignedUpiId}</div>` : ''}
+          ${r.assignedUsdtAddress ? `<div style="font-size:0.7rem;color:#26a17b;">💚 ${r.assignedUsdtAddress.substring(0,20)}...</div>` : ''}
+          <div style="font-size:0.7rem;color:var(--gold);">UPI: ${r.upiId || 'Not provided'}</div>
+          <div style="font-size:0.68rem;color:var(--muted);">UID: ${r.uid ? r.uid.substring(0,12) + '...' : '—'}</div>
+          <div style="font-size:0.68rem;color:var(--muted);">${new Date(r.timestamp).toLocaleString('en-IN')}</div>
+          <div style="font-size:0.68rem;color:var(--muted);">${new Date(r.timestamp).toLocaleString('en-IN')}</div>
+        </div>
+        <div style="display:flex;gap:0.4rem;flex-shrink:0;">
+          ${r.status === 'pending' ? `
+          <button onclick="autoPayWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--gold);border:none;border-radius:6px;padding:0.3rem 0.7rem;color:#000;font-size:0.75rem;font-weight:700;cursor:pointer;">⚡ Auto Pay</button>
+          <button onclick="approveWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:6px;padding:0.3rem 0.7rem;color:#000;font-size:0.75rem;font-weight:700;cursor:pointer;">✅ Manual</button>
+          <button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:6px;padding:0.3rem 0.7rem;color:var(--red2);font-size:0.75rem;cursor:pointer;">❌ Reject</button>
+          ` : `<span style="font-size:0.75rem;color:var(--muted);">${r.status}</span>`}
+        </div>
+      </div>`).join('');
+  });
+
+  // Load users
+  loadUsers();
+}
+
+window.approveDeposit = async function(key, uid, amount) {
+  try {
+    // Read request data FIRST before updating status
+    const reqSnap = await get(ref(db, 'adminRequests/deposits/' + key));
+    const reqData = reqSnap.val();
+    console.log('Approving deposit:', { key, uid, amount, bonusAmt: reqData?.bonusAmt, bonusPct: reqData?.bonusPct, wagerReq: reqData?.wagerReq });
+
+    const balSnap = await get(ref(db, 'users/' + uid + '/balance'));
+    const currentBal = parseFloat(balSnap.val() || 0);
+    const newBal = parseFloat((currentBal + amount).toFixed(2));
+    await update(ref(db, 'users/' + uid), { balance: newBal });
+
+    // Credit deposit bonus if applicable
+    let finalBal = newBal;
+    if (reqData && reqData.bonusAmt && reqData.bonusAmt > 0) {
+      const bonusAmt = parseFloat(reqData.bonusAmt);
+      const wagerReq = reqData.wagerReq || 1;
+      finalBal = parseFloat((newBal + bonusAmt).toFixed(2));
+      await update(ref(db, 'users/' + uid), { balance: finalBal });
+      // Save wager requirement
+      const wagerRequired = parseFloat((amount * wagerReq).toFixed(2));
+      const existingWagerSnap = await get(ref(db, 'users/' + uid + '/wager'));
+      const existingWager = existingWagerSnap.val();
+      const existingCompleted = existingWager ? parseFloat(existingWager.completed || 0) : 0;
+      await set(ref(db, 'users/' + uid + '/wager'), {
+        required: (existingWager ? parseFloat(existingWager.required || 0) : 0) + wagerRequired,
+        completed: existingCompleted,
+        bonusAmt, bonusPct: reqData.bonusPct || 0,
+        updatedAt: Date.now()
+      });
+      showToast('✅ ₹' + amount.toLocaleString('en-IN') + ' approved + ₹' + bonusAmt + ' (' + reqData.bonusPct + '%) bonus credited!');
+    } else {
+      showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
+    }
+
+    // Save balanceAfter AFTER bonus is applied
+    await update(ref(db, 'adminRequests/deposits/' + key), { status: 'approved', balanceAfter: finalBal });
+
+    // ── ADD VIP EXP FOR DEPOSIT ──
+    const vipExp = Math.floor(amount / 1000) * 40;
+    if (vipExp > 0) {
+      const vipSnap = await get(ref(db, 'users/' + uid + '/vip/exp'));
+      const currentExp = parseFloat(vipSnap.val() || 0);
+      await set(ref(db, 'users/' + uid + '/vip/exp'), currentExp + vipExp);
+    }
+
+    // ── BRONZE FIRST DEPOSIT ₹50 BONUS ──
+    const hasDepSnap = await get(ref(db, 'users/' + uid + '/hasDeposited'));
+    if (!hasDepSnap.val()) {
+      // First deposit — credit ₹50 Bronze bonus
+      const bronzeBal = parseFloat((await get(ref(db, 'users/' + uid + '/balance'))).val() || 0);
+      const bronzeNewBal = parseFloat((bronzeBal + 50).toFixed(2));
+      await update(ref(db, 'users/' + uid), { balance: bronzeNewBal, hasDeposited: true });
+      await set(ref(db, 'users/' + uid + '/transactions/' + (Date.now() + 5)), {
+        type: 'vip_levelup', amount: 50,
+        details: '🥉 Bronze VIP welcome bonus — first deposit!',
+        balance: bronzeNewBal, timestamp: Date.now()
+      });
+      // Push notification to user
+      await set(ref(db, 'users/' + uid + '/notifications/' + (Date.now() + 6)), {
+        icon: '🥉', title: 'Welcome Bonus!',
+        body: '₹50 Bronze VIP bonus credited for your first deposit!',
+        read: false, timestamp: Date.now()
+      });
+      showToast('✅ Deposit approved + ₹50 Bronze welcome bonus credited!');
+    }
+
+    // Notify user of deposit approval
+    await set(ref(db, 'users/' + uid + '/notifications/' + (Date.now() + 7)), {
+      icon: '✅', title: 'Deposit Approved!',
+      body: '₹' + amount.toLocaleString('en-IN') + (reqData?.bonusAmt > 0 ? ' + ₹' + reqData.bonusAmt + ' bonus' : '') + ' added to your wallet.',
+      read: false, timestamp: Date.now()
+    });
+    const userSnap = await get(ref(db, 'users/' + uid));
+    const userData = userSnap.val();
+    if (userData && userData.referredBy) {
+      // Mark user as having deposited
+      await update(ref(db, 'users/' + uid), { hasDeposited: true });
+
+      // Update referral record with deposit info for invitation bonus tracking
+      const allUsersSnap = await get(ref(db, 'users'));
+      const allUsers = allUsersSnap.val() || {};
+      const referrerEntry = Object.entries(allUsers).find(([ruid, u]) => u.referralCode === userData.referredBy);
+      if (referrerEntry) {
+        const [referrerUid] = referrerEntry;
+        await update(ref(db, 'users/' + referrerUid + '/referrals/' + uid), {
+          uid, username: userData.username || 'Unknown',
+          memberId: userData.memberId || '—',
+          joinedAt: userData.createdAt || Date.now(),
+          firstDepositAmt: amount,
+          hasDeposited: amount >= 500, // Mark as qualified if deposit >= ₹500
+          totalDeposited: amount,
+          creditedAt: Date.now()
+        });
+      }
+      showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
+    } else {
+      showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
+    }
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
+const VERCEL_API_URL = 'https://royalwin-api.vercel.app';
+
+window.autoPayWithdrawal = async function(key, uid, amount) {
+  if (!confirm(`Auto-pay ₹${amount} via gateway?`)) return;
+  showToast('⏳ Processing payout...');
+  try {
+    const response = await fetch(VERCEL_API_URL + '/api/payout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ withdrawalKey: key, adminUid: auth.currentUser?.uid })
+    });
+    const data = await response.json();
+    if (data.success) {
+      showToast('✅ Payout initiated! ' + (data.platOrderId || ''));
+    } else {
+      showToast('❌ ' + (data.msg || 'Payout failed'));
+    }
+  } catch(e) {
+    showToast('❌ Error: ' + e.message);
+  }
+};
+
+window.approveWithdrawal = async function(key, uid, amount) {
+  try {
+    const balSnap = await get(ref(db, 'users/' + uid + '/balance'));
+    const currentBal = parseFloat(balSnap.val() || 0);
+    if (amount > currentBal) { showToast('❌ User has insufficient balance!'); return; }
+    const newBal = parseFloat((currentBal - amount).toFixed(2));
+    await update(ref(db, 'users/' + uid), { balance: newBal });
+    await update(ref(db, 'adminRequests/withdrawals/' + key), { status: 'approved' });
+    await set(ref(db, 'users/' + uid + '/transactions/' + Date.now()), {
+      type: 'withdrawal', amount: -amount, timestamp: Date.now(), balance: newBal, status: 'approved'
+    });
+    showToast('✅ Withdrawal of ₹' + amount.toLocaleString('en-IN') + ' approved!');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
+window.rejectRequest = async function(type, key) {
+  if (!confirm('Reject this request?')) return;
+  try {
+    const snap = await get(ref(db, 'adminRequests/' + type + '/' + key));
+    const reqData = snap.val();
+    await update(ref(db, 'adminRequests/' + type + '/' + key), { status: 'rejected' });
+
+    // Auto-refund withdrawal balance
+    if (type === 'withdrawals' && reqData && reqData.uid && reqData.amount) {
+      const balSnap = await get(ref(db, 'users/' + reqData.uid + '/balance'));
+      const currentBal = parseFloat(balSnap.val() || 0);
+      const refundedBal = parseFloat((currentBal + reqData.amount).toFixed(2));
+      await update(ref(db, 'users/' + reqData.uid), { balance: refundedBal });
+      // Add refund transaction record
+      await set(ref(db, 'users/' + reqData.uid + '/transactions/' + Date.now()), {
+        type: 'withdrawal_refund',
+        amount: reqData.amount,
+        details: 'Withdrawal rejected — amount refunded',
+        balance: refundedBal,
+        timestamp: Date.now()
+      });
+      // Push notification
+      await set(ref(db, 'users/' + reqData.uid + '/notifications/' + (Date.now()+1)), {
+        icon: '↩️', title: 'Withdrawal Rejected',
+        body: '₹' + reqData.amount.toLocaleString('en-IN') + ' has been refunded to your wallet.',
+        read: false, timestamp: Date.now()
+      });
+      showToast('❌ Withdrawal rejected — ₹' + reqData.amount.toLocaleString('en-IN') + ' refunded to user');
+    } else {
+      showToast('❌ Request rejected');
+    }
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
+// ── USDT ADDRESS MANAGER ──
+async function loadUsdtAddresses() {
+  const listEl = document.getElementById('usdtAddressList');
+  if (!listEl) return;
+  try {
+    const snap = await get(ref(db, 'settings/usdtAddresses'));
+    const data = snap.val() || {};
+    const entries = Object.entries(data);
+    if (!entries.length) { listEl.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">No USDT addresses added yet.</div>'; return; }
+    listEl.innerHTML = entries.map(([key, a]) => `
+      <div style="display:flex;align-items:center;gap:0.6rem;padding:0.6rem 0.8rem;background:var(--bg3);border-radius:10px;border:1px solid var(--border);">
+        <div style="flex:1;min-width:0;">
+          <div style="font-weight:700;font-size:0.82rem;color:${a.active?'#26a17b':'var(--muted)'};">${a.label||'Wallet'}</div>
+          <div style="font-size:0.7rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.address}</div>
+        </div>
+        <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.75rem;color:var(--muted);cursor:pointer;flex-shrink:0;">
+          <input type="checkbox" ${a.active?'checked':''} onchange="toggleUsdtAddress('${key}',this.checked)" style="cursor:pointer;">Active
+        </label>
+        <button onclick="removeUsdtAddress('${key}')" style="background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.2);color:var(--red2);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer;font-size:0.75rem;flex-shrink:0;">✕</button>
+      </div>`).join('');
+  } catch(e) {}
+}
+window.addUsdtAddress = async function() {
+  const address = document.getElementById('newUsdtAddress').value.trim();
+  const label = document.getElementById('newUsdtLabel').value.trim() || 'Wallet';
+  if (!address) { showToast('⚠️ Enter a USDT address'); return; }
+  if (address.length < 20) { showToast('⚠️ Invalid TRC20 address'); return; }
+  const key = 'usdt_' + Date.now();
+  await set(ref(db, 'settings/usdtAddresses/' + key), {address, label, active:true});
+  document.getElementById('newUsdtAddress').value = '';
+  document.getElementById('newUsdtLabel').value = '';
+  showToast('✅ USDT address added!');
+  loadUsdtAddresses();
+};
+window.removeUsdtAddress = async function(key) {
+  if (!confirm('Remove this USDT address?')) return;
+  await remove(ref(db, 'settings/usdtAddresses/' + key));
+  showToast('🗑️ Address removed');
+  loadUsdtAddresses();
+};
+window.toggleUsdtAddress = async function(key, active) {
+  await set(ref(db, 'settings/usdtAddresses/' + key + '/active'), active);
+  showToast(active ? '✅ Address enabled' : '⛔ Address disabled');
+};
+
+// ── MULTIPLE UPI ID MANAGER ──
+async function loadAdminUpiIdSetting() {
+  const listEl = document.getElementById('upiIdList');
+  if (!listEl) return;
+  try {
+    const snap = await get(ref(db, 'settings/upiIds'));
+    const data = snap.val() || {};
+    renderUpiList(data);
+  } catch(e) {
+    // Fallback: load single upiId
+    try {
+      const snap = await get(ref(db, 'settings/upiId'));
+      if (snap.val()) renderUpiList({default:{id:snap.val(),label:'Default',active:true}});
+    } catch(e2) {}
+  }
+}
+function renderUpiList(data) {
+  const listEl = document.getElementById('upiIdList');
+  if (!listEl) return;
+  const entries = Object.entries(data);
+  if (!entries.length) { listEl.innerHTML='<div style="color:var(--muted);font-size:0.82rem;">No UPI IDs added yet.</div>'; return; }
+  listEl.innerHTML = entries.map(([key, u]) => `
+    <div style="display:flex;align-items:center;gap:0.6rem;padding:0.6rem 0.8rem;background:var(--bg3);border-radius:10px;border:1px solid var(--border);">
+      <div style="flex:1;">
+        <div style="font-weight:700;font-size:0.85rem;color:${u.active?'var(--text)':'var(--muted)'};">${u.label||'UPI'} <span style="font-size:0.7rem;color:var(--muted);">${u.id}</span></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.75rem;color:var(--muted);cursor:pointer;">
+        <input type="checkbox" ${u.active?'checked':''} onchange="toggleUpiId('${key}',this.checked)" style="cursor:pointer;">Active
+      </label>
+      <button onclick="removeUpiId('${key}')" style="background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.2);color:var(--red2);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer;font-size:0.75rem;">✕</button>
+    </div>`).join('');
+}
+window.addUpiId = async function() {
+  const id = document.getElementById('newUpiId').value.trim();
+  const label = document.getElementById('newUpiLabel').value.trim() || 'UPI';
+  if (!id) { showToast('⚠️ Enter a UPI ID'); return; }
+  if (!id.includes('@')) { showToast('⚠️ Invalid UPI ID format'); return; }
+  const key = 'upi_' + Date.now();
+  await set(ref(db, 'settings/upiIds/' + key), {id, label, active:true});
+  document.getElementById('newUpiId').value = '';
+  document.getElementById('newUpiLabel').value = '';
+  showToast('✅ UPI ID added!');
+  loadAdminUpiIdSetting();
+};
+window.removeUpiId = async function(key) {
+  if (!confirm('Remove this UPI ID?')) return;
+  await remove(ref(db, 'settings/upiIds/' + key));
+  showToast('🗑️ UPI ID removed');
+  loadAdminUpiIdSetting();
+};
+window.toggleUpiId = async function(key, active) {
+  await set(ref(db, 'settings/upiIds/' + key + '/active'), active);
+  showToast(active ? '✅ UPI ID enabled' : '⛔ UPI ID disabled');
+};
+
+// ── ANNOUNCEMENT ──
+window.saveAnnouncement = async function(active) {
+  const text = document.getElementById('announcementText').value.trim();
+  const statusEl = document.getElementById('announcementStatus');
+  if (active && !text) { showToast('⚠️ Enter announcement text'); return; }
+  await set(ref(db, 'announcements/current'), { text: text || '', active, updatedAt: Date.now() });
+  if (statusEl) statusEl.textContent = active ? '✅ Announcement published!' : '🗑️ Announcement removed.';
+  showToast(active ? '📢 Announcement published!' : '🗑️ Announcement removed');
+};
+
+// Load current announcement in admin
+async function loadCurrentAnnouncement() {
+  const snap = await get(ref(db, 'announcements/current'));
+  const data = snap.val();
+  if (data && data.text) {
+    const el = document.getElementById('announcementText');
+    if (el) el.value = data.text;
+    const statusEl = document.getElementById('announcementStatus');
+    if (statusEl) statusEl.textContent = data.active ? '✅ Currently active' : '⭕ Currently inactive';
+  }
+}
+
+// ── GIFT CODE MANAGER ──
+async function loadGiftCodes() {
+  const el = document.getElementById('giftCodesList');
+  if (el) el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.82rem;">Loading...</div>';
+  try {
+    const snap = await get(ref(db, 'giftCodes'));
+    const codes = snap.val() || {};
+    if (!el) return;
+    const entries = Object.entries(codes);
+    if (entries.length === 0) {
+      el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.82rem;">No gift codes yet</div>';
+      return;
+    }
+    el.innerHTML = `
+      <div style="display:grid;grid-template-columns:1.5fr 0.8fr 1fr 1fr 0.8fr 0.8fr;gap:0.4rem;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.03);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">
+        <div>Code</div><div>Amount</div><div>Uses</div><div>Status</div><div>Toggle</div><div>Delete</div>
+      </div>` +
+      entries.map(([code, data]) => `
+      <div style="display:grid;grid-template-columns:1.5fr 0.8fr 1fr 1fr 0.8fr 0.8fr;gap:0.4rem;padding:0.65rem 0.8rem;border-top:1px solid rgba(255,255,255,0.05);font-size:0.82rem;align-items:center;">
+        <div style="font-weight:700;color:var(--gold);">${code}</div>
+        <div style="color:var(--green);">₹${data.amount}</div>
+        <div style="color:var(--muted);">${data.usedCount||0} / ${data.maxUses||'∞'}</div>
+        <div><span style="padding:0.15rem 0.5rem;border-radius:20px;font-size:0.72rem;font-weight:700;background:${data.active?'rgba(0,230,118,0.15)':'rgba(224,32,32,0.12)'};color:${data.active?'var(--green)':'var(--red2)'};">${data.active?'Active':'Inactive'}</span></div>
+        <div><button onclick="toggleGiftCode('${code}',${data.active})" style="background:none;border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.5rem;color:var(--muted);cursor:pointer;font-size:0.72rem;">${data.active?'Disable':'Enable'}</button></div>
+        <div><button onclick="deleteGiftCode('${code}')" style="background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.3);border-radius:6px;padding:0.2rem 0.5rem;color:var(--red2);cursor:pointer;font-size:0.72rem;">Delete</button></div>
+      </div>`).join('');
+  } catch(e) {
+    if (el) el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--red2);font-size:0.82rem;">❌ Error: ' + e.message + '</div>';
+    console.error('loadGiftCodes error:', e);
+  }
+}
+
+window.createGiftCode = async function() {
+  const code = document.getElementById('giftCode').value.trim().toUpperCase();
+  const amount = parseFloat(document.getElementById('giftAmount').value);
+  const maxUses = parseInt(document.getElementById('giftMaxUses').value) || 999999;
+  if (!code) { showToast('⚠️ Enter a gift code'); return; }
+  if (!amount || amount <= 0) { showToast('⚠️ Enter a valid amount'); return; }
+  try {
+    const existing = await get(ref(db, 'giftCodes/' + code));
+    if (existing.val()) { showToast('⚠️ Code already exists!'); return; }
+    await set(ref(db, 'giftCodes/' + code), { amount, active: true, maxUses, usedCount: 0, createdAt: Date.now() });
+    document.getElementById('giftCode').value = '';
+    document.getElementById('giftAmount').value = '';
+    document.getElementById('giftMaxUses').value = '';
+    showToast('✅ Gift code ' + code + ' created! ₹' + amount + ' · ' + maxUses + ' uses');
+    loadGiftCodes();
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
+window.toggleGiftCode = async function(code, currentActive) {
+  await update(ref(db, 'giftCodes/' + code), { active: !currentActive });
+  showToast((currentActive ? '🔴 Disabled' : '🟢 Enabled') + ' code: ' + code);
+  loadGiftCodes();
+};
+
+window.deleteGiftCode = async function(code) {
+  if (!confirm('Delete gift code ' + code + '?')) return;
+  await remove(ref(db, 'giftCodes/' + code));
+  showToast('🗑️ Deleted: ' + code);
+  loadGiftCodes();
+};
+
+// ── COMMISSION RATES ──
+async function loadCommissionRates() {
+  const snap = await get(ref(db, 'settings/commissionRates'));
+  const rates = snap.val() || {};
+  if (rates.l1 != null) document.getElementById('rateL1').value = rates.l1;
+  if (rates.l2 != null) document.getElementById('rateL2').value = rates.l2;
+  if (rates.l3 != null) document.getElementById('rateL3').value = rates.l3;
+  if (rates.l4 != null) document.getElementById('rateL4').value = rates.l4;
+}
+
+window.saveCommissionRates = async function() {
+  const l1 = parseFloat(document.getElementById('rateL1').value);
+  const l2 = parseFloat(document.getElementById('rateL2').value);
+  const l3 = parseFloat(document.getElementById('rateL3').value);
+  const l4 = parseFloat(document.getElementById('rateL4').value);
+  if (isNaN(l1)||isNaN(l2)||isNaN(l3)||isNaN(l4)) { showToast('⚠️ Enter all 4 rates'); return; }
+  await set(ref(db, 'settings/commissionRates'), { l1, l2, l3, l4, updatedAt: Date.now() });
+  document.getElementById('ratesStatus').textContent = '✅ Saved: L1=' + l1 + '% L2=' + l2 + '% L3=' + l3 + '% L4=' + l4 + '%';
+  showToast('✅ Commission rates updated!');
+};
+
+window.manualBalance = async function() {
+  const uid = document.getElementById('manualUid').value.trim();
+  const amt = parseFloat(document.getElementById('manualAmt').value);
+  const type = document.getElementById('manualType').value;
+  if (!uid) { showToast('⚠️ Enter user UID'); return; }
+  if (!amt || amt <= 0) { showToast('⚠️ Enter valid amount'); return; }
+  try {
+    const balSnap = await get(ref(db, 'users/' + uid + '/balance'));
+    const currentBal = parseFloat(balSnap.val() || 0);
+    const newBal = type === 'add' ? currentBal + amt : Math.max(0, currentBal - amt);
+    await update(ref(db, 'users/' + uid), { balance: parseFloat(newBal.toFixed(2)) });
+    showToast((type === 'add' ? '✅ Added' : '➖ Deducted') + ' ₹' + amt.toLocaleString('en-IN') + ' | New balance: ₹' + newBal.toLocaleString('en-IN'));
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
+// ── LIVE CHAT ADMIN ──
+let _adminSelectedUid = null;
+let _adminChatListener = null;
+
+window.debugLoadChat = async function() {
+  const debugEl = document.getElementById('chatDebugInfo');
+  const listEl = document.getElementById('chatUserList');
+  const user = auth.currentUser;
+
+  if (!user) {
+    if (debugEl) debugEl.textContent = '❌ Not logged in to Firebase';
+    if (listEl) listEl.innerHTML = '<div style="padding:1rem;color:var(--red2);font-size:0.8rem;">❌ Admin not authenticated. Please sign out and sign in again.</div>';
+    return;
+  }
+
+  if (debugEl) debugEl.textContent = '✅ Auth: ' + user.uid.substring(0,8) + '... Loading...';
+
+  try {
+    const snap = await get(ref(db, 'chats'));
+    const chats = snap.val();
+    if (!chats) {
+      if (debugEl) debugEl.textContent = '✅ Auth OK · No chats in Firebase yet';
+      if (listEl) listEl.innerHTML = '<div style="padding:1rem;color:var(--muted);font-size:0.8rem;">No conversations yet. Have a user send a message first.</div>';
+      return;
+    }
+    if (debugEl) debugEl.textContent = '✅ Auth OK · Found ' + Object.keys(chats).length + ' conversation(s)';
+    loadChatUserList();
+  } catch(e) {
+    if (debugEl) debugEl.textContent = '❌ Error: ' + e.message;
+    if (listEl) listEl.innerHTML = '<div style="padding:1rem;color:var(--red2);font-size:0.8rem;">❌ ' + e.message + '</div>';
+  }
+};
+
+function loadChatUserList() {
+  const listEl = document.getElementById('chatUserList');
+  if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.8rem;">Loading...</div>';
+
+  onValue(ref(db, 'chats'), snap => {
+    const chats = snap.val() || {};
+    if (!listEl) return;
+
+    let totalUnread = 0;
+    const entries = Object.entries(chats).sort((a,b) => (b[1].info?.lastMessageTime||0) - (a[1].info?.lastMessageTime||0));
+
+    if (entries.length === 0) {
+      listEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.8rem;">No conversations yet</div>';
+      return;
+    }
+
+    listEl.innerHTML = entries.map(([uid, chat]) => {
+      const info = chat.info || {};
+      const isUnread = info.unreadByAdmin;
+      if (isUnread) totalUnread++;
+      const time = info.lastMessageTime ? new Date(info.lastMessageTime).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) : '';
+      const isSelected = uid === _adminSelectedUid;
+      return `<div onclick="selectAdminChat('${uid}','${info.username||'User'}')"
+        style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;background:${isSelected?'rgba(240,192,64,0.08)':'transparent'};transition:background 0.2s;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="font-size:0.85rem;font-weight:${isUnread?'800':'600'};color:${isUnread?'var(--gold)':'var(--text)'};">${info.username||'User'}</div>
+          <div style="font-size:0.65rem;color:var(--muted);">${time}</div>
+        </div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          ${isUnread?'🔵 ':''}${info.lastMessage||'No messages yet'}
+        </div>
+        <div style="font-size:0.62rem;color:var(--muted);margin-top:1px;">ID: ${info.memberId||uid.substring(0,8)}</div>
+      </div>`;
+    }).join('');
+
+    const badge = document.getElementById('chatUnreadBadge');
+    if (badge) { badge.style.display = totalUnread > 0 ? 'inline' : 'none'; badge.textContent = totalUnread; }
+  }, (error) => {
+    console.error('Chat load error:', error);
+    if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--red2);font-size:0.8rem;">❌ Permission denied. Check Firebase rules.</div>';
+  });
+}
+
+window.selectAdminChat = function(uid, username) {
+  _adminSelectedUid = uid;
+
+  // Update header
+  document.getElementById('adminChatName').textContent = username;
+  document.getElementById('adminChatUid').textContent = 'UID: ' + uid;
+  document.getElementById('adminChatStatus').style.display = 'block';
+
+  // Mark as read by admin
+  update(ref(db, 'chats/' + uid + '/info'), { unreadByAdmin: false });
+
+  // Remove old listener
+  if (_adminChatListener) { off(ref(db, 'chats/' + _adminSelectedUid + '/messages')); }
+
+  // Listen to messages
+  const msgsEl = document.getElementById('adminChatMessages');
+  onValue(ref(db, 'chats/' + uid + '/messages'), snap => {
+    const messages = snap.val();
+    if (!msgsEl) return;
+    msgsEl.innerHTML = '';
+    if (!messages) {
+      msgsEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.8rem;margin-top:2rem;">No messages yet</div>';
+      return;
+    }
+    Object.values(messages).sort((a,b) => a.timestamp - b.timestamp).forEach(m => {
+      const isAdmin = m.sender === 'admin';
+      const div = document.createElement('div');
+      div.style.cssText = `max-width:75%;padding:0.6rem 0.9rem;border-radius:${isAdmin?'12px 12px 0 12px':'12px 12px 12px 0'};
+        background:${isAdmin?'linear-gradient(135deg,#c07a10,var(--gold2))':'var(--bg3)'};
+        color:${isAdmin?'#000':'var(--text)'};font-size:0.83rem;align-self:${isAdmin?'flex-end':'flex-start'};`;
+
+      if (m.type === 'image' && m.fileData) {
+        const img = document.createElement('img');
+        img.src = m.fileData;
+        img.style.cssText = 'max-width:200px;max-height:200px;border-radius:6px;display:block;cursor:pointer;';
+        img.onclick = () => window.open(m.fileData, '_blank');
+        div.appendChild(img);
+      } else if (m.type === 'file' && m.fileData) {
+        const link = document.createElement('a');
+        link.href = m.fileData;
+        link.download = m.fileName || 'file';
+        link.style.cssText = 'display:flex;align-items:center;gap:0.4rem;color:inherit;text-decoration:none;font-size:0.82rem;';
+        link.innerHTML = '📎 ' + (m.fileName || 'Download file');
+        div.appendChild(link);
+      } else {
+        div.textContent = m.text || '';
+      }
+
+      const time = document.createElement('div');
+      time.style.cssText = `font-size:0.6rem;color:${isAdmin?'rgba(0,0,0,0.5)':'rgba(255,255,255,0.3)'};margin-top:3px;text-align:${isAdmin?'right':'left'};`;
+      time.textContent = new Date(m.timestamp).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
+      div.appendChild(time);
+      msgsEl.appendChild(div);
+    });
+    msgsEl.scrollTop = msgsEl.scrollHeight;
+  });
+};
+
+window.adminSendChat = async function() {
+  const inp = document.getElementById('adminChatInput');
+  const msg = inp?.value.trim();
+  if (!msg || !_adminSelectedUid) { showToast('⚠️ Select a user first'); return; }
+  inp.value = '';
+  try {
+    await push(ref(db, 'chats/' + _adminSelectedUid + '/messages'), {
+      text: msg, sender: 'admin', timestamp: Date.now(), readByUser: false
+    });
+    await update(ref(db, 'chats/' + _adminSelectedUid + '/info'), {
+      lastMessage: '(Admin) ' + msg,
+      lastMessageTime: Date.now(),
+      unreadByAdmin: false
+    });
+    // Push notification to user
+    await set(ref(db, 'users/' + _adminSelectedUid + '/notifications/' + Date.now()), {
+      icon: '💬',
+      title: 'New message from Support',
+      body: msg.length > 50 ? msg.substring(0, 50) + '...' : msg,
+      read: false,
+      timestamp: Date.now()
+    });
+  } catch(e) { showToast('❌ Failed to send: ' + e.message); }
+};
+
+// Load chat list when chat tab opened
+const origSwitchTab = window.switchTab;
+window.switchTab = function(tab) {
+  origSwitchTab(tab);
+  if (tab === 'finance') loadRevenueStats('today');
+  if (tab === 'chat') {
+    const user = auth.currentUser;
+    if (user) { loadChatUserList(); }
+    else { onAuthStateChanged(auth, (u) => { if (u) loadChatUserList(); }); }
+  }
+  if (tab === 'settings') {
+    const user = auth.currentUser;
+    if (user) { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadAdminUpiIdSetting(); loadUsdtAddresses(); }
+    else { onAuthStateChanged(auth, (u) => { if (u) { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadAdminUpiIdSetting(); loadUsdtAddresses(); } }); }
+  }
+};
+
+window.switchTab = function(tab) {
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+  const panel = document.getElementById('panel-' + tab);
+  if (panel) panel.classList.add('active');
+  document.querySelectorAll('.admin-tab').forEach(t => {
+    if (t.getAttribute('onclick') && t.getAttribute('onclick').indexOf(tab) !== -1) {
+      t.classList.add('active');
+    }
+  });
+};
+
+// ── TOAST ──
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+window.showToast = showToast;
+</script>
+</body>
+</html>
