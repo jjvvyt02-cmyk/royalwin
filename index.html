@@ -1129,6 +1129,7 @@
     <div class="hero-btns" id="heroBtns">
       <button class="btn btn-gold" id="heroPlayBtn" onclick="showPage('register')"><span data-t="home.start">🚀 Start Playing</span></button>
       <button class="btn btn-outline" id="heroSignInBtn" onclick="showPage('login')">Sign In</button>
+      <button id="installAppBtn" onclick="installPWA()" style="display:none;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(240,192,64,0.4);border-radius:12px;padding:0.7rem 1.5rem;color:var(--gold);font-weight:700;font-size:0.9rem;cursor:pointer;font-family:'Exo 2',sans-serif;">📲 Install App</button>
     </div>
     <!-- Welcome bonus banner shown when logged in -->
     <div id="heroWelcomeBanner" style="display:none;width:100%;max-width:600px;margin:1rem auto 0;">
@@ -7639,50 +7640,70 @@ function loadInvitationBonusPage() {
   var user = firebase.auth().currentUser;
   var db = firebase.database();
   if (!user) return;
-  if (!user || !db) return;
 
-  // Get L1 referrals who deposited
+  // Render tiers immediately with 0 progress
+  var listEl = document.getElementById('inviteBonusList');
+  if (listEl) {
+    listEl.innerHTML = INVITE_TIERS.map(function(tier) {
+      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;">' +
+          '<div style="background:#444;color:#fff;border-radius:20px;padding:0.2rem 0.7rem;font-size:0.75rem;font-weight:700;">Bonus ' + tier.bonus + '</div>' +
+          '<div style="font-weight:800;color:var(--gold);font-size:1rem;">₹' + tier.reward.toLocaleString('en-IN') + '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:0.5rem;margin-bottom:0.6rem;">' +
+          '<div style="flex:1;background:var(--bg3);border-radius:8px;padding:0.5rem;text-align:center;"><div style="font-size:0.7rem;color:var(--muted);">Number of invitees</div><div style="font-weight:700;color:var(--text);">' + tier.invites.toLocaleString('en-IN') + '</div></div>' +
+          '<div style="flex:1;background:var(--bg3);border-radius:8px;padding:0.5rem;text-align:center;"><div style="font-size:0.7rem;color:var(--muted);">Recharge per person</div><div style="font-weight:700;color:var(--red2);">₹500</div></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<div style="font-size:0.75rem;color:var(--muted);" id="inv-progress-' + tier.bonus + '">0 / ' + tier.invites + ' deposits</div>' +
+          '<div style="color:var(--muted);font-size:0.8rem;" id="inv-btn-' + tier.bonus + '">Loading...</div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Then update with real data from Firebase
   db.ref('users/' + user.uid + '/referrals').once('value').then(function(snap) {
     var referrals = snap.val() || {};
     var totalInvited = Object.keys(referrals).length;
-    var deposited = Object.values(referrals).filter(function(r) { return r.hasDeposited || (r.totalBet && r.totalBet > 0); }).length;
+    var deposited = Object.values(referrals).filter(function(r) { return r.hasDeposited; }).length;
 
     var invEl = document.getElementById('inviteTotalInvited');
     var depEl = document.getElementById('inviteDeposited');
     if (invEl) invEl.textContent = totalInvited;
     if (depEl) depEl.textContent = deposited;
 
-    // Get claimed tiers
     db.ref('users/' + user.uid + '/claimedInviteTiers').once('value').then(function(cs) {
       var claimed = cs.val() || {};
-      var listEl = document.getElementById('inviteBonusList');
-      if (!listEl) return;
-
-      listEl.innerHTML = INVITE_TIERS.map(function(tier) {
+      INVITE_TIERS.forEach(function(tier) {
         var isClaimed = claimed['tier' + tier.bonus];
         var isComplete = deposited >= tier.invites;
         var canClaim = isComplete && !isClaimed;
         var progress = Math.min(deposited, tier.invites);
-
-        return '<div style="background:var(--card);border:1px solid ' + (canClaim ? 'var(--gold)' : 'var(--border)') + ';border-radius:14px;padding:1rem;' + (canClaim ? 'box-shadow:0 0 12px rgba(240,192,64,0.15);' : '') + '">' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;">' +
-            '<div style="background:' + (isComplete ? '#27ae60' : '#444') + ';color:#fff;border-radius:20px;padding:0.2rem 0.7rem;font-size:0.75rem;font-weight:700;">Bonus ' + tier.bonus + '</div>' +
-            '<div style="font-weight:800;color:var(--gold);font-size:1rem;">₹' + tier.reward.toLocaleString('en-IN') + '</div>' +
-          '</div>' +
-          '<div style="display:flex;gap:0.5rem;margin-bottom:0.6rem;">' +
-            '<div style="flex:1;background:var(--bg3);border-radius:8px;padding:0.5rem;text-align:center;"><div style="font-size:0.7rem;color:var(--muted);">Number of invitees</div><div style="font-weight:700;color:var(--text);">' + tier.invites + '</div></div>' +
-            '<div style="flex:1;background:var(--bg3);border-radius:8px;padding:0.5rem;text-align:center;"><div style="font-size:0.7rem;color:var(--muted);">Recharge per person</div><div style="font-weight:700;color:var(--red2);">₹500.00</div></div>' +
-          '</div>' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-            '<div style="font-size:0.75rem;color:var(--muted);">' + progress + ' / ' + tier.invites + ' invitees &nbsp;|&nbsp; ' + deposited + ' / ' + tier.invites + ' deposits</div>' +
-            (isClaimed ? '<div style="color:var(--green);font-size:0.8rem;font-weight:700;">✅ Claimed</div>' :
-             canClaim ? '<button onclick="claimInviteTier(' + tier.bonus + ',' + tier.reward + ')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.4rem 0.9rem;color:#000;font-weight:800;font-size:0.8rem;cursor:pointer;">Claim</button>' :
-             '<div style="color:var(--muted);font-size:0.8rem;">Unfinished</div>') +
-          '</div>' +
-        '</div>';
-      }).join('');
+        var card = document.querySelector('[id="inv-progress-' + tier.bonus + '"]');
+        var btnEl = document.getElementById('inv-btn-' + tier.bonus);
+        if (card) {
+          card.textContent = progress + ' / ' + tier.invites + ' deposits';
+          card.closest('div[style*="background:var(--card)"]').style.borderColor = canClaim ? 'var(--gold)' : 'var(--border)';
+        }
+        if (btnEl) {
+          if (isClaimed) {
+            btnEl.innerHTML = '<span style="color:var(--green);font-weight:700;">✅ Claimed</span>';
+          } else if (canClaim) {
+            btnEl.innerHTML = '<button onclick="claimInviteTier(' + tier.bonus + ',' + tier.reward + ')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.4rem 0.9rem;color:#000;font-weight:800;font-size:0.8rem;cursor:pointer;">Claim</button>';
+          } else {
+            btnEl.innerHTML = '<span style="color:var(--muted);font-size:0.8rem;">Unfinished</span>';
+          }
+        }
+      });
     });
-  }).catch(function() {});
+  }).catch(function(e) {
+    // Still show unfinished state
+    INVITE_TIERS.forEach(function(tier) {
+      var btnEl = document.getElementById('inv-btn-' + tier.bonus);
+      if (btnEl) btnEl.innerHTML = '<span style="color:var(--muted);font-size:0.8rem;">Unfinished</span>';
+    });
+  });
 }
 
 function claimInviteTier(tierNum, reward) {
@@ -7725,50 +7746,62 @@ function loadActivityAwardPage() {
   var user = firebase.auth().currentUser;
   var db = firebase.database();
   if (!user) return;
-  if (!user || !db) return;
   var todayKey = new Date().toISOString().split('T')[0];
 
+  // Render tasks immediately
+  var listEl = document.getElementById('activityTaskList');
+  if (listEl) {
+    listEl.innerHTML = ACTIVITY_TASKS.map(function(task) {
+      return '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">' +
+          '<div style="display:flex;align-items:center;gap:0.5rem;">' +
+            '<div style="background:#444;border-radius:8px;padding:0.3rem 0.5rem;font-size:0.75rem;font-weight:700;color:var(--gold);">Daily mission</div>' +
+            '<div style="font-size:0.75rem;color:var(--muted);" id="act-status-' + task.id + '">Unfinished</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">' +
+          '<div style="font-size:1.2rem;">🎰</div>' +
+          '<div style="font-size:0.85rem;color:var(--text);">Lottery Daily task ' + task.id + '</div>' +
+          '<div style="font-size:0.85rem;font-weight:700;color:#e05a00;" id="act-prog-' + task.id + '">0/' + task.target.toLocaleString('en-IN') + '</div>' +
+        '</div>' +
+        '<div style="background:var(--bg3);border-radius:8px;padding:0.5rem 0.7rem;font-size:0.75rem;color:var(--muted);margin-bottom:0.6rem;">Complete total bets of ₹' + task.target.toLocaleString('en-IN') + ' on Lottery games.</div>' +
+        '<div style="background:var(--bg3);border-radius:6px;height:6px;margin-bottom:0.6rem;overflow:hidden;">' +
+          '<div id="act-bar-' + task.id + '" style="width:0%;height:100%;background:var(--gold);border-radius:6px;transition:width 0.3s;"></div>' +
+        '</div>' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+          '<div style="font-size:0.78rem;color:var(--muted);">Award amount <span style="color:var(--gold);font-weight:700;">💰 ₹' + task.reward + '</span></div>' +
+          '<div id="act-btn-' + task.id + '"><button style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.9rem;color:var(--muted);font-size:0.8rem;cursor:default;">To complete</button></div>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // Update with Firebase data
   db.ref('users/' + user.uid + '/dailyBets/' + todayKey).once('value').then(function(snap) {
     var todayBets = parseFloat(snap.val() || 0);
     var betEl = document.getElementById('activityTodayBets');
     if (betEl) betEl.textContent = '₹' + todayBets.toLocaleString('en-IN');
-
     db.ref('users/' + user.uid + '/claimedActivityTasks/' + todayKey).once('value').then(function(cs) {
       var claimed = cs.val() || {};
-      var listEl = document.getElementById('activityTaskList');
-      if (!listEl) return;
-
-      listEl.innerHTML = ACTIVITY_TASKS.map(function(task) {
+      ACTIVITY_TASKS.forEach(function(task) {
         var isClaimed = claimed['task' + task.id];
         var isComplete = todayBets >= task.target;
         var canClaim = isComplete && !isClaimed;
         var progress = Math.min(todayBets, task.target);
         var pct = Math.min(100, Math.round((progress / task.target) * 100));
-
-        return '<div style="background:var(--card);border:1px solid ' + (canClaim ? 'var(--gold)' : 'var(--border)') + ';border-radius:14px;padding:1rem;">' +
-          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">' +
-            '<div style="display:flex;align-items:center;gap:0.5rem;">' +
-              '<div style="background:#444;border-radius:8px;padding:0.3rem 0.5rem;font-size:0.75rem;font-weight:700;color:var(--gold);">Daily mission</div>' +
-              '<div style="font-size:0.75rem;color:' + (isComplete ? 'var(--green)' : 'var(--muted)') + ';">' + (isClaimed ? 'Claimed' : isComplete ? 'Complete!' : 'Unfinished') + '</div>' +
-            '</div>' +
-          '</div>' +
-          '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">' +
-            '<div style="font-size:1.2rem;">🎰</div>' +
-            '<div style="font-size:0.85rem;color:var(--text);">Lottery Daily task ' + task.id + '</div>' +
-            '<div style="font-size:0.85rem;font-weight:700;color:' + (isComplete ? 'var(--green)' : '#e05a00') + ';">' + progress.toLocaleString('en-IN') + '/' + task.target.toLocaleString('en-IN') + '</div>' +
-          '</div>' +
-          '<div style="background:var(--bg3);border-radius:8px;padding:0.5rem 0.7rem;font-size:0.75rem;color:var(--muted);margin-bottom:0.6rem;">Complete total bets of ₹' + task.target.toLocaleString('en-IN') + ' on Lottery games.</div>' +
-          '<div style="background:var(--bg3);border-radius:6px;height:6px;margin-bottom:0.6rem;overflow:hidden;">' +
-            '<div style="width:' + pct + '%;height:100%;background:' + (isComplete ? 'var(--green)' : 'var(--gold)') + ';border-radius:6px;transition:width 0.3s;"></div>' +
-          '</div>' +
-          '<div style="display:flex;justify-content:space-between;align-items:center;">' +
-            '<div style="font-size:0.78rem;color:var(--muted);">Award amount &nbsp; <span style="color:var(--gold);font-weight:700;">💰 ₹' + task.reward + '</span></div>' +
-            (isClaimed ? '<div style="color:var(--green);font-size:0.8rem;font-weight:700;">✅ Claimed</div>' :
-             canClaim ? '<button onclick="claimActivityTask(' + task.id + ',' + task.reward + ')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.4rem 0.9rem;color:#000;font-weight:800;font-size:0.8rem;cursor:pointer;">Claim</button>' :
-             '<button style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.9rem;color:var(--muted);font-size:0.8rem;cursor:default;">To complete</button>') +
-          '</div>' +
-        '</div>';
-      }).join('');
+        var progEl = document.getElementById('act-prog-' + task.id);
+        var barEl = document.getElementById('act-bar-' + task.id);
+        var statusEl = document.getElementById('act-status-' + task.id);
+        var btnEl = document.getElementById('act-btn-' + task.id);
+        if (progEl) { progEl.textContent = progress.toLocaleString('en-IN') + '/' + task.target.toLocaleString('en-IN'); progEl.style.color = isComplete ? 'var(--green)' : '#e05a00'; }
+        if (barEl) { barEl.style.width = pct + '%'; barEl.style.background = isComplete ? 'var(--green)' : 'var(--gold)'; }
+        if (statusEl) { statusEl.textContent = isClaimed ? 'Claimed' : isComplete ? 'Complete!' : 'Unfinished'; statusEl.style.color = isClaimed || isComplete ? 'var(--green)' : 'var(--muted)'; }
+        if (btnEl) {
+          if (isClaimed) { btnEl.innerHTML = '<span style="color:var(--green);font-size:0.8rem;font-weight:700;">✅ Claimed</span>'; }
+          else if (canClaim) { btnEl.innerHTML = '<button onclick="claimActivityTask(' + task.id + ',' + task.reward + ')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.4rem 0.9rem;color:#000;font-weight:800;font-size:0.8rem;cursor:pointer;">Claim</button>'; }
+          else { btnEl.innerHTML = '<button style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.9rem;color:var(--muted);font-size:0.8rem;cursor:default;">To complete</button>'; }
+        }
+      });
     });
   }).catch(function() {});
 }
@@ -7834,5 +7867,29 @@ if ('serviceWorker' in navigator) {
     });
   });
 }
-</script>
+
+// PWA Install prompt
+var _deferredPrompt = null;
+window.addEventListener('beforeinstallprompt', function(e) {
+  e.preventDefault();
+  _deferredPrompt = e;
+  var btn = document.getElementById('installAppBtn');
+  if (btn) btn.style.display = 'inline-flex';
+});
+
+window.installPWA = function() {
+  if (_deferredPrompt) {
+    _deferredPrompt.prompt();
+    _deferredPrompt.userChoice.then(function(result) {
+      if (result.outcome === 'accepted') {
+        showToast('✅ RoyalWin installed!');
+        var btn = document.getElementById('installAppBtn');
+        if (btn) btn.style.display = 'none';
+      }
+      _deferredPrompt = null;
+    });
+  } else {
+    showToast('📲 Open in Chrome and tap "Add to Home Screen"');
+  }
+};</script>
 
