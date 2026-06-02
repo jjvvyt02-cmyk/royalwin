@@ -3148,8 +3148,8 @@
         btn.textContent = '💚 Deposit via USDT';
         btn.onclick = openUSDTModal;
       } else {
-        btn.textContent = '📱 Pay via UPI QR';
-        btn.onclick = openQR;
+        btn.textContent = '💳 Pay Now';
+        btn.onclick = openGatewayDeposit;
       }
     }
   }
@@ -4274,6 +4274,46 @@
         showToast('⚠️ QR expired. Please generate a new one.');
       }
     }, 1000);
+  }
+
+    const VERCEL_API_URL = 'https://royalwin-api.vercel.app';
+
+  async function openGatewayDeposit() {
+    if (!isLoggedIn) { showToast('🔐 Please sign in first!'); showPage('login'); return; }
+    const amt = parseFloat(document.getElementById('depositAmount').value || 500);
+    if (amt < 300) { showToast('⚠️ Minimum deposit is ₹300'); return; }
+    showToast('⏳ Opening payment page...');
+    try {
+      const db = window.fbDB || fbDB;
+      const orderId = 'RW' + Date.now() + window.currentUser.uid.substring(0,6);
+      let bonusPct=0, bonusAmt=0, wagerReq=0;
+      if (selectedBonusOption===1){bonusPct=8;bonusAmt=Math.round(amt*0.08);wagerReq=1;}
+      if (selectedBonusOption===2){bonusPct=15;bonusAmt=Math.round(amt*0.15);wagerReq=2.5;}
+      await db.ref('adminRequests/deposits').push({
+        orderId, amount: amt, status: 'pending', method: 'Gateway - UPI',
+        uid: window.currentUser.uid,
+        username: window.userProfile?.username || 'Unknown',
+        contact: window.userProfile?.contact || '',
+        bonusPct, bonusAmt, wagerReq,
+        isFirstDeposit: !window.userProfile?.hasDeposited,
+        timestamp: Date.now()
+      });
+      const response = await fetch(VERCEL_API_URL + '/api/create-order', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: amt, uid: window.currentUser.uid,
+          username: window.userProfile?.username || 'User',
+          contact: window.userProfile?.contact || '',
+          orderId, callbackUrl: window.location.href })
+      });
+      const data = await response.json();
+      if (data.success && data.url) {
+        window.open(data.url, '_blank');
+        showToast('✅ Payment page opened!');
+      } else {
+        showToast('❌ ' + (data.msg || 'Gateway error. Try manual UPI.'));
+        openQR();
+      }
+    } catch(e) { showToast('❌ Gateway unavailable. Using manual UPI.'); openQR(); }
   }
 
   async function confirmQRPayment() {
@@ -5779,7 +5819,7 @@
         <div style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;">Rate: ₹100 = 1 USDT (TRC20)</div>
       </div>
       <div style="display:flex;gap:1rem;flex-wrap:wrap;">
-        <button id="depositActionBtn" class="btn btn-gold" style="padding:0.8rem 2rem;" onclick="openQR()">📱 Pay via UPI QR</button>
+        <button id="depositActionBtn" class="btn btn-gold" style="padding:0.8rem 2rem;" onclick="openGatewayDeposit()">📱 Pay via UPI QR</button>
       </div>
 
       <!-- Deposit History -->
