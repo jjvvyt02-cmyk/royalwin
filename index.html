@@ -1674,6 +1674,9 @@
     if (name === 'deposithistory') loadDepositHistoryPage();
     if (name === 'withdrawhistory') loadWithdrawHistoryPage();
     if (name === 'referral') loadReferralData();
+    if (name === 'attendance') { setTimeout(loadAttendancePage, 200); }
+    if (name === 'invitation-bonus') { setTimeout(loadInvitationBonusPage, 200); }
+    if (name === 'activity-award') { setTimeout(loadActivityAwardPage, 200); }
     if (name === 'wallet') {
       switchWalletTab('deposit');
       checkDepositBonus();
@@ -7849,13 +7852,7 @@ function trackDailyBet(amount) {
 // ═══════════════════════════════════════════
 // HOOK INTO showPage
 // ═══════════════════════════════════════════
-var __spActivity = showPage;
-showPage = function(name) {
-  __spActivity(name);
-  if (name === 'attendance') setTimeout(loadAttendancePage, 200);
-  if (name === 'invitation-bonus') setTimeout(loadInvitationBonusPage, 200);
-  if (name === 'activity-award') setTimeout(loadActivityAwardPage, 200);
-};
+// Activity pages handled in main showPage function above
 </script>
 <script>
 if ('serviceWorker' in navigator) {
