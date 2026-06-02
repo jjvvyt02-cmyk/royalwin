@@ -459,6 +459,16 @@
             <button onclick="loadRevenueStats()" style="padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">🔄</button>
           </div>
         </div>
+
+        <!-- CXPay Balance Card -->
+        <div style="background:linear-gradient(135deg,#001233,#003388);border:1px solid rgba(64,128,255,0.3);border-radius:12px;padding:0.9rem 1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:0.7rem;color:rgba(255,255,255,0.6);margin-bottom:0.2rem;">💳 CXPay Gateway Balance</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.2rem;color:#60a0ff;font-weight:700;" id="cxpayBalance">—</div>
+            <div style="font-size:0.65rem;color:rgba(255,255,255,0.5);" id="cxpayBalanceUsable">Usable: —</div>
+          </div>
+          <button onclick="loadCXPayBalance()" style="background:rgba(64,128,255,0.2);border:1px solid rgba(64,128,255,0.3);border-radius:8px;padding:0.4rem 0.8rem;color:#60a0ff;font-size:0.75rem;cursor:pointer;font-family:'Exo 2',sans-serif;">🔄 Refresh</button>
+        </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-bottom:1rem;">
           <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
             <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Deposits</div>
@@ -502,6 +512,15 @@
             <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:3px;"></span>Deposits</span>
             <span><span style="display:inline-block;width:10px;height:10px;background:var(--red2);border-radius:2px;margin-right:3px;"></span>Withdrawals</span>
           </div>
+        </div>
+
+        <!-- User Statistics -->
+        <div style="margin-top:1rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;">
+            <div style="font-size:0.82rem;font-weight:700;color:var(--text);">👥 User Statistics</div>
+            <button onclick="loadUserStats()" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.6rem;color:var(--muted);font-size:0.72rem;cursor:pointer;">🔄</button>
+          </div>
+          <div id="adminUserStats"><div style="text-align:center;color:var(--muted);font-size:0.8rem;padding:0.5rem;">Click refresh to load</div></div>
         </div>
       </div>
 
@@ -2171,6 +2190,63 @@ window.toggleUpiId = async function(key, active) {
   showToast(active ? '✅ UPI ID enabled' : '⛔ UPI ID disabled');
 };
 
+// ── CXPAY BALANCE ──
+window.loadCXPayBalance = async function() {
+  const balEl = document.getElementById('cxpayBalance');
+  const usableEl = document.getElementById('cxpayBalanceUsable');
+  if (balEl) balEl.textContent = '⏳ Loading...';
+  try {
+    const response = await fetch('https://royalwin-api.vercel.app/api/balance');
+    const data = await response.json();
+    if (data.success && data.data) {
+      if (balEl) balEl.textContent = '₹' + (data.data.balanceAll || 0).toLocaleString('en-IN');
+      if (usableEl) usableEl.textContent = 'Usable: ₹' + (data.data.balanceUsable || 0).toLocaleString('en-IN');
+    } else {
+      if (balEl) balEl.textContent = 'Unavailable';
+      if (usableEl) usableEl.textContent = 'Connect official channel first';
+    }
+  } catch(e) {
+    if (balEl) balEl.textContent = 'Error connecting';
+    console.warn('CXPay balance error:', e);
+  }
+};
+
+// ── USER STATISTICS ──
+window.loadUserStats = async function() {
+  try {
+    const snap = await get(ref(db, 'users'));
+    const users = snap.val() || {};
+    const userList = Object.values(users);
+    const total = userList.length;
+    const today = new Date(); today.setHours(0,0,0,0);
+    const newToday = userList.filter(u => (u.createdAt || 0) >= today.getTime()).length;
+    const active = userList.filter(u => (u.lastLogin || u.createdAt || 0) >= today.getTime() - 7*24*60*60*1000).length;
+    const totalBalance = userList.reduce((sum, u) => sum + parseFloat(u.balance || 0), 0);
+    const el = document.getElementById('adminUserStats');
+    if (el) {
+      el.innerHTML = `
+        <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:0.8rem;">
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Total Users</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);font-weight:700;">${total.toLocaleString('en-IN')}</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">New Today</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.3rem;color:var(--green);font-weight:700;">${newToday}</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Active (7 days)</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);font-weight:700;">${active}</div>
+          </div>
+          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Total Wallet Balance</div>
+            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--red2);font-weight:700;">₹${totalBalance.toLocaleString('en-IN',{maximumFractionDigits:0})}</div>
+          </div>
+        </div>`;
+    }
+  } catch(e) { console.warn('User stats error:', e); }
+};
+
 // ── ANNOUNCEMENT ──
 window.saveAnnouncement = async function(active) {
   const text = document.getElementById('announcementText').value.trim();
@@ -2455,7 +2531,7 @@ window.adminSendChat = async function() {
 const origSwitchTab = window.switchTab;
 window.switchTab = function(tab) {
   origSwitchTab(tab);
-  if (tab === 'finance') loadRevenueStats('today');
+  if (tab === 'finance') { loadRevenueStats('today'); loadCXPayBalance(); loadUserStats(); }
   if (tab === 'chat') {
     const user = auth.currentUser;
     if (user) { loadChatUserList(); }
