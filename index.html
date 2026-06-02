@@ -1781,6 +1781,13 @@
       await db.ref('users/' + user.uid + '/redeemedGifts/' + code).set({ code, amount: giftData.amount, redeemedAt: Date.now() });
       await db.ref('giftCodes/' + code + '/usedCount').set((giftData.usedCount || 0) + 1);
 
+      // Save to transaction history
+      await db.ref('users/' + user.uid + '/transactions').push({
+        type: 'gift', amount: giftData.amount,
+        details: 'Gift code: ' + code,
+        balance: newBal, timestamp: Date.now()
+      });
+
       if (input) input.value = '';
       if (statusEl) { statusEl.style.color = 'var(--green)'; statusEl.textContent = '✅ Code redeemed! ₹' + giftData.amount + ' added to your wallet.'; }
       showToast('🎁 Gift redeemed! +₹' + giftData.amount + ' added to wallet');
@@ -5279,6 +5286,7 @@
       attendance:        { icon:'📅', label:'Attendance Bonus', color:'#27ae60', sign:'+' },
       invitation_bonus:  { icon:'👥', label:'Invitation Bonus', color:'#27ae60', sign:'+' },
       activity_award:    { icon:'🎯', label:'Activity Award',   color:'#27ae60', sign:'+' },
+      gift:              { icon:'🎁', label:'Gift Code',        color:'#27ae60', sign:'+' },
     };
     container.innerHTML = txs.map(tx => {
       const cfg = typeConfig[tx.type] || { icon:'💸', label: tx.type || 'Transaction', color:'var(--gold)', sign:'+' };
@@ -7424,9 +7432,10 @@ async function confirmUSDTPayment() {
 var ATTEND_REWARDS = [5, 8, 16, 25, 45, 90, 188];
 
 function loadAttendancePage() {
-  var user = window.currentUser;
-  var db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
-  if (!user || !db) return;
+  if (!firebase.apps.length) return;
+  var user = firebase.auth().currentUser;
+  var db = firebase.database();
+  if (!user) return;
   db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
     var data = snap.val() || { streak: 0, lastCheckin: 0, totalEarned: 0 };
     var streak = data.streak || 0;
@@ -7467,11 +7476,65 @@ function loadAttendancePage() {
 }
 
 function claimAttendance() {
-  var user = window.currentUser;
-  var db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
+  if (!firebase.apps.length) { showToast('❌ Not connected'); return; }
+  var auth = firebase.auth();
+  var user = auth.currentUser;
   if (!user) { showToast('🔐 Please sign in'); return; }
-  if (!db) { showToast('❌ Connection error. Please refresh.'); console.error('DB not available'); return; }
-  console.log('claimAttendance called, user:', user.uid, 'db:', !!db);
+  var db = firebase.database();
+  console.log('claimAttendance - uid:', user.uid);
+
+  db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
+    var data = snap.val() || { streak: 0, lastCheckin: 0, totalEarned: 0 };
+    var today = new Date(); today.setHours(0,0,0,0);
+    var yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+
+    if ((data.lastCheckin || 0) >= today.getTime()) {
+      showToast('⚠️ Already checked in today!'); return;
+    }
+
+    var newStreak;
+    if ((data.lastCheckin || 0) >= yesterday.getTime()) {
+      newStreak = (data.streak || 0) + 1;
+    } else {
+      newStreak = 1;
+    }
+    if (newStreak > 7) newStreak = 1;
+
+    var reward = ATTEND_REWARDS[newStreak - 1];
+    var newTotal = (data.totalEarned || 0) + reward;
+
+    db.ref('users/' + user.uid + '/attendance').update({
+      streak: newStreak, lastCheckin: Date.now(), totalEarned: newTotal
+    }).then(function() {
+      console.log('Attendance updated ✅');
+    }).catch(function(e) { console.error('Attendance error:', e); });
+
+    db.ref('users/' + user.uid + '/balance').once('value').then(function(bs) {
+      var newBal = parseFloat(((bs.val() || 0) + reward).toFixed(2));
+      db.ref('users/' + user.uid + '/balance').set(newBal).then(function() {
+        console.log('Balance updated ✅', newBal);
+        updateBalanceDisplay(newBal);
+      });
+      db.ref('users/' + user.uid + '/transactions').push({
+        type: 'attendance', amount: reward,
+        details: 'Attendance Day ' + newStreak + ' bonus',
+        balance: newBal, timestamp: Date.now()
+      }).then(function() {
+        console.log('Transaction saved ✅');
+      }).catch(function(e) { console.error('Transaction error:', e); });
+    });
+
+    db.ref('users/' + user.uid + '/notifications').push({
+      icon: '📅', title: 'Attendance Bonus!',
+      body: 'Day ' + newStreak + ' check-in! ₹' + reward + ' credited.',
+      read: false, timestamp: Date.now()
+    });
+
+    showToast('🎉 Day ' + newStreak + ' check-in! +₹' + reward + ' credited!');
+    setTimeout(function() { loadAttendancePage(); }, 1000);
+
+  }).catch(function(e) { console.error('Attendance read error:', e); showToast('❌ ' + e.message); });
+}
   db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
     var data = snap.val() || { streak: 0, lastCheckin: 0, totalEarned: 0 };
     var today = new Date(); today.setHours(0,0,0,0);
@@ -7538,8 +7601,10 @@ var INVITE_TIERS = [
 ];
 
 function loadInvitationBonusPage() {
-  var user = window.currentUser;
-  var db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
+  if (!firebase.apps.length) return;
+  var user = firebase.auth().currentUser;
+  var db = firebase.database();
+  if (!user) return;
   if (!user || !db) return;
 
   // Get L1 referrals who deposited
@@ -7587,8 +7652,10 @@ function loadInvitationBonusPage() {
 }
 
 function claimInviteTier(tierNum, reward) {
-  var user = window.currentUser;
-  var db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
+  if (!firebase.apps.length) return;
+  var user = firebase.auth().currentUser;
+  var db = firebase.database();
+  if (!user) { showToast('🔐 Please sign in'); return; }
   if (!user || !db) return;
   db.ref('users/' + user.uid + '/claimedInviteTiers/tier' + tierNum).once('value').then(function(snap) {
     if (snap.val()) { showToast('⚠️ Already claimed!'); return; }
@@ -7620,8 +7687,10 @@ var ACTIVITY_TASKS = [
 ];
 
 function loadActivityAwardPage() {
-  var user = window.currentUser;
-  var db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
+  if (!firebase.apps.length) return;
+  var user = firebase.auth().currentUser;
+  var db = firebase.database();
+  if (!user) return;
   if (!user || !db) return;
   var todayKey = new Date().toISOString().split('T')[0];
 
@@ -7671,8 +7740,10 @@ function loadActivityAwardPage() {
 }
 
 function claimActivityTask(taskId, reward) {
-  var user = window.currentUser;
-  var db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
+  if (!firebase.apps.length) return;
+  var user = firebase.auth().currentUser;
+  var db = firebase.database();
+  if (!user) { showToast('🔐 Please sign in'); return; }
   if (!user || !db) return;
   var todayKey = new Date().toISOString().split('T')[0];
   db.ref('users/' + user.uid + '/claimedActivityTasks/' + todayKey + '/task' + taskId).once('value').then(function(snap) {
@@ -7697,8 +7768,10 @@ function claimActivityTask(taskId, reward) {
 // TRACK DAILY BETS (call this from placeBet)
 // ═══════════════════════════════════════════
 function trackDailyBet(amount) {
-  var user = window.currentUser;
-  var db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
+  if (!firebase.apps.length) return;
+  var user = firebase.auth().currentUser;
+  var db = firebase.database();
+  if (!user) return;
   if (!user || !db) return;
   var todayKey = new Date().toISOString().split('T')[0];
   db.ref('users/' + user.uid + '/dailyBets/' + todayKey).transaction(function(val) {
