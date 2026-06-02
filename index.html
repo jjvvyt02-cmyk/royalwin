@@ -7469,7 +7469,7 @@ async function confirmUSDTPayment() {
 // ═══════════════════════════════════════════
 var ATTEND_REWARDS = [5, 8, 16, 25, 45, 90, 188];
 
-function loadAttendancePage() {
+window.loadAttendancePage = function() {
   if (!firebase.apps.length) return;
   var user = firebase.auth().currentUser;
   var db = firebase.database();
@@ -7513,7 +7513,7 @@ function loadAttendancePage() {
   }).catch(function() {});
 }
 
-function claimAttendance() {
+window.claimAttendance = function() {
   if (!firebase.apps.length) { showToast('❌ Not connected'); return; }
   var auth = firebase.auth();
   var user = auth.currentUser;
@@ -7638,7 +7638,7 @@ var INVITE_TIERS = [
   { bonus: 10, invites: 20000, reward: 1555555 }
 ];
 
-function loadInvitationBonusPage() {
+window.loadInvitationBonusPage = function() {
   if (!firebase.apps.length) return;
   var user = firebase.auth().currentUser;
   var db = firebase.database();
@@ -7709,7 +7709,7 @@ function loadInvitationBonusPage() {
   });
 }
 
-function claimInviteTier(tierNum, reward) {
+window.claimInviteTier = function(tierNum, reward) {
   if (!firebase.apps.length) return;
   var user = firebase.auth().currentUser;
   var db = firebase.database();
@@ -7744,7 +7744,7 @@ var ACTIVITY_TASKS = [
   { id: 5, target: 100000, reward: 2015 }
 ];
 
-function loadActivityAwardPage() {
+window.loadActivityAwardPage = function() {
   if (!firebase.apps.length) return;
   var user = firebase.auth().currentUser;
   var db = firebase.database();
@@ -7809,7 +7809,7 @@ function loadActivityAwardPage() {
   }).catch(function() {});
 }
 
-function claimActivityTask(taskId, reward) {
+window.claimActivityTask = function(taskId, reward) {
   if (!firebase.apps.length) return;
   var user = firebase.auth().currentUser;
   var db = firebase.database();
@@ -7837,7 +7837,7 @@ function claimActivityTask(taskId, reward) {
 // ═══════════════════════════════════════════
 // TRACK DAILY BETS (call this from placeBet)
 // ═══════════════════════════════════════════
-function trackDailyBet(amount) {
+window.trackDailyBet = function(amount) {
   if (!firebase.apps.length) return;
   var user = firebase.auth().currentUser;
   var db = firebase.database();
