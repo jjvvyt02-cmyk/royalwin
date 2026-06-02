@@ -5276,6 +5276,9 @@
       vip_weekly:        { icon:'📅', label:'VIP Weekly Bonus', color:'#27ae60', sign:'+' },
       vip_monthly:       { icon:'🗓️', label:'VIP Monthly Bonus',color:'#27ae60', sign:'+' },
       vip_levelup:       { icon:'⬆️', label:'VIP Level Up',    color:'#f0c040', sign:'+' },
+      attendance:        { icon:'📅', label:'Attendance Bonus', color:'#27ae60', sign:'+' },
+      invitation_bonus:  { icon:'👥', label:'Invitation Bonus', color:'#27ae60', sign:'+' },
+      activity_award:    { icon:'🎯', label:'Activity Award',   color:'#27ae60', sign:'+' },
     };
     container.innerHTML = txs.map(tx => {
       const cfg = typeConfig[tx.type] || { icon:'💸', label: tx.type || 'Transaction', color:'var(--gold)', sign:'+' };
