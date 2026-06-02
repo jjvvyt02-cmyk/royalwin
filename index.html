@@ -6601,13 +6601,43 @@
         </div>
       </div>
       
-      <div class="promo-card">
+      <div class="promo-card" onclick="showPage('vip')" style="cursor:pointer;">
         <div class="promo-thumb" style="background:linear-gradient(135deg,#1a0010,#330020);">💎</div>
         <div class="promo-body">
           <div class="promo-tag">VIP</div>
           <div class="promo-name">VIP Reload Bonus</div>
           <div class="promo-desc">Diamond VIP and above get a 15% reload bonus on every deposit. Auto-applied.</div>
-          <div class="promo-footer"><span class="promo-expiry"><span data-t="promo.vipgold">VIP Gold+</span></span><button class="btn btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem;border-color:var(--gold);color:var(--gold);" onclick="showPage('vip')">Upgrade</button></div>
+          <div class="promo-footer"><span class="promo-expiry"><span data-t="promo.vipgold">VIP Gold+</span></span><button class="btn btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem;border-color:var(--gold);color:var(--gold);" onclick="event.stopPropagation();showPage('vip')">Upgrade</button></div>
+        </div>
+      </div>
+
+      <div class="promo-card" onclick="showPage('attendance')" style="cursor:pointer;">
+        <div class="promo-thumb" style="background:linear-gradient(135deg,#001833,#003366);">📅</div>
+        <div class="promo-body">
+          <div class="promo-tag">Daily</div>
+          <div class="promo-name">Attendance Bonus</div>
+          <div class="promo-desc">Login every day to earn rewards. The more consecutive days you login, the higher the reward!</div>
+          <div class="promo-footer"><span class="promo-expiry">Every day</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="event.stopPropagation();showPage('attendance')">Check In</button></div>
+        </div>
+      </div>
+
+      <div class="promo-card" onclick="showPage('invitation-bonus')" style="cursor:pointer;">
+        <div class="promo-thumb" style="background:linear-gradient(135deg,#001a10,#004d2e);">👥</div>
+        <div class="promo-body">
+          <div class="promo-tag">Referral</div>
+          <div class="promo-name">Invitation Bonus</div>
+          <div class="promo-desc">Invite friends to register and deposit. Both parties receive rewards!</div>
+          <div class="promo-footer"><span class="promo-expiry">Up to ₹15,55,555</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="event.stopPropagation();showPage('invitation-bonus')">Invite Now</button></div>
+        </div>
+      </div>
+
+      <div class="promo-card" onclick="showPage('activity-award')" style="cursor:pointer;">
+        <div class="promo-thumb" style="background:linear-gradient(135deg,#1a1000,#4d3000);">🎯</div>
+        <div class="promo-body">
+          <div class="promo-tag">Daily</div>
+          <div class="promo-name">Activity Award</div>
+          <div class="promo-desc">Complete daily betting tasks to earn bonus rewards. Up to ₹2,015 per day!</div>
+          <div class="promo-footer"><span class="promo-expiry">Resets daily</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="event.stopPropagation();showPage('activity-award')">View Tasks</button></div>
         </div>
       </div>
     </div>
@@ -7240,4 +7270,411 @@ async function confirmUSDTPayment() {
     setTimeout(function() { closeUSDTModal(); }, 4000);
   } catch(e) { showToast('❌ Error: ' + e.message); }
 }
+</script>
+
+<!-- ═══ ATTENDANCE BONUS PAGE ═══ -->
+<div class="page" id="page-attendance">
+  <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 3rem;">
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
+      <button onclick="showPage('promotions')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">📅 Attendance Bonus</div>
+    </div>
+
+    <!-- Banner -->
+    <div style="background:linear-gradient(135deg,#e05a00,#ff8c00);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden;">
+      <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.3rem;">Attendance Bonus</div>
+      <div style="font-size:0.82rem;color:rgba(255,255,255,0.85);margin-bottom:0.8rem;">Get rewards based on consecutive login days</div>
+      <div style="background:rgba(255,255,255,0.2);border-radius:20px;padding:0.3rem 0.8rem;display:inline-block;font-size:0.8rem;color:#fff;font-weight:700;">
+        Attended consecutively <span id="attendStreak" style="color:#ffe066;">0</span> Day
+      </div>
+      <div style="margin-top:0.8rem;font-size:0.82rem;color:rgba(255,255,255,0.85);">Accumulated</div>
+      <div style="font-size:1.5rem;font-weight:800;color:#fff;" id="attendTotal">₹0.00</div>
+      <div style="position:absolute;right:1rem;top:50%;transform:translateY(-50%);font-size:4rem;opacity:0.3;">📅</div>
+    </div>
+
+    <!-- Day rewards grid -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;margin-bottom:1.5rem;">
+      <div id="attendCard1" class="attend-card" onclick="claimAttendance()" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;text-align:center;cursor:pointer;">
+        <div style="font-size:1rem;font-weight:800;color:var(--gold);">₹5</div>
+        <div style="font-size:2rem;margin:0.3rem 0;">⭐</div>
+        <div style="font-size:0.75rem;color:var(--muted);">1 Day</div>
+      </div>
+      <div id="attendCard2" class="attend-card" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;text-align:center;">
+        <div style="font-size:1rem;font-weight:800;color:var(--gold);">₹8</div>
+        <div style="font-size:2rem;margin:0.3rem 0;">⭐</div>
+        <div style="font-size:0.75rem;color:var(--muted);">2 Days</div>
+      </div>
+      <div id="attendCard3" class="attend-card" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;text-align:center;">
+        <div style="font-size:1rem;font-weight:800;color:var(--gold);">₹16</div>
+        <div style="font-size:2rem;margin:0.3rem 0;">⭐</div>
+        <div style="font-size:0.75rem;color:var(--muted);">3 Days</div>
+      </div>
+      <div id="attendCard4" class="attend-card" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;text-align:center;">
+        <div style="font-size:1rem;font-weight:800;color:var(--gold);">₹25</div>
+        <div style="font-size:2rem;margin:0.3rem 0;">⭐</div>
+        <div style="font-size:0.75rem;color:var(--muted);">4 Days</div>
+      </div>
+      <div id="attendCard5" class="attend-card" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;text-align:center;">
+        <div style="font-size:1rem;font-weight:800;color:var(--gold);">₹45</div>
+        <div style="font-size:2rem;margin:0.3rem 0;">⭐</div>
+        <div style="font-size:0.75rem;color:var(--muted);">5 Days</div>
+      </div>
+      <div id="attendCard6" class="attend-card" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;text-align:center;">
+        <div style="font-size:1rem;font-weight:800;color:var(--gold);">₹90</div>
+        <div style="font-size:2rem;margin:0.3rem 0;">⭐</div>
+        <div style="font-size:0.75rem;color:var(--muted);">6 Days</div>
+      </div>
+    </div>
+    <!-- Day 7 special -->
+    <div id="attendCard7" style="background:linear-gradient(135deg,#1a0800,#3d1800);border:1px solid var(--gold);border-radius:14px;padding:1.2rem;display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
+      <div style="font-size:3rem;">🎁</div>
+      <div style="flex:1;">
+        <div style="font-size:0.8rem;color:var(--muted);">Day 7 — Special Reward</div>
+        <div style="font-size:1.5rem;font-weight:800;color:var(--gold);">₹188</div>
+      </div>
+      <div style="font-size:0.8rem;color:var(--muted);">7 Days</div>
+    </div>
+
+    <!-- Claim button -->
+    <button id="attendClaimBtn" onclick="claimAttendance()" style="width:100%;background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:12px;padding:1rem;color:#000;font-weight:800;font-size:1rem;cursor:pointer;font-family:'Exo 2',sans-serif;">
+      ✅ Check In Today
+    </button>
+    <div style="text-align:center;font-size:0.75rem;color:var(--muted);margin-top:0.5rem;">Check in every day to maintain your streak. Missing a day resets streak to 0.</div>
+  </div>
+</div>
+
+<!-- ═══ INVITATION BONUS PAGE ═══ -->
+<div class="page" id="page-invitation-bonus">
+  <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 3rem;">
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
+      <button onclick="showPage('promotions')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">👥 Invitation Bonus</div>
+    </div>
+
+    <!-- Banner -->
+    <div style="background:linear-gradient(135deg,#b30000,#ff4500);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden;">
+      <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.3rem;">Invite friends and deposit</div>
+      <div style="font-size:0.82rem;color:rgba(255,255,255,0.9);margin-bottom:0.3rem;">Both parties can receive rewards</div>
+      <div style="font-size:0.78rem;color:rgba(255,255,255,0.8);">Invite friends to register and recharge to receive rewards</div>
+      <div style="margin-top:0.8rem;font-size:0.75rem;color:rgba(255,255,255,0.7);">Activity date: 2024-01-01 – 2028-12-31</div>
+      <div style="position:absolute;right:1rem;top:50%;transform:translateY(-50%);font-size:4rem;opacity:0.25;">🎁</div>
+    </div>
+
+    <!-- Stats -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1.5rem;">
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center;">
+        <div style="font-size:1.5rem;font-weight:800;color:var(--gold);" id="inviteTotalInvited">0</div>
+        <div style="font-size:0.75rem;color:var(--muted);">Total Invited</div>
+      </div>
+      <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center;">
+        <div style="font-size:1.5rem;font-weight:800;color:var(--green);" id="inviteDeposited">0</div>
+        <div style="font-size:0.75rem;color:var(--muted);">Deposited (₹500+)</div>
+      </div>
+    </div>
+
+    <!-- Bonus tiers -->
+    <div id="inviteBonusList" style="display:flex;flex-direction:column;gap:0.8rem;"></div>
+  </div>
+</div>
+
+<!-- ═══ ACTIVITY AWARD PAGE ═══ -->
+<div class="page" id="page-activity-award">
+  <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 3rem;">
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
+      <button onclick="showPage('promotions')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">🎯 Activity Award</div>
+    </div>
+
+    <!-- Banner -->
+    <div style="background:linear-gradient(135deg,#f06000,#ff9500);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden;">
+      <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.3rem;">Activity Award</div>
+      <div style="font-size:0.82rem;color:rgba(255,255,255,0.9);">Complete weekly/daily tasks to receive rich rewards</div>
+      <div style="font-size:0.75rem;color:rgba(255,255,255,0.75);margin-top:0.3rem;">Daily rewards reset every day at midnight</div>
+      <div style="position:absolute;right:1rem;top:50%;transform:translateY(-50%);font-size:4rem;opacity:0.25;">🎲</div>
+    </div>
+
+    <!-- Today's bet progress -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:1.2rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <div style="font-size:0.82rem;color:var(--muted);">Today's Total Bets</div>
+        <div style="font-size:1rem;font-weight:800;color:var(--gold);" id="activityTodayBets">₹0</div>
+      </div>
+    </div>
+
+    <!-- Tasks -->
+    <div style="display:flex;flex-direction:column;gap:0.8rem;" id="activityTaskList"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════
+// ATTENDANCE BONUS
+// ═══════════════════════════════════════════
+var ATTEND_REWARDS = [5, 8, 16, 25, 45, 90, 188];
+
+function loadAttendancePage() {
+  var user = window.currentUser; var db = window.fbDB;
+  if (!user || !db) return;
+  db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
+    var data = snap.val() || { streak: 0, lastCheckin: 0, totalEarned: 0 };
+    var streak = data.streak || 0;
+    var totalEarned = data.totalEarned || 0;
+    var lastCheckin = data.lastCheckin || 0;
+
+    // Update display
+    var streakEl = document.getElementById('attendStreak');
+    var totalEl = document.getElementById('attendTotal');
+    if (streakEl) streakEl.textContent = streak;
+    if (totalEl) totalEl.textContent = '₹' + totalEarned.toFixed(2);
+
+    // Highlight current streak cards
+    for (var i = 1; i <= 7; i++) {
+      var card = document.getElementById('attendCard' + i);
+      if (!card) continue;
+      if (i <= streak) {
+        card.style.background = 'rgba(240,192,64,0.15)';
+        card.style.borderColor = 'var(--gold)';
+        card.style.opacity = '1';
+      } else if (i === streak + 1) {
+        card.style.borderColor = '#27ae60';
+        card.style.boxShadow = '0 0 12px rgba(39,174,96,0.3)';
+      } else {
+        card.style.opacity = '0.5';
+      }
+    }
+
+    // Check if already checked in today
+    var today = new Date(); today.setHours(0,0,0,0);
+    var btn = document.getElementById('attendClaimBtn');
+    if (lastCheckin >= today.getTime()) {
+      if (btn) { btn.textContent = '✅ Already Checked In Today'; btn.disabled = true; btn.style.opacity = '0.6'; }
+    } else {
+      if (btn) { btn.textContent = '✅ Check In Today — Get ₹' + ATTEND_REWARDS[Math.min(streak, 6)]; btn.disabled = false; btn.style.opacity = '1'; }
+    }
+  }).catch(function() {});
+}
+
+function claimAttendance() {
+  var user = window.currentUser; var db = window.fbDB;
+  if (!user || !db) { showToast('🔐 Please sign in'); return; }
+  db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
+    var data = snap.val() || { streak: 0, lastCheckin: 0, totalEarned: 0 };
+    var today = new Date(); today.setHours(0,0,0,0);
+    var yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+
+    if ((data.lastCheckin || 0) >= today.getTime()) {
+      showToast('⚠️ Already checked in today!'); return;
+    }
+
+    // Calculate new streak
+    var newStreak;
+    if ((data.lastCheckin || 0) >= yesterday.getTime()) {
+      newStreak = (data.streak || 0) + 1; // Consecutive
+    } else {
+      newStreak = 1; // Reset streak
+    }
+    if (newStreak > 7) newStreak = 1; // Reset after 7
+
+    var reward = ATTEND_REWARDS[newStreak - 1];
+    var newTotal = (data.totalEarned || 0) + reward;
+
+    // Update Firebase
+    db.ref('users/' + user.uid + '/attendance').update({
+      streak: newStreak, lastCheckin: Date.now(), totalEarned: newTotal
+    });
+    db.ref('users/' + user.uid + '/balance').once('value').then(function(bs) {
+      var newBal = parseFloat(((bs.val() || 0) + reward).toFixed(2));
+      db.ref('users/' + user.uid + '/balance').set(newBal);
+      updateBalanceDisplay(newBal);
+    });
+    db.ref('users/' + user.uid + '/notifications').push({
+      icon: '📅', title: 'Attendance Bonus!',
+      body: 'Day ' + newStreak + ' check-in! ₹' + reward + ' credited to your wallet.',
+      read: false, timestamp: Date.now()
+    });
+    showToast('🎉 Day ' + newStreak + ' check-in! +₹' + reward + ' credited!');
+    loadAttendancePage();
+  }).catch(function(e) { showToast('❌ ' + e.message); });
+}
+
+// ═══════════════════════════════════════════
+// INVITATION BONUS
+// ═══════════════════════════════════════════
+var INVITE_TIERS = [
+  { bonus: 1,  invites: 2,     reward: 155 },
+  { bonus: 2,  invites: 10,    reward: 555 },
+  { bonus: 3,  invites: 30,    reward: 1555 },
+  { bonus: 4,  invites: 70,    reward: 3355 },
+  { bonus: 5,  invites: 200,   reward: 10955 },
+  { bonus: 6,  invites: 500,   reward: 25555 },
+  { bonus: 7,  invites: 1000,  reward: 48555 },
+  { bonus: 8,  invites: 5000,  reward: 355555 },
+  { bonus: 9,  invites: 10000, reward: 755555 },
+  { bonus: 10, invites: 20000, reward: 1555555 }
+];
+
+function loadInvitationBonusPage() {
+  var user = window.currentUser; var db = window.fbDB;
+  if (!user || !db) return;
+
+  // Get L1 referrals who deposited
+  db.ref('users/' + user.uid + '/referrals').once('value').then(function(snap) {
+    var referrals = snap.val() || {};
+    var totalInvited = Object.keys(referrals).length;
+    var deposited = Object.values(referrals).filter(function(r) { return r.hasDeposited || (r.totalBet && r.totalBet > 0); }).length;
+
+    var invEl = document.getElementById('inviteTotalInvited');
+    var depEl = document.getElementById('inviteDeposited');
+    if (invEl) invEl.textContent = totalInvited;
+    if (depEl) depEl.textContent = deposited;
+
+    // Get claimed tiers
+    db.ref('users/' + user.uid + '/claimedInviteTiers').once('value').then(function(cs) {
+      var claimed = cs.val() || {};
+      var listEl = document.getElementById('inviteBonusList');
+      if (!listEl) return;
+
+      listEl.innerHTML = INVITE_TIERS.map(function(tier) {
+        var isClaimed = claimed['tier' + tier.bonus];
+        var isComplete = deposited >= tier.invites;
+        var canClaim = isComplete && !isClaimed;
+        var progress = Math.min(deposited, tier.invites);
+
+        return '<div style="background:var(--card);border:1px solid ' + (canClaim ? 'var(--gold)' : 'var(--border)') + ';border-radius:14px;padding:1rem;' + (canClaim ? 'box-shadow:0 0 12px rgba(240,192,64,0.15);' : '') + '">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.6rem;">' +
+            '<div style="background:' + (isComplete ? '#27ae60' : '#444') + ';color:#fff;border-radius:20px;padding:0.2rem 0.7rem;font-size:0.75rem;font-weight:700;">Bonus ' + tier.bonus + '</div>' +
+            '<div style="font-weight:800;color:var(--gold);font-size:1rem;">₹' + tier.reward.toLocaleString('en-IN') + '</div>' +
+          '</div>' +
+          '<div style="display:flex;gap:0.5rem;margin-bottom:0.6rem;">' +
+            '<div style="flex:1;background:var(--bg3);border-radius:8px;padding:0.5rem;text-align:center;"><div style="font-size:0.7rem;color:var(--muted);">Number of invitees</div><div style="font-weight:700;color:var(--text);">' + tier.invites + '</div></div>' +
+            '<div style="flex:1;background:var(--bg3);border-radius:8px;padding:0.5rem;text-align:center;"><div style="font-size:0.7rem;color:var(--muted);">Recharge per person</div><div style="font-weight:700;color:var(--red2);">₹500.00</div></div>' +
+          '</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+            '<div style="font-size:0.75rem;color:var(--muted);">' + progress + ' / ' + tier.invites + ' invitees &nbsp;|&nbsp; ' + deposited + ' / ' + tier.invites + ' deposits</div>' +
+            (isClaimed ? '<div style="color:var(--green);font-size:0.8rem;font-weight:700;">✅ Claimed</div>' :
+             canClaim ? '<button onclick="claimInviteTier(' + tier.bonus + ',' + tier.reward + ')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.4rem 0.9rem;color:#000;font-weight:800;font-size:0.8rem;cursor:pointer;">Claim</button>' :
+             '<div style="color:var(--muted);font-size:0.8rem;">Unfinished</div>') +
+          '</div>' +
+        '</div>';
+      }).join('');
+    });
+  }).catch(function() {});
+}
+
+function claimInviteTier(tierNum, reward) {
+  var user = window.currentUser; var db = window.fbDB;
+  if (!user || !db) return;
+  db.ref('users/' + user.uid + '/claimedInviteTiers/tier' + tierNum).once('value').then(function(snap) {
+    if (snap.val()) { showToast('⚠️ Already claimed!'); return; }
+    db.ref('users/' + user.uid + '/balance').once('value').then(function(bs) {
+      var newBal = parseFloat(((bs.val() || 0) + reward).toFixed(2));
+      db.ref('users/' + user.uid + '/balance').set(newBal);
+      db.ref('users/' + user.uid + '/claimedInviteTiers/tier' + tierNum).set(Date.now());
+      updateBalanceDisplay(newBal);
+      showToast('🎉 Bonus ' + tierNum + ' claimed! +₹' + reward.toLocaleString('en-IN') + ' credited!');
+      loadInvitationBonusPage();
+    });
+  });
+}
+
+// ═══════════════════════════════════════════
+// ACTIVITY AWARD
+// ═══════════════════════════════════════════
+var ACTIVITY_TASKS = [
+  { id: 1, target: 2000,   reward: 25 },
+  { id: 2, target: 5000,   reward: 85 },
+  { id: 3, target: 10000,  reward: 215 },
+  { id: 4, target: 50000,  reward: 1015 },
+  { id: 5, target: 100000, reward: 2015 }
+];
+
+function loadActivityAwardPage() {
+  var user = window.currentUser; var db = window.fbDB;
+  if (!user || !db) return;
+  var todayKey = new Date().toISOString().split('T')[0];
+
+  db.ref('users/' + user.uid + '/dailyBets/' + todayKey).once('value').then(function(snap) {
+    var todayBets = parseFloat(snap.val() || 0);
+    var betEl = document.getElementById('activityTodayBets');
+    if (betEl) betEl.textContent = '₹' + todayBets.toLocaleString('en-IN');
+
+    db.ref('users/' + user.uid + '/claimedActivityTasks/' + todayKey).once('value').then(function(cs) {
+      var claimed = cs.val() || {};
+      var listEl = document.getElementById('activityTaskList');
+      if (!listEl) return;
+
+      listEl.innerHTML = ACTIVITY_TASKS.map(function(task) {
+        var isClaimed = claimed['task' + task.id];
+        var isComplete = todayBets >= task.target;
+        var canClaim = isComplete && !isClaimed;
+        var progress = Math.min(todayBets, task.target);
+        var pct = Math.min(100, Math.round((progress / task.target) * 100));
+
+        return '<div style="background:var(--card);border:1px solid ' + (canClaim ? 'var(--gold)' : 'var(--border)') + ';border-radius:14px;padding:1rem;">' +
+          '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">' +
+            '<div style="display:flex;align-items:center;gap:0.5rem;">' +
+              '<div style="background:#444;border-radius:8px;padding:0.3rem 0.5rem;font-size:0.75rem;font-weight:700;color:var(--gold);">Daily mission</div>' +
+              '<div style="font-size:0.75rem;color:' + (isComplete ? 'var(--green)' : 'var(--muted)') + ';">' + (isClaimed ? 'Claimed' : isComplete ? 'Complete!' : 'Unfinished') + '</div>' +
+            '</div>' +
+          '</div>' +
+          '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.5rem;">' +
+            '<div style="font-size:1.2rem;">🎰</div>' +
+            '<div style="font-size:0.85rem;color:var(--text);">Lottery Daily task ' + task.id + '</div>' +
+            '<div style="font-size:0.85rem;font-weight:700;color:' + (isComplete ? 'var(--green)' : '#e05a00') + ';">' + progress.toLocaleString('en-IN') + '/' + task.target.toLocaleString('en-IN') + '</div>' +
+          '</div>' +
+          '<div style="background:var(--bg3);border-radius:8px;padding:0.5rem 0.7rem;font-size:0.75rem;color:var(--muted);margin-bottom:0.6rem;">Complete total bets of ₹' + task.target.toLocaleString('en-IN') + ' on Lottery games.</div>' +
+          '<div style="background:var(--bg3);border-radius:6px;height:6px;margin-bottom:0.6rem;overflow:hidden;">' +
+            '<div style="width:' + pct + '%;height:100%;background:' + (isComplete ? 'var(--green)' : 'var(--gold)') + ';border-radius:6px;transition:width 0.3s;"></div>' +
+          '</div>' +
+          '<div style="display:flex;justify-content:space-between;align-items:center;">' +
+            '<div style="font-size:0.78rem;color:var(--muted);">Award amount &nbsp; <span style="color:var(--gold);font-weight:700;">💰 ₹' + task.reward + '</span></div>' +
+            (isClaimed ? '<div style="color:var(--green);font-size:0.8rem;font-weight:700;">✅ Claimed</div>' :
+             canClaim ? '<button onclick="claimActivityTask(' + task.id + ',' + task.reward + ')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.4rem 0.9rem;color:#000;font-weight:800;font-size:0.8rem;cursor:pointer;">Claim</button>' :
+             '<button style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.9rem;color:var(--muted);font-size:0.8rem;cursor:default;">To complete</button>') +
+          '</div>' +
+        '</div>';
+      }).join('');
+    });
+  }).catch(function() {});
+}
+
+function claimActivityTask(taskId, reward) {
+  var user = window.currentUser; var db = window.fbDB;
+  if (!user || !db) return;
+  var todayKey = new Date().toISOString().split('T')[0];
+  db.ref('users/' + user.uid + '/claimedActivityTasks/' + todayKey + '/task' + taskId).once('value').then(function(snap) {
+    if (snap.val()) { showToast('⚠️ Already claimed!'); return; }
+    db.ref('users/' + user.uid + '/balance').once('value').then(function(bs) {
+      var newBal = parseFloat(((bs.val() || 0) + reward).toFixed(2));
+      db.ref('users/' + user.uid + '/balance').set(newBal);
+      db.ref('users/' + user.uid + '/claimedActivityTasks/' + todayKey + '/task' + taskId).set(Date.now());
+      updateBalanceDisplay(newBal);
+      showToast('🎉 Task ' + taskId + ' reward claimed! +₹' + reward + ' credited!');
+      loadActivityAwardPage();
+    });
+  });
+}
+
+// ═══════════════════════════════════════════
+// TRACK DAILY BETS (call this from placeBet)
+// ═══════════════════════════════════════════
+function trackDailyBet(amount) {
+  var user = window.currentUser; var db = window.fbDB;
+  if (!user || !db) return;
+  var todayKey = new Date().toISOString().split('T')[0];
+  db.ref('users/' + user.uid + '/dailyBets/' + todayKey).transaction(function(val) {
+    return parseFloat(((val || 0) + amount).toFixed(2));
+  });
+}
+
+// ═══════════════════════════════════════════
+// HOOK INTO showPage
+// ═══════════════════════════════════════════
+var __spActivity = showPage;
+showPage = function(name) {
+  __spActivity(name);
+  if (name === 'attendance') setTimeout(loadAttendancePage, 200);
+  if (name === 'invitation-bonus') setTimeout(loadInvitationBonusPage, 200);
+  if (name === 'activity-award') setTimeout(loadActivityAwardPage, 200);
+};
 </script>
