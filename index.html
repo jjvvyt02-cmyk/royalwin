@@ -1674,9 +1674,9 @@
     if (name === 'deposithistory') loadDepositHistoryPage();
     if (name === 'withdrawhistory') loadWithdrawHistoryPage();
     if (name === 'referral') loadReferralData();
-    if (name === 'attendance') { setTimeout(loadAttendancePage, 200); }
-    if (name === 'invitation-bonus') { setTimeout(loadInvitationBonusPage, 200); }
-    if (name === 'activity-award') { setTimeout(loadActivityAwardPage, 200); }
+    if (name === 'attendance') { _showPageInternal('attendance'); setTimeout(window.loadAttendancePage, 200); return; }
+    if (name === 'invitation-bonus') { _showPageInternal('invitation-bonus'); setTimeout(window.loadInvitationBonusPage, 200); return; }
+    if (name === 'activity-award') { _showPageInternal('activity-award'); setTimeout(window.loadActivityAwardPage, 200); return; }
     if (name === 'wallet') {
       switchWalletTab('deposit');
       checkDepositBonus();
