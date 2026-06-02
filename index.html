@@ -7495,14 +7495,18 @@ function claimAttendance() {
     });
     db.ref('users/' + user.uid + '/balance').once('value').then(function(bs) {
       var newBal = parseFloat(((bs.val() || 0) + reward).toFixed(2));
-      db.ref('users/' + user.uid + '/balance').set(newBal);
+      db.ref('users/' + user.uid + '/balance').set(newBal).then(function() {
+        console.log('Balance updated to:', newBal);
+      }).catch(function(e) { console.error('Balance save error:', e); showToast('❌ Balance error: ' + e.message); });
       db.ref('users/' + user.uid + '/transactions').push({
         type: 'attendance', amount: reward,
         details: 'Attendance Day ' + newStreak + ' bonus',
         balance: newBal, timestamp: Date.now()
-      });
+      }).then(function() {
+        console.log('Transaction saved!');
+      }).catch(function(e) { console.error('Transaction save error:', e); showToast('❌ Transaction error: ' + e.message); });
       updateBalanceDisplay(newBal);
-    });
+    }).catch(function(e) { console.error('Balance read error:', e); showToast('❌ Read error: ' + e.message); });
     db.ref('users/' + user.uid + '/notifications').push({
       icon: '📅', title: 'Attendance Bonus!',
       body: 'Day ' + newStreak + ' check-in! ₹' + reward + ' credited to your wallet.',
