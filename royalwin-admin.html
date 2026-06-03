@@ -2468,6 +2468,7 @@ window.switchTab = function(tab) {
     }
   });
   if (tab === 'finance') { loadRevenueStats('today'); loadCXPayBalance(); loadUserStats(); }
+  if (tab === 'users') { loadUsers(); loadFraudAlerts(); }
   if (tab === 'chat') {
     const user = auth.currentUser;
     if (user) { loadChatUserList(); }
@@ -2481,6 +2482,18 @@ window.switchTab = function(tab) {
 };
 
 // ── ANNOUNCEMENT (unified) ──
+async function loadCurrentAnnouncement() {
+  try {
+    const snap = await get(ref(db, 'announcement'));
+    const data = snap.val();
+    if (data && data.message) {
+      const el = document.getElementById('announcementMsg');
+      if (el) el.value = data.message;
+      const cur = document.getElementById('currentAnnouncement');
+      if (cur) cur.textContent = data.active ? data.message : 'None';
+    }
+  } catch(e) {}
+}
 window.saveAnnouncement = async function() {
   const msg = document.getElementById('announcementMsg').value.trim();
   if (!msg) { showToast('⚠️ Enter a message'); return; }
