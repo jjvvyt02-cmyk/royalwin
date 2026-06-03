@@ -948,7 +948,6 @@ function initAdmin() {
   updateNextResultBadges();
   loadFinance();
   loadRevenueStats();
-  loadSettings();
   // Pre-load settings data
   setTimeout(() => { loadGiftCodes(); loadCommissionRates(); loadLimits(); }, 1000);
 }
@@ -1196,12 +1195,16 @@ function loadLiveData() {
       }
       // Update main display for selected timer
       if (mins === selectedTimerMode) {
-        if (data.mode) document.getElementById('statMode').textContent = data.mode === 'auto' ? '🤖 Auto' : '👑 Manual';
+        const statMode = document.getElementById('statMode');
+        if (statMode && data.mode) statMode.textContent = data.mode === 'auto' ? '🤖 Auto' : '👑 Manual';
         if (data.lastresult !== undefined && data.lastresult >= 0) {
-          document.getElementById('lastResultNum').textContent = data.lastresult;
+          const lrNum = document.getElementById('lastResultNum');
+          const lrColor = document.getElementById('lastResultColor');
+          const lrTime = document.getElementById('lastResultTime');
           const colors = ['violet+red','green','red','green','red','violet+green','red','green','red','green'];
-          document.getElementById('lastResultColor').textContent = colors[data.lastresult] || '—';
-          document.getElementById('lastResultTime').textContent = 'at ' + new Date().toLocaleTimeString();
+          if (lrNum) lrNum.textContent = data.lastresult;
+          if (lrColor) lrColor.textContent = colors[data.lastresult] || '—';
+          if (lrTime) lrTime.textContent = 'at ' + new Date().toLocaleTimeString();
         }
       }
     });
@@ -1209,7 +1212,8 @@ function loadLiveData() {
   // Listen for bets
   onValue(ref(db, 'wingo/bets'), (snap) => {
     const bets = snap.val() ? Object.values(snap.val()) : [];
-    document.getElementById('statBets').textContent = bets.length;
+    const statBets = document.getElementById('statBets');
+    if (statBets) statBets.textContent = bets.length;
     renderLiveBets(bets);
   });
 }
