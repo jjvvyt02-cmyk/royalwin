@@ -2098,6 +2098,7 @@
       const levelNames = ['bronze','silver','gold','diamond'];
       const currentIdx = levelNames.indexOf(level.name.toLowerCase());
       if (currentIdx >= 0) setTimeout(() => scrollVipSlider(currentIdx), 300);
+      const weeklyAmtEl = document.getElementById('vipWeeklyAmt');
       const monthlyAmtEl = document.getElementById('vipMonthlyAmt');
       if (weeklyAmtEl) weeklyAmtEl.textContent = '₹' + level.weekly;
       if (monthlyAmtEl) monthlyAmtEl.textContent = '₹' + level.monthly;
@@ -7830,3 +7831,240 @@ window.loadActivityAwardPage = function() {
   });
 }
 
+<script>
+// ══════════════════════════════════════════════════════════════
+// ATTENDANCE BONUS — Full Implementation
+// Firebase paths:
+//   users/{uid}/attendance/streak        — current consecutive days
+//   users/{uid}/attendance/lastCheckin   — date string (toDateString)
+//   users/{uid}/attendance/totalEarned   — cumulative ₹ earned
+//   users/{uid}/attendance/claimedDays   — array of date strings
+// ══════════════════════════════════════════════════════════════
+var ATTEND_REWARDS = [5, 8, 16, 25, 45, 90, 188]; // days 1-7
+
+window.loadAttendancePage = function() {
+  var user = window.currentUser;
+  var db = window.fbDB;
+  if (!user || !db) {
+    // Not logged in — show default state
+    _attendRenderUI(0, false, 0);
+    return;
+  }
+  db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
+    var data = snap.val() || {};
+    var streak = data.streak || 0;
+    var lastCheckin = data.lastCheckin || '';
+    var totalEarned = data.totalEarned || 0;
+    var today = new Date().toDateString();
+    var yesterday = new Date(Date.now() - 86400000).toDateString();
+
+    // Check if streak is broken (missed a day)
+    if (lastCheckin && lastCheckin !== today && lastCheckin !== yesterday) {
+      streak = 0; // streak broken
+    }
+
+    var alreadyCheckedIn = (lastCheckin === today);
+    _attendRenderUI(streak, alreadyCheckedIn, totalEarned);
+  }).catch(function(e) {
+    _attendRenderUI(0, false, 0);
+  });
+};
+
+function _attendRenderUI(streak, alreadyClaimed, totalEarned) {
+  // Update streak display
+  var streakEl = document.getElementById('attendStreak');
+  if (streakEl) streakEl.textContent = streak;
+
+  // Update total earned
+  var totalEl = document.getElementById('attendTotal');
+  if (totalEl) totalEl.textContent = '₹' + parseFloat(totalEarned).toFixed(2);
+
+  // Highlight completed + current day cards
+  for (var d = 1; d <= 7; d++) {
+    var card = document.getElementById('attendCard' + d);
+    if (!card) continue;
+    if (d <= streak) {
+      // Already completed days
+      card.style.borderColor = 'var(--green)';
+      card.style.background = 'rgba(0,230,118,0.08)';
+      card.style.opacity = '1';
+      var icon = card.querySelector('[style*="font-size:2rem"]') || card.children[1];
+      if (icon) icon.textContent = '✅';
+    } else if (d === streak + 1) {
+      // Today's claimable day
+      card.style.borderColor = 'var(--gold)';
+      card.style.background = 'rgba(240,192,64,0.08)';
+      card.style.opacity = '1';
+      card.style.boxShadow = '0 0 16px rgba(240,192,64,0.2)';
+    } else {
+      // Future days
+      card.style.borderColor = 'var(--border)';
+      card.style.background = 'var(--card)';
+      card.style.opacity = '0.5';
+      card.style.boxShadow = '';
+    }
+  }
+
+  // Update claim button
+  var btn = document.getElementById('attendClaimBtn');
+  if (!btn) return;
+  if (alreadyClaimed) {
+    btn.textContent = '✅ Already Checked In Today';
+    btn.disabled = true;
+    btn.style.background = 'var(--bg3)';
+    btn.style.color = 'var(--muted)';
+    btn.style.cursor = 'default';
+  } else {
+    var nextDay = Math.min(streak + 1, 7);
+    var reward = ATTEND_REWARDS[nextDay - 1];
+    btn.textContent = '✅ Check In Today — Claim ₹' + reward;
+    btn.disabled = false;
+    btn.style.background = '';
+    btn.style.color = '';
+    btn.style.cursor = 'pointer';
+  }
+}
+
+window.claimAttendance = function() {
+  var user = window.currentUser;
+  var db = window.fbDB;
+  if (!user || !db) { showToast('🔐 Please sign in first'); return; }
+
+  var today = new Date().toDateString();
+  var yesterday = new Date(Date.now() - 86400000).toDateString();
+
+  db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
+    var data = snap.val() || {};
+    var streak = data.streak || 0;
+    var lastCheckin = data.lastCheckin || '';
+    var totalEarned = parseFloat(data.totalEarned || 0);
+
+    // Already checked in today?
+    if (lastCheckin === today) {
+      showToast('⚠️ Already checked in today! Come back tomorrow.');
+      return;
+    }
+
+    // Streak broken if not yesterday
+    if (lastCheckin && lastCheckin !== yesterday) {
+      streak = 0;
+    }
+
+    // Advance streak (cap at 7, then cycle back)
+    var newStreak = (streak % 7) + 1;
+    var reward = ATTEND_REWARDS[newStreak - 1];
+    var newTotal = parseFloat((totalEarned + reward).toFixed(2));
+
+    // Credit balance
+    db.ref('users/' + user.uid + '/balance').once('value').then(function(balSnap) {
+      var newBal = parseFloat(((balSnap.val() || 0) + reward).toFixed(2));
+
+      var updates = {};
+      updates['users/' + user.uid + '/attendance/streak'] = newStreak;
+      updates['users/' + user.uid + '/attendance/lastCheckin'] = today;
+      updates['users/' + user.uid + '/attendance/totalEarned'] = newTotal;
+      updates['users/' + user.uid + '/balance'] = newBal;
+
+      db.ref().update(updates).then(function() {
+        // Save transaction
+        db.ref('users/' + user.uid + '/transactions').push({
+          type: 'attendance',
+          amount: reward,
+          details: 'Day ' + newStreak + ' attendance bonus',
+          balance: newBal,
+          timestamp: Date.now()
+        });
+        if (typeof updateBalanceDisplay === 'function') updateBalanceDisplay(newBal);
+        if (typeof showToast === 'function') showToast('🎁 Day ' + newStreak + ' check-in! +₹' + reward + ' credited!');
+        _attendRenderUI(newStreak, true, newTotal);
+        // Push notification
+        if (typeof pushNotification === 'function') {
+          pushNotification(user.uid, '📅', 'Attendance Bonus!', 'Day ' + newStreak + ' — ₹' + reward + ' added to your wallet!');
+        }
+      }).catch(function(e) {
+        showToast('❌ Check-in failed: ' + e.message);
+      });
+    });
+  }).catch(function(e) {
+    showToast('❌ Error: ' + e.message);
+  });
+};
+
+// ══════════════════════════════════════════════════════════════
+// INVITATION BONUS — claimInviteTier
+// Firebase path: users/{uid}/claimedInviteTiers/tier{n}
+// ══════════════════════════════════════════════════════════════
+window.claimInviteTier = function(tierNum, reward) {
+  var user = window.currentUser;
+  var db = window.fbDB;
+  if (!user || !db) { showToast('🔐 Please sign in first'); return; }
+
+  var tierKey = 'tier' + tierNum;
+  db.ref('users/' + user.uid + '/claimedInviteTiers/' + tierKey).once('value').then(function(snap) {
+    if (snap.val()) { showToast('⚠️ Already claimed this tier!'); return; }
+
+    db.ref('users/' + user.uid + '/balance').once('value').then(function(balSnap) {
+      var newBal = parseFloat(((balSnap.val() || 0) + reward).toFixed(2));
+
+      var updates = {};
+      updates['users/' + user.uid + '/claimedInviteTiers/' + tierKey] = Date.now();
+      updates['users/' + user.uid + '/balance'] = newBal;
+
+      db.ref().update(updates).then(function() {
+        db.ref('users/' + user.uid + '/transactions').push({
+          type: 'invitation_bonus',
+          amount: reward,
+          details: 'Invitation Bonus Tier ' + tierNum,
+          balance: newBal,
+          timestamp: Date.now()
+        });
+        if (typeof updateBalanceDisplay === 'function') updateBalanceDisplay(newBal);
+        if (typeof showToast === 'function') showToast('🎉 Tier ' + tierNum + ' bonus! +₹' + reward.toLocaleString('en-IN') + ' credited!');
+        // Refresh the page UI
+        if (typeof window.loadInvitationBonusPage === 'function') window.loadInvitationBonusPage();
+      }).catch(function(e) { showToast('❌ Claim failed: ' + e.message); });
+    });
+  });
+};
+
+// ══════════════════════════════════════════════════════════════
+// ACTIVITY AWARD — claimActivityTask
+// Firebase path: users/{uid}/claimedActivityTasks/{todayKey}/task{n}
+// ══════════════════════════════════════════════════════════════
+window.claimActivityTask = function(taskId, reward) {
+  var user = window.currentUser;
+  var db = window.fbDB;
+  if (!user || !db) { showToast('🔐 Please sign in first'); return; }
+
+  var todayKey = new Date().toISOString().split('T')[0];
+  var taskKey = 'task' + taskId;
+
+  db.ref('users/' + user.uid + '/claimedActivityTasks/' + todayKey + '/' + taskKey).once('value').then(function(snap) {
+    if (snap.val()) { showToast('⚠️ Already claimed this task today!'); return; }
+
+    db.ref('users/' + user.uid + '/balance').once('value').then(function(balSnap) {
+      var newBal = parseFloat(((balSnap.val() || 0) + reward).toFixed(2));
+
+      var updates = {};
+      updates['users/' + user.uid + '/claimedActivityTasks/' + todayKey + '/' + taskKey] = Date.now();
+      updates['users/' + user.uid + '/balance'] = newBal;
+
+      db.ref().update(updates).then(function() {
+        db.ref('users/' + user.uid + '/transactions').push({
+          type: 'activity_award',
+          amount: reward,
+          details: 'Activity Award Task ' + taskId + ' — Daily',
+          balance: newBal,
+          timestamp: Date.now()
+        });
+        if (typeof updateBalanceDisplay === 'function') updateBalanceDisplay(newBal);
+        if (typeof showToast === 'function') showToast('🎯 Task ' + taskId + ' reward! +₹' + reward + ' credited!');
+        // Refresh the page UI
+        if (typeof window.loadActivityAwardPage === 'function') window.loadActivityAwardPage();
+      }).catch(function(e) { showToast('❌ Claim failed: ' + e.message); });
+    });
+  });
+};
+</script>
+</body>
+</html>
