@@ -528,16 +528,22 @@
 
         <!-- Deposit Requests -->
         <div>
-          <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;margin-bottom:1rem;">⬇️ Deposit Requests</div>
-          <div id="depositRequests" style="display:flex;flex-direction:column;gap:0.6rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;">
+            <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬇️ Deposits <span id="depPendingBadge" style="background:var(--red2);color:#fff;border-radius:50%;padding:0.1rem 0.45rem;font-size:0.65rem;font-family:'Exo 2',sans-serif;margin-left:4px;display:none;">0</span></div>
+            <button onclick="toggleDepHistory()" id="depHistBtn" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.6rem;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Show History</button>
+          </div>
+          <div id="depositRequests" style="display:flex;flex-direction:column;gap:0.4rem;">
             <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending deposits</div>
           </div>
         </div>
 
         <!-- Withdrawal Requests -->
         <div>
-          <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;margin-bottom:1rem;">⬆️ Withdrawal Requests</div>
-          <div id="withdrawRequests" style="display:flex;flex-direction:column;gap:0.6rem;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;">
+            <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬆️ Withdrawals <span id="withPendingBadge" style="background:var(--red2);color:#fff;border-radius:50%;padding:0.1rem 0.45rem;font-size:0.65rem;font-family:'Exo 2',sans-serif;margin-left:4px;display:none;">0</span></div>
+            <button onclick="toggleWithHistory()" id="withHistBtn" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.6rem;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Show History</button>
+          </div>
+          <div id="withdrawRequests" style="display:flex;flex-direction:column;gap:0.4rem;">
             <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending withdrawals</div>
           </div>
         </div>
@@ -695,252 +701,165 @@
 
     <div class="admin-panel" id="panel-settings">
 
-      <!-- USDT Address Manager -->
-      <div class="control-card" style="margin-bottom:1.5rem;">
-        <h3>💚 USDT TRC20 Addresses</h3>
-        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Add multiple USDT wallet addresses. Each deposit shows a random address.</p>
-        <div id="usdtAddressList" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;"></div>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-          <input class="form-input" type="text" id="newUsdtAddress" placeholder="TRC20 wallet address" style="flex:2;min-width:160px;font-size:0.82rem;">
-          <input class="form-input" type="text" id="newUsdtLabel" placeholder="Label (e.g. Wallet 1)" style="flex:1;min-width:100px;font-size:0.85rem;">
-          <button class="btn btn-gold" onclick="addUsdtAddress()" style="white-space:nowrap;">➕ Add</button>
-        </div>
-      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;">
 
-      <!-- UPI ID Manager -->
-      <div class="control-card" style="margin-bottom:1.5rem;">
-        <h3>💳 Payment UPI IDs</h3>
-        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Add multiple UPI IDs. Users can choose which one to pay to.</p>
-        <div id="upiIdList" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:1rem;"></div>
-        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
-          <input class="form-input" type="text" id="newUpiId" placeholder="UPI ID (e.g. name@ybl)" style="flex:2;min-width:140px;font-size:0.85rem;">
-          <input class="form-input" type="text" id="newUpiLabel" placeholder="Label (e.g. GPay)" style="flex:1;min-width:100px;font-size:0.85rem;">
-          <button class="btn btn-gold" onclick="addUpiId()" style="white-space:nowrap;">➕ Add</button>
-        </div>
-      </div>
+        <!-- LEFT COLUMN -->
+        <div style="display:flex;flex-direction:column;gap:1.2rem;">
 
-      <!-- Announcement Manager -->
-      <div class="control-card" style="margin-bottom:1.5rem;">
-        <h3>📢 Announcement Banner</h3>
-        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Show a banner message to all users on the home page.</p>
-        <div style="display:flex;gap:0.6rem;margin-bottom:0.6rem;">
-          <input class="form-input" type="text" id="announcementText" placeholder="e.g. 🎉 New game launching soon! Stay tuned." style="flex:1;font-size:0.85rem;">
-        </div>
-        <div style="display:flex;gap:0.6rem;">
-          <button class="btn btn-gold" onclick="saveAnnouncement(true)" style="flex:1;">📢 Publish</button>
-          <button class="btn" onclick="saveAnnouncement(false)" style="flex:1;background:rgba(224,32,32,0.1);border-color:rgba(224,32,32,0.3);color:var(--red2);">🗑️ Remove</button>
-        </div>
-        <div id="announcementStatus" style="font-size:0.75rem;color:var(--muted);margin-top:0.5rem;"></div>
-      </div>
-
-      <!-- Gift Code Manager -->
-      <div class="control-card" style="margin-bottom:1.5rem;">
-        <h3>🎁 Gift Code Manager</h3>
-        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Create and manage gift codes for users to redeem.</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:0.6rem;margin-bottom:0.8rem;align-items:end;">
-          <div>
-            <label class="form-label">Code</label>
-            <input class="form-input" type="text" id="giftCode" placeholder="ROYAL100" oninput="this.value=this.value.toUpperCase()" style="font-size:0.85rem;">
-          </div>
-          <div>
-            <label class="form-label">Amount (₹)</label>
-            <input class="form-input" type="number" id="giftAmount" placeholder="100" style="font-size:0.85rem;">
-          </div>
-          <div>
-            <label class="form-label">Max Uses</label>
-            <input class="form-input" type="number" id="giftMaxUses" placeholder="100" style="font-size:0.85rem;">
-          </div>
-          <button class="btn btn-gold" onclick="createGiftCode()" style="white-space:nowrap;height:42px;">➕ Create</button>
-        </div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;">
-          <div id="giftCodesList" style="background:var(--bg3);border-radius:10px;overflow:hidden;flex:1;">
-            <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.82rem;">Loading...</div>
-          </div>
-        </div>
-        <button onclick="loadGiftCodes()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.4rem 1rem;color:var(--muted);cursor:pointer;font-size:0.78rem;margin-top:0.4rem;">🔄 Refresh List</button>
-      </div>
-
-      <!-- Commission Rates -->
-      <div class="control-card" style="margin-bottom:1.5rem;">
-        <h3>💰 Commission Rates (Referral)</h3>
-        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Set commission % credited to referrers on every bet.</p>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.6rem;margin-bottom:0.8rem;">
-          <div><label class="form-label">L1 %</label><input class="form-input" type="number" id="rateL1" placeholder="1" step="0.1" style="font-size:0.85rem;"></div>
-          <div><label class="form-label">L2 %</label><input class="form-input" type="number" id="rateL2" placeholder="0.8" step="0.1" style="font-size:0.85rem;"></div>
-          <div><label class="form-label">L3 %</label><input class="form-input" type="number" id="rateL3" placeholder="0.5" step="0.1" style="font-size:0.85rem;"></div>
-          <div><label class="form-label">L4 %</label><input class="form-input" type="number" id="rateL4" placeholder="0.2" step="0.1" style="font-size:0.85rem;"></div>
-        </div>
-        <button class="btn btn-gold" onclick="saveCommissionRates()">💾 Save Rates</button>
-        <div id="ratesStatus" style="margin-top:0.6rem;font-size:0.78rem;color:var(--muted);"></div>
-      </div>
-
-      <!-- Announcement Banner -->
-      <div class="control-card" style="margin-bottom:1.5rem;">
-        <h3>📢 Announcement Banner</h3>
-        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">Shows a banner on the game site for all players.</p>
-        <div class="form-group">
-          <label class="form-label">Message</label>
-          <input class="form-input" type="text" id="announcementMsg" placeholder="🎉 Special bonus today! Deposit now and get 50% extra!">
-        </div>
-        <div style="display:flex;gap:0.8rem;margin-top:0.5rem;">
-          <button class="btn btn-gold" style="flex:1;" onclick="saveAnnouncement()">📢 Publish</button>
-          <button class="btn btn-outline" style="flex:1;" onclick="clearAnnouncement()">🗑️ Clear</button>
-        </div>
-        <div style="margin-top:0.8rem;padding:0.7rem;background:var(--bg3);border-radius:8px;font-size:0.78rem;color:var(--muted);">
-          Current: <span id="currentAnnouncement" style="color:var(--gold);">None</span>
-        </div>
-      </div>
-
-      <!-- Maintenance Mode -->
-      <div class="control-card" style="margin-bottom:1.5rem;">
-        <h3>🔧 Maintenance Mode</h3>
-        <p style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;">When ON, players see a maintenance message and cannot play.</p>
-        <div class="toggle-wrap">
-          <div>
-            <div class="toggle-label">🔧 Maintenance Mode</div>
-            <div style="font-size:0.75rem;color:var(--muted);">Disables game for all users</div>
-          </div>
-          <label class="toggle">
-            <input type="checkbox" id="maintenanceToggle" onchange="toggleMaintenance(this.checked)">
-            <span class="toggle-slider"></span>
-          </label>
-        </div>
-        <div class="form-group" style="margin-top:0.8rem;">
-          <label class="form-label">Maintenance Message</label>
-          <input class="form-input" type="text" id="maintenanceMsg" value="🔧 Site under maintenance. Back soon!">
-        </div>
-      </div>
-
-      <!-- Revenue Dashboard -->
-      <div class="control-card" style="margin-bottom:1.5rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-          <h3 style="margin:0;">📊 Revenue Dashboard</h3>
-          <div style="display:flex;gap:0.4rem;">
-            <button onclick="loadRevenueStats('today')" id="revBtn-today" style="padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--gold);background:rgba(240,192,64,0.15);color:var(--gold);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-weight:700;">Today</button>
-            <button onclick="loadRevenueStats('week')" id="revBtn-week" style="padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Week</button>
-            <button onclick="loadRevenueStats('month')" id="revBtn-month" style="padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Month</button>
-            <button onclick="loadRevenueStats('all')" id="revBtn-all" style="padding:0.3rem 0.7rem;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">All Time</button>
-          </div>
-        </div>
-
-        <!-- Key metrics -->
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;margin-bottom:1rem;">
-          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
-            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Deposits</div>
-            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--green);font-weight:700;" id="statTotalDeposits">₹0</div>
-            <div style="font-size:0.65rem;color:var(--muted);" id="statDepCount">0 txns</div>
-          </div>
-          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
-            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Withdrawals</div>
-            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--red2);font-weight:700;" id="statTotalWithdrawals">₹0</div>
-            <div style="font-size:0.65rem;color:var(--muted);" id="statWithCount">0 txns</div>
-          </div>
-          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
-            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Net Revenue</div>
-            <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:700;" id="statNetRevenue">₹0</div>
-            <div style="font-size:0.65rem;color:var(--muted);">deposits - withdrawals</div>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;margin-bottom:1rem;">
-          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
-            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Total Users</div>
-            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);font-weight:700;" id="statTotalUsers">0</div>
-            <div style="font-size:0.65rem;color:var(--muted);" id="statNewUsers">0 new</div>
-          </div>
-          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
-            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Total Bets</div>
-            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);font-weight:700;" id="statTotalBets">0</div>
-            <div style="font-size:0.65rem;color:var(--muted);" id="statTotalWagered">₹0 wagered</div>
-          </div>
-          <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
-            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Pending</div>
-            <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);font-weight:700;" id="statPending">0</div>
-            <div style="font-size:0.65rem;color:var(--muted);">requests</div>
-          </div>
-        </div>
-
-        <!-- Daily chart (last 7 days) -->
-        <div style="background:var(--bg3);border-radius:10px;padding:1rem;">
-          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.8rem;text-transform:uppercase;letter-spacing:0.5px;">Last 7 Days — Deposits vs Withdrawals</div>
-          <div id="revChart" style="display:flex;align-items:flex-end;gap:0.3rem;height:80px;"></div>
-          <div id="revChartLabels" style="display:flex;gap:0.3rem;margin-top:0.3rem;"></div>
-          <div style="display:flex;gap:1rem;margin-top:0.5rem;font-size:0.65rem;">
-            <span><span style="display:inline-block;width:10px;height:10px;background:var(--green);border-radius:2px;margin-right:3px;"></span>Deposits</span>
-            <span><span style="display:inline-block;width:10px;height:10px;background:var(--red2);border-radius:2px;margin-right:3px;"></span>Withdrawals</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="settings-grid">
-        <div class="control-card">
-          <h3>⚙️ Game Settings</h3>
-          <div class="setting-row">
-            <div><div class="setting-name">Platform Fee</div><div class="setting-desc">Deducted from each bet</div></div>
-            <div style="display:flex;align-items:center;gap:0.5rem;">
-              <input type="number" value="4" min="0" max="20" id="feeInput" style="width:60px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;color:var(--text);font-family:'Exo 2',sans-serif;text-align:center;outline:none;">
-              <span style="color:var(--muted);">%</span>
+          <!-- UPI IDs -->
+          <div class="control-card">
+            <h3>💳 UPI IDs</h3>
+            <div id="upiIdList" style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.7rem;"></div>
+            <div style="display:flex;gap:0.4rem;">
+              <input class="form-input" type="text" id="newUpiId" placeholder="name@ybl" style="flex:2;font-size:0.82rem;">
+              <input class="form-input" type="text" id="newUpiLabel" placeholder="Label" style="flex:1;font-size:0.82rem;">
+              <button class="btn btn-gold" onclick="addUpiId()" style="white-space:nowrap;padding:0.5rem 0.8rem;">➕</button>
             </div>
           </div>
-          <div class="setting-row">
-            <div><div class="setting-name">Min Bet Amount</div><div class="setting-desc">Minimum per round</div></div>
-            <div style="display:flex;align-items:center;gap:0.5rem;">
-              <span style="color:var(--muted);">₹</span>
-              <input type="number" value="10" min="1" id="minBetInput" style="width:80px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;color:var(--text);font-family:'Exo 2',sans-serif;text-align:center;outline:none;">
+
+          <!-- USDT Addresses -->
+          <div class="control-card">
+            <h3>💚 USDT TRC20</h3>
+            <div id="usdtAddressList" style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.7rem;"></div>
+            <div style="display:flex;gap:0.4rem;">
+              <input class="form-input" type="text" id="newUsdtAddress" placeholder="TRC20 address" style="flex:2;font-size:0.82rem;">
+              <input class="form-input" type="text" id="newUsdtLabel" placeholder="Label" style="flex:1;font-size:0.82rem;">
+              <button class="btn btn-gold" onclick="addUsdtAddress()" style="white-space:nowrap;padding:0.5rem 0.8rem;">➕</button>
             </div>
           </div>
-          <div class="setting-row">
-            <div><div class="setting-name">Max Bet Amount</div><div class="setting-desc">Maximum per round</div></div>
-            <div style="display:flex;align-items:center;gap:0.5rem;">
-              <span style="color:var(--muted);">₹</span>
-              <input type="number" value="50000" id="maxBetInput" style="width:80px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;color:var(--text);font-family:'Exo 2',sans-serif;text-align:center;outline:none;">
+
+          <!-- Announcement -->
+          <div class="control-card">
+            <h3>📢 Announcement</h3>
+            <input class="form-input" type="text" id="announcementMsg" placeholder="🎉 Special bonus today!" style="margin-bottom:0.6rem;font-size:0.85rem;">
+            <div style="display:flex;gap:0.5rem;">
+              <button class="btn btn-gold" style="flex:1;padding:0.5rem;" onclick="saveAnnouncement()">📢 Publish</button>
+              <button class="btn btn-outline" style="flex:1;padding:0.5rem;" onclick="clearAnnouncement()">🗑️ Clear</button>
             </div>
+            <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--muted);">Current: <span id="currentAnnouncement" style="color:var(--gold);">None</span></div>
           </div>
-          <div class="setting-row">
-            <div><div class="setting-name">Green/Red Payout</div><div class="setting-desc">Multiplier for color bets</div></div>
-            <input type="number" value="2" step="0.1" id="colorPayout" style="width:70px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;color:var(--text);font-family:'Exo 2',sans-serif;text-align:center;outline:none;">
+
+          <!-- Broadcast Notification -->
+          <div class="control-card">
+            <h3>🔔 Broadcast Notification</h3>
+            <p style="font-size:0.78rem;color:var(--muted);margin-bottom:0.7rem;">Send a notification to ALL users at once.</p>
+            <input class="form-input" type="text" id="broadcastTitle" placeholder="Title e.g. 🎁 New Bonus!" style="margin-bottom:0.5rem;font-size:0.85rem;">
+            <input class="form-input" type="text" id="broadcastBody" placeholder="Message body..." style="margin-bottom:0.6rem;font-size:0.85rem;">
+            <button class="btn btn-gold" style="width:100%;padding:0.55rem;" onclick="sendBroadcast()">📣 Send to All Users</button>
+            <div id="broadcastStatus" style="font-size:0.75rem;color:var(--muted);margin-top:0.4rem;"></div>
           </div>
-          <div class="setting-row">
-            <div><div class="setting-name">Violet Payout</div><div class="setting-desc">Multiplier for violet bets</div></div>
-            <input type="number" value="4.5" step="0.1" id="violetPayout" style="width:70px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;color:var(--text);font-family:'Exo 2',sans-serif;text-align:center;outline:none;">
+
+          <!-- Gift Codes -->
+          <div class="control-card">
+            <h3>🎁 Gift Codes</h3>
+            <div style="display:grid;grid-template-columns:1.2fr 0.8fr 0.8fr auto;gap:0.4rem;margin-bottom:0.6rem;align-items:end;">
+              <div><label class="form-label">Code</label><input class="form-input" type="text" id="giftCode" placeholder="ROYAL100" oninput="this.value=this.value.toUpperCase()" style="font-size:0.82rem;"></div>
+              <div><label class="form-label">₹ Amount</label><input class="form-input" type="number" id="giftAmount" placeholder="100" style="font-size:0.82rem;"></div>
+              <div><label class="form-label">Max Uses</label><input class="form-input" type="number" id="giftMaxUses" placeholder="100" style="font-size:0.82rem;"></div>
+              <button class="btn btn-gold" onclick="createGiftCode()" style="height:38px;padding:0 0.8rem;white-space:nowrap;">➕</button>
+            </div>
+            <div id="giftCodesList" style="background:var(--bg3);border-radius:8px;overflow:hidden;"><div style="text-align:center;padding:1rem;color:var(--muted);font-size:0.8rem;">Loading...</div></div>
+            <button onclick="loadGiftCodes()" style="background:none;border:none;color:var(--muted);font-size:0.72rem;cursor:pointer;margin-top:0.4rem;">🔄 Refresh</button>
           </div>
-          <div class="setting-row">
-            <div><div class="setting-name">Number Payout</div><div class="setting-desc">Multiplier for number bets</div></div>
-            <input type="number" value="9" step="0.5" id="numPayout" style="width:70px;background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.4rem 0.6rem;color:var(--text);font-family:'Exo 2',sans-serif;text-align:center;outline:none;">
-          </div>
-          <button class="btn btn-gold btn-full" style="margin-top:1rem;" onclick="saveSettings()">💾 Save Settings</button>
+
         </div>
 
-        <div class="control-card">
-          <h3>🔐 Admin Security</h3>
-          <div class="form-group" style="margin-top:0.5rem;">
-            <label class="form-label">New Admin Password</label>
-            <input class="form-input" type="password" id="newAdminPass" placeholder="Enter new password">
-          </div>
-          <div class="form-group">
-            <label class="form-label">Confirm Password</label>
-            <input class="form-input" type="password" id="confirmAdminPass" placeholder="Confirm new password">
-          </div>
-          <button class="btn btn-outline btn-full" onclick="changeAdminPass()">🔒 Change Password</button>
+        <!-- RIGHT COLUMN -->
+        <div style="display:flex;flex-direction:column;gap:1.2rem;">
 
-          <div style="margin-top:1.5rem;">
-            <h3 style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;margin-bottom:1rem;">🔥 Firebase Status</h3>
-            <div style="background:var(--bg3);border-radius:10px;padding:1rem;font-size:0.82rem;line-height:2;">
-              <div>Status: <span id="fbStatusDetail" style="color:var(--green);">Connected</span></div>
-              <div>Database: <span style="color:var(--muted);" id="fbDbUrl">—</span></div>
+          <!-- Game Settings -->
+          <div class="control-card">
+            <h3>⚙️ Game Settings</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.7rem;">
+              <div><label class="form-label">Fee %</label><input type="number" value="4" min="0" max="20" id="feeInput" class="form-input" style="font-size:0.82rem;"></div>
+              <div><label class="form-label">Min Bet ₹</label><input type="number" value="10" min="1" id="minBetInput" class="form-input" style="font-size:0.82rem;"></div>
+              <div><label class="form-label">Max Bet ₹</label><input type="number" value="50000" id="maxBetInput" class="form-input" style="font-size:0.82rem;"></div>
+              <div><label class="form-label">Color Payout ×</label><input type="number" value="2" step="0.1" id="colorPayout" class="form-input" style="font-size:0.82rem;"></div>
+              <div><label class="form-label">Violet Payout ×</label><input type="number" value="4.5" step="0.1" id="violetPayout" class="form-input" style="font-size:0.82rem;"></div>
+              <div><label class="form-label">Number Payout ×</label><input type="number" value="9" step="0.5" id="numPayout" class="form-input" style="font-size:0.82rem;"></div>
+            </div>
+            <button class="btn btn-gold btn-full" style="padding:0.55rem;" onclick="saveSettings()">💾 Save Game Settings</button>
+          </div>
+
+          <!-- Withdrawal & Deposit Limits -->
+          <div class="control-card">
+            <h3>💸 Withdrawal & Deposit Limits</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.7rem;">
+              <div><label class="form-label">Max Withdrawals/Day</label><input type="number" value="2" min="1" max="10" id="maxWithdrawPerDay" class="form-input" style="font-size:0.82rem;"></div>
+              <div><label class="form-label">Min Withdraw UPI ₹</label><input type="number" value="300" id="minWithdrawUpi" class="form-input" style="font-size:0.82rem;"></div>
+              <div><label class="form-label">Min Withdraw Bank ₹</label><input type="number" value="500" id="minWithdrawBank" class="form-input" style="font-size:0.82rem;"></div>
+              <div><label class="form-label">Min Deposit ₹</label><input type="number" value="300" id="minDeposit" class="form-input" style="font-size:0.82rem;"></div>
+            </div>
+            <button class="btn btn-gold btn-full" style="padding:0.55rem;" onclick="saveLimits()">💾 Save Limits</button>
+            <div id="limitsStatus" style="font-size:0.72rem;color:var(--muted);margin-top:0.4rem;"></div>
+          </div>
+
+          <!-- Commission Rates -->
+          <div class="control-card">
+            <h3>💰 Commission Rates</h3>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.4rem;margin-bottom:0.6rem;">
+              <div><label class="form-label">L1 %</label><input class="form-input" type="number" id="rateL1" placeholder="1" step="0.1" style="font-size:0.82rem;"></div>
+              <div><label class="form-label">L2 %</label><input class="form-input" type="number" id="rateL2" placeholder="0.8" step="0.1" style="font-size:0.82rem;"></div>
+              <div><label class="form-label">L3 %</label><input class="form-input" type="number" id="rateL3" placeholder="0.5" step="0.1" style="font-size:0.82rem;"></div>
+              <div><label class="form-label">L4 %</label><input class="form-input" type="number" id="rateL4" placeholder="0.2" step="0.1" style="font-size:0.82rem;"></div>
+            </div>
+            <button class="btn btn-gold btn-full" style="padding:0.55rem;" onclick="saveCommissionRates()">💾 Save Rates</button>
+            <div id="ratesStatus" style="margin-top:0.4rem;font-size:0.72rem;color:var(--muted);"></div>
+          </div>
+
+          <!-- Quick Balance Lookup -->
+          <div class="control-card">
+            <h3>🔍 Quick User Lookup</h3>
+            <div style="display:flex;gap:0.4rem;margin-bottom:0.6rem;">
+              <input class="form-input" type="text" id="lookupUid" placeholder="UID or Member ID" style="flex:1;font-size:0.82rem;">
+              <button class="btn btn-gold" onclick="quickLookup()" style="padding:0.5rem 0.8rem;white-space:nowrap;">🔍 Find</button>
+            </div>
+            <div id="lookupResult" style="font-size:0.82rem;color:var(--muted);background:var(--bg3);border-radius:8px;padding:0.7rem;display:none;"></div>
+          </div>
+
+          <!-- Admin Security -->
+          <div class="control-card">
+            <h3>🔐 Admin Security</h3>
+            <div style="display:flex;gap:0.4rem;margin-bottom:0.5rem;">
+              <input class="form-input" type="password" id="newAdminPass" placeholder="New password" style="flex:1;font-size:0.82rem;">
+              <input class="form-input" type="password" id="confirmAdminPass" placeholder="Confirm" style="flex:1;font-size:0.82rem;">
+            </div>
+            <button class="btn btn-outline btn-full" style="padding:0.5rem;" onclick="changeAdminPass()">🔒 Change Password</button>
+            <div style="margin-top:0.8rem;background:var(--bg3);border-radius:8px;padding:0.7rem;font-size:0.78rem;line-height:1.8;">
+              <div>Firebase: <span id="fbStatusDetail" style="color:var(--green);">Connected</span></div>
               <div>Auth: <span id="fbAuthStatus" style="color:var(--muted);">—</span></div>
+              <div style="font-size:0.68rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="fbDbUrl">—</div>
             </div>
           </div>
 
-          <div style="margin-top:1.5rem;">
-            <h3 style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;margin-bottom:1rem;">⚠️ Danger Zone</h3>
-            <button class="btn btn-red btn-full" style="margin-bottom:0.8rem;" onclick="resetAllRounds()">🗑️ Reset All Round Data</button>
-            <button class="btn btn-red btn-full" onclick="resetAllBets()">💀 Clear All Bet History</button>
+          <!-- Danger Zone -->
+          <div class="control-card" style="border-color:rgba(224,32,32,0.3);">
+            <h3 style="color:var(--red2);">⚠️ Danger Zone</h3>
+            <div style="display:flex;gap:0.5rem;">
+              <button class="btn btn-red" style="flex:1;padding:0.5rem;font-size:0.78rem;" onclick="resetAllRounds()">🗑️ Reset Rounds</button>
+              <button class="btn btn-red" style="flex:1;padding:0.5rem;font-size:0.78rem;" onclick="resetAllBets()">💀 Clear Bets</button>
+            </div>
           </div>
+
+          <!-- Maintenance Mode -->
+          <div class="control-card">
+            <h3>🔧 Maintenance Mode</h3>
+            <input class="form-input" type="text" id="maintenanceMsg" placeholder="Site under maintenance..." style="margin-bottom:0.6rem;font-size:0.82rem;">
+            <div style="display:flex;gap:0.5rem;">
+              <button class="btn btn-red" style="flex:1;padding:0.5rem;" onclick="toggleMaintenance(true)">🔴 Enable</button>
+              <button class="btn btn-gold" style="flex:1;padding:0.5rem;" onclick="toggleMaintenance(false)">🟢 Disable</button>
+            </div>
+            <div style="margin-top:0.5rem;display:flex;align-items:center;gap:0.5rem;font-size:0.78rem;">
+              <input type="checkbox" id="maintenanceToggle" onchange="toggleMaintenance(this.checked)" style="cursor:pointer;">
+              <label for="maintenanceToggle" style="color:var(--muted);cursor:pointer;">Currently active</label>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
+
+    <!-- ── LIVE BETS TAB ── -->
 
   </div>
 </div>
@@ -1031,7 +950,7 @@ function initAdmin() {
   loadRevenueStats();
   loadSettings();
   // Pre-load settings data
-  setTimeout(() => { loadGiftCodes(); loadCommissionRates(); }, 1000);
+  setTimeout(() => { loadGiftCodes(); loadCommissionRates(); loadLimits(); }, 1000);
 }
 
 // ── REAL-TIME PERIOD TRACKER ──
@@ -1526,22 +1445,6 @@ window.resetAllBets = async function() {
 // ── TABS ──
 
 
-// ── ANNOUNCEMENT ──
-window.saveAnnouncement = async function() {
-  const msg = document.getElementById('announcementMsg').value.trim();
-  if (!msg) { showToast('⚠️ Enter a message'); return; }
-  await set(ref(db, 'announcement'), { message: msg, timestamp: Date.now(), active: true });
-  document.getElementById('currentAnnouncement').textContent = msg;
-  showToast('📢 Announcement published!');
-};
-
-window.clearAnnouncement = async function() {
-  await set(ref(db, 'announcement'), { message: '', active: false });
-  document.getElementById('currentAnnouncement').textContent = 'None';
-  document.getElementById('announcementMsg').value = '';
-  showToast('🗑️ Announcement cleared');
-};
-
 // ── MAINTENANCE MODE ──
 window.toggleMaintenance = async function(isOn) {
   const msg = document.getElementById('maintenanceMsg').value;
@@ -1868,22 +1771,44 @@ function loadFinance() {
       showToast('🔔 New deposit request!');
     }
     _lastDepCount = pendingCount;
-    el.innerHTML = requests.map(([key, r]) => `
-      <div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:10px;padding:0.8rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
-        <div>
-          <div style="font-weight:700;color:var(--green);">₹${r.amount?.toLocaleString('en-IN')}${r.bonusAmt > 0 ? ' <span style="color:var(--gold);font-size:0.75rem;">+₹'+r.bonusAmt+' bonus</span>' : ''}</div>
-          <div style="font-size:0.72rem;color:var(--text);font-weight:600;">${r.username || 'Unknown'}</div>
-          <div style="font-size:0.7rem;color:var(--muted);">${r.contact || '—'} · ${r.method || 'UPI'}</div>
-          <div style="font-size:0.68rem;color:var(--muted);">UID: ${r.uid ? r.uid.substring(0,12) + '...' : '—'}</div>
-          <div style="font-size:0.68rem;color:var(--muted);">${new Date(r.timestamp).toLocaleString('en-IN')}</div>
+
+    // Split pending vs history
+    const pendingDeps = requests.filter(([,r]) => r.status === 'pending');
+    const historyDeps = requests.filter(([,r]) => r.status !== 'pending');
+
+    // Update badge
+    const depBadge = document.getElementById('depPendingBadge');
+    if (depBadge) { depBadge.textContent = pendingDeps.length; depBadge.style.display = pendingDeps.length > 0 ? 'inline' : 'none'; }
+
+    // Decide which to show
+    const showDepHistory = window._showDepHistory || false;
+    const toShow = showDepHistory ? requests : pendingDeps;
+
+    function renderDepRow([key, r]) {
+      return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+        <div style="display:flex;align-items:center;gap:0.6rem;flex:1;min-width:0;">
+          <div style="font-weight:800;color:var(--green);font-size:0.92rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}${r.bonusAmt > 0 ? '<span style="color:var(--gold);font-size:0.68rem;margin-left:3px;">+₹'+r.bonusAmt+'</span>' : ''}</div>
+          <div style="font-size:0.75rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.username || 'Unknown'}</div>
+          <div style="font-size:0.68rem;color:var(--muted);white-space:nowrap;">${r.contact || '—'}</div>
+          <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
         </div>
-        <div style="display:flex;gap:0.4rem;flex-shrink:0;">
+        <div style="display:flex;gap:0.3rem;flex-shrink:0;">
           ${r.status === 'pending' ? `
-          <button onclick="approveDeposit('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:6px;padding:0.3rem 0.7rem;color:#000;font-size:0.75rem;font-weight:700;cursor:pointer;">✅ Approve</button>
-          <button onclick="rejectRequest('deposits','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:6px;padding:0.3rem 0.7rem;color:var(--red2);font-size:0.75rem;cursor:pointer;">❌ Reject</button>
-          ` : `<span style="font-size:0.75rem;color:var(--muted);">${r.status}</span>`}
+          <button onclick="approveDeposit('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">✅</button>
+          <button onclick="rejectRequest('deposits','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.25rem 0.6rem;color:var(--red2);font-size:0.72rem;cursor:pointer;">❌</button>
+          ` : `<span style="font-size:0.68rem;color:${r.status==='approved'?'var(--green)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>`}
         </div>
-      </div>`).join('');
+      </div>`;
+    }
+
+    if (toShow.length === 0) {
+      el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${showDepHistory ? 'No deposits yet' : '✅ No pending deposits'}</div>`;
+    } else {
+      el.innerHTML = toShow.map(renderDepRow).join('');
+    }
+    if (showDepHistory && historyDeps.length > 0) {
+      el.innerHTML += `<div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:0.3rem;">Showing all ${requests.length} records</div>`;
+    }
   });
 
   // Listen for withdrawal requests
@@ -1898,27 +1823,45 @@ function loadFinance() {
       _playAlertSound(); showToast('🔔 New withdrawal request!');
     }
     window._lastWithCount = pendingWith;
-    el.innerHTML = requests.map(([key, r]) => `
-      <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
-        <div>
-          <div style="font-weight:700;color:var(--red2);">₹${r.amount?.toLocaleString('en-IN')}</div>
-          <div style="font-size:0.72rem;color:var(--text);font-weight:600;">${r.username || 'Unknown'}</div>
-          <div style="font-size:0.7rem;color:var(--muted);">${r.contact || r.mobile || r.email || '—'} · Bal: ₹${r.balance?.toLocaleString('en-IN') || 0}</div>
-          ${r.assignedUpiId ? `<div style="font-size:0.7rem;color:var(--gold);">💳 ${r.assignedUpiId}</div>` : ''}
-          ${r.assignedUsdtAddress ? `<div style="font-size:0.7rem;color:#26a17b;">💚 ${r.assignedUsdtAddress.substring(0,20)}...</div>` : ''}
-          <div style="font-size:0.7rem;color:var(--gold);">UPI: ${r.upiId || 'Not provided'}</div>
-          <div style="font-size:0.68rem;color:var(--muted);">UID: ${r.uid ? r.uid.substring(0,12) + '...' : '—'}</div>
-          <div style="font-size:0.68rem;color:var(--muted);">${new Date(r.timestamp).toLocaleString('en-IN')}</div>
-          <div style="font-size:0.68rem;color:var(--muted);">${new Date(r.timestamp).toLocaleString('en-IN')}</div>
+
+    // Split pending vs history
+    const pendingWiths = requests.filter(([,r]) => r.status === 'pending');
+    const historyWiths = requests.filter(([,r]) => r.status !== 'pending');
+
+    // Update badge
+    const withBadge = document.getElementById('withPendingBadge');
+    if (withBadge) { withBadge.textContent = pendingWiths.length; withBadge.style.display = pendingWiths.length > 0 ? 'inline' : 'none'; }
+
+    // Decide which to show
+    const showWithHistory = window._showWithHistory || false;
+    const toShowWith = showWithHistory ? requests : pendingWiths;
+
+    function renderWithRow([key, r]) {
+      return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+        <div style="display:flex;align-items:center;gap:0.6rem;flex:1;min-width:0;">
+          <div style="font-weight:800;color:var(--red2);font-size:0.92rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}</div>
+          <div style="font-size:0.75rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.username || 'Unknown'}</div>
+          <div style="font-size:0.68rem;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;" title="${r.upiId || ''}">${r.upiId || '—'}</div>
+          <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
         </div>
-        <div style="display:flex;gap:0.4rem;flex-shrink:0;">
+        <div style="display:flex;gap:0.3rem;flex-shrink:0;">
           ${r.status === 'pending' ? `
-          <button onclick="autoPayWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--gold);border:none;border-radius:6px;padding:0.3rem 0.7rem;color:#000;font-size:0.75rem;font-weight:700;cursor:pointer;">⚡ Auto Pay</button>
-          <button onclick="approveWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:6px;padding:0.3rem 0.7rem;color:#000;font-size:0.75rem;font-weight:700;cursor:pointer;">✅ Manual</button>
-          <button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:6px;padding:0.3rem 0.7rem;color:var(--red2);font-size:0.75rem;cursor:pointer;">❌ Reject</button>
-          ` : `<span style="font-size:0.75rem;color:var(--muted);">${r.status}</span>`}
+          <button onclick="autoPayWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--gold);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">⚡ Auto</button>
+          <button onclick="approveWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">✅</button>
+          <button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.25rem 0.6rem;color:var(--red2);font-size:0.72rem;cursor:pointer;">❌</button>
+          ` : `<span style="font-size:0.68rem;color:${r.status==='approved'?'var(--green)':r.status==='processing'?'var(--gold)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>`}
         </div>
-      </div>`).join('');
+      </div>`;
+    }
+
+    if (toShowWith.length === 0) {
+      el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${showWithHistory ? 'No withdrawals yet' : '✅ No pending withdrawals'}</div>`;
+    } else {
+      el.innerHTML = toShowWith.map(renderWithRow).join('');
+    }
+    if (showWithHistory && historyWiths.length > 0) {
+      el.innerHTML += `<div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:0.3rem;">Showing all ${requests.length} records</div>`;
+    }
   });
 
   // Load users
@@ -2255,28 +2198,6 @@ window.loadUserStats = async function() {
   } catch(e) { console.warn('User stats error:', e); }
 };
 
-// ── ANNOUNCEMENT ──
-window.saveAnnouncement = async function(active) {
-  const text = document.getElementById('announcementText').value.trim();
-  const statusEl = document.getElementById('announcementStatus');
-  if (active && !text) { showToast('⚠️ Enter announcement text'); return; }
-  await set(ref(db, 'announcements/current'), { text: text || '', active, updatedAt: Date.now() });
-  if (statusEl) statusEl.textContent = active ? '✅ Announcement published!' : '🗑️ Announcement removed.';
-  showToast(active ? '📢 Announcement published!' : '🗑️ Announcement removed');
-};
-
-// Load current announcement in admin
-async function loadCurrentAnnouncement() {
-  const snap = await get(ref(db, 'announcements/current'));
-  const data = snap.val();
-  if (data && data.text) {
-    const el = document.getElementById('announcementText');
-    if (el) el.value = data.text;
-    const statusEl = document.getElementById('announcementStatus');
-    if (statusEl) statusEl.textContent = data.active ? '✅ Currently active' : '⭕ Currently inactive';
-  }
-}
-
 // ── GIFT CODE MANAGER ──
 async function loadGiftCodes() {
   const el = document.getElementById('giftCodesList');
@@ -2557,6 +2478,136 @@ window.switchTab = function(tab) {
     if (user) { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadAdminUpiIdSetting(); loadUsdtAddresses(); }
     else { onAuthStateChanged(auth, (u) => { if (u) { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadAdminUpiIdSetting(); loadUsdtAddresses(); } }); }
   }
+};
+
+// ── ANNOUNCEMENT (unified) ──
+window.saveAnnouncement = async function() {
+  const msg = document.getElementById('announcementMsg').value.trim();
+  if (!msg) { showToast('⚠️ Enter a message'); return; }
+  await set(ref(db, 'announcement'), { message: msg, timestamp: Date.now(), active: true });
+  document.getElementById('currentAnnouncement').textContent = msg;
+  showToast('📢 Announcement published!');
+};
+window.clearAnnouncement = async function() {
+  await set(ref(db, 'announcement'), { message: '', active: false });
+  document.getElementById('currentAnnouncement').textContent = 'None';
+  document.getElementById('announcementMsg').value = '';
+  showToast('🗑️ Announcement cleared');
+};
+
+// ── BROADCAST NOTIFICATION ──
+window.sendBroadcast = async function() {
+  const title = document.getElementById('broadcastTitle').value.trim();
+  const body = document.getElementById('broadcastBody').value.trim();
+  const statusEl = document.getElementById('broadcastStatus');
+  if (!title) { showToast('⚠️ Enter notification title'); return; }
+  if (!body) { showToast('⚠️ Enter notification message'); return; }
+  if (!confirm('Send "' + title + '" to ALL users?')) return;
+  statusEl.textContent = '⏳ Sending...';
+  try {
+    const snap = await get(ref(db, 'users'));
+    const users = snap.val() || {};
+    const uids = Object.keys(users);
+    let count = 0;
+    const ts = Date.now();
+    for (const uid of uids) {
+      await set(ref(db, 'users/' + uid + '/notifications/' + (ts + count)), {
+        icon: '📣', title, body, read: false, timestamp: ts + count
+      });
+      count++;
+    }
+    statusEl.textContent = '✅ Sent to ' + count + ' users!';
+    document.getElementById('broadcastTitle').value = '';
+    document.getElementById('broadcastBody').value = '';
+    showToast('📣 Broadcast sent to ' + count + ' users!');
+  } catch(e) {
+    statusEl.textContent = '❌ Error: ' + e.message;
+    showToast('❌ ' + e.message);
+  }
+};
+
+// ── WITHDRAWAL & DEPOSIT LIMITS ──
+async function loadLimits() {
+  try {
+    const snap = await get(ref(db, 'settings/limits'));
+    const data = snap.val() || {};
+    if (data.maxWithdrawPerDay != null) document.getElementById('maxWithdrawPerDay').value = data.maxWithdrawPerDay;
+    if (data.minWithdrawUpi != null) document.getElementById('minWithdrawUpi').value = data.minWithdrawUpi;
+    if (data.minWithdrawBank != null) document.getElementById('minWithdrawBank').value = data.minWithdrawBank;
+    if (data.minDeposit != null) document.getElementById('minDeposit').value = data.minDeposit;
+  } catch(e) {}
+}
+window.saveLimits = async function() {
+  const data = {
+    maxWithdrawPerDay: parseInt(document.getElementById('maxWithdrawPerDay').value) || 2,
+    minWithdrawUpi: parseInt(document.getElementById('minWithdrawUpi').value) || 300,
+    minWithdrawBank: parseInt(document.getElementById('minWithdrawBank').value) || 500,
+    minDeposit: parseInt(document.getElementById('minDeposit').value) || 300,
+    updatedAt: Date.now()
+  };
+  await set(ref(db, 'settings/limits'), data);
+  document.getElementById('limitsStatus').textContent = '✅ Limits saved!';
+  showToast('✅ Limits updated!');
+};
+
+// ── QUICK USER LOOKUP ──
+window.quickLookup = async function() {
+  const query = document.getElementById('lookupUid').value.trim();
+  const resultEl = document.getElementById('lookupResult');
+  if (!query) { showToast('⚠️ Enter UID or Member ID'); return; }
+  resultEl.style.display = 'block';
+  resultEl.innerHTML = '⏳ Looking up...';
+  try {
+    // Try direct UID first
+    let snap = await get(ref(db, 'users/' + query));
+    let userData = snap.val();
+    let uid = query;
+
+    // If not found by UID, search by memberId
+    if (!userData) {
+      const allSnap = await get(ref(db, 'users'));
+      const allUsers = allSnap.val() || {};
+      const found = Object.entries(allUsers).find(([, u]) => u.memberId === query);
+      if (found) { uid = found[0]; userData = found[1]; }
+    }
+
+    if (!userData) {
+      resultEl.innerHTML = '❌ User not found';
+      return;
+    }
+
+    const vipExp = userData.vip?.exp || 0;
+    const lastLogin = userData.lastLogin ? new Date(userData.lastLogin).toLocaleString('en-IN', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Never';
+    resultEl.innerHTML = `
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;font-size:0.8rem;">
+        <div><span style="color:var(--muted);">Name:</span> <strong>${userData.username || '—'}</strong></div>
+        <div><span style="color:var(--muted);">Member ID:</span> <strong style="color:var(--gold);">${userData.memberId || '—'}</strong></div>
+        <div><span style="color:var(--muted);">Contact:</span> ${userData.contact || userData.mobile || '—'}</div>
+        <div><span style="color:var(--muted);">Balance:</span> <strong style="color:var(--green);">₹${parseFloat(userData.balance || 0).toLocaleString('en-IN')}</strong></div>
+        <div><span style="color:var(--muted);">VIP EXP:</span> ${vipExp}</div>
+        <div><span style="color:var(--muted);">Last Login:</span> ${lastLogin}</div>
+        <div><span style="color:var(--muted);">Ref Code:</span> ${userData.referralCode || '—'}</div>
+        <div><span style="color:var(--muted);">Status:</span> <span style="color:${userData.isBlocked?'var(--red2)':'var(--green)'};">${userData.isBlocked?'🚫 Blocked':'✅ Active'}</span></div>
+      </div>
+      <div style="display:flex;gap:0.4rem;margin-top:0.6rem;">
+        <button onclick="document.getElementById('manualUid').value='${uid}';switchTab('finance');" style="background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:var(--gold);cursor:pointer;font-size:0.72rem;">💰 Adjust Balance</button>
+        <button onclick="toggleBlockUser('${uid}', ${!userData.isBlocked})" style="background:${userData.isBlocked?'rgba(0,230,118,0.1)':'rgba(224,32,32,0.1)'};border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:${userData.isBlocked?'var(--green)':'var(--red2)'};cursor:pointer;font-size:0.72rem;">${userData.isBlocked?'✅ Unblock':'🚫 Block'}</button>
+      </div>`;
+  } catch(e) {
+    resultEl.innerHTML = '❌ Error: ' + e.message;
+  }
+};
+
+// ── HISTORY TOGGLE ──
+window.toggleDepHistory = function() {
+  window._showDepHistory = !window._showDepHistory;
+  const btn = document.getElementById('depHistBtn');
+  if (btn) btn.textContent = window._showDepHistory ? 'Hide History' : 'Show History';
+};
+window.toggleWithHistory = function() {
+  window._showWithHistory = !window._showWithHistory;
+  const btn = document.getElementById('withHistBtn');
+  if (btn) btn.textContent = window._showWithHistory ? 'Hide History' : 'Show History';
 };
 
 // ── TOAST ──
