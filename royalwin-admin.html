@@ -555,8 +555,8 @@
         <h3>💳 Manually Add/Deduct Balance</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:0.8rem;align-items:end;">
           <div>
-            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">User UID</div>
-            <input class="form-input" type="text" id="manualUid" placeholder="Paste user UID" style="font-size:0.82rem;">
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Member ID or UID</div>
+            <input class="form-input" type="text" id="manualUid" placeholder="e.g. Iev6jHt3" style="font-size:0.82rem;">
           </div>
           <div>
             <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Amount (₹)</div>
@@ -571,14 +571,15 @@
           </div>
           <button class="btn btn-gold" onclick="manualBalance()" style="padding:0.75rem 1rem;font-size:0.85rem;">Apply</button>
         </div>
+        <div id="manualBalInfo" style="margin-top:0.5rem;font-size:0.75rem;color:var(--muted);"></div>
 
         <!-- Wager Adjustment -->
         <h3 style="margin-top:1.5rem;">🎯 Manually Adjust Wager</h3>
         <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.8rem;">Set or increase the wager completed amount for a user. Useful if you need to manually credit wager progress.</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:0.8rem;align-items:end;">
           <div>
-            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">User UID</div>
-            <input class="form-input" type="text" id="wagerUid" placeholder="Paste user UID" style="font-size:0.82rem;">
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Member ID or UID</div>
+            <input class="form-input" type="text" id="wagerUid" placeholder="e.g. Iev6jHt3" style="font-size:0.82rem;">
           </div>
           <div>
             <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Amount (₹)</div>
@@ -1702,37 +1703,79 @@ window.loadFraudAlerts = async function() {
   } catch(e) { if(el) el.innerHTML = 'Failed to load'; }
 };
 
+// ── RESOLVE MEMBER ID OR UID TO FIREBASE UID ──
+async function resolveUid(input) {
+  input = input.trim();
+  if (!input) return null;
+  // If it looks like a Firebase UID (long, >20 chars), use directly
+  if (input.length > 20) return input;
+  // Otherwise search by memberId
+  const snap = await get(ref(db, 'users'));
+  const users = snap.val() || {};
+  const found = Object.entries(users).find(([, u]) => 
+    u.memberId === input || u.referralCode === input
+  );
+  return found ? found[0] : null;
+}
+
+window.manualBalance = async function() {
+  const input = document.getElementById('manualUid').value.trim();
+  const amt = parseFloat(document.getElementById('manualAmt').value);
+  const type = document.getElementById('manualType').value;
+  const infoEl = document.getElementById('manualBalInfo');
+  if (!input) { showToast('⚠️ Enter Member ID or UID'); return; }
+  if (!amt || isNaN(amt) || amt <= 0) { showToast('⚠️ Enter a valid amount'); return; }
+  if (infoEl) infoEl.textContent = '⏳ Looking up user...';
+  try {
+    const uid = await resolveUid(input);
+    if (!uid) { showToast('❌ User not found: ' + input); if (infoEl) infoEl.textContent = '❌ User not found'; return; }
+    const balSnap = await get(ref(db, 'users/' + uid + '/balance'));
+    const currentBal = parseFloat(balSnap.val() || 0);
+    const newBal = type === 'add'
+      ? parseFloat((currentBal + amt).toFixed(2))
+      : parseFloat((currentBal - amt).toFixed(2));
+    if (newBal < 0) { showToast('❌ Balance would go negative!'); return; }
+    await set(ref(db, 'users/' + uid + '/balance'), newBal);
+    await push(ref(db, 'users/' + uid + '/transactions'), {
+      type: type === 'add' ? 'admin_credit' : 'admin_deduct',
+      amount: type === 'add' ? amt : -amt,
+      details: 'Manual ' + (type === 'add' ? 'credit' : 'deduction') + ' by admin',
+      balance: newBal, timestamp: Date.now()
+    });
+    if (infoEl) infoEl.textContent = '✅ Done! UID: ' + uid + ' | Old: ₹' + currentBal.toLocaleString('en-IN') + ' → New: ₹' + newBal.toLocaleString('en-IN');
+    showToast((type === 'add' ? '✅ Added' : '➖ Deducted') + ' ₹' + amt.toLocaleString('en-IN') + ' | New balance: ₹' + newBal.toLocaleString('en-IN'));
+  } catch(e) { showToast('❌ Error: ' + e.message); if (infoEl) infoEl.textContent = '❌ ' + e.message; }
+};
+
 window.adjustWager = async function() {
-  const uid = document.getElementById('wagerUid').value.trim();
+  const input = document.getElementById('wagerUid').value.trim();
   const amt = parseFloat(document.getElementById('wagerAdjAmt').value);
   const type = document.getElementById('wagerAdjType').value;
-  if (!uid) { showToast('⚠️ Enter user UID'); return; }
-
+  const infoEl = document.getElementById('wagerCurrentInfo');
+  if (!input) { showToast('⚠️ Enter Member ID or UID'); return; }
+  if (infoEl) infoEl.textContent = '⏳ Looking up user...';
   try {
+    const uid = await resolveUid(input);
+    if (!uid) { showToast('❌ User not found: ' + input); if (infoEl) infoEl.textContent = '❌ User not found'; return; }
     const wagerSnap = await get(ref(db, 'users/' + uid + '/wager'));
     const wager = wagerSnap.val() || { required: 0, completed: 0 };
-    const infoEl = document.getElementById('wagerCurrentInfo');
-
     if (type === 'reset') {
       await set(ref(db, 'users/' + uid + '/wager'), { required: 0, completed: 0 });
       showToast('✅ Wager reset for user');
-      if (infoEl) infoEl.textContent = 'Wager reset — Required: ₹0, Completed: ₹0';
+      if (infoEl) infoEl.textContent = '✅ Wager reset — UID: ' + uid + ' | Required: ₹0, Completed: ₹0';
       return;
     }
-
     if (!amt || isNaN(amt)) { showToast('⚠️ Enter a valid amount'); return; }
-
     let newCompleted;
     if (type === 'add') {
       newCompleted = parseFloat((parseFloat(wager.completed || 0) + amt).toFixed(2));
     } else {
       newCompleted = parseFloat(amt.toFixed(2));
     }
-
     await update(ref(db, 'users/' + uid + '/wager'), { completed: newCompleted });
-    showToast('✅ Wager updated! Completed: ₹' + newCompleted.toLocaleString('en-IN') + ' / Required: ₹' + (wager.required || 0).toLocaleString('en-IN'));
-    if (infoEl) infoEl.textContent = `Current — Required: ₹${(wager.required||0).toLocaleString('en-IN')} · Completed: ₹${newCompleted.toLocaleString('en-IN')} · Remaining: ₹${Math.max(0, (wager.required||0) - newCompleted).toLocaleString('en-IN')}`;
-  } catch(e) { showToast('❌ Error: ' + e.message); }
+    showToast('✅ Wager updated! Completed: ₹' + newCompleted.toLocaleString('en-IN'));
+    if (infoEl) infoEl.textContent = '✅ UID: ' + uid + ' | Required: ₹' + (wager.required||0).toLocaleString('en-IN') + ' · Completed: ₹' + newCompleted.toLocaleString('en-IN') + ' · Remaining: ₹' + Math.max(0, (wager.required||0) - newCompleted).toLocaleString('en-IN');
+  } catch(e) { showToast('❌ Error: ' + e.message); if (infoEl) infoEl.textContent = '❌ ' + e.message; }
 };
 
 window.toggleBlockUser = async function(uid, block) {
@@ -2291,21 +2334,6 @@ window.saveCommissionRates = async function() {
   await set(ref(db, 'settings/commissionRates'), { l1, l2, l3, l4, updatedAt: Date.now() });
   document.getElementById('ratesStatus').textContent = '✅ Saved: L1=' + l1 + '% L2=' + l2 + '% L3=' + l3 + '% L4=' + l4 + '%';
   showToast('✅ Commission rates updated!');
-};
-
-window.manualBalance = async function() {
-  const uid = document.getElementById('manualUid').value.trim();
-  const amt = parseFloat(document.getElementById('manualAmt').value);
-  const type = document.getElementById('manualType').value;
-  if (!uid) { showToast('⚠️ Enter user UID'); return; }
-  if (!amt || amt <= 0) { showToast('⚠️ Enter valid amount'); return; }
-  try {
-    const balSnap = await get(ref(db, 'users/' + uid + '/balance'));
-    const currentBal = parseFloat(balSnap.val() || 0);
-    const newBal = type === 'add' ? currentBal + amt : Math.max(0, currentBal - amt);
-    await update(ref(db, 'users/' + uid), { balance: parseFloat(newBal.toFixed(2)) });
-    showToast((type === 'add' ? '✅ Added' : '➖ Deducted') + ' ₹' + amt.toLocaleString('en-IN') + ' | New balance: ₹' + newBal.toLocaleString('en-IN'));
-  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 // ── LIVE CHAT ADMIN ──
