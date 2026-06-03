@@ -588,8 +588,8 @@
           <div>
             <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Action</div>
             <select id="wagerAdjType" class="form-input" style="font-size:0.82rem;cursor:pointer;">
-              <option value="add">➕ Add to Completed</option>
-              <option value="set">🔄 Set Completed to</option>
+              <option value="add">➕ Add Wager</option>
+              <option value="reduce">➖ Reduce Wager</option>
               <option value="reset">🗑️ Reset Wager</option>
             </select>
           </div>
@@ -1766,15 +1766,15 @@ window.adjustWager = async function() {
       return;
     }
     if (!amt || isNaN(amt)) { showToast('⚠️ Enter a valid amount'); return; }
-    let newCompleted;
+    let newRequired = parseFloat(wager.required || 0);
     if (type === 'add') {
-      newCompleted = parseFloat((parseFloat(wager.completed || 0) + amt).toFixed(2));
-    } else {
-      newCompleted = parseFloat(amt.toFixed(2));
+      newRequired = parseFloat((newRequired + amt).toFixed(2));
+    } else if (type === 'reduce') {
+      newRequired = Math.max(0, parseFloat((newRequired - amt).toFixed(2)));
     }
-    await update(ref(db, 'users/' + uid + '/wager'), { completed: newCompleted });
-    showToast('✅ Wager updated! Completed: ₹' + newCompleted.toLocaleString('en-IN'));
-    if (infoEl) infoEl.textContent = '✅ UID: ' + uid + ' | Required: ₹' + (wager.required||0).toLocaleString('en-IN') + ' · Completed: ₹' + newCompleted.toLocaleString('en-IN') + ' · Remaining: ₹' + Math.max(0, (wager.required||0) - newCompleted).toLocaleString('en-IN');
+    await update(ref(db, 'users/' + uid + '/wager'), { required: newRequired });
+    showToast('✅ Wager ' + (type === 'add' ? 'increased' : 'reduced') + '! Required: ₹' + newRequired.toLocaleString('en-IN'));
+    if (infoEl) infoEl.textContent = '✅ UID: ' + uid + ' | Required: ₹' + newRequired.toLocaleString('en-IN') + ' · Completed: ₹' + parseFloat(wager.completed||0).toLocaleString('en-IN') + ' · Remaining: ₹' + Math.max(0, newRequired - parseFloat(wager.completed||0)).toLocaleString('en-IN');
   } catch(e) { showToast('❌ Error: ' + e.message); if (infoEl) infoEl.textContent = '❌ ' + e.message; }
 };
 
