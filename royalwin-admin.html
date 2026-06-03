@@ -1582,14 +1582,22 @@ function loadSettings() {
 let allUsers = [];
 
 function loadUsers() {
-  onValue(ref(db, 'users'), (snap) => {
+  const el = document.getElementById('usersList');
+  if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;">Loading...</div>';
+  get(ref(db, 'users')).then((snap) => {
     const data = snap.val();
-    if (!data) { 
-      document.getElementById('usersList').innerHTML = '<div style="text-align:center;color:var(--muted);">No users yet</div>'; 
-      return; 
+    const countEl = document.getElementById('userCount');
+    if (!data) {
+      if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);">No users yet</div>';
+      if (countEl) countEl.textContent = '0';
+      return;
     }
     allUsers = Object.entries(data).map(([uid, u]) => ({ uid, ...u }));
+    if (countEl) countEl.textContent = allUsers.length;
     renderUsers(allUsers);
+  }).catch((e) => {
+    console.error('loadUsers error:', e);
+    if (el) el.innerHTML = '<div style="text-align:center;color:var(--red2);padding:1rem;">❌ Error: ' + e.message + '</div>';
   });
 }
 
@@ -1602,6 +1610,8 @@ function getAdminVipLevel(exp) {
 
 function renderUsers(users) {
   const el = document.getElementById('usersList');
+  const countEl = document.getElementById('userCount');
+  if (countEl) countEl.textContent = users.length;
   if (!el) return;
   if (!users || users.length === 0) {
     el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;">No users found</div>';
@@ -1867,9 +1877,6 @@ function loadFinance() {
       el.innerHTML += `<div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:0.3rem;">Showing all ${requests.length} records</div>`;
     }
   });
-
-  // Load users
-  loadUsers();
 }
 
 window.approveDeposit = async function(key, uid, amount) {
