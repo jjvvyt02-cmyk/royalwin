@@ -1830,8 +1830,8 @@ function loadFinance() {
     _lastDepCount = pendingCount;
 
     // Split pending vs history
-    const pendingDeps = requests.filter(([,r]) => r.status === 'pending');
-    const historyDeps = requests.filter(([,r]) => r.status !== 'pending');
+    const pendingDeps = requests.filter(([,r]) => r.status === 'pending' && !r.autoApproved);
+    const historyDeps = requests.filter(([,r]) => r.status !== 'pending' || r.autoApproved);
 
     // Update badge
     const depBadge = document.getElementById('depPendingBadge');
@@ -1882,7 +1882,7 @@ function loadFinance() {
     window._lastWithCount = pendingWith;
 
     // Split pending vs history
-    const pendingWiths = requests.filter(([,r]) => r.status === 'pending' || r.status === 'processing' || r.status === 'failed');
+    const pendingWiths = requests.filter(([,r]) => (r.status === 'pending' || r.status === 'processing' || r.status === 'failed') && !r.autoProcessed);
     const historyWiths = requests.filter(([,r]) => r.status !== 'pending');
 
     // Update badge
