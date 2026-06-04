@@ -2095,6 +2095,7 @@
       const levelNames = ['bronze','silver','gold','diamond'];
       const currentIdx = levelNames.indexOf(level.name.toLowerCase());
       if (currentIdx >= 0) setTimeout(() => scrollVipSlider(currentIdx), 300);
+      const weeklyAmtEl = document.getElementById('vipWeeklyAmt');
       const monthlyAmtEl = document.getElementById('vipMonthlyAmt');
       if (weeklyAmtEl) weeklyAmtEl.textContent = '₹' + level.weekly;
       if (monthlyAmtEl) monthlyAmtEl.textContent = '₹' + level.monthly;
@@ -2924,7 +2925,8 @@
     const db = window.fbDB || fbDB;
     if (!user || !db) return;
     try {
-      // Real-time wager listener
+      // Detach existing listener first then re-attach fresh
+      db.ref('users/' + user.uid + '/wager').off();
       db.ref('users/' + user.uid + '/wager').on('value', async (snap) => {
       const wager = snap.val();
       const progressSection = document.getElementById('wagerProgressSection');
@@ -3387,6 +3389,30 @@
         return;
       }
 
+      // ── CHECK: No pending withdrawal allowed ──
+      const allWithSnap = await db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(window.currentUser.uid).once('value');
+      const allWithData = allWithSnap.val();
+      if (allWithData) {
+        const hasPending = Object.values(allWithData).some(w => w.status === 'pending' || w.status === 'processing');
+        if (hasPending) {
+          showToast('❌ You already have a pending withdrawal. Please wait for it to be processed first.');
+          return;
+        }
+      }
+
+      // ── CHECK: Max 2 withdrawals per day ──
+      const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+      const todayStartTs = todayStart.getTime();
+      if (allWithData) {
+        const todayCount = Object.values(allWithData).filter(w =>
+          (w.timestamp || 0) >= todayStartTs && w.status !== 'rejected' && w.status !== 'failed'
+        ).length;
+        if (todayCount >= 2) {
+          showToast('❌ Maximum 2 withdrawals allowed per day. Try again tomorrow.');
+          return;
+        }
+      }
+
       // Check balance
       const balSnap = await db.ref('users/' + window.currentUser.uid + '/balance').once('value');
       const bal = parseFloat(balSnap.val() || 0);
@@ -3399,7 +3425,6 @@
 
       // Check USDT restriction
       if (currentWithdrawMethod === 'usdt' && !window._userHasUsdtDeposit) {
-        // Refund immediately
         await db.ref('users/' + window.currentUser.uid + '/balance').set(bal);
         updateBalanceDisplay(bal);
         showToast('❌ USDT withdrawal only available if you deposited via USDT');
@@ -3410,7 +3435,6 @@
       const savedSnap = await db.ref('users/' + window.currentUser.uid + '/withdrawDetails/' + currentWithdrawMethod).once('value');
       const saved = savedSnap.val();
       if (!saved) {
-        // Refund immediately
         await db.ref('users/' + window.currentUser.uid + '/balance').set(bal);
         updateBalanceDisplay(bal);
         showToast('⚠️ Please save your ' + currentWithdrawMethod.toUpperCase() + ' details first');
@@ -3422,7 +3446,6 @@
       else if (currentWithdrawMethod === 'bank') upiId = `Acc: ${saved.acc} | IFSC: ${saved.ifsc} | Bank: ${saved.bank} | Name: ${saved.name}`;
       else upiId = `USDT TRC20: ${saved.addr}`;
 
-      // Save to adminRequests with balanceAfter
       await db.ref('adminRequests/withdrawals').push({
         amount: amt, status: 'pending', uid: window.currentUser.uid,
         username: window.userProfile ? window.userProfile.username : 'Unknown',
@@ -3432,7 +3455,7 @@
         timestamp: Date.now()
       });
 
-      showToast('⬆️ Withdrawal of ₹' + amt.toLocaleString('en-IN') + ' submitted! Balance deducted. Admin will process shortly.');
+      showToast('⬆️ Withdrawal of ₹' + amt.toLocaleString('en-IN') + ' submitted! Admin will process shortly.');
       loadWithdrawHistory();
     } catch(e) { showToast('❌ Withdrawal failed: ' + e.message); }
   }
@@ -5467,7 +5490,24 @@
       const profUserDisp = document.getElementById('profileUsernameDisplay');
       if (profUserDisp) profUserDisp.textContent = profile.username || profile.firstName || '—';
       const profUID = document.getElementById('profileUIDDisplay');
-      const uidVal = profile.memberId || (profile.uid ? profile.uid.substring(0,8) : '—');
+      // Auto-assign numeric Member ID if user doesn't have one
+      let uidVal = profile.memberId;
+      if (!uidVal || uidVal.length > 10) {
+        const user = window.currentUser;
+        const db = window.fbDB || fbDB;
+        let newMemberId;
+        let attempts = 0;
+        do {
+          newMemberId = Math.floor(100000 + Math.random() * 900000).toString();
+          const snap = await db.ref('memberIds/' + newMemberId).once('value');
+          if (!snap.val()) break;
+          attempts++;
+        } while (attempts < 10);
+        await db.ref('memberIds/' + newMemberId).set(user.uid);
+        await db.ref('users/' + user.uid + '/memberId').set(newMemberId);
+        profile.memberId = newMemberId;
+        uidVal = newMemberId;
+      }
       const profUIDEl = document.getElementById('profileUIDDisplay');
       if (profUIDEl) {
         profUIDEl.innerHTML = '';
@@ -7886,3 +7926,160 @@ window.loadActivityAwardPage = function() {
   });
 }
 
+<script>
+// ══════════════════════════════════════════════════════
+// ATTENDANCE BONUS
+// ══════════════════════════════════════════════════════
+var ATTEND_REWARDS = [5, 8, 16, 25, 45, 90, 188];
+window.loadAttendancePage = function() {
+  var user = window.currentUser; var db = window.fbDB;
+  if (!user || !db) { _attendRenderUI(0, false, 0); return; }
+  db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
+    var data = snap.val() || {}, streak = data.streak || 0, lastCheckin = data.lastCheckin || '', totalEarned = data.totalEarned || 0;
+    var today = new Date().toDateString(), yesterday = new Date(Date.now() - 86400000).toDateString();
+    if (lastCheckin && lastCheckin !== today && lastCheckin !== yesterday) streak = 0;
+    _attendRenderUI(streak, lastCheckin === today, totalEarned);
+  }).catch(function() { _attendRenderUI(0, false, 0); });
+};
+function _attendRenderUI(streak, alreadyClaimed, totalEarned) {
+  var streakEl = document.getElementById('attendStreak'); if (streakEl) streakEl.textContent = streak;
+  var totalEl = document.getElementById('attendTotal'); if (totalEl) totalEl.textContent = '₹' + parseFloat(totalEarned).toFixed(2);
+  for (var d = 1; d <= 7; d++) {
+    var card = document.getElementById('attendCard' + d); if (!card) continue;
+    if (d <= streak) { card.style.borderColor='var(--green)'; card.style.background='rgba(0,230,118,0.08)'; card.style.opacity='1'; }
+    else if (d === streak + 1) { card.style.borderColor='var(--gold)'; card.style.background='rgba(240,192,64,0.08)'; card.style.opacity='1'; card.style.boxShadow='0 0 16px rgba(240,192,64,0.2)'; }
+    else { card.style.borderColor='var(--border)'; card.style.background='var(--card)'; card.style.opacity='0.5'; card.style.boxShadow=''; }
+  }
+  var btn = document.getElementById('attendClaimBtn'); if (!btn) return;
+  if (alreadyClaimed) { btn.textContent='✅ Already Checked In Today'; btn.disabled=true; btn.style.background='var(--bg3)'; btn.style.color='var(--muted)'; }
+  else { var nextDay=Math.min(streak+1,7), reward=ATTEND_REWARDS[nextDay-1]; btn.textContent='✅ Check In Today — Claim ₹'+reward; btn.disabled=false; btn.style.background=''; btn.style.color=''; }
+}
+window.claimAttendance = function() {
+  var user = window.currentUser, db = window.fbDB;
+  if (!user || !db) { showToast('🔐 Please sign in first'); return; }
+  var today = new Date().toDateString(), yesterday = new Date(Date.now() - 86400000).toDateString();
+  db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
+    var data = snap.val() || {}, streak = data.streak || 0, lastCheckin = data.lastCheckin || '', totalEarned = parseFloat(data.totalEarned || 0);
+    if (lastCheckin === today) { showToast('⚠️ Already checked in today!'); return; }
+    if (lastCheckin && lastCheckin !== yesterday) streak = 0;
+    var newStreak = (streak % 7) + 1, reward = ATTEND_REWARDS[newStreak - 1], newTotal = parseFloat((totalEarned + reward).toFixed(2));
+    db.ref('users/' + user.uid + '/balance').once('value').then(function(balSnap) {
+      var newBal = parseFloat(((balSnap.val() || 0) + reward).toFixed(2));
+      var updates = {};
+      updates['users/'+user.uid+'/attendance/streak'] = newStreak;
+      updates['users/'+user.uid+'/attendance/lastCheckin'] = today;
+      updates['users/'+user.uid+'/attendance/totalEarned'] = newTotal;
+      updates['users/'+user.uid+'/balance'] = newBal;
+      db.ref().update(updates).then(function() {
+        db.ref('users/'+user.uid+'/transactions').push({type:'attendance',amount:reward,details:'Day '+newStreak+' attendance bonus',balance:newBal,timestamp:Date.now()});
+        if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+        showToast('🎁 Day '+newStreak+' check-in! +₹'+reward+' credited!');
+        _attendRenderUI(newStreak, true, newTotal);
+      }).catch(function(e) { showToast('❌ '+e.message); });
+    });
+  }).catch(function(e) { showToast('❌ '+e.message); });
+};
+
+// ══════════════════════════════════════════════════════
+// INVITATION BONUS
+// ══════════════════════════════════════════════════════
+window.claimInviteTier = function(tierNum, reward) {
+  var user = window.currentUser, db = window.fbDB;
+  if (!user || !db) { showToast('🔐 Please sign in first'); return; }
+  db.ref('users/'+user.uid+'/claimedInviteTiers/tier'+tierNum).once('value').then(function(snap) {
+    if (snap.val()) { showToast('⚠️ Already claimed!'); return; }
+    db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
+      var newBal = parseFloat(((balSnap.val()||0)+reward).toFixed(2));
+      var updates = {}; updates['users/'+user.uid+'/claimedInviteTiers/tier'+tierNum]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
+      db.ref().update(updates).then(function() {
+        db.ref('users/'+user.uid+'/transactions').push({type:'invitation_bonus',amount:reward,details:'Invitation Bonus Tier '+tierNum,balance:newBal,timestamp:Date.now()});
+        if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+        showToast('🎉 Tier '+tierNum+' bonus! +₹'+reward.toLocaleString('en-IN')+' credited!');
+        if (typeof window.loadInvitationBonusPage==='function') window.loadInvitationBonusPage();
+      }).catch(function(e) { showToast('❌ '+e.message); });
+    });
+  });
+};
+
+// ══════════════════════════════════════════════════════
+// ACTIVITY AWARD
+// ══════════════════════════════════════════════════════
+window.claimActivityTask = function(taskId, reward) {
+  var user = window.currentUser, db = window.fbDB;
+  if (!user || !db) { showToast('🔐 Please sign in first'); return; }
+  var todayKey = new Date().toISOString().split('T')[0];
+  db.ref('users/'+user.uid+'/claimedActivityTasks/'+todayKey+'/task'+taskId).once('value').then(function(snap) {
+    if (snap.val()) { showToast('⚠️ Already claimed today!'); return; }
+    db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
+      var newBal = parseFloat(((balSnap.val()||0)+reward).toFixed(2));
+      var updates = {}; updates['users/'+user.uid+'/claimedActivityTasks/'+todayKey+'/task'+taskId]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
+      db.ref().update(updates).then(function() {
+        db.ref('users/'+user.uid+'/transactions').push({type:'activity_award',amount:reward,details:'Activity Award Task '+taskId,balance:newBal,timestamp:Date.now()});
+        if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+        showToast('🎯 Task '+taskId+' reward! +₹'+reward+' credited!');
+        if (typeof window.loadActivityAwardPage==='function') window.loadActivityAwardPage();
+      }).catch(function(e) { showToast('❌ '+e.message); });
+    });
+  });
+};
+
+// ══════════════════════════════════════════════════════
+// VIP WEEKLY & MONTHLY CLAIM
+// ══════════════════════════════════════════════════════
+var VIP_LEVELS_DATA = [
+  {name:'Bronze',minExp:0,weekly:25,monthly:50},
+  {name:'Silver',minExp:200,weekly:125,monthly:250},
+  {name:'Gold',minExp:500,weekly:225,monthly:650},
+  {name:'Diamond',minExp:1000,weekly:325,monthly:1350}
+];
+function _getVipLevelData(exp) {
+  var level = VIP_LEVELS_DATA[0];
+  for (var i=VIP_LEVELS_DATA.length-1;i>=0;i--) { if(exp>=VIP_LEVELS_DATA[i].minExp){level=VIP_LEVELS_DATA[i];break;} }
+  return level;
+}
+window.claimVipWeekly = function() {
+  var user=window.currentUser, db=window.fbDB;
+  if (!user||!db) { showToast('🔐 Please sign in first'); return; }
+  var weekStart=new Date(); weekStart.setHours(0,0,0,0); weekStart.setDate(weekStart.getDate()-weekStart.getDay());
+  var weekKey=weekStart.toISOString().split('T')[0];
+  db.ref('users/'+user.uid+'/vip/claimedWeekly/'+weekKey).once('value').then(function(snap) {
+    if (snap.val()) { showToast('⚠️ Already claimed weekly bonus!'); return; }
+    db.ref('users/'+user.uid+'/vip/exp').once('value').then(function(expSnap) {
+      var level=_getVipLevelData(parseFloat(expSnap.val()||0)), reward=level.weekly;
+      db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
+        var newBal=parseFloat(((balSnap.val()||0)+reward).toFixed(2));
+        var updates={}; updates['users/'+user.uid+'/vip/claimedWeekly/'+weekKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
+        db.ref().update(updates).then(function() {
+          db.ref('users/'+user.uid+'/transactions').push({type:'vip_weekly',amount:reward,details:level.name+' VIP Weekly Bonus',balance:newBal,timestamp:Date.now()});
+          if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+          showToast('👑 Weekly VIP bonus! +₹'+reward+' credited!');
+          if (typeof loadVipPage==='function') loadVipPage();
+        });
+      });
+    });
+  });
+};
+window.claimVipMonthly = function() {
+  var user=window.currentUser, db=window.fbDB;
+  if (!user||!db) { showToast('🔐 Please sign in first'); return; }
+  var now=new Date(), monthKey=now.getFullYear()+'-'+(now.getMonth()+1);
+  db.ref('users/'+user.uid+'/vip/claimedMonthly/'+monthKey).once('value').then(function(snap) {
+    if (snap.val()) { showToast('⚠️ Already claimed monthly bonus!'); return; }
+    db.ref('users/'+user.uid+'/vip/exp').once('value').then(function(expSnap) {
+      var level=_getVipLevelData(parseFloat(expSnap.val()||0)), reward=level.monthly;
+      db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
+        var newBal=parseFloat(((balSnap.val()||0)+reward).toFixed(2));
+        var updates={}; updates['users/'+user.uid+'/vip/claimedMonthly/'+monthKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
+        db.ref().update(updates).then(function() {
+          db.ref('users/'+user.uid+'/transactions').push({type:'vip_monthly',amount:reward,details:level.name+' VIP Monthly Bonus',balance:newBal,timestamp:Date.now()});
+          if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+          showToast('👑 Monthly VIP bonus! +₹'+reward+' credited!');
+          if (typeof loadVipPage==='function') loadVipPage();
+        });
+      });
+    });
+  });
+};
+</script>
+</body>
+</html>
