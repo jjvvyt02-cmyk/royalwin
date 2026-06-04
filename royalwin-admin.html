@@ -1797,26 +1797,24 @@ window.deleteUser = async function(uid, username) {
 
 
 // ── FINANCE ──
-function loadFinance() {
-  // Listen for deposit requests
-  // Deposit sound alert
-  var _lastDepCount = 0;
-  function _playAlertSound() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      [800, 1000, 1200].forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.type = 'sine'; osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.2);
-        osc.start(ctx.currentTime + i * 0.15);
-        osc.stop(ctx.currentTime + i * 0.15 + 0.2);
-      });
-    } catch(e) {}
-  }
+var _lastDepCount = 0;
+function _playAlertSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [800, 1000, 1200].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.2);
+      osc.start(ctx.currentTime + i * 0.15);
+      osc.stop(ctx.currentTime + i * 0.15 + 0.2);
+    });
+  } catch(e) {}
+}
 
+function loadFinance() {
   onValue(ref(db, 'adminRequests/deposits'), (snap) => {
     const data = snap.val();
     const requests = data ? Object.entries(data).reverse() : [];
@@ -1825,7 +1823,7 @@ function loadFinance() {
   });
 }
 
-window.renderDepRequests = function(requests) {
+window.renderDepRequests = async function(requests) {
     const el = document.getElementById('depositRequests');
     if (!el) return;
     if (!requests || requests.length === 0) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending deposits</div>'; return; }
@@ -1841,9 +1839,25 @@ window.renderDepRequests = function(requests) {
     if (depBadge) { depBadge.textContent = pendingDeps.length; depBadge.style.display = pendingDeps.length > 0 ? 'inline' : 'none'; }
     const showDepHistory = window._showDepHistory || false;
     const toShow = showDepHistory ? requests : pendingDeps;
+
+    // Build member ID cache
+    const memberIdCache = {};
+    for (const [, r] of toShow) {
+      if (!memberIdCache[r.uid] && r.uid) {
+        if (r.memberId && r.memberId.length <= 10) {
+          memberIdCache[r.uid] = r.memberId;
+        } else {
+          try {
+            const s = await get(ref(db, 'users/' + r.uid + '/memberId'));
+            memberIdCache[r.uid] = s.val() || '—';
+          } catch(e) { memberIdCache[r.uid] = '—'; }
+        }
+      }
+    }
+
     function renderDepRow([key, r]) {
       const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-      const memberId = r.memberId && r.memberId.length <= 10 ? r.memberId : '—';
+      const memberId = memberIdCache[r.uid] || '—';
       return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
         <div style="display:flex;align-items:center;gap:0.8rem;flex:1;min-width:0;">
           <div style="font-size:0.72rem;color:var(--gold);font-weight:700;white-space:nowrap;">#${memberId}</div>
@@ -1890,51 +1904,61 @@ function renderWithRequests(requests) {
       _playAlertSound(); showToast('🔔 New withdrawal request!');
     }
     window._lastWithCount = pendingWith;
-
-    // Split pending vs history
     const pendingWiths = requests.filter(([,r]) => (r.status === 'pending' || r.status === 'processing' || r.status === 'failed') && !r.autoProcessed);
     const historyWiths = requests.filter(([,r]) => r.status !== 'pending');
-
-    // Update badge
     const withBadge = document.getElementById('withPendingBadge');
     if (withBadge) { withBadge.textContent = pendingWiths.length; withBadge.style.display = pendingWiths.length > 0 ? 'inline' : 'none'; }
-
-    // Decide which to show
     const showWithHistory = window._showWithHistory || false;
     const toShowWith = showWithHistory ? requests : pendingWiths;
 
-    function renderWithRow([key, r]) {
-      const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-      const memberId = r.memberId && r.memberId.length <= 10 ? r.memberId : '—';
-      return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
-        <div style="display:flex;align-items:center;gap:0.8rem;flex:1;min-width:0;">
-          <div style="font-size:0.72rem;color:var(--gold);font-weight:700;white-space:nowrap;">#${memberId}</div>
-          <div style="font-weight:800;color:var(--red2);font-size:0.92rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}</div>
-          <div style="font-size:0.7rem;color:var(--muted);white-space:nowrap;">${r.method || 'UPI'}</div>
-          <div style="font-size:0.68rem;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;" title="${r.upiId || ''}">${r.upiId || '—'}</div>
-          <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${time}</div>
-        </div>
-        <div style="display:flex;gap:0.3rem;flex-shrink:0;">
-          ${r.status === 'pending' ? `
-          <button onclick="autoPayWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--gold);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">⚡ Auto</button>
-          <button onclick="approveWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">✅</button>
-          <button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.25rem 0.6rem;color:var(--red2);font-size:0.72rem;cursor:pointer;">❌</button>
-          ` : r.status === 'processing' || r.status === 'failed' ? `
-          <span style="font-size:0.68rem;color:${r.status==='processing'?'var(--gold)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>
-          <button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.25rem 0.6rem;color:var(--red2);font-size:0.72rem;cursor:pointer;">❌</button>
-          ` : `<span style="font-size:0.68rem;color:${r.status==='approved'?'var(--green)':r.status==='processing'?'var(--gold)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>`}
-        </div>
-      </div>`;
-    }
-
-    if (toShowWith.length === 0) {
-      el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${showWithHistory ? 'No withdrawals yet' : '✅ No pending withdrawals'}</div>`;
-    } else {
-      el.innerHTML = toShowWith.map(renderWithRow).join('');
-    }
-    if (showWithHistory && historyWiths.length > 0) {
-      el.innerHTML += `<div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:0.3rem;">Showing all ${requests.length} records</div>`;
-    }
+    // Fetch member IDs for all entries
+    const fetchAndRender = async () => {
+      const memberIdCache = {};
+      for (const [, r] of toShowWith) {
+        if (!memberIdCache[r.uid] && r.uid) {
+          if (r.memberId && r.memberId.length <= 10) {
+            memberIdCache[r.uid] = r.memberId;
+          } else {
+            try {
+              const s = await get(ref(db, 'users/' + r.uid + '/memberId'));
+              memberIdCache[r.uid] = s.val() || '—';
+            } catch(e) { memberIdCache[r.uid] = '—'; }
+          }
+        }
+      }
+      function renderWithRow([key, r]) {
+        const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+        const memberId = memberIdCache[r.uid] || '—';
+        return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+          <div style="display:flex;align-items:center;gap:0.8rem;flex:1;min-width:0;">
+            <div style="font-size:0.72rem;color:var(--gold);font-weight:700;white-space:nowrap;">#${memberId}</div>
+            <div style="font-weight:800;color:var(--red2);font-size:0.92rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}</div>
+            <div style="font-size:0.7rem;color:var(--muted);white-space:nowrap;">${r.method || 'UPI'}</div>
+            <div style="font-size:0.68rem;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;" title="${r.upiId || ''}">${r.upiId || '—'}</div>
+            <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${time}</div>
+          </div>
+          <div style="display:flex;gap:0.3rem;flex-shrink:0;">
+            ${r.status === 'pending' ? `
+            <button onclick="autoPayWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--gold);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">⚡ Auto</button>
+            <button onclick="approveWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">✅</button>
+            <button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.25rem 0.6rem;color:var(--red2);font-size:0.72rem;cursor:pointer;">❌</button>
+            ` : r.status === 'processing' || r.status === 'failed' ? `
+            <span style="font-size:0.68rem;color:${r.status==='processing'?'var(--gold)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>
+            <button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.25rem 0.6rem;color:var(--red2);font-size:0.72rem;cursor:pointer;">❌</button>
+            ` : `<span style="font-size:0.68rem;color:${r.status==='approved'?'var(--green)':r.status==='processing'?'var(--gold)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>`}
+          </div>
+        </div>`;
+      }
+      if (toShowWith.length === 0) {
+        el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${showWithHistory ? 'No withdrawals yet' : '✅ No pending withdrawals'}</div>`;
+      } else {
+        el.innerHTML = toShowWith.map(renderWithRow).join('');
+      }
+      if (showWithHistory && historyWiths.length > 0) {
+        el.innerHTML += `<div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:0.3rem;">Showing all ${requests.length} records</div>`;
+      }
+    };
+    fetchAndRender();
 }
 
 window.approveDeposit = async function(key, uid, amount) {
