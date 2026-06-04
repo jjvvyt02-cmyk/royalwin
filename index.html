@@ -1109,10 +1109,7 @@
 </div>
 
 <!-- LIVE WINNER TICKER -->
-<div class="ticker-wrap" id="winnerTicker" style="display:none;">
-  <div class="ticker-label">🔴 Live Wins</div>
-  <div class="ticker-track" id="tickerTrack"></div>
-</div>
+
 
 <!-- ══════════════════════════════════════
      HOME PAGE
@@ -2266,7 +2263,7 @@
     const db = window.fbDB || fbDB;
     if (!user || !db) return;
     if (_notifListener) { db.ref('users/' + user.uid + '/notifications').off('value', _notifListener); _notifListener = null; }
-    _notifListener = db.ref('users/' + user.uid + '/notifications').orderByChild('timestamp').limitToLast(20).on('value', snap => {
+    _notifListener = db.ref('users/' + user.uid + '/notifications').orderByChild('timestamp').limitToLast(5).on('value', snap => {
       const data = snap.val();
       const listEl = document.getElementById('notifList');
       const badge = document.getElementById('notifBadge');
@@ -2276,7 +2273,7 @@
         if (badge) badge.style.display = 'none';
         return;
       }
-      const notifs = Object.entries(data).map(([k,v]) => ({...v, key: k})).sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+      const notifs = Object.entries(data).map(([k,v]) => ({...v, key: k})).sort((a,b) => (b.timestamp||0) - (a.timestamp||0)).slice(0, 5);
       const unread = notifs.filter(n => !n.read).length;
       if (badge) { badge.style.display = unread > 0 ? 'flex' : 'none'; badge.textContent = unread > 9 ? '9+' : unread; }
       listEl.innerHTML = notifs.map(n => `
@@ -4157,27 +4154,8 @@
     {name:'Har***', amt:'₹980', game:'Dragon Tiger', icon:'🐉'},
   ];
 
-  function buildTicker() {
-    const track = document.getElementById('tickerTrack');
-    if (!track) return;
-    // duplicate for infinite scroll
-    const items = [...tickerWinners, ...tickerWinners];
-    track.innerHTML = items.map(w =>
-      `<div class="ticker-item">
-        <span class="t-dot"></span>
-        <span>${w.icon}</span>
-        <span class="t-name">${w.name}</span>
-        <span style="color:var(--muted);">won</span>
-        <span class="t-amt">${w.amt}</span>
-        <span class="t-game">on ${w.game}</span>
-      </div>`
-    ).join('');
-  }
-
-  function showTicker() {
-    document.getElementById('winnerTicker').style.display = 'block';
-    buildTicker();
-  }
+  function showTicker() { /* removed */ }
+  function buildTicker() { /* removed */ }
 
   // Show ticker after login/register
   // doLogin ticker patch — handled inline
@@ -7358,6 +7336,12 @@ function closeUSDTModal() {
   var modal = document.getElementById('usdtModal');
   if (modal) modal.style.display = 'none';
   if (window._usdtTimerInterval) clearInterval(window._usdtTimerInterval);
+  // Cancel deposit if user didn't confirm
+  if (window._usdtDepositKey && !window._usdtConfirmed) {
+    var db = window.fbDB || fbDB;
+    if (db) db.ref('adminRequests/deposits/' + window._usdtDepositKey + '/status').set('cancelled');
+    window._usdtDepositKey = null;
+  }
 }
 
 function copyUSDTAddress() {
