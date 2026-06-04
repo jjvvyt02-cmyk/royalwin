@@ -4215,17 +4215,6 @@
   async function confirmQRPayment() {
     showToast('⚠️ Please use Pay Now button to deposit.');
   }
-    if (!isLoggedIn) { showToast('🔐 Please sign in first!'); showPage('login'); return; }
-    document.getElementById('qrModal').classList.add('open');
-    document.getElementById('qrConfirmed').style.display = 'none';
-    const amt = document.getElementById('depositAmount') ? document.getElementById('depositAmount').value : 500;
-    document.getElementById('qrAmount').value = amt || 500;
-    // Hide selector — user never sees it
-    const selector = document.getElementById('upiSelector');
-    if (selector) selector.style.display = 'none';
-    updateQR();
-    startQRTimer();
-  }
 
   function closeQR() {
     document.getElementById('qrModal').classList.remove('open');
