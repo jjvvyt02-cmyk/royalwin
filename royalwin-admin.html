@@ -1882,7 +1882,7 @@ function loadFinance() {
     window._lastWithCount = pendingWith;
 
     // Split pending vs history
-    const pendingWiths = requests.filter(([,r]) => r.status === 'pending');
+    const pendingWiths = requests.filter(([,r]) => r.status === 'pending' || r.status === 'processing' || r.status === 'failed');
     const historyWiths = requests.filter(([,r]) => r.status !== 'pending');
 
     // Update badge
@@ -1905,6 +1905,9 @@ function loadFinance() {
           ${r.status === 'pending' ? `
           <button onclick="autoPayWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--gold);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">⚡ Auto</button>
           <button onclick="approveWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">✅</button>
+          <button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.25rem 0.6rem;color:var(--red2);font-size:0.72rem;cursor:pointer;">❌</button>
+          ` : r.status === 'processing' || r.status === 'failed' ? `
+          <span style="font-size:0.68rem;color:${r.status==='processing'?'var(--gold)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>
           <button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.25rem 0.6rem;color:var(--red2);font-size:0.72rem;cursor:pointer;">❌</button>
           ` : `<span style="font-size:0.68rem;color:${r.status==='approved'?'var(--green)':r.status==='processing'?'var(--gold)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>`}
         </div>
