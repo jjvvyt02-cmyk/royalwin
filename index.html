@@ -3331,6 +3331,9 @@
   }
 
   async function doDeposit() {
+    // Manual deposit disabled — all deposits go through gateway
+    showToast('⚠️ Please use the Pay Now button to deposit.');
+  }
     const amt = parseFloat(document.getElementById('depositAmount').value);
     if (!amt || amt < 300) { showToast('⚠️ Minimum deposit is ₹300'); return; }
     if (amt > 20000) { showToast('⚠️ Maximum deposit is ₹20,000'); return; }
@@ -4247,6 +4250,12 @@
   }
 
   function openQR() {
+    // Manual QR disabled — all deposits go through gateway
+    showToast('⚠️ Please use Pay Now button to deposit.');
+  }
+  async function confirmQRPayment() {
+    showToast('⚠️ Please use Pay Now button to deposit.');
+  }
     if (!isLoggedIn) { showToast('🔐 Please sign in first!'); showPage('login'); return; }
     document.getElementById('qrModal').classList.add('open');
     document.getElementById('qrConfirmed').style.display = 'none';
@@ -4329,7 +4338,7 @@
         const hasDepSnap = await db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value');
         if (hasDepSnap.val()) { bonusPct=5; bonusAmt=Math.round(amt*0.05); wagerReq=1; }
       }
-      await db.ref('adminRequests/deposits').push({
+      const depositRef = await db.ref('adminRequests/deposits').push({
         orderId, amount: amt, status: 'pending', method: 'Gateway - UPI',
         uid: window.currentUser.uid,
         username: window.userProfile?.username || 'Unknown',
@@ -4338,6 +4347,17 @@
         isFirstDeposit: !window.userProfile?.hasDeposited,
         timestamp: Date.now()
       });
+
+      // Auto-cancel after 5 minutes if still pending
+      const depositKey = depositRef.key;
+      setTimeout(async () => {
+        try {
+          const checkSnap = await db.ref('adminRequests/deposits/' + depositKey + '/status').once('value');
+          if (checkSnap.val() === 'pending') {
+            await db.ref('adminRequests/deposits/' + depositKey + '/status').set('cancelled');
+          }
+        } catch(e) {}
+      }, 5 * 60 * 1000);
       const response = await fetch(VERCEL_API_URL + '/api/create-order', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ amount: amt, uid: window.currentUser.uid,
@@ -4350,10 +4370,15 @@
         window.open(data.url, '_blank');
         showToast('✅ Payment page opened!');
       } else {
-        showToast('❌ ' + (data.msg || 'Gateway error. Try manual UPI.'));
-        openQR();
+        // Cancel the gateway deposit record
+        db.ref('adminRequests/deposits/' + depositKey + '/status').set('cancelled');
+        showToast('❌ ' + (data.msg || 'Payment gateway error. Please try again.'));
       }
-    } catch(e) { showToast('❌ Gateway unavailable. Using manual UPI.'); openQR(); }
+    } catch(e) {
+      // Cancel gateway deposit record if it was created
+      try { if (depositKey) db.ref('adminRequests/deposits/' + depositKey + '/status').set('cancelled'); } catch(err) {}
+      showToast('❌ Payment gateway unavailable. Please try again later.');
+    }
   }
 
   async function confirmQRPayment() {
