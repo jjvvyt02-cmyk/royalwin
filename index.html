@@ -2900,7 +2900,7 @@
       const db = window.fbDB || fbDB;
       await db.ref('adminRequests/deposits').push({
         amount: amt, status: 'pending', method: 'UPI - 100% Bonus',
-        uid: window.currentUser.uid,
+        uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
         username: window.userProfile ? window.userProfile.username : 'Unknown',
         contact: window.userProfile ? (window.userProfile.contact || '') : '',
         upiId: upiId || 'Not provided',
@@ -3409,7 +3409,7 @@
       else upiId = `USDT TRC20: ${saved.addr}`;
 
       await db.ref('adminRequests/withdrawals').push({
-        amount: amt, status: 'pending', uid: window.currentUser.uid,
+        amount: amt, status: 'pending', uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
         username: window.userProfile ? window.userProfile.username : 'Unknown',
         contact: window.userProfile ? (window.userProfile.contact || '') : '',
         upiId, method: currentWithdrawMethod.toUpperCase(),
@@ -4288,7 +4288,7 @@
       }
       const depositRef = await db.ref('adminRequests/deposits').push({
         orderId, amount: amt, status: 'pending', method: 'Gateway - UPI',
-        uid: window.currentUser.uid,
+        uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
         username: window.userProfile?.username || 'Unknown',
         contact: window.userProfile?.contact || '',
         bonusPct, bonusAmt, wagerReq,
@@ -4308,7 +4308,7 @@
       }, 5 * 60 * 1000);
       const response = await fetch(VERCEL_API_URL + '/api/create-order', {
         method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amt, uid: window.currentUser.uid,
+        body: JSON.stringify({ amount: amt, uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
           username: window.userProfile?.username || 'User',
           contact: window.userProfile?.contact || '',
           orderId, callbackUrl: window.location.href })
@@ -4344,7 +4344,7 @@
       await db.ref('adminRequests/deposits').push({
         amount: amt, status: 'pending',
         method: bonusPct > 0 ? `UPI QR · ${bonusPct}% bonus` : 'UPI QR',
-        uid: window.currentUser.uid,
+        uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
         username: window.userProfile ? window.userProfile.username : 'Unknown',
         contact: window.userProfile ? (window.userProfile.contact || window.userProfile.mobile || window.userProfile.email || '') : '',
         referredBy: window.userProfile ? (window.userProfile.referredBy || '') : '',
@@ -7333,7 +7333,7 @@ function openUSDTModal() {
       db.ref('adminRequests/deposits').push({
         amount: amt, status: 'pending',
         method: bonusPct > 0 ? `USDT TRC20 · ${bonusPct}% bonus` : 'USDT TRC20',
-        uid: window.currentUser.uid,
+        uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
         username: window.userProfile ? window.userProfile.username : 'Unknown',
         contact: window.userProfile ? (window.userProfile.contact || '') : '',
         isFirstDeposit: isFirst,
@@ -7422,7 +7422,7 @@ async function confirmUSDTPayment() {
     } else {
       await db.ref('adminRequests/deposits').push({
         amount: amt, status: 'pending', method: 'USDT TRC20',
-        uid: window.currentUser.uid,
+        uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
         username: window.userProfile ? window.userProfile.username : 'Unknown',
         contact: window.userProfile ? (window.userProfile.contact || '') : '',
         assignedUsdtAddress: _activeUsdtAddress,
