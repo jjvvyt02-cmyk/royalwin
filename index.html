@@ -4323,7 +4323,12 @@
       const orderId = 'RW' + Date.now() + window.currentUser.uid.substring(0,6);
       let bonusPct=0, bonusAmt=0, wagerReq=0;
       if (selectedBonusOption===1){bonusPct=8;bonusAmt=Math.round(amt*0.08);wagerReq=1;}
-      if (selectedBonusOption===2){bonusPct=15;bonusAmt=Math.round(amt*0.15);wagerReq=2.5;}
+      else if (selectedBonusOption===2){bonusPct=15;bonusAmt=Math.round(amt*0.15);wagerReq=2.5;}
+      else {
+        // 5% recurring bonus for all deposits after first
+        const hasDepSnap = await db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value');
+        if (hasDepSnap.val()) { bonusPct=5; bonusAmt=Math.round(amt*0.05); wagerReq=1; }
+      }
       await db.ref('adminRequests/deposits').push({
         orderId, amount: amt, status: 'pending', method: 'Gateway - UPI',
         uid: window.currentUser.uid,
@@ -4356,15 +4361,23 @@
     if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
     try {
       const db = window.fbDB || fbDB;
-      // Save UPI deposit request for admin to verify
+      const hasDepSnap = await db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value');
+      const isFirst = !hasDepSnap.val();
+      let bonusPct = 0, bonusAmt = 0, wagerReq = 0;
+      if (selectedBonusOption === 1) { bonusPct = 8;   bonusAmt = Math.round(amt * 0.08);  wagerReq = 1; }
+      else if (selectedBonusOption === 2) { bonusPct = 15;  bonusAmt = Math.round(amt * 0.15);  wagerReq = 2.5; }
+      else if (selectedBonusOption === 3 && isFirst) { bonusPct = 100; bonusAmt = Math.round(amt * 1.00);  wagerReq = 10; }
+      else if (!isFirst) { bonusPct = 5; bonusAmt = Math.round(amt * 0.05); wagerReq = 1; }
       await db.ref('adminRequests/deposits').push({
-        amount: amt, status: 'pending', method: 'UPI QR',
+        amount: amt, status: 'pending',
+        method: bonusPct > 0 ? `UPI QR · ${bonusPct}% bonus` : 'UPI QR',
         uid: window.currentUser.uid,
         username: window.userProfile ? window.userProfile.username : 'Unknown',
         contact: window.userProfile ? (window.userProfile.contact || window.userProfile.mobile || window.userProfile.email || '') : '',
         referredBy: window.userProfile ? (window.userProfile.referredBy || '') : '',
-        isFirstDeposit: window.userProfile ? !window.userProfile.hasDeposited : true,
+        isFirstDeposit: isFirst,
         assignedUpiId: _activeUpiId || 'royalwin@upi',
+        bonusPct, bonusAmt, wagerReq,
         timestamp: Date.now()
       });
       await db.ref('users/' + window.currentUser.uid + '/depositRequests').push({
@@ -7316,15 +7329,25 @@ function openUSDTModal() {
   // Save pending deposit first to get key
   if (window.currentUser && (window.fbDB || fbDB)) {
     var db = window.fbDB || fbDB;
-    db.ref('adminRequests/deposits').push({
-      amount: amt, status: 'pending', method: 'USDT TRC20',
-      uid: window.currentUser.uid,
-      username: window.userProfile ? window.userProfile.username : 'Unknown',
-      contact: window.userProfile ? (window.userProfile.contact || '') : '',
-      isFirstDeposit: window.userProfile ? !window.userProfile.hasDeposited : true,
-      timestamp: Date.now()
-    }).then(function(ref) {
-      window._usdtDepositKey = ref.key;
+    db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value').then(function(hasDepSnap) {
+      var isFirst = !hasDepSnap.val();
+      var bonusPct = 0, bonusAmt = 0, wagerReq = 0;
+      if (selectedBonusOption === 1) { bonusPct = 8;   bonusAmt = Math.round(amt * 0.08);  wagerReq = 1; }
+      else if (selectedBonusOption === 2) { bonusPct = 15;  bonusAmt = Math.round(amt * 0.15);  wagerReq = 2.5; }
+      else if (selectedBonusOption === 3 && isFirst) { bonusPct = 100; bonusAmt = Math.round(amt * 1.00);  wagerReq = 10; }
+      else if (!isFirst) { bonusPct = 5; bonusAmt = Math.round(amt * 0.05); wagerReq = 1; }
+      db.ref('adminRequests/deposits').push({
+        amount: amt, status: 'pending',
+        method: bonusPct > 0 ? `USDT TRC20 · ${bonusPct}% bonus` : 'USDT TRC20',
+        uid: window.currentUser.uid,
+        username: window.userProfile ? window.userProfile.username : 'Unknown',
+        contact: window.userProfile ? (window.userProfile.contact || '') : '',
+        isFirstDeposit: isFirst,
+        bonusPct: bonusPct, bonusAmt: bonusAmt, wagerReq: wagerReq,
+        timestamp: Date.now()
+      }).then(function(ref) {
+        window._usdtDepositKey = ref.key;
+      });
     });
   }
 
