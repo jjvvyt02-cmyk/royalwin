@@ -3334,47 +3334,6 @@
     // Manual deposit disabled — all deposits go through gateway
     showToast('⚠️ Please use the Pay Now button to deposit.');
   }
-    const amt = parseFloat(document.getElementById('depositAmount').value);
-    if (!amt || amt < 300) { showToast('⚠️ Minimum deposit is ₹300'); return; }
-    if (amt > 20000) { showToast('⚠️ Maximum deposit is ₹20,000'); return; }
-    if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
-    try {
-      const db = window.fbDB || fbDB;
-
-      // Calculate bonus based on selected option
-      let bonusPct = 0, bonusAmt = 0, wagerReq = 0;
-      if (selectedBonusOption === 1) { bonusPct = 8;  bonusAmt = Math.round(amt * 0.08); wagerReq = 1; }
-      if (selectedBonusOption === 2) { bonusPct = 15; bonusAmt = Math.round(amt * 0.15); wagerReq = 2.5; }
-
-      // 5% recurring bonus for returning users — read directly from Firebase
-      if (selectedBonusOption === 0) {
-        const hasDepSnap = await db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value');
-        if (hasDepSnap.val()) {
-          bonusPct = 5;
-          bonusAmt = Math.round(amt * 0.05);
-          wagerReq = 1;
-        }
-      }
-
-      const depositData = {
-        amount: amt, status: 'pending', uid: window.currentUser.uid,
-        username: window.userProfile ? window.userProfile.username : 'Unknown',
-        contact: window.userProfile ? (window.userProfile.contact || '') : '',
-        method: bonusPct > 0 ? `Manual · ${bonusPct}% bonus` : 'Manual',
-        timestamp: Date.now(),
-        bonusPct, bonusAmt, wagerReq
-      };
-
-      await db.ref('users/' + window.currentUser.uid + '/depositRequests').push({
-        amount: amt, status: 'pending', method: 'manual',
-        bonusPct, bonusAmt, wagerReq, timestamp: Date.now()
-      });
-      await db.ref('adminRequests/deposits').push(depositData);
-
-      const bonusMsg = bonusAmt > 0 ? ' + ₹' + bonusAmt + ' (' + bonusPct + '% bonus) after approval.' : ' submitted! Admin will approve shortly.';
-      showToast('✅ Deposit of ₹' + amt.toLocaleString('en-IN') + bonusMsg);
-    } catch(e) { showToast('❌ Deposit request failed: ' + e.message); }
-  }
 
   async function doWithdraw() {
     const minAmt = currentWithdrawMethod === 'upi' ? 300 : currentWithdrawMethod === 'bank' ? 500 : 3000;
@@ -4420,6 +4379,25 @@
   // 0 = violet+red, 5 = violet+green, 2,4,6,8 = red, 1,3,7,9 = green
   const numColors = ['violet-red','#27ae60','#e02020','#27ae60','#e02020','violet-green','#e02020','#27ae60','#e02020','#27ae60'];
   const numBigSmall = ['Small','Small','Small','Small','Small','Big','Big','Big','Big','Big'];
+  // ── GAME SETTINGS (loaded from Firebase, fallback to defaults) ──
+  let cgSettings = { fee: 0.04, minBet: 10, maxBet: 50000, colorPayout: 2, violetPayout: 4.5, numPayout: 9, bigSmallPayout: 1.5 };
+  async function loadGameSettings() {
+    try {
+      const db = window.fbDB || fbDB;
+      if (!db) return;
+      const snap = await db.ref('wingo/settings').once('value');
+      const s = snap.val();
+      if (s) {
+        if (s.fee != null) cgSettings.fee = parseFloat(s.fee) / 100; // stored as % e.g. 4
+        if (s.minBet != null) cgSettings.minBet = parseFloat(s.minBet);
+        if (s.maxBet != null) cgSettings.maxBet = parseFloat(s.maxBet);
+        if (s.colorPayout != null) cgSettings.colorPayout = parseFloat(s.colorPayout);
+        if (s.violetPayout != null) cgSettings.violetPayout = parseFloat(s.violetPayout);
+        if (s.numPayout != null) cgSettings.numPayout = parseFloat(s.numPayout);
+      }
+    } catch(e) { console.warn('Game settings load failed, using defaults'); }
+  }
+
   let cgTimer = 1, cgSeconds = 60, cgInterval = null;
   const cgRoundByTimer = {1: 20250513001, 3: 20250513001, 5: 20250513001};
   let cgSelectedColor = null, cgSelectedNum = null, cgSelectedBigSmall = null;
@@ -4449,6 +4427,7 @@
 
   function openColorGame() {
     document.getElementById('colorGameOverlay').classList.add('open');
+    loadGameSettings();
     buildNumGrid();
     startAllTimers();
     // Load history from Firebase for all timers
@@ -4677,9 +4656,10 @@
     if (!cgBettingOpen) { showToast('⛔ Betting is closed for this round!'); return; }
     if (cgSelectedColor === null && cgSelectedNum === null && cgSelectedBigSmall === null) { showToast('⚠️ Select a color, number, Big or Small first!'); return; }
     const amt = parseInt(document.getElementById('cgBetAmt').value);
-    if (!amt || amt < 10) { showToast('⚠️ Minimum bet is ₹10'); return; }
+    if (!amt || amt < cgSettings.minBet) { showToast('⚠️ Minimum bet is ₹' + cgSettings.minBet); return; }
+    if (amt > cgSettings.maxBet) { showToast('⚠️ Maximum bet is ₹' + cgSettings.maxBet.toLocaleString('en-IN')); return; }
     if (amt % 10 !== 0) { showToast('⚠️ Bet must be a multiple of ₹10'); return; }
-    const fee = Math.round(amt * 0.04);
+    const fee = Math.round(amt * cgSettings.fee);
     const actualAmt = amt - fee;
     const sel = cgSelectedColor ? cgSelectedColor.toUpperCase() : cgSelectedBigSmall ? cgSelectedBigSmall.toUpperCase() : 'Number ' + cgSelectedNum;
     document.getElementById('cgConfirmBtn').disabled = true;
@@ -4913,25 +4893,25 @@
 
     const bigSmall = winNum >= 5 ? 'Big' : 'Small';
     const betAmt = parseInt(document.getElementById('cgBetAmt').value) || 10;
-    const actualBet = window._cgActualBet || Math.round(betAmt * 0.96);
+    const actualBet = window._cgActualBet || Math.round(betAmt * (1 - cgSettings.fee));
     let won = false, winAmt = 0;
 
     if (cgSelectedColor === 'violet' && (winColor === 'violet-red' || winColor === 'violet-green')) {
-      won = true; winAmt = actualBet * 4.5;
+      won = true; winAmt = actualBet * cgSettings.violetPayout;
     } else if (cgSelectedColor === 'red' && winColor === 'red') {
-      won = true; winAmt = actualBet * 2;
+      won = true; winAmt = actualBet * cgSettings.colorPayout;
     } else if (cgSelectedColor === 'green' && winColor === 'green') {
-      won = true; winAmt = actualBet * 2;
+      won = true; winAmt = actualBet * cgSettings.colorPayout;
     } else if (cgSelectedColor === 'red' && winColor === 'violet-red') {
-      won = true; winAmt = actualBet * 1.5;
+      won = true; winAmt = actualBet * cgSettings.bigSmallPayout;
     } else if (cgSelectedColor === 'green' && winColor === 'violet-green') {
-      won = true; winAmt = actualBet * 1.5;
+      won = true; winAmt = actualBet * cgSettings.bigSmallPayout;
     } else if (cgSelectedNum === winNum) {
-      won = true; winAmt = actualBet * 9;
+      won = true; winAmt = actualBet * cgSettings.numPayout;
     } else if (cgSelectedBigSmall === 'big' && winNum >= 5) {
-      won = true; winAmt = actualBet * 2;
+      won = true; winAmt = actualBet * cgSettings.colorPayout;
     } else if (cgSelectedBigSmall === 'small' && winNum <= 4) {
-      won = true; winAmt = actualBet * 2;
+      won = true; winAmt = actualBet * cgSettings.colorPayout;
     }
 
     // color circle for history — split for 0 and 5
