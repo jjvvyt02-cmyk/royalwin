@@ -1817,11 +1817,16 @@ function loadFinance() {
   }
 
   onValue(ref(db, 'adminRequests/deposits'), (snap) => {
+    const data = snap.val();
+    const requests = data ? Object.entries(data).reverse() : [];
+    window._lastDepRequests = requests;
+    renderDepRequests(requests);
+  });
+
+  function renderDepRequests(requests) {
     const el = document.getElementById('depositRequests');
     if (!el) return;
-    const data = snap.val();
-    if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending deposits</div>'; return; }
-    const requests = Object.entries(data).reverse();
+    if (!requests || requests.length === 0) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending deposits</div>'; return; }
     const pendingCount = requests.filter(([,r]) => r.status === 'pending').length;
     if (_lastDepCount > 0 && pendingCount > _lastDepCount) {
       _playAlertSound();
@@ -1842,18 +1847,20 @@ function loadFinance() {
     const toShow = showDepHistory ? requests : pendingDeps;
 
     function renderDepRow([key, r]) {
+      const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+      const memberId = r.memberId || r.uid?.substring(0,8) || '—';
       return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
-        <div style="display:flex;align-items:center;gap:0.6rem;flex:1;min-width:0;">
-          <div style="font-weight:800;color:var(--green);font-size:0.92rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}${r.bonusAmt > 0 ? '<span style="color:var(--gold);font-size:0.68rem;margin-left:3px;">+₹'+r.bonusAmt+'</span>' : ''}</div>
-          <div style="font-size:0.75rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.username || 'Unknown'}</div>
-          <div style="font-size:0.68rem;color:var(--muted);white-space:nowrap;">${r.contact || '—'}</div>
-          <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+        <div style="display:flex;align-items:center;gap:0.8rem;flex:1;min-width:0;">
+          <div style="font-size:0.72rem;color:var(--gold);font-weight:700;white-space:nowrap;">#${memberId}</div>
+          <div style="font-weight:800;color:var(--green);font-size:0.92rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}${r.bonusAmt > 0 ? '<span style="color:var(--gold);font-size:0.68rem;margin-left:3px;">+₹'+r.bonusAmt+' ('+r.bonusPct+'%)</span>' : ''}</div>
+          <div style="font-size:0.7rem;color:var(--muted);white-space:nowrap;">${r.method || 'UPI'}</div>
+          <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${time}</div>
         </div>
         <div style="display:flex;gap:0.3rem;flex-shrink:0;">
           ${r.status === 'pending' ? `
           <button onclick="approveDeposit('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">✅</button>
           <button onclick="rejectRequest('deposits','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.25rem 0.6rem;color:var(--red2);font-size:0.72rem;cursor:pointer;">❌</button>
-          ` : `<span style="font-size:0.68rem;color:${r.status==='approved'?'var(--green)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>`}
+          ` : `<span style="font-size:0.68rem;color:${r.status==='approved'?'var(--green)':r.status==='cancelled'?'var(--muted)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>`}
         </div>
       </div>`;
     }
@@ -1866,7 +1873,7 @@ function loadFinance() {
     if (showDepHistory && historyDeps.length > 0) {
       el.innerHTML += `<div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:0.3rem;">Showing all ${requests.length} records</div>`;
     }
-  });
+  }
 
   // Listen for withdrawal requests
   onValue(ref(db, 'adminRequests/withdrawals'), (snap) => {
@@ -1875,6 +1882,15 @@ function loadFinance() {
     const data = snap.val();
     if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending withdrawals</div>'; return; }
     const requests = Object.entries(data).reverse();
+    window._lastWithRequests = requests;
+    renderWithRequests(requests);
+  });
+}
+
+function renderWithRequests(requests) {
+    const el = document.getElementById('withdrawRequests');
+    if (!el) return;
+    if (!requests || requests.length === 0) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending withdrawals</div>'; return; }
     const pendingWith = requests.filter(([,r]) => r.status === 'pending').length;
     if (typeof _lastWithCount !== 'undefined' && _lastWithCount > 0 && pendingWith > _lastWithCount) {
       _playAlertSound(); showToast('🔔 New withdrawal request!');
@@ -1894,12 +1910,15 @@ function loadFinance() {
     const toShowWith = showWithHistory ? requests : pendingWiths;
 
     function renderWithRow([key, r]) {
+      const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+      const memberId = r.memberId || r.uid?.substring(0,8) || '—';
       return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
-        <div style="display:flex;align-items:center;gap:0.6rem;flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:0.8rem;flex:1;min-width:0;">
+          <div style="font-size:0.72rem;color:var(--gold);font-weight:700;white-space:nowrap;">#${memberId}</div>
           <div style="font-weight:800;color:var(--red2);font-size:0.92rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}</div>
-          <div style="font-size:0.75rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.username || 'Unknown'}</div>
-          <div style="font-size:0.68rem;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;" title="${r.upiId || ''}">${r.upiId || '—'}</div>
-          <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+          <div style="font-size:0.7rem;color:var(--muted);white-space:nowrap;">${r.method || 'UPI'}</div>
+          <div style="font-size:0.68rem;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;" title="${r.upiId || ''}">${r.upiId || '—'}</div>
+          <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${time}</div>
         </div>
         <div style="display:flex;gap:0.3rem;flex-shrink:0;">
           ${r.status === 'pending' ? `
@@ -1922,7 +1941,6 @@ function loadFinance() {
     if (showWithHistory && historyWiths.length > 0) {
       el.innerHTML += `<div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:0.3rem;">Showing all ${requests.length} records</div>`;
     }
-  });
 }
 
 window.approveDeposit = async function(key, uid, amount) {
@@ -2658,11 +2676,13 @@ window.toggleDepHistory = function() {
   window._showDepHistory = !window._showDepHistory;
   const btn = document.getElementById('depHistBtn');
   if (btn) btn.textContent = window._showDepHistory ? 'Hide History' : 'Show History';
+  if (window._lastDepRequests) renderDepRequests(window._lastDepRequests);
 };
 window.toggleWithHistory = function() {
   window._showWithHistory = !window._showWithHistory;
   const btn = document.getElementById('withHistBtn');
   if (btn) btn.textContent = window._showWithHistory ? 'Hide History' : 'Show History';
+  if (window._lastWithRequests) renderWithRequests(window._lastWithRequests);
 };
 
 // ── TOAST ──
