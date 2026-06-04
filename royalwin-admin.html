@@ -948,6 +948,7 @@ function initAdmin() {
   startPeriodTracker();
   updateNextResultBadges();
   loadFinance();
+  loadWithdrawals();
   loadRevenueStats();
   // Pre-load settings data
   setTimeout(() => { loadGiftCodes(); loadCommissionRates(); loadLimits(); }, 1000);
@@ -1820,10 +1821,11 @@ function loadFinance() {
     const data = snap.val();
     const requests = data ? Object.entries(data).reverse() : [];
     window._lastDepRequests = requests;
-    renderDepRequests(requests);
+    window.renderDepRequests(requests);
   });
+}
 
-  function renderDepRequests(requests) {
+window.renderDepRequests = function(requests) {
     const el = document.getElementById('depositRequests');
     if (!el) return;
     if (!requests || requests.length === 0) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending deposits</div>'; return; }
@@ -1833,22 +1835,15 @@ function loadFinance() {
       showToast('🔔 New deposit request!');
     }
     _lastDepCount = pendingCount;
-
-    // Split pending vs history
     const pendingDeps = requests.filter(([,r]) => r.status === 'pending' && !r.autoApproved);
     const historyDeps = requests.filter(([,r]) => r.status !== 'pending' || r.autoApproved);
-
-    // Update badge
     const depBadge = document.getElementById('depPendingBadge');
     if (depBadge) { depBadge.textContent = pendingDeps.length; depBadge.style.display = pendingDeps.length > 0 ? 'inline' : 'none'; }
-
-    // Decide which to show
     const showDepHistory = window._showDepHistory || false;
     const toShow = showDepHistory ? requests : pendingDeps;
-
     function renderDepRow([key, r]) {
       const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-      const memberId = r.memberId || r.uid?.substring(0,8) || '—';
+      const memberId = r.memberId && r.memberId.length <= 10 ? r.memberId : '—';
       return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
         <div style="display:flex;align-items:center;gap:0.8rem;flex:1;min-width:0;">
           <div style="font-size:0.72rem;color:var(--gold);font-weight:700;white-space:nowrap;">#${memberId}</div>
@@ -1864,7 +1859,6 @@ function loadFinance() {
         </div>
       </div>`;
     }
-
     if (toShow.length === 0) {
       el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${showDepHistory ? 'No deposits yet' : '✅ No pending deposits'}</div>`;
     } else {
@@ -1873,9 +1867,9 @@ function loadFinance() {
     if (showDepHistory && historyDeps.length > 0) {
       el.innerHTML += `<div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:0.3rem;">Showing all ${requests.length} records</div>`;
     }
-  }
+};
 
-  // Listen for withdrawal requests
+function loadWithdrawals() {
   onValue(ref(db, 'adminRequests/withdrawals'), (snap) => {
     const el = document.getElementById('withdrawRequests');
     if (!el) return;
@@ -1911,7 +1905,7 @@ function renderWithRequests(requests) {
 
     function renderWithRow([key, r]) {
       const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-      const memberId = r.memberId || r.uid?.substring(0,8) || '—';
+      const memberId = r.memberId && r.memberId.length <= 10 ? r.memberId : '—';
       return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
         <div style="display:flex;align-items:center;gap:0.8rem;flex:1;min-width:0;">
           <div style="font-size:0.72rem;color:var(--gold);font-weight:700;white-space:nowrap;">#${memberId}</div>
@@ -2676,7 +2670,7 @@ window.toggleDepHistory = function() {
   window._showDepHistory = !window._showDepHistory;
   const btn = document.getElementById('depHistBtn');
   if (btn) btn.textContent = window._showDepHistory ? 'Hide History' : 'Show History';
-  if (window._lastDepRequests) renderDepRequests(window._lastDepRequests);
+  if (window._lastDepRequests) window.renderDepRequests(window._lastDepRequests);
 };
 window.toggleWithHistory = function() {
   window._showWithHistory = !window._showWithHistory;
