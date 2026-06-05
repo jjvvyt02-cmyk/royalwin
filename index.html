@@ -4947,28 +4947,36 @@
         const val = snap.val();
         console.log('Firebase result fetch [' + timerKey + ']: currentResult =', val);
         if (val !== null && parseInt(val) >= 0 && parseInt(val) <= 9) {
-          // Manual override set
           winNum = parseInt(val);
-          console.log('Using manual override result:', winNum);
+          console.log('Using currentResult:', winNum);
           await db.ref(timerKey + '/currentResult').set(-1);
           await db.ref(timerKey + '/mode').set('auto');
         } else {
-          // Check schedule for this timer mode
-          const schedule = (window.cgScheduleByTimer && window.cgScheduleByTimer[timerMode]) || [];
-          const nextScheduled = schedule.find(v => v !== null && v >= 0 && v <= 9);
-          if (nextScheduled !== undefined) {
-            winNum = parseInt(nextScheduled);
-            console.log('Using scheduled result:', winNum);
-            // Remove used schedule entry and save back
-            const updatedSchedule = schedule.map((v, i) => i === schedule.indexOf(nextScheduled) ? null : v);
-            // Shift schedule up — remove first used item
-            const shifted = schedule.filter((v, i) => i !== schedule.indexOf(nextScheduled));
-            shifted.push(null); // add empty slot at end
-            window.cgScheduleByTimer[timerMode] = shifted;
-            await db.ref(timerKey + '/schedule').set(shifted);
+          // Fallback: read lastResult saved by game engine
+          const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
+          const lastVal = lastSnap.val();
+          const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
+          const lastTime = lastTimeSnap.val() || 0;
+          // Use lastResult only if it was set within last 30 seconds
+          if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9 && (Date.now() - lastTime) < 30000) {
+            winNum = parseInt(lastVal);
+            console.log('Using lastResult fallback:', winNum);
           } else {
-            console.log('No override or schedule, using random');
-            winNum = Math.floor(Math.random() * 10);
+            // Check schedule for this timer mode
+            const schedule = (window.cgScheduleByTimer && window.cgScheduleByTimer[timerMode]) || [];
+            const nextScheduled = schedule.find(v => v !== null && v >= 0 && v <= 9);
+            if (nextScheduled !== undefined) {
+              winNum = parseInt(nextScheduled);
+              console.log('Using scheduled result:', winNum);
+              const updatedSchedule = schedule.map((v, i) => i === schedule.indexOf(nextScheduled) ? null : v);
+              const shifted = schedule.filter((v, i) => i !== schedule.indexOf(nextScheduled));
+              shifted.push(null);
+              window.cgScheduleByTimer[timerMode] = shifted;
+              await db.ref(timerKey + '/schedule').set(shifted);
+            } else {
+              console.log('No result available, using random');
+              winNum = Math.floor(Math.random() * 10);
+            }
           }
         }
       } else {
