@@ -535,6 +535,7 @@
           <div id="depositRequests" style="display:flex;flex-direction:column;gap:0.4rem;">
             <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending deposits</div>
           </div>
+          <div id="depPagination" style="display:flex;justify-content:center;gap:0.3rem;margin-top:0.6rem;"></div>
         </div>
 
         <!-- Withdrawal Requests -->
@@ -546,6 +547,7 @@
           <div id="withdrawRequests" style="display:flex;flex-direction:column;gap:0.4rem;">
             <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending withdrawals</div>
           </div>
+          <div id="withPagination" style="display:flex;justify-content:center;gap:0.3rem;margin-top:0.6rem;"></div>
         </div>
 
       </div>
@@ -1823,47 +1825,42 @@ function loadFinance() {
   });
 }
 
-window.renderDepRequests = async function(requests) {
+window.renderDepRequests = async function(requests, page) {
     const el = document.getElementById('depositRequests');
     if (!el) return;
     if (!requests || requests.length === 0) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending deposits</div>'; return; }
     const pendingCount = requests.filter(([,r]) => r.status === 'pending').length;
-    if (_lastDepCount > 0 && pendingCount > _lastDepCount) {
-      _playAlertSound();
-      showToast('🔔 New deposit request!');
-    }
+    if (_lastDepCount > 0 && pendingCount > _lastDepCount) { _playAlertSound(); showToast('🔔 New deposit request!'); }
     _lastDepCount = pendingCount;
     const pendingDeps = requests.filter(([,r]) => r.status === 'pending' && !r.autoApproved);
     const historyDeps = requests.filter(([,r]) => r.status !== 'pending' || r.autoApproved);
     const depBadge = document.getElementById('depPendingBadge');
     if (depBadge) { depBadge.textContent = pendingDeps.length; depBadge.style.display = pendingDeps.length > 0 ? 'inline' : 'none'; }
     const showDepHistory = window._showDepHistory || false;
-    const toShow = showDepHistory ? requests : pendingDeps;
+    const allToShow = showDepHistory ? requests.slice(0, 50) : pendingDeps;
+    const perPage = 10;
+    const totalPages = Math.min(5, Math.ceil(allToShow.length / perPage));
+    const currentPage = Math.max(1, Math.min(page || window._depPage || 1, totalPages));
+    window._depPage = currentPage;
+    const pageItems = allToShow.slice((currentPage-1)*perPage, currentPage*perPage);
 
-    // Build member ID cache
     const memberIdCache = {};
-    for (const [, r] of toShow) {
+    for (const [, r] of pageItems) {
       if (!memberIdCache[r.uid] && r.uid) {
-        if (r.memberId && r.memberId.length <= 10) {
-          memberIdCache[r.uid] = r.memberId;
-        } else {
-          try {
-            const s = await get(ref(db, 'users/' + r.uid + '/memberId'));
-            memberIdCache[r.uid] = s.val() || '—';
-          } catch(e) { memberIdCache[r.uid] = '—'; }
-        }
+        if (r.memberId && r.memberId.length <= 10) { memberIdCache[r.uid] = r.memberId; }
+        else { try { const s = await get(ref(db, 'users/'+r.uid+'/memberId')); memberIdCache[r.uid] = s.val() || '—'; } catch(e) { memberIdCache[r.uid] = '—'; } }
       }
     }
 
     function renderDepRow([key, r]) {
       const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
       const memberId = memberIdCache[r.uid] || '—';
-      return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+      return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.5rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
         <div style="display:flex;align-items:center;gap:0.8rem;flex:1;min-width:0;">
           <div style="font-size:0.72rem;color:var(--gold);font-weight:700;white-space:nowrap;">#${memberId}</div>
-          <div style="font-weight:800;color:var(--green);font-size:0.92rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}${r.bonusAmt > 0 ? '<span style="color:var(--gold);font-size:0.68rem;margin-left:3px;">+₹'+r.bonusAmt+' ('+r.bonusPct+'%)</span>' : ''}</div>
-          <div style="font-size:0.7rem;color:var(--muted);white-space:nowrap;">${r.method || 'UPI'}</div>
-          <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${time}</div>
+          <div style="font-weight:800;color:var(--green);font-size:0.9rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}${r.bonusAmt > 0 ? '<span style="color:var(--gold);font-size:0.65rem;margin-left:3px;">+₹'+r.bonusAmt+'('+r.bonusPct+'%)</span>' : ''}</div>
+          <div style="font-size:0.68rem;color:var(--muted);white-space:nowrap;">${r.method || 'UPI'}</div>
+          <div style="font-size:0.63rem;color:var(--muted);white-space:nowrap;">${time}</div>
         </div>
         <div style="display:flex;gap:0.3rem;flex-shrink:0;">
           ${r.status === 'pending' ? `
@@ -1873,13 +1870,18 @@ window.renderDepRequests = async function(requests) {
         </div>
       </div>`;
     }
-    if (toShow.length === 0) {
+
+    if (pageItems.length === 0) {
       el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${showDepHistory ? 'No deposits yet' : '✅ No pending deposits'}</div>`;
     } else {
-      el.innerHTML = toShow.map(renderDepRow).join('');
-    }
-    if (showDepHistory && historyDeps.length > 0) {
-      el.innerHTML += `<div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:0.3rem;">Showing all ${requests.length} records</div>`;
+      el.innerHTML = pageItems.map(renderDepRow).join('');
+      if (totalPages > 1) {
+        el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.5rem;margin-top:0.6rem;font-size:0.75rem;">
+          <button onclick="window.renderDepRequests(window._lastDepRequests,${currentPage-1})" ${currentPage<=1?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:var(--muted);cursor:pointer;${currentPage<=1?'opacity:0.4;':''}">&lt;</button>
+          <span style="color:var(--muted);">Page ${currentPage} / ${totalPages}</span>
+          <button onclick="window.renderDepRequests(window._lastDepRequests,${currentPage+1})" ${currentPage>=totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:var(--muted);cursor:pointer;${currentPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
+        </div>`;
+      }
     }
 };
 
@@ -1895,67 +1897,64 @@ function loadWithdrawals() {
   });
 }
 
-function renderWithRequests(requests) {
+var _withPage = 1;
+function renderWithRequests(requests, page) {
+    _withPage = page || _withPage || 1;
     const el = document.getElementById('withdrawRequests');
+    const pagEl = document.getElementById('withPagination');
     if (!el) return;
-    if (!requests || requests.length === 0) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending withdrawals</div>'; return; }
+    if (!requests || requests.length === 0) {
+      el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending withdrawals</div>';
+      if (pagEl) pagEl.innerHTML = '';
+      return;
+    }
     const pendingWith = requests.filter(([,r]) => r.status === 'pending').length;
     if (typeof _lastWithCount !== 'undefined' && _lastWithCount > 0 && pendingWith > _lastWithCount) {
       _playAlertSound(); showToast('🔔 New withdrawal request!');
     }
     window._lastWithCount = pendingWith;
     const pendingWiths = requests.filter(([,r]) => (r.status === 'pending' || r.status === 'processing' || r.status === 'failed') && !r.autoProcessed);
-    const historyWiths = requests.filter(([,r]) => r.status !== 'pending');
     const withBadge = document.getElementById('withPendingBadge');
     if (withBadge) { withBadge.textContent = pendingWiths.length; withBadge.style.display = pendingWiths.length > 0 ? 'inline' : 'none'; }
-    const showWithHistory = window._showWithHistory || false;
-    const toShowWith = showWithHistory ? requests : pendingWiths;
+    const showHistory = window._showWithHistory || false;
+    const allItems = showHistory ? requests.slice(0,50) : pendingWiths.slice(0,50);
+    const PER_PAGE = 10, MAX_PAGES = 5;
+    const totalPages = Math.min(Math.ceil(allItems.length/PER_PAGE), MAX_PAGES) || 1;
+    if (_withPage > totalPages) _withPage = 1;
+    const pageItems = allItems.slice((_withPage-1)*PER_PAGE, _withPage*PER_PAGE);
 
-    // Fetch member IDs for all entries
     const fetchAndRender = async () => {
-      const memberIdCache = {};
-      for (const [, r] of toShowWith) {
-        if (!memberIdCache[r.uid] && r.uid) {
-          if (r.memberId && r.memberId.length <= 10) {
-            memberIdCache[r.uid] = r.memberId;
-          } else {
-            try {
-              const s = await get(ref(db, 'users/' + r.uid + '/memberId'));
-              memberIdCache[r.uid] = s.val() || '—';
-            } catch(e) { memberIdCache[r.uid] = '—'; }
-          }
+      const midCache = {};
+      for (const [,r] of pageItems) {
+        if (!midCache[r.uid] && r.uid) {
+          if (r.memberId && r.memberId.length<=10) { midCache[r.uid]=r.memberId; }
+          else { try { const s=await get(ref(db,'users/'+r.uid+'/memberId')); midCache[r.uid]=s.val()||'—'; } catch(e) { midCache[r.uid]='—'; } }
         }
       }
-      function renderWithRow([key, r]) {
-        const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-        const memberId = memberIdCache[r.uid] || '—';
-        return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
-          <div style="display:flex;align-items:center;gap:0.8rem;flex:1;min-width:0;">
-            <div style="font-size:0.72rem;color:var(--gold);font-weight:700;white-space:nowrap;">#${memberId}</div>
-            <div style="font-weight:800;color:var(--red2);font-size:0.92rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}</div>
-            <div style="font-size:0.7rem;color:var(--muted);white-space:nowrap;">${r.method || 'UPI'}</div>
-            <div style="font-size:0.68rem;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:120px;" title="${r.upiId || ''}">${r.upiId || '—'}</div>
-            <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${time}</div>
+      function withRow([key,r]) {
+        const time=r.timestamp?new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
+        const mid=midCache[r.uid]||'—';
+        return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.5rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+          <div style="display:flex;align-items:center;gap:0.7rem;flex:1;min-width:0;">
+            <div style="font-size:0.72rem;color:var(--gold);font-weight:700;white-space:nowrap;">#${mid}</div>
+            <div style="font-weight:800;color:var(--red2);font-size:0.88rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}</div>
+            <div style="font-size:0.68rem;color:var(--muted);white-space:nowrap;">${r.method||'UPI'}</div>
+            <div style="font-size:0.66rem;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px;" title="${r.upiId||''}">${r.upiId||'—'}</div>
+            <div style="font-size:0.63rem;color:var(--muted);white-space:nowrap;">${time}</div>
           </div>
           <div style="display:flex;gap:0.3rem;flex-shrink:0;">
-            ${r.status === 'pending' ? `
-            <button onclick="autoPayWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--gold);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">⚡ Auto</button>
-            <button onclick="approveWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">✅</button>
-            <button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.25rem 0.6rem;color:var(--red2);font-size:0.72rem;cursor:pointer;">❌</button>
-            ` : r.status === 'processing' || r.status === 'failed' ? `
-            <span style="font-size:0.68rem;color:${r.status==='processing'?'var(--gold)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>
-            <button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.25rem 0.6rem;color:var(--red2);font-size:0.72rem;cursor:pointer;">❌</button>
-            ` : `<span style="font-size:0.68rem;color:${r.status==='approved'?'var(--green)':r.status==='processing'?'var(--gold)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>`}
+            ${r.status==='pending'?`<button onclick="autoPayWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--gold);border:none;border-radius:5px;padding:0.2rem 0.5rem;color:#000;font-size:0.7rem;font-weight:700;cursor:pointer;">⚡</button><button onclick="approveWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:5px;padding:0.2rem 0.5rem;color:#000;font-size:0.7rem;font-weight:700;cursor:pointer;">✅</button><button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.2rem 0.5rem;color:var(--red2);font-size:0.7rem;cursor:pointer;">❌</button>`:r.status==='processing'||r.status==='failed'?`<span style="font-size:0.66rem;color:${r.status==='processing'?'var(--gold)':'var(--red2)'};padding:0.15rem 0.4rem;background:var(--bg3);border-radius:5px;">${r.status}</span><button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.2rem 0.4rem;color:var(--red2);font-size:0.7rem;cursor:pointer;">❌</button>`:`<span style="font-size:0.66rem;color:${r.status==='approved'?'var(--green)':'var(--red2)'};padding:0.15rem 0.4rem;background:var(--bg3);border-radius:5px;">${r.status}</span>`}
           </div>
         </div>`;
       }
-      if (toShowWith.length === 0) {
-        el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${showWithHistory ? 'No withdrawals yet' : '✅ No pending withdrawals'}</div>`;
+      if (pageItems.length===0) {
+        el.innerHTML=`<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${showHistory?'No withdrawals yet':'✅ No pending withdrawals'}</div>`;
+        if (pagEl) pagEl.innerHTML='';
       } else {
-        el.innerHTML = toShowWith.map(renderWithRow).join('');
-      }
-      if (showWithHistory && historyWiths.length > 0) {
-        el.innerHTML += `<div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:0.3rem;">Showing all ${requests.length} records</div>`;
+        el.innerHTML=pageItems.map(withRow).join('');
+        if (pagEl&&totalPages>1) {
+          pagEl.innerHTML=`<button onclick="renderWithRequests(window._lastWithRequests,${_withPage-1})" ${_withPage<=1?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:var(--muted);cursor:pointer;${_withPage<=1?'opacity:0.4;':''}">&lt;</button><span style="color:var(--muted);font-size:0.75rem;padding:0 0.4rem;">Page ${_withPage}/${totalPages}</span><button onclick="renderWithRequests(window._lastWithRequests,${_withPage+1})" ${_withPage>=totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:var(--muted);cursor:pointer;${_withPage>=totalPages?'opacity:0.4;':''}">&gt;</button>`;
+        } else if (pagEl) pagEl.innerHTML='';
       }
     };
     fetchAndRender();
