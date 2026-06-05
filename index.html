@@ -4943,45 +4943,29 @@
       }
       const db = window.fbDB || fbDB;
       if (db) {
-        // Read lastResult + lastProcessedPeriod from game engine
+        // Read lastResult from game engine
         const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
         const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
-        const lastPeriodSnap = await db.ref(timerKey + '/lastProcessedPeriod').once('value');
         const lastVal = lastSnap.val();
         const lastTime = lastTimeSnap.val() || 0;
-        const lastProcessedPeriod = lastPeriodSnap.val();
+        const secsSinceResult = (Date.now() - lastTime) / 1000;
 
-        // Calculate what the previous period ID should be
-        const now2 = Date.now();
-        const periodMs2 = timerMode * 60 * 1000;
-        const prevMs2 = now2 - (now2 % periodMs2) - periodMs2;
-        const prevD = new Date(prevMs2);
-        const IST = 5.5 * 60 * 60 * 1000;
-        const prevIST = new Date(prevMs2 + IST);
-        const prevDateStr = `${prevIST.getUTCFullYear()}${String(prevIST.getUTCMonth()+1).padStart(2,'0')}${String(prevIST.getUTCDate()).padStart(2,'0')}`;
-        const prevMins = prevIST.getUTCHours() * 60 + prevIST.getUTCMinutes();
-        const expectedPrevPeriod = parseInt(prevDateStr + String(Math.floor(prevMins / timerMode)).padStart(4,'0'));
+        console.log('lastResult:', lastVal, 'set', secsSinceResult.toFixed(1), 's ago');
 
-        console.log('Expected prev period:', expectedPrevPeriod, 'lastProcessedPeriod:', lastProcessedPeriod);
-
-        // Use lastResult only if it matches the previous period AND is recent
-        if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9 &&
-            lastProcessedPeriod === expectedPrevPeriod &&
-            (Date.now() - lastTime) < 3 * 60 * 1000) {
+        // Use lastResult if set within last 65 seconds (covers any cron delay)
+        if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9 && secsSinceResult < 65) {
           winNum = parseInt(lastVal);
-          console.log('Using lastResult from game engine:', winNum, 'for period:', lastProcessedPeriod);
+          console.log('✅ Using game engine result:', winNum);
         } else {
-          // Fallback: currentResult (manual override)
+          // Fallback: currentResult (manual override from admin)
           const snap = await db.ref(timerKey + '/currentResult').once('value');
           const val = snap.val();
           if (val !== null && parseInt(val) >= 0 && parseInt(val) <= 9) {
             winNum = parseInt(val);
-            console.log('Using currentResult (manual):', winNum);
-            await db.ref(timerKey + '/currentResult').set(-1);
+            console.log('✅ Using manual override:', winNum);
           } else {
-            // Last resort: random
             winNum = Math.floor(Math.random() * 10);
-            console.log('No matching result from server, using random:', winNum);
+            console.log('⚠️ No result available, using random:', winNum);
           }
         }
       } else {
