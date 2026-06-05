@@ -5214,11 +5214,14 @@
   function renderHistRows() {
     const el = document.getElementById('cgHistRows');
     if (!el) return;
-    const total = cgHistory.length;
+    // Filter out current active round — only show completed rounds
+    const currentRound = cgRoundByTimer[cgTimer];
+    const completedHistory = cgHistory.filter(h => h.round !== currentRound);
+    const total = completedHistory.length;
     const totalPages = Math.max(1, Math.ceil(total / cgHistPageSize));
     if (cgHistPage > totalPages) cgHistPage = totalPages;
     const start = (cgHistPage - 1) * cgHistPageSize;
-    const pageData = cgHistory.slice(start, start + cgHistPageSize);
+    const pageData = completedHistory.slice(start, start + cgHistPageSize);
 
     // Update pagination controls
     const pageNumEl = document.getElementById('cgHistPageNum');
@@ -5237,8 +5240,9 @@
   }
 
   function cgHistNextPage() {
-    const total = cgHistory.length;
-    const totalPages = Math.max(1, Math.ceil(total / cgHistPageSize));
+    const currentRound = cgRoundByTimer[cgTimer];
+    const completedHistory = cgHistory.filter(h => h.round !== currentRound);
+    const totalPages = Math.max(1, Math.ceil(completedHistory.length / cgHistPageSize));
     if (cgHistPage < totalPages) { cgHistPage++; renderHistRows(); }
   }
 
