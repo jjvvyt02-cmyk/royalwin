@@ -4650,8 +4650,8 @@
           }
         }
 
-        // Resolve round for this specific timer
-        setTimeout(() => resolveRoundForTimer(mins), 800);
+        // Resolve round for this specific timer — wait 5s for game engine to set result
+        setTimeout(() => resolveRoundForTimer(mins), 5000);
       }
     }
 
@@ -4943,18 +4943,33 @@
       }
       const db = window.fbDB || fbDB;
       if (db) {
-        // Read lastResult first (most reliable — set by game engine)
+        // Read lastResult + lastProcessedPeriod from game engine
         const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
         const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
+        const lastPeriodSnap = await db.ref(timerKey + '/lastProcessedPeriod').once('value');
         const lastVal = lastSnap.val();
         const lastTime = lastTimeSnap.val() || 0;
-        const prevPeriodMs = timerMode * 60 * 1000;
-        const expectedResultTime = Math.floor((Date.now() - (Date.now() % prevPeriodMs)) - prevPeriodMs + prevPeriodMs);
+        const lastProcessedPeriod = lastPeriodSnap.val();
 
-        // Use lastResult if it was set within the last 2 minutes (fresh result)
-        if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9 && (Date.now() - lastTime) < 2 * 60 * 1000) {
+        // Calculate what the previous period ID should be
+        const now2 = Date.now();
+        const periodMs2 = timerMode * 60 * 1000;
+        const prevMs2 = now2 - (now2 % periodMs2) - periodMs2;
+        const prevD = new Date(prevMs2);
+        const IST = 5.5 * 60 * 60 * 1000;
+        const prevIST = new Date(prevMs2 + IST);
+        const prevDateStr = `${prevIST.getUTCFullYear()}${String(prevIST.getUTCMonth()+1).padStart(2,'0')}${String(prevIST.getUTCDate()).padStart(2,'0')}`;
+        const prevMins = prevIST.getUTCHours() * 60 + prevIST.getUTCMinutes();
+        const expectedPrevPeriod = parseInt(prevDateStr + String(Math.floor(prevMins / timerMode)).padStart(4,'0'));
+
+        console.log('Expected prev period:', expectedPrevPeriod, 'lastProcessedPeriod:', lastProcessedPeriod);
+
+        // Use lastResult only if it matches the previous period AND is recent
+        if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9 &&
+            lastProcessedPeriod === expectedPrevPeriod &&
+            (Date.now() - lastTime) < 3 * 60 * 1000) {
           winNum = parseInt(lastVal);
-          console.log('Using lastResult from game engine:', winNum);
+          console.log('Using lastResult from game engine:', winNum, 'for period:', lastProcessedPeriod);
         } else {
           // Fallback: currentResult (manual override)
           const snap = await db.ref(timerKey + '/currentResult').once('value');
@@ -4966,7 +4981,7 @@
           } else {
             // Last resort: random
             winNum = Math.floor(Math.random() * 10);
-            console.log('No result from server, using random:', winNum);
+            console.log('No matching result from server, using random:', winNum);
           }
         }
       } else {
