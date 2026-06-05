@@ -3114,55 +3114,103 @@
   }
 
 
-  async function loadDepositHistory() {
+  var _walDepPage = 1, _walDepData = [];
+  async function loadDepositHistory(page) {
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
     const el = document.getElementById('depositHistoryRows');
     if (!user || !db || !el) return;
-    try {
-      const snap = await db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).once('value');
-      const data = snap.val();
-      if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No deposits yet</div>'; return; }
-      const rows = Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
-      el.innerHTML = rows.map(r => {
-        const time = r.timestamp ? new Date(r.timestamp).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'}) : '—';
-        const statusColor = r.status === 'approved' ? 'var(--green)' : r.status === 'rejected' ? 'var(--red2)' : 'var(--gold)';
-        const statusText = r.status === 'approved' ? '✅ Approved' : r.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
-        const bonusText = r.bonusPct ? ` + ${r.bonusPct}% bonus` : '';
-        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.6rem;display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div style="font-weight:700;color:var(--green);">+₹${(r.amount||0).toLocaleString('en-IN')}<span style="font-size:0.72rem;color:var(--gold);margin-left:0.4rem;">${bonusText}</span></div>
-            <div style="font-size:0.72rem;color:var(--muted);">${r.method || 'UPI'} · ${time}</div>
-          </div>
-          <div style="font-size:0.78rem;font-weight:700;color:${statusColor};">${statusText}</div>
-        </div>`;
-      }).join('');
-    } catch(e) { console.warn('Deposit history failed:', e); }
+    if (page) { _walDepPage = page; }
+    else if (!_walDepData.length) {
+      el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
+      try {
+        const snap = await db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).once('value');
+        const data = snap.val();
+        _walDepData = data ? Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0)) : [];
+      } catch(e) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Failed to load</div>'; return; }
+    }
+    if (!_walDepData.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No deposits yet</div>'; return; }
+    const PER_PAGE = 10, MAX_PAGES = 5;
+    const limited = _walDepData.slice(0, PER_PAGE * MAX_PAGES);
+    const totalPages = Math.min(Math.ceil(limited.length / PER_PAGE), MAX_PAGES);
+    if (_walDepPage > totalPages) _walDepPage = 1;
+    const pageItems = limited.slice((_walDepPage-1)*PER_PAGE, _walDepPage*PER_PAGE);
+    el.innerHTML = pageItems.map(r => {
+      const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+      let statusColor, statusText, statusIcon;
+      switch(r.status) {
+        case 'approved':   statusColor='var(--green)'; statusIcon='✅'; statusText='Success'; break;
+        case 'rejected':   statusColor='var(--red2)';  statusIcon='❌'; statusText='Rejected'; break;
+        case 'cancelled':  statusColor='var(--muted)'; statusIcon='🚫'; statusText='Cancelled'; break;
+        case 'processing': statusColor='var(--gold)';  statusIcon='⚙️'; statusText='Processing'; break;
+        default:           statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
+      }
+      const bonusText = r.bonusPct ? `<span style="font-size:0.7rem;color:var(--gold);margin-left:0.3rem;">+${r.bonusPct}%</span>` : '';
+      return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-weight:700;color:var(--green);">+₹${(r.amount||0).toLocaleString('en-IN')}${bonusText}</div>
+          <div style="font-size:0.7rem;color:var(--muted);">${r.method||'UPI'} · ${time}</div>
+        </div>
+        <div style="font-size:0.75rem;font-weight:700;color:${statusColor};">${statusIcon} ${statusText}</div>
+      </div>`;
+    }).join('');
+    if (totalPages > 1) {
+      el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.7rem;">
+        <button onclick="loadDepositHistory(${_walDepPage-1})" ${_walDepPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walDepPage<=1?'opacity:0.4;':''}">&lt;</button>
+        <span style="color:var(--muted);font-size:0.75rem;">Page ${_walDepPage} / ${totalPages}</span>
+        <button onclick="loadDepositHistory(${_walDepPage+1})" ${_walDepPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walDepPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
+      </div>`;
+    }
   }
 
-  async function loadWithdrawHistory() {
+  var _walWithPage = 1, _walWithData = [];
+  async function loadWithdrawHistory(page) {
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
     const el = document.getElementById('withdrawHistoryRows');
     if (!user || !db || !el) return;
-    try {
-      const snap = await db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(user.uid).once('value');
-      const data = snap.val();
-      if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No withdrawals yet</div>'; return; }
-      const rows = Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
-      el.innerHTML = rows.map(r => {
-        const time = r.timestamp ? new Date(r.timestamp).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'}) : '—';
-        const statusColor = r.status === 'approved' ? 'var(--green)' : r.status === 'rejected' ? 'var(--red2)' : 'var(--gold)';
-        const statusText = r.status === 'approved' ? '✅ Approved' : r.status === 'rejected' ? '❌ Rejected' : '⏳ Pending';
-        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.6rem;display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <div style="font-weight:700;color:var(--red2);">-₹${(r.amount||0).toLocaleString('en-IN')}</div>
-            <div style="font-size:0.72rem;color:var(--muted);">${r.method || 'UPI'} · ${time}</div>
-          </div>
-          <div style="font-size:0.78rem;font-weight:700;color:${statusColor};">${statusText}</div>
-        </div>`;
-      }).join('');
-    } catch(e) { console.warn('Withdraw history failed:', e); }
+    if (page) { _walWithPage = page; }
+    else if (!_walWithData.length) {
+      el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
+      try {
+        const snap = await db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(user.uid).once('value');
+        const data = snap.val();
+        _walWithData = data ? Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0)) : [];
+      } catch(e) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Failed to load</div>'; return; }
+    }
+    if (!_walWithData.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No withdrawals yet</div>'; return; }
+    const PER_PAGE = 10, MAX_PAGES = 5;
+    const limited = _walWithData.slice(0, PER_PAGE * MAX_PAGES);
+    const totalPages = Math.min(Math.ceil(limited.length / PER_PAGE), MAX_PAGES);
+    if (_walWithPage > totalPages) _walWithPage = 1;
+    const pageItems = limited.slice((_walWithPage-1)*PER_PAGE, _walWithPage*PER_PAGE);
+    el.innerHTML = pageItems.map(r => {
+      const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+      let statusColor, statusText, statusIcon;
+      switch(r.status) {
+        case 'approved':    statusColor='var(--green)'; statusIcon='✅'; statusText='Success'; break;
+        case 'rejected':    statusColor='var(--red2)';  statusIcon='❌'; statusText='Rejected'; break;
+        case 'failed':      statusColor='var(--red2)';  statusIcon='❌'; statusText='Failed'; break;
+        case 'processing':  statusColor='var(--gold)';  statusIcon='⚙️'; statusText='Processing'; break;
+        default:            statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
+      }
+      return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-weight:700;color:var(--red2);">-₹${(r.amount||0).toLocaleString('en-IN')}</div>
+          <div style="font-size:0.7rem;color:var(--muted);">${r.method||'UPI'} · ${time}</div>
+          ${r.status==='processing'?'<div style="font-size:0.67rem;color:var(--gold);">Expected within 24 hours</div>':''}
+          ${r.status==='failed'||r.status==='rejected'?'<div style="font-size:0.67rem;color:var(--red2);">Amount refunded</div>':''}
+        </div>
+        <div style="font-size:0.75rem;font-weight:700;color:${statusColor};">${statusIcon} ${statusText}</div>
+      </div>`;
+    }).join('');
+    if (totalPages > 1) {
+      el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.7rem;">
+        <button onclick="loadWithdrawHistory(${_walWithPage-1})" ${_walWithPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walWithPage<=1?'opacity:0.4;':''}">&lt;</button>
+        <span style="color:var(--muted);font-size:0.75rem;">Page ${_walWithPage} / ${totalPages}</span>
+        <button onclick="loadWithdrawHistory(${_walWithPage+1})" ${_walWithPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walWithPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
+      </div>`;
+    }
   }
 
   async function refreshWalletBalance() {
@@ -3187,8 +3235,8 @@
       if (tabEl) tabEl.classList.toggle('active', t === tab);
       if (panelEl) panelEl.classList.toggle('active', t === tab);
     });
-    if (tab === 'withdraw') { loadWagerProgress(); loadWithdrawHistory(); loadSavedWithdrawDetails(); }
-    if (tab === 'deposit') { checkDepositBonus(); loadDepositHistory(); }
+    if (tab === 'withdraw') { _walWithData = []; _walWithPage = 1; loadWagerProgress(); loadWithdrawHistory(); loadSavedWithdrawDetails(); }
+    if (tab === 'deposit') { _walDepData = []; _walDepPage = 1; checkDepositBonus(); loadDepositHistory(); }
   }
 
   function selectMethod(el, method) {
