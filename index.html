@@ -4901,17 +4901,20 @@
       }
     } catch(e) { console.warn('Balance deduct failed:', e); }
 
-    // Save bet summary to Firebase (no user identity — just selection + amount)
+    // Save bet summary to Firebase for smart result engine
     try {
       const db = window.fbDB || fbDB;
       if (db) {
         const path = 'wingo/wingo' + cgTimer + 'min/betSummary';
         const snap = await db.ref(path).once('value');
         const summary = snap.val() || {};
-        const key = selLabel.toLowerCase().replace(' ', '_');
-        summary[key] = summary[key] || { selection: selLabel, totalAmount: 0, count: 0 };
-        summary[key].totalAmount += amt;
-        summary[key].count += 1;
+        const key = selLabel.toLowerCase().replace(/\s/g, '_') + '_' + Date.now();
+        // Determine type and value for smart engine
+        let betType = 'color', betValue = selLabel.toLowerCase();
+        if (cgSelectedNum !== null) { betType = 'number'; betValue = String(cgSelectedNum); }
+        else if (cgSelectedBigSmall) { betType = 'bigsmall'; betValue = cgSelectedBigSmall; }
+        else if (cgSelectedColor) { betType = 'color'; betValue = cgSelectedColor; }
+        summary[key] = { type: betType, value: betValue, amount: amt, timestamp: Date.now() };
         await db.ref(path).set(summary);
       }
     } catch(e) { console.warn('Bet summary save failed:', e); }
