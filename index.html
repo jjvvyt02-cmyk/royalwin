@@ -4943,40 +4943,30 @@
       }
       const db = window.fbDB || fbDB;
       if (db) {
-        const snap = await db.ref(timerKey + '/currentResult').once('value');
-        const val = snap.val();
-        console.log('Firebase result fetch [' + timerKey + ']: currentResult =', val);
-        if (val !== null && parseInt(val) >= 0 && parseInt(val) <= 9) {
-          winNum = parseInt(val);
-          console.log('Using currentResult:', winNum);
-          await db.ref(timerKey + '/currentResult').set(-1);
-          await db.ref(timerKey + '/mode').set('auto');
+        // Read lastResult first (most reliable — set by game engine)
+        const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
+        const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
+        const lastVal = lastSnap.val();
+        const lastTime = lastTimeSnap.val() || 0;
+        const prevPeriodMs = timerMode * 60 * 1000;
+        const expectedResultTime = Math.floor((Date.now() - (Date.now() % prevPeriodMs)) - prevPeriodMs + prevPeriodMs);
+
+        // Use lastResult if it was set within the last 2 minutes (fresh result)
+        if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9 && (Date.now() - lastTime) < 2 * 60 * 1000) {
+          winNum = parseInt(lastVal);
+          console.log('Using lastResult from game engine:', winNum);
         } else {
-          // Fallback: read lastResult saved by game engine
-          const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
-          const lastVal = lastSnap.val();
-          const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
-          const lastTime = lastTimeSnap.val() || 0;
-          // Use lastResult only if it was set within last 30 seconds
-          if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9 && (Date.now() - lastTime) < 30000) {
-            winNum = parseInt(lastVal);
-            console.log('Using lastResult fallback:', winNum);
+          // Fallback: currentResult (manual override)
+          const snap = await db.ref(timerKey + '/currentResult').once('value');
+          const val = snap.val();
+          if (val !== null && parseInt(val) >= 0 && parseInt(val) <= 9) {
+            winNum = parseInt(val);
+            console.log('Using currentResult (manual):', winNum);
+            await db.ref(timerKey + '/currentResult').set(-1);
           } else {
-            // Check schedule for this timer mode
-            const schedule = (window.cgScheduleByTimer && window.cgScheduleByTimer[timerMode]) || [];
-            const nextScheduled = schedule.find(v => v !== null && v >= 0 && v <= 9);
-            if (nextScheduled !== undefined) {
-              winNum = parseInt(nextScheduled);
-              console.log('Using scheduled result:', winNum);
-              const updatedSchedule = schedule.map((v, i) => i === schedule.indexOf(nextScheduled) ? null : v);
-              const shifted = schedule.filter((v, i) => i !== schedule.indexOf(nextScheduled));
-              shifted.push(null);
-              window.cgScheduleByTimer[timerMode] = shifted;
-              await db.ref(timerKey + '/schedule').set(shifted);
-            } else {
-              console.log('No result available, using random');
-              winNum = Math.floor(Math.random() * 10);
-            }
+            // Last resort: random
+            winNum = Math.floor(Math.random() * 10);
+            console.log('No result from server, using random:', winNum);
           }
         }
       } else {
