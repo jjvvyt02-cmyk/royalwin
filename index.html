@@ -4650,28 +4650,26 @@
           }
         }
 
-        // Read nextResult pre-calculated by game engine
-        // Poll every 500ms for up to 10 seconds
-        let attempts = 0;
-        const poll = async () => {
-          attempts++;
-          const db2 = window.fbDB || fbDB;
-          if (db2) {
-            const snap2 = await db2.ref('wingo/wingo' + mins + 'min/lastResult').once('value');
-            const tSnap = await db2.ref('wingo/wingo' + mins + 'min/lastResultTime').once('value');
-            const lastVal = snap2.val();
-            const lastTime = tSnap.val() || 0;
-            const secsSince = (Date.now() - lastTime) / 1000;
-            if (lastVal !== null && parseInt(lastVal) >= 0 && secsSince < 30) {
-              console.log('✅ Got result from game engine:', lastVal, 'after', attempts, 'attempts');
-              resolveRoundForTimer(mins);
-              return;
+        // Poll for result published AFTER this round started
+        const roundStartTime = Date.now();
+        let pollAttempts = 0;
+        const pollForResult = async () => {
+          pollAttempts++;
+          try {
+            const db2 = window.fbDB || fbDB;
+            if (db2) {
+              const tSnap = await db2.ref('wingo/wingo' + mins + 'min/lastResultTime').once('value');
+              const lastTime = tSnap.val() || 0;
+              if (lastTime > roundStartTime - 2000) {
+                resolveRoundForTimer(mins, roundStartTime);
+                return;
+              }
             }
-          }
-          if (attempts < 20) setTimeout(poll, 500);
-          else { console.log('⚠️ No result after 10s, using random'); resolveRoundForTimer(mins); }
+          } catch(e) {}
+          if (pollAttempts < 24) setTimeout(pollForResult, 500);
+          else resolveRoundForTimer(mins, roundStartTime);
         };
-        setTimeout(poll, 500);
+        setTimeout(pollForResult, 1000);
       }
     }
 
@@ -4940,7 +4938,8 @@
     } catch(e) { console.warn('Bet summary save failed:', e); }
   }
 
-  async function resolveRoundForTimer(timerMode) {
+  async function resolveRoundForTimer(timerMode, roundStartTime) {
+    roundStartTime = roundStartTime || Date.now();
     // Save current active timer state
     const savedPendingBet = window._cgPendingBet;
     const savedSelectedColor = cgSelectedColor;
@@ -4963,31 +4962,28 @@
       }
       const db = window.fbDB || fbDB;
       if (db) {
-        // Read lastResult published by game engine
         const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
         const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
         const lastVal = lastSnap.val();
         const lastTime = lastTimeSnap.val() || 0;
-        const secsSinceResult = (Date.now() - lastTime) / 1000;
-        console.log('lastResult:', lastVal, 'set', secsSinceResult.toFixed(1), 's ago');
 
-        if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9 && secsSinceResult < 90) {
+        // Only accept result published AFTER this round started
+        if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9 && lastTime > roundStartTime - 2000) {
           winNum = parseInt(lastVal);
-          console.log('✅ Using game engine result:', winNum);
+          console.log('✅ Game engine result:', winNum);
         } else {
-          // Fallback: currentResult (manual override from admin)
+          // Manual override fallback
           const snap = await db.ref(timerKey + '/currentResult').once('value');
           const val = snap.val();
           if (val !== null && parseInt(val) >= 0 && parseInt(val) <= 9) {
             winNum = parseInt(val);
-            console.log('✅ Using manual override:', winNum);
+            console.log('✅ Manual override:', winNum);
           } else {
             winNum = Math.floor(Math.random() * 10);
-            console.log('⚠️ No result available, using random:', winNum);
+            console.log('⚠️ Random fallback:', winNum);
           }
         }
       } else {
-        console.warn('fbDB not ready, using random');
         winNum = Math.floor(Math.random() * 10);
       }
     } catch(e) {
