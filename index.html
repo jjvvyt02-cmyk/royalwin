@@ -992,7 +992,7 @@
     .form-row { grid-template-columns:1fr; }
 
     /* ── WALLET PAGE ── */
-    .wallet-page { padding:80px 1rem 5rem; }
+    .wallet-page { padding:65px 0.8rem 5rem; }
     .wallet-hero { flex-direction:column; padding:1.5rem; }
     .wallet-balance-val { font-size:2rem; }
     .deposit-methods { grid-template-columns:repeat(2,1fr); }
@@ -1002,33 +1002,33 @@
     .tx-row > *:nth-child(3) { display:none; }
 
     /* ── REFERRAL / AGENCY PAGE ── */
-    .ref-page { padding:72px 0 5rem; }
+    .ref-page { padding:65px 0 5rem; }
     .agency-card { margin:0 0.7rem 0.7rem; padding:1.1rem 1rem 0.9rem; }
     .sub-grid { gap:0.5rem; margin:0 0.7rem 0; }
     .ref-actions { margin:0.6rem 0.7rem 0; }
     .sub-history { margin:0.6rem 0.7rem 0.7rem; }
 
     /* ── VIP PAGE ── */
-    .vip-page { padding:80px 1rem 5rem; }
+    .vip-page { padding:65px 0.8rem 5rem; }
     .vip-levels { grid-template-columns:repeat(2,1fr); }
     .vip-hero h2 { font-size:1.6rem; }
 
     /* ── PROFILE PAGE ── */
-    .profile-page { padding:80px 1rem 5rem; }
+    .profile-page { padding:65px 0.8rem 5rem; }
     .profile-grid { grid-template-columns:1fr; }
     .profile-hero { flex-direction:column; padding:1.5rem; text-align:center; }
 
     /* ── PROMOTIONS PAGE ── */
-    .promo-page { padding:80px 1rem 5rem; }
+    .promo-page { padding:65px 0.8rem 5rem; }
     .promo-grid { grid-template-columns:1fr; }
 
     /* ── SUPPORT PAGE ── */
-    .support-page { padding:80px 1rem 5rem; }
+    .support-page { padding:65px 0.8rem 5rem; }
     .support-options { grid-template-columns:repeat(2,1fr); }
     .chat-window { height:340px; }
 
     /* ── BET HISTORY PAGE ── */
-    .history-page { padding:80px 1rem 5rem; }
+    .history-page { padding:65px 0.8rem 5rem; }
     .history-summary { grid-template-columns:repeat(2,1fr); gap:0.8rem; }
     .bh-row { grid-template-columns:1.5fr 1fr 1fr 1fr; font-size:0.78rem; padding:0.7rem 0.8rem; }
     .bh-row > *:nth-child(5), .bh-row > *:nth-child(6) { display:none; }
@@ -1071,38 +1071,82 @@
 
   /* ── MOBILE RESPONSIVE ── */
   @media (max-width: 600px) {
-    body { overflow-x: hidden; }
-    .top-nav { padding: 0.6rem 0.8rem; }
-    .nav-logo { font-size: 1rem; }
-    .wallet-page, .profile-page, .vip-page, .promo-page, .support-page, .ref-page { padding: 68px 0.7rem 5rem; max-width: 100%; }
-    .section { padding: 68px 0.7rem 5rem; max-width: 100%; }
-    .auth-card { padding: 1.5rem 1rem; margin: 0 0.5rem; border-radius: 16px; }
-    .card { padding: 1rem; border-radius: 12px; }
-    .btn { padding: 0.65rem 1rem; font-size: 0.85rem; }
+    body { overflow-x: hidden; font-size: 14px; }
+
+    /* Fix all page padding for mobile */
+    .wallet-page { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
+    .profile-page { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
+    .vip-page { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
+    .promo-page { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
+    .support-page { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
+    .ref-page { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
+    .history-page { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
+    .cg-wrap { padding: 65px 0.6rem 5rem !important; max-width: 100% !important; }
+    .section { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
+
+    /* Fix inline padded containers */
+    [style*="padding:5rem 1rem"] { padding: 65px 0.8rem 2rem !important; }
+    [style*="padding:100px"] { padding-top: 65px !important; }
+
+    /* Navigation */
+    .top-nav { padding: 0.5rem 0.8rem !important; }
+    .nav-logo { font-size: 1rem !important; }
+    .nav-balance { font-size: 0.78rem !important; padding: 0.25rem 0.5rem !important; }
+    .mobile-nav { padding: 0.3rem 0 !important; }
+    .mobile-nav-item { font-size: 0.6rem !important; gap: 1px !important; }
+    .mobile-nav-item .mn-icon { font-size: 1.15rem !important; }
+
+    /* Auth */
+    .auth-card { padding: 1.5rem 1rem !important; max-width: 100% !important; margin: 0 0.5rem !important; }
+
+    /* Inputs — prevent iOS zoom */
     input, select, textarea { font-size: 16px !important; }
-    .cg-wrap { padding: 62px 0.5rem 5rem; max-width: 100%; }
-    .cg-timer-tab { padding: 0.4rem 0.7rem; font-size: 0.75rem; }
-    .cg-period-box { padding: 0.6rem 0.8rem; }
-    .cg-color-btn { padding: 0.75rem 0.4rem; font-size: 0.8rem; border-radius: 10px; }
-    .cg-num-btn { font-size: 0.85rem; border-radius: 8px; }
-    .cg-confirm-btn { padding: 0.85rem; font-size: 0.85rem; }
-    .cg-bet-btn { padding: 0.35rem 0.55rem; font-size: 0.72rem; }
-    .cg-mult-btn { padding: 0.35rem 0.55rem; font-size: 0.72rem; }
-    .cg-hist-row { font-size: 0.7rem; padding: 0.45rem 0.2rem; }
-    .cg-result-popup { width: 88vw; padding: 1.5rem 1rem; }
-    .hero-title { font-size: 1.7rem; }
-    .game-cards { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
-    .game-card { padding: 0.8rem; }
-    .vip-cards { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .toast { left: 0.5rem; right: 0.5rem; max-width: unset; font-size: 0.8rem; }
-    .stats-bar { gap: 0.6rem; flex-wrap: wrap; }
-    table { font-size: 0.72rem; }
-    th, td { padding: 0.35rem 0.25rem; }
+
+    /* Buttons */
+    .btn { padding: 0.65rem 1rem !important; font-size: 0.85rem !important; }
+
+    /* Game */
+    .cg-timer-tab { padding: 0.4rem 0.7rem !important; font-size: 0.75rem !important; }
+    .cg-period-box { padding: 0.6rem 0.8rem !important; }
+    .cg-color-btn { padding: 0.75rem 0.4rem !important; font-size: 0.8rem !important; border-radius: 10px !important; }
+    .cg-num-btn { font-size: 0.85rem !important; border-radius: 8px !important; }
+    .cg-confirm-btn { padding: 0.85rem !important; font-size: 0.85rem !important; }
+    .cg-bet-btn { padding: 0.35rem 0.55rem !important; font-size: 0.72rem !important; }
+    .cg-mult-btn { padding: 0.35rem 0.55rem !important; font-size: 0.72rem !important; }
+    .cg-hist-row { font-size: 0.7rem !important; padding: 0.45rem 0.2rem !important; }
+    .cg-result-popup { width: 88vw !important; padding: 1.5rem 1rem !important; }
+
+    /* Home */
+    .hero-title { font-size: 1.6rem !important; }
+    .game-cards { grid-template-columns: 1fr 1fr !important; gap: 0.6rem !important; }
+    .game-card { padding: 0.8rem !important; }
+
+    /* VIP */
+    .vip-cards { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
+
+    /* Toast */
+    .toast { left: 0.5rem !important; right: 0.5rem !important; max-width: unset !important; font-size: 0.8rem !important; bottom: 5rem !important; }
+
+    /* Tables */
+    table { font-size: 0.72rem !important; }
+    th, td { padding: 0.35rem 0.25rem !important; }
+
+    /* Stats */
+    .stats-bar { gap: 0.6rem !important; flex-wrap: wrap !important; }
+
+    /* Cards */
+    .card { padding: 1rem !important; border-radius: 12px !important; }
+
+    /* Grid fixes */
+    [style*="grid-template-columns:1fr 1fr 1fr"] { grid-template-columns: 1fr 1fr !important; }
+    [style*="grid-template-columns:repeat(3"] { grid-template-columns: 1fr 1fr !important; }
   }
+
   @media (max-width: 380px) {
-    .cg-color-btn { font-size: 0.72rem; padding: 0.65rem 0.2rem; }
-    .cg-num-btn { font-size: 0.78rem; }
-    .cg-timer-tab { padding: 0.35rem 0.5rem; font-size: 0.7rem; }
+    .cg-color-btn { font-size: 0.72rem !important; padding: 0.65rem 0.2rem !important; }
+    .cg-num-btn { font-size: 0.78rem !important; }
+    .cg-timer-tab { padding: 0.35rem 0.5rem !important; font-size: 0.7rem !important; }
+    .mobile-nav-item { font-size: 0.55rem !important; }
   }
 </style>
 </head>
@@ -6451,7 +6495,7 @@
 
 <!-- GAME STATS PAGE -->
 <div class="page" id="page-gamestats">
-  <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 2rem;">
+  <div style="max-width:600px;margin:0 auto;padding:65px 1rem 2rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
       <button onclick="showPage('profile')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">📊 Game Stats</div>
@@ -6521,7 +6565,7 @@
 </div>
 <!-- TRANSACTION HISTORY PAGE -->
 <div class="page" id="page-history">
-  <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 2rem;">
+  <div style="max-width:600px;margin:0 auto;padding:65px 1rem 2rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
       <button onclick="showPage('profile')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💸 Transaction History</div>
@@ -6543,7 +6587,7 @@
 
 <!-- DEPOSIT HISTORY PAGE -->
 <div class="page" id="page-deposithistory">
-  <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 2rem;">
+  <div style="max-width:600px;margin:0 auto;padding:65px 1rem 2rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
       <button onclick="showPage('profile')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬇️ Deposit History</div>
@@ -6564,7 +6608,7 @@
 
 <!-- WITHDRAWAL HISTORY PAGE -->
 <div class="page" id="page-withdrawhistory">
-  <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 2rem;">
+  <div style="max-width:600px;margin:0 auto;padding:65px 1rem 2rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
       <button onclick="showPage('profile')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬆️ Withdrawal History</div>
@@ -6740,7 +6784,7 @@
 
 <!-- VIP PAGE -->
 <div class="page" id="page-vip">
-  <div style="max-width:520px;margin:0 auto;padding:5rem 1rem 2rem;">
+  <div style="max-width:520px;margin:0 auto;padding:65px 1rem 2rem;">
 
     <!-- Header -->
     <div style="text-align:center;margin-bottom:1.5rem;">
