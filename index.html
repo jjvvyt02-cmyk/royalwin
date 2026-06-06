@@ -4599,16 +4599,14 @@
       const elapsed = now % periodMs;
       const remaining = Math.ceil((periodMs - elapsed) / 1000);
       const totalSecs = mins * 60;
-      // Period = YYYYMMDD + serial number since midnight
-      const nowDate = new Date(now);
-      const year = nowDate.getFullYear();
-      const month = String(nowDate.getMonth() + 1).padStart(2, '0');
-      const day = String(nowDate.getDate()).padStart(2, '0');
+      // Period ID using IST (UTC+5:30) — matches game engine exactly
+      const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+      const istDate = new Date(now + IST_OFFSET);
+      const year = istDate.getUTCFullYear();
+      const month = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(istDate.getUTCDate()).padStart(2, '0');
       const dateStr = '' + year + month + day;
-
-      // Minutes since midnight
-      const minutesSinceMidnight = nowDate.getHours() * 60 + nowDate.getMinutes();
-      // Serial = how many complete periods have passed since midnight
+      const minutesSinceMidnight = istDate.getUTCHours() * 60 + istDate.getUTCMinutes();
       const serial = Math.floor(minutesSinceMidnight / mins);
       const serialStr = String(serial).padStart(4, '0');
       const roundId = parseInt(dateStr + serialStr);
