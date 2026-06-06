@@ -4526,34 +4526,32 @@
     loadAllHistory();
   }
 
-  async function loadAllHistory() {
+  function loadAllHistory() {
     const db = window.fbDB || fbDB;
-    if (!db) {
-      cgHistory = cgHistoryByTimer[cgTimer] || [];
-      renderHistDots(); renderHistRows();
-      return;
-    }
-    try {
-      for (const mins of [1,3,5]) {
-        const snap = await db.ref('wingo/wingo' + mins + 'min/history').once('value');
-        if (snap.val()) {
-          const raw = Array.isArray(snap.val()) ? snap.val() : Object.values(snap.val());
-          cgHistoryByTimer[mins] = raw
-            .filter(h => h && h.round)
-            .sort((a, b) => (b.timestamp || b.round) - (a.timestamp || a.round))
-            .map(h => ({
-              ...h,
-              histBg: h.histBg || (h.color === 'violet' ? (h.num === 0 ? 'linear-gradient(135deg,#7c4dff 50%,#e02020 50%)' : 'linear-gradient(135deg,#7c4dff 50%,#27ae60 50%)') : h.color === 'red' ? '#e02020' : '#27ae60')
-            }));
+    if (!db) return;
+    // Listen for real-time history updates for all timers
+    [1, 3, 5].forEach(mins => {
+      db.ref('wingo/wingo' + mins + 'min/history').off();
+      db.ref('wingo/wingo' + mins + 'min/history').on('value', snap => {
+        if (!snap.val()) return;
+        const raw = Array.isArray(snap.val()) ? snap.val() : Object.values(snap.val());
+        cgHistoryByTimer[mins] = raw
+          .filter(h => h && h.round)
+          .sort((a, b) => (b.timestamp || b.round) - (a.timestamp || a.round))
+          .map(h => ({
+            ...h,
+            histBg: h.histBg || (h.color === 'violet'
+              ? (h.num === 0 ? 'linear-gradient(135deg,#7c4dff 50%,#e02020 50%)' : 'linear-gradient(135deg,#7c4dff 50%,#27ae60 50%)')
+              : h.color === 'red' ? '#e02020' : '#27ae60')
+          }));
+        // Update UI if this is the active timer
+        if (mins === cgTimer) {
+          cgHistory = cgHistoryByTimer[cgTimer] || [];
+          renderHistDots();
+          renderHistRows();
         }
-      }
-      cgHistory = cgHistoryByTimer[cgTimer] || [];
-        renderHistRows();
-    } catch(e) {
-      console.warn('History load failed:', e);
-      cgHistory = cgHistoryByTimer[cgTimer] || [];
-      renderHistDots(); renderHistRows();
-    }
+      });
+    });
   }
 
   function closeColorGame() {
