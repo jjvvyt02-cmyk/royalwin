@@ -829,7 +829,7 @@
     background: #0d0d1a;
     border-top: 2px solid rgba(240,192,64,0.15);
     grid-template-columns: repeat(5, 1fr);
-    padding: 0; height: 62px;
+    padding: 0 0 env(safe-area-inset-bottom, 0); height: calc(62px + env(safe-area-inset-bottom, 0));
     box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
   }
   .mobile-nav-item {
@@ -921,233 +921,184 @@
   }
 
 
-  /* ═══════════════════════════════
-     MOBILE RESPONSIVE — Full Fix
-  ═══════════════════════════════ */
+  /* ═══════════════════════════════════════════
+     MOBILE — 768px and below
+  ═══════════════════════════════════════════ */
   @media (max-width: 768px) {
 
-    /* ── Game Overlay Full Screen ── */
-    .color-game-overlay { position:fixed; inset:0; overflow-y:auto; z-index:600; }
-    .cg-wrap { padding:70px 0.8rem 5rem; max-width:100%; }
-    .cg-header { margin-bottom:1rem; }
-    .cg-title { font-size:1.1rem; }
+    /* ── BASE ── */
+    body { padding-bottom: 70px; overflow-x: hidden; }
+    * { -webkit-tap-highlight-color: transparent; }
+    input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
 
-    /* ── Timer Tabs Full Width ── */
-    .cg-timer-tabs { gap:0.4rem; }
-    .cg-ttab { padding:0.65rem 0.3rem; font-size:0.82rem; border-radius:8px; }
+    /* ── TOP NAV ── */
+    nav { padding: 0 0.8rem; height: 56px; }
+    .nav-logo { font-size: 1.1rem; letter-spacing: 1px; }
+    .nav-links { display: none !important; }
+    #navUser .nav-btn { display: none !important; }
+    #navUser .balance-pill { display: none !important; }
+    #navUser { gap: 0.5rem; }
+    .notif-bell, .avatar { display: flex !important; }
+    .notif-dropdown { right: 0; width: 260px; }
 
-    /* ── Round Info ── */
-    .cg-round-info { padding:0.8rem 1rem; }
-    .cg-count-val { font-size:1.8rem; }
-
-    /* ── Color Buttons Bigger ── */
-    .cg-colors { gap:0.6rem; margin-bottom:1rem; }
-    .cg-color-btn { padding:1.2rem 0.5rem; font-size:1.05rem; border-radius:10px; }
-
-    /* ── Number Grid Bigger ── */
-    .cg-numbers { gap:0.5rem; margin-bottom:1rem; }
-    .cg-num-btn { border-radius:10px; font-size:1.1rem; min-height:52px; }
-
-    /* ── Big/Small Buttons ── */
-    .cg-color-btn[id="cgBigBtn"], .cg-color-btn[id="cgSmallBtn"] { padding:1rem; font-size:1.1rem; }
-
-    /* ── Bet Presets Scrollable ── */
-    .cg-bet-presets {
-      display:flex; flex-wrap:nowrap; overflow-x:auto; gap:0.5rem;
-      padding-bottom:0.3rem; scrollbar-width:none;
-    }
-    .cg-bet-presets::-webkit-scrollbar { display:none; }
-    .cg-bet-preset { flex-shrink:0; padding:0.5rem 1rem; font-size:0.88rem; white-space:nowrap; }
-
-    /* ── Multiplier buttons ── */
-    .cg-x-btn { padding:0.6rem 0.7rem; font-size:0.85rem; }
-
-    /* ── Confirm Button ── */
-    .cg-confirm-btn { padding:1rem; font-size:0.95rem; }
-
-    /* ── Results Table — hide Period column ── */
-    .cg-hist-row { grid-template-columns:1fr 0.7fr 0.7fr 1fr; font-size:0.78rem; padding:0.6rem 0.7rem; }
-    .cg-hist-row.head { font-size:0.68rem; }
-
-    /* ── My Bets table ── */
-    .cg-hist-row[style*="1.2fr"] { grid-template-columns:1fr 0.7fr 1fr 1fr 1fr !important; font-size:0.75rem; }
+    /* ── BOTTOM NAV ── */
+    .mobile-nav { display: grid; }
 
     /* ── HOME PAGE ── */
-    .hero { padding-top:64px; }
-    .hero h1 { font-size:2rem; }
-    .hero p { font-size:0.9rem; padding:0 0.5rem; }
-    .hero-btns { flex-direction:column; align-items:center; width:100%; padding:0 1rem; }
-    .hero-btns .btn { width:100%; text-align:center; }
-    .stats-bar { gap:1.2rem; flex-wrap:wrap; justify-content:center; margin-top:2rem; }
-    .stat-val { font-size:1.3rem; }
+    .hero { padding: 4rem 1rem 2rem; min-height: auto; }
+    .hero h1 { font-size: 2rem; }
+    .hero p { font-size: 0.88rem; padding: 0 0.5rem; margin-bottom: 1.5rem; }
+    .hero-btns { flex-direction: column; align-items: stretch; width: 100%; padding: 0 1rem; gap: 0.7rem; }
+    .hero-btns .btn { width: 100%; text-align: center; padding: 0.9rem; }
+    .stats-bar { gap: 1.5rem; flex-wrap: wrap; justify-content: center; margin-top: 2rem; }
+    .stat-val { font-size: 1.3rem; }
 
-    /* ── GAMES GRID ── */
-    .games-grid { grid-template-columns:repeat(2,1fr) !important; gap:0.8rem; }
-    .section { padding:3rem 1rem; }
-    .promo-banner { flex-direction:column; text-align:center; padding:1.5rem; }
-    .promo-amount { font-size:2rem; }
+    /* ── GAMES SECTION ── */
+    .section { padding: 1.2rem 0.8rem 2rem; max-width: 100%; }
+    .section-title { font-size: 1.2rem; }
+    .section-sub { font-size: 0.82rem; margin-bottom: 1rem; }
+    .games-grid { grid-template-columns: 1fr 1fr !important; gap: 0.7rem; }
+    .game-thumb { height: 100px; font-size: 2.5rem; }
+    .game-info { padding: 0.6rem 0.7rem 0.8rem; }
+    .game-name { font-size: 0.82rem; }
+    .game-meta { font-size: 0.7rem; }
+    .promo-banner { flex-direction: column; text-align: center; padding: 1.2rem; gap: 0.8rem; }
+    .promo-amount { font-size: 1.8rem; }
 
     /* ── AUTH PAGES ── */
-    .auth-card { padding:1.5rem; margin:0 0.5rem; }
-    .form-row { grid-template-columns:1fr; }
+    .auth-card { padding: 1.5rem 1rem; margin: 0 0.5rem; border-radius: 16px; }
+    .form-row { grid-template-columns: 1fr; }
+    .auth-page { padding-top: 56px; }
 
     /* ── WALLET PAGE ── */
-    .wallet-page { padding:65px 0.8rem 5rem; }
-    .wallet-hero { flex-direction:column; padding:1.5rem; }
-    .wallet-balance-val { font-size:2rem; }
-    .deposit-methods { grid-template-columns:repeat(2,1fr); }
-    .amount-presets { gap:0.4rem; }
-    .amount-preset { padding:0.4rem 0.7rem; font-size:0.82rem; }
-    .tx-row { grid-template-columns:1.5fr 1fr 1fr 1fr; font-size:0.78rem; padding:0.7rem 0.8rem; }
-    .tx-row > *:nth-child(3) { display:none; }
+    .wallet-page { padding: 60px 0.8rem 5rem; max-width: 100%; }
+    .wallet-hero { flex-direction: column; padding: 1.2rem; gap: 0.5rem; }
+    .wallet-balance-val { font-size: 1.8rem; }
+    .wallet-tabs { gap: 0.3rem; }
+    .deposit-methods { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .deposit-method-card { padding: 1rem 0.5rem; }
+    .amount-presets { gap: 0.4rem; flex-wrap: wrap; }
+    .amount-preset { padding: 0.4rem 0.7rem; font-size: 0.8rem; }
+    .tx-row { grid-template-columns: 1.5fr 1fr 1fr 1fr; font-size: 0.78rem; padding: 0.7rem 0.8rem; }
+    .tx-row > *:nth-child(3) { display: none; }
 
-    /* ── REFERRAL / AGENCY PAGE ── */
-    .ref-page { padding:65px 0 5rem; }
-    .agency-card { margin:0 0.7rem 0.7rem; padding:1.1rem 1rem 0.9rem; }
-    .sub-grid { gap:0.5rem; margin:0 0.7rem 0; }
-    .ref-actions { margin:0.6rem 0.7rem 0; }
-    .sub-history { margin:0.6rem 0.7rem 0.7rem; }
+    /* ── REFERRAL PAGE ── */
+    .ref-page { padding: 60px 0 5rem; max-width: 100%; }
+    .agency-card { margin: 0 0.7rem 0.7rem; padding: 1rem; }
+    .sub-grid { gap: 0.5rem; margin: 0 0.7rem 0; }
+    .ref-actions { margin: 0.6rem 0.7rem 0; }
+    .sub-history { margin: 0.6rem 0.7rem 0.7rem; }
 
     /* ── VIP PAGE ── */
-    .vip-page { padding:65px 0.8rem 5rem; }
-    .vip-levels { grid-template-columns:repeat(2,1fr); }
-    .vip-hero h2 { font-size:1.6rem; }
+    .vip-page { padding: 60px 0.8rem 5rem; max-width: 100%; }
+    .vip-levels { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .vip-hero h2 { font-size: 1.4rem; }
 
     /* ── PROFILE PAGE ── */
-    .profile-page { padding:65px 0.8rem 5rem; }
-    .profile-grid { grid-template-columns:1fr; }
-    .profile-hero { flex-direction:column; padding:1.5rem; text-align:center; }
+    .profile-page { padding: 60px 0.8rem 5rem; max-width: 100%; }
+    .profile-grid { grid-template-columns: 1fr; }
+    .profile-hero { flex-direction: column; padding: 1.2rem; text-align: center; }
 
     /* ── PROMOTIONS PAGE ── */
-    .promo-page { padding:65px 0.8rem 5rem; }
-    .promo-grid { grid-template-columns:1fr; }
+    .promo-page { padding: 60px 0.8rem 5rem; max-width: 100%; }
+    .promo-grid { grid-template-columns: 1fr; gap: 0.8rem; }
 
     /* ── SUPPORT PAGE ── */
-    .support-page { padding:65px 0.8rem 5rem; }
-    .support-options { grid-template-columns:repeat(2,1fr); }
-    .chat-window { height:340px; }
+    .support-page { padding: 60px 0.8rem 5rem; max-width: 100%; }
+    .support-options { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .chat-window { height: 340px; }
 
-    /* ── BET HISTORY PAGE ── */
-    .history-page { padding:65px 0.8rem 5rem; }
-    .history-summary { grid-template-columns:repeat(2,1fr); gap:0.8rem; }
-    .bh-row { grid-template-columns:1.5fr 1fr 1fr 1fr; font-size:0.78rem; padding:0.7rem 0.8rem; }
-    .bh-row > *:nth-child(5), .bh-row > *:nth-child(6) { display:none; }
+    /* ── HISTORY PAGES ── */
+    .history-page { padding: 60px 0.8rem 5rem; max-width: 100%; }
+    .history-summary { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .hs-card { padding: 0.8rem; }
+    .hs-val { font-size: 1.1rem; }
+    .history-filters { gap: 0.4rem; }
+    .hf-btn { padding: 0.35rem 0.7rem; font-size: 0.75rem; }
+    .bh-row { grid-template-columns: 1.5fr 0.8fr 1fr 1fr; font-size: 0.75rem; padding: 0.6rem 0.7rem; }
+    .bh-row > *:nth-child(5), .bh-row > *:nth-child(6) { display: none; }
 
-    /* ── NAV ── */
-    nav { padding:0 0.8rem; }
-    .nav-logo { font-size:1.1rem; }
+    /* ── WINGO GAME ── */
+    .color-game-overlay { position: fixed; inset: 0; overflow-y: auto; overflow-x: hidden; z-index: 600; }
+    .cg-wrap { padding: 56px 0.7rem 5rem; max-width: 100%; box-sizing: border-box; overflow-x: hidden; }
+    .cg-header { margin-bottom: 0.7rem; }
+    .cg-title { font-size: 0.95rem; }
+    .cg-close { padding: 0.3rem 0.6rem; font-size: 0.78rem; }
 
-    /* ── SECTION TITLES ── */
-    .section-title { font-size:1.3rem; }
+    /* Timer tabs — 3 equal columns */
+    .cg-timer-tabs { gap: 0.3rem; display: grid; grid-template-columns: 1fr 1fr 1fr; margin-bottom: 0.8rem; }
+    .cg-ttab { padding: 0.55rem 0.2rem; font-size: 0.75rem; border-radius: 8px; text-align: center; }
+
+    /* Period info box */
+    .cg-round-info { padding: 0.6rem 0.8rem; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
+    .cg-round-val { font-size: 0.72rem; }
+    .cg-count-val { font-size: 1.6rem; }
+    .cg-status { font-size: 0.65rem; padding: 0.2rem 0.5rem; }
+
+    /* Color buttons — 3 equal */
+    .cg-colors { gap: 0.4rem; margin-bottom: 0.7rem; }
+    .cg-color-btn { padding: 0.9rem 0.2rem; font-size: 0.88rem; border-radius: 10px; }
+
+    /* Number grid — 5 per row, all visible */
+    .cg-numbers { gap: 0.35rem; margin-bottom: 0.7rem; }
+    .cg-num-btn { border-radius: 8px; font-size: 1rem; aspect-ratio: 1; min-height: 44px; }
+
+    /* Big/Small */
+    .cg-color-btn[id="cgBigBtn"],
+    .cg-color-btn[id="cgSmallBtn"] { padding: 0.8rem; font-size: 0.95rem; }
+
+    /* Bet presets — scrollable row */
+    .cg-bet-presets { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.4rem; padding-bottom: 0.3rem; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .cg-bet-presets::-webkit-scrollbar { display: none; }
+    .cg-bet-preset { flex-shrink: 0; padding: 0.45rem 0.9rem; font-size: 0.82rem; white-space: nowrap; }
+    .cg-x-btn { padding: 0.5rem 0.5rem; font-size: 0.8rem; }
+    .cg-confirm-btn { padding: 0.9rem; font-size: 0.88rem; border-radius: 10px; }
+
+    /* History table in game */
+    .cg-hist-row { font-size: 0.72rem; padding: 0.5rem 0.4rem; }
+    .cg-hist-row.head { font-size: 0.65rem; }
+
+    /* Result popup */
+    .cg-result-popup { width: 88vw; padding: 1.5rem 1rem; border-radius: 16px; }
+    .cg-result-num { font-size: 2.5rem; }
+
+    /* ── SPIN WHEEL ── */
+    .wheel-wrap { width: 240px; height: 240px; }
+    .wheel-canvas { width: 240px !important; height: 240px !important; }
+    .wheel-title { font-size: 1.1rem; }
 
     /* ── QR MODAL ── */
-    .qr-card { padding:1.2rem; margin:0 0.5rem; }
+    .qr-card { padding: 1.2rem; margin: 0 0.5rem; width: calc(100vw - 2rem); }
 
-    /* ── WHEEL OVERLAY ── */
-    .wheel-wrap { width:240px; height:240px; }
-    .wheel-canvas { width:240px !important; height:240px !important; }
-    .wheel-title { font-size:1.2rem; }
+    /* ── TOAST ── */
+    .toast { left: 0.5rem !important; right: 0.5rem !important; max-width: unset !important; bottom: 5rem !important; font-size: 0.82rem !important; }
 
-    /* ── RESULT POPUP ── */
-    .cg-result-popup { width:85%; padding:1.5rem; }
+    /* ── MODALS ── */
+    .modal-content { margin: 0 0.5rem; padding: 1.2rem; max-width: calc(100vw - 1rem); }
 
-    /* ── FOOTER SPACING for bottom nav ── */
-    body { padding-bottom:70px; }
+    /* ── INLINE HISTORY PAGES ── */
+    [id="page-deposithistory"] > div,
+    [id="page-withdrawhistory"] > div,
+    [id="page-history"] > div { padding: 60px 0.8rem 2rem !important; max-width: 100% !important; }
   }
 
+  /* ═══════════════════════════════════════════
+     SMALL MOBILE — 400px and below
+  ═══════════════════════════════════════════ */
   @media (max-width: 400px) {
-    .cg-color-btn { font-size:0.95rem; padding:1rem 0.3rem; }
-    .cg-num-btn { font-size:1rem; min-height:46px; }
-    .cg-timer-tabs { gap:0.3rem; }
-    .cg-ttab { font-size:0.75rem; }
-    .games-grid { grid-template-columns:1fr 1fr !important; }
-    .vip-levels { grid-template-columns:1fr 1fr; }
+    .cg-color-btn { font-size: 0.8rem; padding: 0.8rem 0.15rem; }
+    .cg-num-btn { font-size: 0.88rem; min-height: 40px; }
+    .cg-ttab { font-size: 0.7rem; padding: 0.5rem 0.1rem; }
+    .game-thumb { height: 80px; font-size: 2rem; }
+    .hero h1 { font-size: 1.7rem; }
+    .cg-result-popup { width: 92vw; }
+    .hs-val { font-size: 1rem; }
   }
 
   /* scrollbar */
   ::-webkit-scrollbar { width:6px; }
   ::-webkit-scrollbar-track { background:var(--bg); }
   ::-webkit-scrollbar-thumb { background:rgba(240,192,64,0.2); border-radius:3px; }
-
-  /* ── MOBILE RESPONSIVE ── */
-  @media (max-width: 600px) {
-    body { overflow-x: hidden; font-size: 14px; }
-
-    /* Fix all page padding for mobile */
-    .wallet-page { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
-    .profile-page { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
-    .vip-page { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
-    .promo-page { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
-    .support-page { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
-    .ref-page { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
-    .history-page { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
-    .cg-wrap { padding: 65px 0.6rem 5rem !important; max-width: 100% !important; }
-    .section { padding: 65px 0.8rem 5rem !important; max-width: 100% !important; }
-
-    /* Fix inline padded containers */
-    [style*="padding:5rem 1rem"] { padding: 65px 0.8rem 2rem !important; }
-    [style*="padding:100px"] { padding-top: 65px !important; }
-
-    /* Navigation */
-    .top-nav { padding: 0.5rem 0.8rem !important; }
-    .nav-logo { font-size: 1rem !important; }
-    .nav-balance { font-size: 0.78rem !important; padding: 0.25rem 0.5rem !important; }
-    .mobile-nav { padding: 0.3rem 0 !important; }
-    .mobile-nav-item { font-size: 0.6rem !important; gap: 1px !important; }
-    .mobile-nav-item .mn-icon { font-size: 1.15rem !important; }
-
-    /* Auth */
-    .auth-card { padding: 1.5rem 1rem !important; max-width: 100% !important; margin: 0 0.5rem !important; }
-
-    /* Inputs — prevent iOS zoom */
-    input, select, textarea { font-size: 16px !important; }
-
-    /* Buttons */
-    .btn { padding: 0.65rem 1rem !important; font-size: 0.85rem !important; }
-
-    /* Game */
-    .cg-timer-tab { padding: 0.4rem 0.7rem !important; font-size: 0.75rem !important; }
-    .cg-period-box { padding: 0.6rem 0.8rem !important; }
-    .cg-color-btn { padding: 0.75rem 0.4rem !important; font-size: 0.8rem !important; border-radius: 10px !important; }
-    .cg-num-btn { font-size: 0.85rem !important; border-radius: 8px !important; }
-    .cg-confirm-btn { padding: 0.85rem !important; font-size: 0.85rem !important; }
-    .cg-bet-btn { padding: 0.35rem 0.55rem !important; font-size: 0.72rem !important; }
-    .cg-mult-btn { padding: 0.35rem 0.55rem !important; font-size: 0.72rem !important; }
-    .cg-hist-row { font-size: 0.7rem !important; padding: 0.45rem 0.2rem !important; }
-    .cg-result-popup { width: 88vw !important; padding: 1.5rem 1rem !important; }
-
-    /* Home */
-    .hero-title { font-size: 1.6rem !important; }
-    .game-cards { grid-template-columns: 1fr 1fr !important; gap: 0.6rem !important; }
-    .game-card { padding: 0.8rem !important; }
-
-    /* VIP */
-    .vip-cards { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
-
-    /* Toast */
-    .toast { left: 0.5rem !important; right: 0.5rem !important; max-width: unset !important; font-size: 0.8rem !important; bottom: 5rem !important; }
-
-    /* Tables */
-    table { font-size: 0.72rem !important; }
-    th, td { padding: 0.35rem 0.25rem !important; }
-
-    /* Stats */
-    .stats-bar { gap: 0.6rem !important; flex-wrap: wrap !important; }
-
-    /* Cards */
-    .card { padding: 1rem !important; border-radius: 12px !important; }
-
-    /* Grid fixes */
-    [style*="grid-template-columns:1fr 1fr 1fr"] { grid-template-columns: 1fr 1fr !important; }
-    [style*="grid-template-columns:repeat(3"] { grid-template-columns: 1fr 1fr !important; }
-  }
-
-  @media (max-width: 380px) {
-    .cg-color-btn { font-size: 0.72rem !important; padding: 0.65rem 0.2rem !important; }
-    .cg-num-btn { font-size: 0.78rem !important; }
-    .cg-timer-tab { padding: 0.35rem 0.5rem !important; font-size: 0.7rem !important; }
-    .mobile-nav-item { font-size: 0.55rem !important; }
-  }
 </style>
 </head>
 <body>
