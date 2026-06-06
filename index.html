@@ -4601,25 +4601,55 @@
     document.getElementById('colorGameOverlay').classList.add('open');
     loadGameSettings();
     buildNumGrid();
-    startAllTimers();
+    // Only start timers if not already running
+    if (!window._cgTimersStarted) {
+      startAllTimers();
+      window._cgTimersStarted = true;
+    }
     loadAllHistory();
-    // Load my bets from Firebase
     loadMyBetsFromFirebase();
   }
 
   function loadMyBetsFromFirebase() {
     const db = window.fbDB || fbDB;
     if (!db || !window.currentUser) return;
-    db.ref('users/' + window.currentUser.uid + '/wingoMyBets')
+    const uid = window.currentUser.uid;
+
+    // Load completed bets
+    db.ref('users/' + uid + '/wingoMyBets')
       .orderByChild('timestamp').limitToLast(50)
       .once('value', snap => {
-        if (!snap.val()) return;
-        const bets = Object.values(snap.val()).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
-        cgMyBetsByTimer[1] = bets.filter(b => b.timer === 1);
-        cgMyBetsByTimer[3] = bets.filter(b => b.timer === 3);
-        cgMyBetsByTimer[5] = bets.filter(b => b.timer === 5);
-        cgMyBets = cgMyBetsByTimer[cgTimer] || [];
-        renderMyBets();
+        const completed = snap.val() ? Object.values(snap.val()).sort((a,b) => (b.timestamp||0)-(a.timestamp||0)) : [];
+        cgMyBetsByTimer[1] = completed.filter(b => b.timer === 1);
+        cgMyBetsByTimer[3] = completed.filter(b => b.timer === 3);
+        cgMyBetsByTimer[5] = completed.filter(b => b.timer === 5);
+
+        // Load pending bets and merge at top
+        db.ref('users/' + uid + '/wingoPendingBets').once('value', pSnap => {
+          if (pSnap.val()) {
+            const now = Date.now();
+            const pending = Object.entries(pSnap.val());
+            window._cgPendingBets = window._cgPendingBets || [];
+            pending.forEach(([key, bet]) => {
+              // Skip stale pending bets older than 10 minutes
+              if (now - (bet.timestamp||0) > 10 * 60 * 1000) {
+                db.ref('users/' + uid + '/wingoPendingBets/' + key).remove();
+                return;
+              }
+              bet._firebaseKey = key;
+              const exists = window._cgPendingBets.some(b => b.round === bet.round && b.selection === bet.selection);
+              if (!exists) window._cgPendingBets.push(bet);
+              const timer = bet.timer || cgTimer;
+              if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
+              const alreadyShown = cgMyBetsByTimer[timer].some(b => b.round === bet.round && b.selection === bet.selection && b.status === 'pending');
+              if (!alreadyShown) {
+                cgMyBetsByTimer[timer].unshift({ ...bet, status: 'pending', result: '⏳ Waiting...', resultBg: 'rgba(240,192,64,0.3)', pl: null });
+              }
+            });
+          }
+          cgMyBets = cgMyBetsByTimer[cgTimer] || [];
+          renderMyBets();
+        });
       });
   }
 
@@ -4890,9 +4920,24 @@
     const selLabel = cgSelectedColor ? cgSelectedColor.charAt(0).toUpperCase()+cgSelectedColor.slice(1) : cgSelectedBigSmall ? cgSelectedBigSmall.charAt(0).toUpperCase()+cgSelectedBigSmall.slice(1) : 'No.'+cgSelectedNum;
     // Support multiple bets per round — push to array
     if (!window._cgPendingBets) window._cgPendingBets = [];
-    const pendingBetObj = { round: cgRoundByTimer[cgTimer], bet: amt, actualBet: actualAmt, selection: selLabel, selColor, savedColor: cgSelectedColor, savedNum: cgSelectedNum, savedBS: cgSelectedBigSmall };
+    const pendingBetObj = {
+      round: cgRoundByTimer[cgTimer], bet: amt, actualBet: actualAmt,
+      selection: selLabel, selColor,
+      savedColor: cgSelectedColor, savedNum: cgSelectedNum, savedBS: cgSelectedBigSmall,
+      timer: cgTimer, timestamp: Date.now()
+    };
     window._cgPendingBets.push(pendingBetObj);
     window._cgPendingBet = window._cgPendingBets[window._cgPendingBets.length - 1];
+
+    // Save pending bet to Firebase so it survives page navigation
+    try {
+      const db2 = window.fbDB || fbDB;
+      if (db2 && window.currentUser) {
+        const pendingKey = 'p_' + cgTimer + '_' + cgRoundByTimer[cgTimer] + '_' + Date.now();
+        db2.ref('users/' + window.currentUser.uid + '/wingoPendingBets/' + pendingKey).set(pendingBetObj);
+        pendingBetObj._firebaseKey = pendingKey;
+      }
+    } catch(e) {}
 
     // Immediately show as pending in My Bets
     if (!cgMyBetsByTimer[cgTimer]) cgMyBetsByTimer[cgTimer] = [];
@@ -4901,7 +4946,7 @@
       selection: selLabel, selColor,
       result: '⏳ Waiting...', resultBg: 'rgba(240,192,64,0.3)',
       pl: null, status: 'pending', timestamp: Date.now(),
-      _pendingRef: pendingBetObj // reference to update later
+      _firebaseKey: pendingBetObj._firebaseKey
     };
     cgMyBetsByTimer[cgTimer].unshift(pendingEntry);
     cgMyBetsPage = 1;
@@ -5135,23 +5180,15 @@
     const actualBet = window._cgActualBet || Math.round(betAmt * (1 - cgSettings.fee));
     let won = false, winAmt = 0;
 
-    if (cgSelectedColor === 'violet' && (winColor === 'violet-red' || winColor === 'violet-green')) {
-      won = true; winAmt = actualBet * cgSettings.violetPayout;
-    } else if (cgSelectedColor === 'red' && winColor === 'red') {
-      won = true; winAmt = actualBet * cgSettings.colorPayout;
-    } else if (cgSelectedColor === 'green' && winColor === 'green') {
-      won = true; winAmt = actualBet * cgSettings.colorPayout;
-    } else if (cgSelectedColor === 'red' && winColor === 'violet-red') {
-      won = true; winAmt = actualBet * cgSettings.bigSmallPayout;
-    } else if (cgSelectedColor === 'green' && winColor === 'violet-green') {
-      won = true; winAmt = actualBet * cgSettings.bigSmallPayout;
-    } else if (cgSelectedNum === winNum) {
-      won = true; winAmt = actualBet * cgSettings.numPayout;
-    } else if (cgSelectedBigSmall === 'big' && winNum >= 5) {
-      won = true; winAmt = actualBet * cgSettings.colorPayout;
-    } else if (cgSelectedBigSmall === 'small' && winNum <= 4) {
-      won = true; winAmt = actualBet * cgSettings.colorPayout;
-    }
+    let won = false, winAmt = 0;
+    if (savedSelectedColor === 'violet' && (winColor === 'violet-red' || winColor === 'violet-green')) { won=true; winAmt=actualBet*cgSettings.violetPayout; }
+    else if (savedSelectedColor === 'red' && winColor === 'red') { won=true; winAmt=actualBet*cgSettings.colorPayout; }
+    else if (savedSelectedColor === 'green' && winColor === 'green') { won=true; winAmt=actualBet*cgSettings.colorPayout; }
+    else if (savedSelectedColor === 'red' && winColor === 'violet-red') { won=true; winAmt=actualBet*cgSettings.bigSmallPayout; }
+    else if (savedSelectedColor === 'green' && winColor === 'violet-green') { won=true; winAmt=actualBet*cgSettings.bigSmallPayout; }
+    else if (savedSelectedNum !== null && savedSelectedNum === winNum) { won=true; winAmt=actualBet*cgSettings.numPayout; }
+    else if (savedSelectedBS === 'big' && winNum >= 5) { won=true; winAmt=actualBet*cgSettings.colorPayout; }
+    else if (savedSelectedBS === 'small' && winNum <= 4) { won=true; winAmt=actualBet*cgSettings.colorPayout; }
 
     // color circle for history — split for 0 and 5
     const histBg = winColor === 'violet-red'
@@ -5205,7 +5242,7 @@
           else if (pendingBet.savedColor === 'green' && winColor === 'green') { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
           else if (pendingBet.savedColor === 'red' && winColor === 'violet-red') { betWon=true; betWinAmt=betActual*cgSettings.bigSmallPayout; }
           else if (pendingBet.savedColor === 'green' && winColor === 'violet-green') { betWon=true; betWinAmt=betActual*cgSettings.bigSmallPayout; }
-          else if (pendingBet.savedNum !== null && pendingBet.savedNum === winNum) { betWon=true; betWinAmt=betActual*cgSettings.numPayout; }
+          else if (pendingBet.savedNum !== null && pendingBet.savedNum !== undefined && parseInt(pendingBet.savedNum) === winNum) { betWon=true; betWinAmt=betActual*cgSettings.numPayout; }
           else if (pendingBet.savedBS === 'big' && winNum >= 5) { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
           else if (pendingBet.savedBS === 'small' && winNum <= 4) { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
 
@@ -5229,6 +5266,14 @@
             cgMyBetsByTimer[timerMode].unshift(betRecord);
           }
           if (cgMyBetsByTimer[timerMode].length > 50) cgMyBetsByTimer[timerMode].pop();
+
+          // Delete from Firebase pending bets
+          try {
+            const db3 = window.fbDB || fbDB;
+            if (db3 && window.currentUser && pendingBet._firebaseKey) {
+              db3.ref('users/' + window.currentUser.uid + '/wingoPendingBets/' + pendingBet._firebaseKey).remove();
+            }
+          } catch(e) {}
           addBetToHistory('WinGo', pendingBet.bet, histColorLabel + ' / ' + winNum, betWinAmt.toFixed(0), betWon, timerRound.toString(), 0);
           // Save to Firebase
           try {
