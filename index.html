@@ -4846,8 +4846,22 @@
     const selLabel = cgSelectedColor ? cgSelectedColor.charAt(0).toUpperCase()+cgSelectedColor.slice(1) : cgSelectedBigSmall ? cgSelectedBigSmall.charAt(0).toUpperCase()+cgSelectedBigSmall.slice(1) : 'No.'+cgSelectedNum;
     // Support multiple bets per round — push to array
     if (!window._cgPendingBets) window._cgPendingBets = [];
-    window._cgPendingBets.push({ round: cgRoundByTimer[cgTimer], bet: amt, actualBet: actualAmt, selection: selLabel, selColor, savedColor: cgSelectedColor, savedNum: cgSelectedNum, savedBS: cgSelectedBigSmall });
-    window._cgPendingBet = window._cgPendingBets[window._cgPendingBets.length - 1]; // keep for compatibility
+    const pendingBetObj = { round: cgRoundByTimer[cgTimer], bet: amt, actualBet: actualAmt, selection: selLabel, selColor, savedColor: cgSelectedColor, savedNum: cgSelectedNum, savedBS: cgSelectedBigSmall };
+    window._cgPendingBets.push(pendingBetObj);
+    window._cgPendingBet = window._cgPendingBets[window._cgPendingBets.length - 1];
+
+    // Immediately show as pending in My Bets
+    if (!cgMyBetsByTimer[cgTimer]) cgMyBetsByTimer[cgTimer] = [];
+    const pendingEntry = {
+      round: cgRoundByTimer[cgTimer], bet: amt, actualBet: actualAmt,
+      selection: selLabel, selColor,
+      result: '⏳ Waiting...', resultBg: 'rgba(240,192,64,0.3)',
+      pl: null, status: 'pending', timestamp: Date.now(),
+      _pendingRef: pendingBetObj // reference to update later
+    };
+    cgMyBetsByTimer[cgTimer].unshift(pendingEntry);
+    cgMyBetsPage = 1;
+    renderMyBets();
 
     // Deduct balance from Firebase + update wager progress
     try {
@@ -5153,15 +5167,23 @@
 
           if (betWon) { totalWin += betWinAmt; anyWon = true; }
 
-          // Save to My Bets
+          // Update pending entry in My Bets instead of adding new
+          const pendingIdx = cgMyBetsByTimer[timerMode].findIndex(b =>
+            b.status === 'pending' && b.round === pendingBet.round && b.selection === pendingBet.selection && b.bet === pendingBet.bet
+          );
           const betRecord = {
             round: pendingBet.round, bet: pendingBet.bet,
             selection: pendingBet.selection, selColor: pendingBet.selColor,
             result: histColorLabel + ' / ' + winNum, resultBg: histBg,
             pl: betWon ? Math.round(betWinAmt) : -pendingBet.bet,
+            status: betWon ? 'won' : 'lost',
             timer: timerMode, timestamp: Date.now()
           };
-          cgMyBetsByTimer[timerMode].unshift(betRecord);
+          if (pendingIdx !== -1) {
+            cgMyBetsByTimer[timerMode][pendingIdx] = betRecord;
+          } else {
+            cgMyBetsByTimer[timerMode].unshift(betRecord);
+          }
           if (cgMyBetsByTimer[timerMode].length > 50) cgMyBetsByTimer[timerMode].pop();
           addBetToHistory('WinGo', pendingBet.bet, histColorLabel + ' / ' + winNum, betWinAmt.toFixed(0), betWon, timerRound.toString(), 0);
           // Save to Firebase
@@ -5303,13 +5325,15 @@
     const pageItems = bets.slice((cgMyBetsPage-1)*cgMyBetsPageSize, cgMyBetsPage*cgMyBetsPageSize);
 
     el.innerHTML = pageItems.map(b => {
-      const plColor = b.pl > 0 ? 'var(--green)' : b.pl < 0 ? 'var(--red2)' : 'var(--muted)';
-      const plText = b.pl > 0 ? '+₹'+b.pl : b.pl < 0 ? '−₹'+Math.abs(b.pl) : '⏳';
-      return `<div class="cg-hist-row" style="grid-template-columns:1.2fr 0.8fr 1fr 1fr 1fr;">
+      const isPending = b.status === 'pending';
+      const plColor = isPending ? 'var(--gold)' : b.pl > 0 ? 'var(--green)' : b.pl < 0 ? 'var(--red2)' : 'var(--muted)';
+      const plText = isPending ? '⏳' : b.pl > 0 ? '+₹'+b.pl : b.pl < 0 ? '−₹'+Math.abs(b.pl) : '—';
+      const rowStyle = isPending ? 'border:1px solid rgba(240,192,64,0.3);background:rgba(240,192,64,0.04);' : '';
+      return `<div class="cg-hist-row" style="grid-template-columns:1.2fr 0.8fr 1fr 1fr 1fr;${rowStyle}">
         <div style="font-size:0.75rem;color:var(--muted);">${b.round}</div>
         <div>₹${b.bet}</div>
         <div style="font-weight:700;color:${b.selColor};">${b.selection}</div>
-        <div><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${b.resultBg};margin-right:4px;"></span>${b.result}</div>
+        <div>${isPending ? '<span style="color:var(--gold);font-size:0.75rem;">⏳ Pending</span>' : `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${b.resultBg};margin-right:4px;"></span>${b.result}`}</div>
         <div style="font-weight:700;color:${plColor};">${plText}</div>
       </div>`;
     }).join('');
