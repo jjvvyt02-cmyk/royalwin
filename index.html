@@ -4624,7 +4624,7 @@
         if (roundEl) roundEl.textContent = roundId;
 
         // Close betting in last 5 seconds
-        if (remaining <= 5 && cgBettingOpenByTimer[mins]) {
+        if (remaining <= 10 && cgBettingOpenByTimer[mins]) {
           cgBettingOpenByTimer[mins] = false;
           cgBettingOpen = false;
           updateCGStatus();
@@ -4650,8 +4650,28 @@
           }
         }
 
-        // Resolve round for this specific timer — wait 5s for game engine to set result
-        setTimeout(() => resolveRoundForTimer(mins), 5000);
+        // Read nextResult pre-calculated by game engine
+        // Poll every 500ms for up to 10 seconds
+        let attempts = 0;
+        const poll = async () => {
+          attempts++;
+          const db2 = window.fbDB || fbDB;
+          if (db2) {
+            const snap2 = await db2.ref('wingo/wingo' + mins + 'min/lastResult').once('value');
+            const tSnap = await db2.ref('wingo/wingo' + mins + 'min/lastResultTime').once('value');
+            const lastVal = snap2.val();
+            const lastTime = tSnap.val() || 0;
+            const secsSince = (Date.now() - lastTime) / 1000;
+            if (lastVal !== null && parseInt(lastVal) >= 0 && secsSince < 30) {
+              console.log('✅ Got result from game engine:', lastVal, 'after', attempts, 'attempts');
+              resolveRoundForTimer(mins);
+              return;
+            }
+          }
+          if (attempts < 20) setTimeout(poll, 500);
+          else { console.log('⚠️ No result after 10s, using random'); resolveRoundForTimer(mins); }
+        };
+        setTimeout(poll, 500);
       }
     }
 
@@ -4943,17 +4963,15 @@
       }
       const db = window.fbDB || fbDB;
       if (db) {
-        // Read lastResult from game engine
+        // Read lastResult published by game engine
         const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
         const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
         const lastVal = lastSnap.val();
         const lastTime = lastTimeSnap.val() || 0;
         const secsSinceResult = (Date.now() - lastTime) / 1000;
-
         console.log('lastResult:', lastVal, 'set', secsSinceResult.toFixed(1), 's ago');
 
-        // Use lastResult if set within last 65 seconds (covers any cron delay)
-        if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9 && secsSinceResult < 65) {
+        if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9 && secsSinceResult < 90) {
           winNum = parseInt(lastVal);
           console.log('✅ Using game engine result:', winNum);
         } else {
