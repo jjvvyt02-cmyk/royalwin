@@ -4596,20 +4596,22 @@
 
     function tick() {
       const now = Date.now();
-      const elapsed = now % periodMs;
+      // Align elapsed to IST midnight (periods reset at IST midnight)
+      const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+      const istNow = now + IST_OFFSET;
+      const istMidnight = istNow - (istNow % (24 * 60 * 60 * 1000));
+      const msSinceMidnightIST = istNow - istMidnight;
+      const elapsed = msSinceMidnightIST % periodMs;
       const remaining = Math.ceil((periodMs - elapsed) / 1000);
       const totalSecs = mins * 60;
-      // Period ID using IST (UTC+5:30) — matches game engine exactly
+
+      // Period ID using IST counter — same as game engine
       const IST_OFFSET = 5.5 * 60 * 60 * 1000;
       const istDate = new Date(now + IST_OFFSET);
-      const year = istDate.getUTCFullYear();
-      const month = String(istDate.getUTCMonth() + 1).padStart(2, '0');
-      const day = String(istDate.getUTCDate()).padStart(2, '0');
-      const dateStr = '' + year + month + day;
+      const dateStr = `${istDate.getUTCFullYear()}${String(istDate.getUTCMonth()+1).padStart(2,'0')}${String(istDate.getUTCDate()).padStart(2,'0')}`;
       const minutesSinceMidnight = istDate.getUTCHours() * 60 + istDate.getUTCMinutes();
-      const serial = Math.floor(minutesSinceMidnight / mins);
-      const serialStr = String(serial).padStart(4, '0');
-      const roundId = parseInt(dateStr + serialStr);
+      const counter = Math.floor(minutesSinceMidnight / mins);
+      const roundId = parseInt(dateStr + String(counter).padStart(4, '0'));
 
       cgRoundByTimer[mins] = roundId;
 
