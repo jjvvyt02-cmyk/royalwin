@@ -4683,7 +4683,8 @@
 
   function closeColorGame() {
     document.getElementById('colorGameOverlay').classList.remove('open');
-    [1,3,5].forEach(m => { if (cgTimerIntervals[m]) clearInterval(cgTimerIntervals[m]); });
+    // Don't clear intervals — keep timers running in background for pending bets
+    // Just hide the overlay
   }
 
   function setTimer(mins) {
@@ -5100,11 +5101,10 @@
         const snap = await db.ref(path).once('value');
         const summary = snap.val() || {};
         const key = selLabel.toLowerCase().replace(/\s/g, '_') + '_' + Date.now();
-        // Determine type and value for smart engine
         let betType = 'color', betValue = selLabel.toLowerCase();
-        if (cgSelectedNum !== null) { betType = 'number'; betValue = String(cgSelectedNum); }
-        else if (cgSelectedBigSmall) { betType = 'bigsmall'; betValue = cgSelectedBigSmall; }
-        else if (cgSelectedColor) { betType = 'color'; betValue = cgSelectedColor; }
+        if (cgSelectedNum !== null && cgSelectedNum !== undefined) { betType = 'number'; betValue = String(cgSelectedNum); }
+        else if (cgSelectedBigSmall) { betType = 'bigsmall'; betValue = cgSelectedBigSmall.toLowerCase(); }
+        else if (cgSelectedColor) { betType = 'color'; betValue = cgSelectedColor.toLowerCase(); }
         summary[key] = { type: betType, value: betValue, amount: amt, timestamp: Date.now() };
         await db.ref(path).set(summary);
       }
@@ -5124,7 +5124,7 @@
     const savedSelectedNum = cgSelectedNum;
     const savedSelectedBS = cgSelectedBigSmall;
 
-    // Only process bet payout if this is the active timer
+    // Process payout for ALL timers regardless of which is active
     const isActiveTimer = (timerMode === cgTimer);
 
     // Fetch result from Firebase — each timer has its own path
@@ -5223,16 +5223,12 @@
 
     renderHistRows();
 
-    // Show result if bet placed
-    if (isActiveTimer) {
-      cgHistory = cgHistoryByTimer[timerMode];
-      renderHistRows();
+    // Process pending bets for ALL timers (not just active) — always credit winnings
+    if (pendingBetsForRound.length > 0) {
+      let totalWin = 0;
+      let anyWon = false;
 
-      if (pendingBetsForRound.length > 0) {
-        let totalWin = 0;
-        let anyWon = false;
-
-        for (const pendingBet of pendingBetsForRound) {
+      for (const pendingBet of pendingBetsForRound) {
           // Calculate win for this specific bet
           const betActual = pendingBet.actualBet || Math.round(pendingBet.bet * (1 - cgSettings.fee));
           let betWon = false, betWinAmt = 0;
@@ -5287,10 +5283,12 @@
 
         renderMyBets();
 
-        // Show result popup for total win/loss
-        showCGResult(anyWon, winNum, winColor, totalWin, pendingBetsForRound.reduce((s,b)=>s+b.bet,0));
+        // Show result popup only for active timer
+        if (isActiveTimer) {
+          showCGResult(anyWon, winNum, winColor, totalWin, pendingBetsForRound.reduce((s,b)=>s+b.bet,0));
+        }
 
-        // Credit total win to balance
+        // Credit total win to balance — always, regardless of active timer
         if (anyWon && totalWin > 0) {
           try {
             const db = window.fbDB || fbDB;
@@ -5303,9 +5301,6 @@
             }
           } catch(e) { console.warn('Win credit error:', e); }
         }
-      }
-    } else {
-      cgHistoryByTimer[timerMode] = cgHistoryByTimer[timerMode] || [];
     }
 
     window._cgActualBet = null;
