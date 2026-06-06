@@ -5179,8 +5179,6 @@
     const betAmt = parseInt(document.getElementById('cgBetAmt').value) || 10;
     const actualBet = window._cgActualBet || Math.round(betAmt * (1 - cgSettings.fee));
     let won = false, winAmt = 0;
-
-    let won = false, winAmt = 0;
     if (savedSelectedColor === 'violet' && (winColor === 'violet-red' || winColor === 'violet-green')) { won=true; winAmt=actualBet*cgSettings.violetPayout; }
     else if (savedSelectedColor === 'red' && winColor === 'red') { won=true; winAmt=actualBet*cgSettings.colorPayout; }
     else if (savedSelectedColor === 'green' && winColor === 'green') { won=true; winAmt=actualBet*cgSettings.colorPayout; }
