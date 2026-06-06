@@ -4702,6 +4702,7 @@
     startCGTimer();
     // Reset selections
     cgMyBets = cgMyBetsByTimer[mins];
+    cgMyBetsPage = 1;
     renderMyBets();
     cgSelectedColor = null; cgSelectedNum = null; cgSelectedBigSmall = null;
     document.querySelectorAll('.cg-color-btn, .cg-num-btn').forEach(b => b.classList.remove('selected'));
