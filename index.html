@@ -73,6 +73,9 @@
   /* ─── PAGES ─── */
   .page { display:none; position:relative; z-index:1; min-height:100vh; }
   .page.active { display:block; }
+  @media (max-width:768px) {
+    .page { min-height:auto; }
+  }
 
   /* ─── NAV ─── */
   nav {
@@ -121,6 +124,7 @@
     min-height: 100vh; padding-top: 64px;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     text-align: center; position: relative; overflow: hidden;
+    padding-left: 1.5rem; padding-right: 1.5rem;
   }
   .hero-glow {
     position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
@@ -834,10 +838,11 @@
   }
   .mobile-nav-item {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 0.15rem; cursor: pointer; padding: 0.4rem 0.2rem;
-    color: #555; font-size: 0.58rem; font-family: 'Exo 2', sans-serif;
-    font-weight: 600; letter-spacing: 0.3px; transition: all 0.2s;
+    gap: 0.1rem; cursor: pointer; padding: 0.3rem 0.1rem;
+    color: #555; font-size: 0.52rem; font-family: 'Exo 2', sans-serif;
+    font-weight: 600; letter-spacing: 0; transition: all 0.2s;
     border: none; background: none; height: 100%; width: 100%;
+    overflow: hidden;
   }
   .mobile-nav-item .mn-icon {
     font-size: 1.35rem; line-height: 1; transition: all 0.2s;
@@ -858,17 +863,6 @@
   }
   .mobile-nav-center.active .mn-icon {
     box-shadow: 0 4px 20px rgba(240,192,64,0.7);
-  }
-
-  @media (max-width: 768px) {
-    .mobile-nav { display: grid; }
-    nav { padding: 0 1rem; }
-    body { padding-bottom: 62px; }
-    .nav-links, #navUser .nav-btn, #navUser .balance-pill { display: none !important; }
-    #navUser { gap: 0.5rem; }
-    .notif-bell, .avatar { display: flex !important; }
-    body { padding-bottom: 70px; }
-    .notif-dropdown { right: 0; width: 260px; }
   }
 
   /* ─── BET HISTORY PAGE ─── */
@@ -909,190 +903,202 @@
   .bh-lose { color: var(--red2); font-weight: 700; }
   .bh-pending { color: var(--gold); font-weight: 600; }
 
-  @media (max-width: 600px) {
-    .history-summary { grid-template-columns: repeat(2, 1fr); }
-    .bh-row { grid-template-columns: 1.5fr 1fr 1fr 1fr; font-size: 0.75rem; padding: 0.7rem 0.8rem; }
-    .bh-row > *:nth-child(5), .bh-row > *:nth-child(6) { display: none; }
-    .hero-btns { flex-direction: column; align-items: center; }
-    .stats-bar { gap: 1.5rem; flex-wrap: wrap; justify-content: center; }
-    .promo-grid, .vip-levels { grid-template-columns: 1fr; }
-    .profile-grid { grid-template-columns: 1fr; }
-    .ref-stats { grid-template-columns: 1fr; }
-  }
-
 
   /* ═══════════════════════════════════════════
      MOBILE — 768px and below
   ═══════════════════════════════════════════ */
   @media (max-width: 768px) {
 
-    /* ── BASE ── */
-    body { padding-bottom: 70px; overflow-x: hidden; }
+    /* BASE */
     * { -webkit-tap-highlight-color: transparent; }
-    input, select, textarea { font-size: 16px !important; } /* prevent iOS zoom */
+    body { padding-bottom: 62px; overflow-x: hidden; min-height: unset; }
+    input, select, textarea { font-size: 16px !important; }
+    .page { min-height: unset; }
 
-    /* ── TOP NAV ── */
-    nav { padding: 0 0.8rem; height: 56px; }
+    /* TOP NAV */
+    nav { padding: 0 1rem; height: 54px; }
     .nav-logo { font-size: 1.1rem; letter-spacing: 1px; }
     .nav-links { display: none !important; }
     #navUser .nav-btn { display: none !important; }
     #navUser .balance-pill { display: none !important; }
-    #navUser { gap: 0.5rem; }
+    #navUser { gap: 0.4rem; }
     .notif-bell, .avatar { display: flex !important; }
     .notif-dropdown { right: 0; width: 260px; }
 
-    /* ── BOTTOM NAV ── */
-    .mobile-nav { display: grid; }
+    /* BOTTOM NAV */
+    .mobile-nav.nav-visible { display: grid; }
 
-    /* ── HOME PAGE ── */
-    .hero { padding: 4rem 1rem 2rem; min-height: auto; }
-    .hero h1 { font-size: 2rem; }
-    .hero p { font-size: 0.88rem; padding: 0 0.5rem; margin-bottom: 1.5rem; }
-    .hero-btns { flex-direction: column; align-items: stretch; width: 100%; padding: 0 1rem; gap: 0.7rem; }
-    .hero-btns .btn { width: 100%; text-align: center; padding: 0.9rem; }
-    .stats-bar { gap: 1.5rem; flex-wrap: wrap; justify-content: center; margin-top: 2rem; }
-    .stat-val { font-size: 1.3rem; }
+    /* HOME — compact, no blank space */
+    .hero {
+      min-height: unset;
+      padding: 70px 1rem 1.5rem;
+      justify-content: flex-start;
+    }
+    .hero-glow { width: 300px; height: 300px; }
+    .hero-badge { font-size: 0.7rem; margin-bottom: 0.8rem; padding: 0.25rem 0.8rem; }
+    .hero h1 { font-size: 2rem; margin-bottom: 0.8rem; }
+    .hero p { font-size: 0.85rem; margin-bottom: 1.2rem; line-height: 1.5; }
+    .hero-btns { flex-direction: column; align-items: stretch; width: 100%; gap: 0.6rem; }
+    .hero-btns .btn { width: 100%; padding: 0.85rem; font-size: 0.9rem; text-align: center; }
+    .stats-bar { gap: 1.5rem; flex-wrap: wrap; justify-content: center; margin-top: 1.5rem; }
+    .stat-val { font-size: 1.2rem; }
+    .stat-lbl { font-size: 0.65rem; }
 
-    /* ── GAMES SECTION ── */
-    .section { padding: 1.2rem 0.8rem 2rem; max-width: 100%; }
-    .section-title { font-size: 1.2rem; }
-    .section-sub { font-size: 0.82rem; margin-bottom: 1rem; }
-    .games-grid { grid-template-columns: 1fr 1fr !important; gap: 0.7rem; }
-    .game-thumb { height: 100px; font-size: 2.5rem; }
-    .game-info { padding: 0.6rem 0.7rem 0.8rem; }
-    .game-name { font-size: 0.82rem; }
-    .game-meta { font-size: 0.7rem; }
-    .promo-banner { flex-direction: column; text-align: center; padding: 1.2rem; gap: 0.8rem; }
-    .promo-amount { font-size: 1.8rem; }
+    /* GAMES SECTION — compact */
+    .section { padding: 1rem 0.8rem 1.5rem; max-width: 100%; }
+    .section-title { font-size: 1.1rem; margin-bottom: 0.3rem; }
+    .section-sub { font-size: 0.78rem; margin-bottom: 0.8rem; }
+    .games-grid { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .game-thumb { height: 90px; font-size: 2.2rem; }
+    .game-info { padding: 0.5rem 0.6rem 0.7rem; }
+    .game-name { font-size: 0.78rem; }
+    .game-meta { font-size: 0.65rem; }
+    .promo-banner { flex-direction: column; text-align: center; padding: 1rem; gap: 0.6rem; }
+    .promo-amount { font-size: 1.6rem; }
 
-    /* ── AUTH PAGES ── */
-    .auth-card { padding: 1.5rem 1rem; margin: 0 0.5rem; border-radius: 16px; }
+    /* AUTH PAGES */
+    .auth-card { padding: 1.5rem 1rem; margin: 0 0.8rem; border-radius: 16px; max-width: 100%; }
     .form-row { grid-template-columns: 1fr; }
-    .auth-page { padding-top: 56px; }
 
-    /* ── WALLET PAGE ── */
-    .wallet-page { padding: 60px 0.8rem 5rem; max-width: 100%; }
-    .wallet-hero { flex-direction: column; padding: 1.2rem; gap: 0.5rem; }
+    /* WALLET PAGE */
+    .wallet-page { padding: 54px 0.8rem 4rem; max-width: 100%; }
+    .wallet-hero { flex-direction: column; padding: 1rem; gap: 0.4rem; }
     .wallet-balance-val { font-size: 1.8rem; }
-    .wallet-tabs { gap: 0.3rem; }
     .deposit-methods { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
-    .deposit-method-card { padding: 1rem 0.5rem; }
     .amount-presets { gap: 0.4rem; flex-wrap: wrap; }
-    .amount-preset { padding: 0.4rem 0.7rem; font-size: 0.8rem; }
-    .tx-row { grid-template-columns: 1.5fr 1fr 1fr 1fr; font-size: 0.78rem; padding: 0.7rem 0.8rem; }
+    .amount-preset { padding: 0.4rem 0.7rem; font-size: 0.78rem; }
+    .tx-row { grid-template-columns: 1.5fr 1fr 1fr; font-size: 0.75rem; padding: 0.6rem 0.7rem; }
     .tx-row > *:nth-child(3) { display: none; }
 
-    /* ── REFERRAL PAGE ── */
-    .ref-page { padding: 60px 0 5rem; max-width: 100%; }
-    .agency-card { margin: 0 0.7rem 0.7rem; padding: 1rem; }
-    .sub-grid { gap: 0.5rem; margin: 0 0.7rem 0; }
-    .ref-actions { margin: 0.6rem 0.7rem 0; }
-    .sub-history { margin: 0.6rem 0.7rem 0.7rem; }
+    /* REFERRAL PAGE */
+    .ref-page { padding: 54px 0 4rem; max-width: 100%; }
+    .agency-card { margin: 0 0.6rem 0.6rem; padding: 1rem; }
+    .sub-grid { gap: 0.4rem; margin: 0 0.6rem 0; }
+    .ref-actions { margin: 0.5rem 0.6rem 0; }
+    .sub-history { margin: 0.5rem 0.6rem 0.6rem; }
 
-    /* ── VIP PAGE ── */
-    .vip-page { padding: 60px 0.8rem 5rem; max-width: 100%; }
-    .vip-levels { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
-    .vip-hero h2 { font-size: 1.4rem; }
+    /* VIP PAGE */
+    .vip-page { padding: 54px 0.8rem 4rem; max-width: 100%; }
+    .vip-levels { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    .vip-hero h2 { font-size: 1.3rem; }
 
-    /* ── PROFILE PAGE ── */
-    .profile-page { padding: 60px 0.8rem 5rem; max-width: 100%; }
+    /* PROFILE PAGE */
+    .profile-page { padding: 54px 0.8rem 4rem; max-width: 100%; }
     .profile-grid { grid-template-columns: 1fr; }
-    .profile-hero { flex-direction: column; padding: 1.2rem; text-align: center; }
+    .profile-hero { flex-direction: column; padding: 1rem; text-align: center; }
 
-    /* ── PROMOTIONS PAGE ── */
-    .promo-page { padding: 60px 0.8rem 5rem; max-width: 100%; }
-    .promo-grid { grid-template-columns: 1fr; gap: 0.8rem; }
+    /* PROMOTIONS PAGE */
+    .promo-page { padding: 54px 0.8rem 4rem; max-width: 100%; }
+    .promo-grid { grid-template-columns: 1fr; gap: 0.7rem; }
 
-    /* ── SUPPORT PAGE ── */
-    .support-page { padding: 60px 0.8rem 5rem; max-width: 100%; }
+    /* SUPPORT PAGE */
+    .support-page { padding: 54px 0.8rem 4rem; max-width: 100%; }
     .support-options { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
-    .chat-window { height: 340px; }
+    .chat-window { height: 320px; }
 
-    /* ── HISTORY PAGES ── */
-    .history-page { padding: 60px 0.8rem 5rem; max-width: 100%; }
-    .history-summary { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
-    .hs-card { padding: 0.8rem; }
-    .hs-val { font-size: 1.1rem; }
-    .history-filters { gap: 0.4rem; }
-    .hf-btn { padding: 0.35rem 0.7rem; font-size: 0.75rem; }
-    .bh-row { grid-template-columns: 1.5fr 0.8fr 1fr 1fr; font-size: 0.75rem; padding: 0.6rem 0.7rem; }
+    /* BET HISTORY PAGE */
+    .history-page { padding: 54px 0.8rem 4rem; max-width: 100%; }
+    .history-summary { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    .hs-card { padding: 0.7rem; }
+    .hs-val { font-size: 1rem; }
+    .hs-lbl { font-size: 0.65rem; }
+    .history-filters { gap: 0.3rem; }
+    .hf-btn { padding: 0.3rem 0.6rem; font-size: 0.72rem; }
+    .bh-row { grid-template-columns: 1.2fr 0.7fr 0.9fr 0.9fr; font-size: 0.73rem; padding: 0.55rem 0.6rem; }
     .bh-row > *:nth-child(5), .bh-row > *:nth-child(6) { display: none; }
 
-    /* ── WINGO GAME ── */
+    /* INLINE HISTORY PAGES */
+    #page-deposithistory > div,
+    #page-withdrawhistory > div,
+    #page-history > div,
+    #page-bethistory > div { padding: 54px 0.8rem 4rem !important; max-width: 100% !important; }
+
+    /* WINGO GAME — most important */
     .color-game-overlay { position: fixed; inset: 0; overflow-y: auto; overflow-x: hidden; z-index: 600; }
-    .cg-wrap { padding: 56px 0.7rem 5rem; max-width: 100%; box-sizing: border-box; overflow-x: hidden; }
-    .cg-header { margin-bottom: 0.7rem; }
-    .cg-title { font-size: 0.95rem; }
-    .cg-close { padding: 0.3rem 0.6rem; font-size: 0.78rem; }
+    .cg-wrap { padding: 54px 0.6rem 4rem; max-width: 100%; box-sizing: border-box; }
+    .cg-header { margin-bottom: 0.6rem; padding: 0 0.2rem; }
+    .cg-title { font-size: 0.9rem; }
+    .cg-close { padding: 0.25rem 0.6rem; font-size: 0.75rem; }
 
-    /* Timer tabs — 3 equal columns */
-    .cg-timer-tabs { gap: 0.3rem; display: grid; grid-template-columns: 1fr 1fr 1fr; margin-bottom: 0.8rem; }
-    .cg-ttab { padding: 0.55rem 0.2rem; font-size: 0.75rem; border-radius: 8px; text-align: center; }
+    /* Timer tabs */
+    .cg-timer-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.3rem; margin-bottom: 0.6rem; }
+    .cg-ttab { padding: 0.5rem 0.1rem; font-size: 0.73rem; border-radius: 8px; text-align: center; }
 
-    /* Period info box */
-    .cg-round-info { padding: 0.6rem 0.8rem; margin-bottom: 0.8rem; display: flex; justify-content: space-between; align-items: center; }
-    .cg-round-val { font-size: 0.72rem; }
-    .cg-count-val { font-size: 1.6rem; }
-    .cg-status { font-size: 0.65rem; padding: 0.2rem 0.5rem; }
+    /* Period info */
+    .cg-round-info { padding: 0.55rem 0.7rem; margin-bottom: 0.6rem; }
+    .cg-round-num { font-size: 0.65rem; }
+    .cg-round-val { font-size: 0.7rem; }
+    .cg-count-val { font-size: 1.5rem; }
+    .cg-count-lbl { font-size: 0.6rem; }
+    .cg-status { font-size: 0.6rem; padding: 0.2rem 0.4rem; border-radius: 4px; }
 
-    /* Color buttons — 3 equal */
-    .cg-colors { gap: 0.4rem; margin-bottom: 0.7rem; }
-    .cg-color-btn { padding: 0.9rem 0.2rem; font-size: 0.88rem; border-radius: 10px; }
+    /* Color buttons */
+    .cg-colors { grid-template-columns: 1fr 1fr 1fr; gap: 0.35rem; margin-bottom: 0.6rem; }
+    .cg-color-btn { padding: 0.85rem 0.1rem; font-size: 0.85rem; border-radius: 10px; }
 
-    /* Number grid — 5 per row, all visible */
-    .cg-numbers { gap: 0.35rem; margin-bottom: 0.7rem; }
-    .cg-num-btn { border-radius: 8px; font-size: 1rem; aspect-ratio: 1; min-height: 44px; }
+    /* Number grid */
+    .cg-numbers { grid-template-columns: repeat(5, 1fr); gap: 0.3rem; margin-bottom: 0.6rem; }
+    .cg-num-btn { border-radius: 8px; font-size: 0.95rem; aspect-ratio: 1; min-height: 42px; }
 
     /* Big/Small */
     .cg-color-btn[id="cgBigBtn"],
-    .cg-color-btn[id="cgSmallBtn"] { padding: 0.8rem; font-size: 0.95rem; }
+    .cg-color-btn[id="cgSmallBtn"] { padding: 0.75rem; font-size: 0.9rem; }
 
-    /* Bet presets — scrollable row */
-    .cg-bet-presets { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.4rem; padding-bottom: 0.3rem; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    /* Bet panel */
+    .cg-bet-panel { padding: 0.7rem; border-radius: 12px; margin-bottom: 0.6rem; }
+    .cg-bet-title { font-size: 0.72rem; margin-bottom: 0.5rem; }
+    .cg-bet-presets { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.35rem; padding-bottom: 0.2rem; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
     .cg-bet-presets::-webkit-scrollbar { display: none; }
-    .cg-bet-preset { flex-shrink: 0; padding: 0.45rem 0.9rem; font-size: 0.82rem; white-space: nowrap; }
-    .cg-x-btn { padding: 0.5rem 0.5rem; font-size: 0.8rem; }
-    .cg-confirm-btn { padding: 0.9rem; font-size: 0.88rem; border-radius: 10px; }
+    .cg-bet-preset { flex-shrink: 0; padding: 0.4rem 0.8rem; font-size: 0.78rem; white-space: nowrap; border-radius: 8px; }
+    .cg-x-btn { padding: 0.45rem 0.4rem; font-size: 0.75rem; border-radius: 6px; }
+    .cg-confirm-btn { padding: 0.85rem; font-size: 0.85rem; border-radius: 10px; margin-top: 0.4rem; }
 
-    /* History table in game */
-    .cg-hist-row { font-size: 0.72rem; padding: 0.5rem 0.4rem; }
-    .cg-hist-row.head { font-size: 0.65rem; }
+    /* Bet total display */
+    .cg-confirm-btn.default-btn { font-size: 0.82rem; }
+
+    /* History table */
+    .cg-hist-row { font-size: 0.68rem; padding: 0.45rem 0.3rem; }
+    .cg-hist-row.head { font-size: 0.62rem; }
+
+    /* Tabs */
+    .cg-tab-btns { gap: 0.3rem; margin-bottom: 0.7rem; }
+    .cg-tab-btn { padding: 0.4rem 1rem; font-size: 0.78rem; }
 
     /* Result popup */
-    .cg-result-popup { width: 88vw; padding: 1.5rem 1rem; border-radius: 16px; }
-    .cg-result-num { font-size: 2.5rem; }
+    .cg-result-popup { width: 86vw; padding: 1.4rem 0.9rem; border-radius: 14px; }
+    .cg-result-emoji { font-size: 2.8rem; }
+    .cg-result-title { font-size: 1.2rem; }
+    .cg-result-amt { font-size: 1.8rem; }
+    .cg-result-num-badge { width: 44px; height: 44px; font-size: 1.1rem; }
 
-    /* ── SPIN WHEEL ── */
-    .wheel-wrap { width: 240px; height: 240px; }
-    .wheel-canvas { width: 240px !important; height: 240px !important; }
-    .wheel-title { font-size: 1.1rem; }
+    /* Spin wheel */
+    .wheel-wrap { width: 220px; height: 220px; }
+    .wheel-canvas { width: 220px !important; height: 220px !important; }
+    .wheel-title { font-size: 1rem; }
 
-    /* ── QR MODAL ── */
-    .qr-card { padding: 1.2rem; margin: 0 0.5rem; width: calc(100vw - 2rem); }
+    /* QR modal */
+    .qr-card { padding: 1.2rem; margin: 0 0.8rem; max-width: calc(100vw - 1.6rem); }
 
-    /* ── TOAST ── */
-    .toast { left: 0.5rem !important; right: 0.5rem !important; max-width: unset !important; bottom: 5rem !important; font-size: 0.82rem !important; }
+    /* Toast */
+    .toast { left: 0.6rem !important; right: 0.6rem !important; max-width: unset !important; bottom: 4.5rem !important; font-size: 0.8rem !important; border-radius: 10px !important; }
 
-    /* ── MODALS ── */
-    .modal-content { margin: 0 0.5rem; padding: 1.2rem; max-width: calc(100vw - 1rem); }
-
-    /* ── INLINE HISTORY PAGES ── */
-    [id="page-deposithistory"] > div,
-    [id="page-withdrawhistory"] > div,
-    [id="page-history"] > div { padding: 60px 0.8rem 2rem !important; max-width: 100% !important; }
+    /* Section title */
+    .section-title { font-size: 1.1rem; }
+    .section-sub { font-size: 0.78rem; }
   }
 
   /* ═══════════════════════════════════════════
      SMALL MOBILE — 400px and below
   ═══════════════════════════════════════════ */
   @media (max-width: 400px) {
-    .cg-color-btn { font-size: 0.8rem; padding: 0.8rem 0.15rem; }
-    .cg-num-btn { font-size: 0.88rem; min-height: 40px; }
-    .cg-ttab { font-size: 0.7rem; padding: 0.5rem 0.1rem; }
-    .game-thumb { height: 80px; font-size: 2rem; }
     .hero h1 { font-size: 1.7rem; }
-    .cg-result-popup { width: 92vw; }
-    .hs-val { font-size: 1rem; }
+    .cg-color-btn { font-size: 0.78rem; padding: 0.75rem 0.05rem; }
+    .cg-num-btn { font-size: 0.85rem; min-height: 38px; }
+    .cg-ttab { font-size: 0.68rem; padding: 0.45rem 0.05rem; }
+    .game-thumb { height: 75px; font-size: 1.9rem; }
+    .hs-val { font-size: 0.9rem; }
+    .cg-result-popup { width: 92vw; padding: 1.2rem 0.8rem; }
+    .mobile-nav-item { font-size: 0.48rem; }
   }
 
   /* scrollbar */
@@ -6003,7 +6009,7 @@
           loadAnnouncement();
           document.getElementById('navGuest').style.display = 'none';
           document.getElementById('navUser').style.display = 'flex';
-          document.getElementById('mobileNav').style.display = 'flex';
+          document.getElementById('mobileNav').classList.add('nav-visible');
           showTicker();
           // Hide guest buttons, show welcome banner when logged in
           const heroSignIn = document.getElementById('heroSignInBtn');
@@ -6023,7 +6029,7 @@
           isLoggedIn = false;
           document.getElementById('navGuest').style.display = 'flex';
           document.getElementById('navUser').style.display = 'none';
-          document.getElementById('mobileNav').style.display = 'none';
+          document.getElementById('mobileNav').classList.remove('nav-visible');
           const heroPlayBtn = document.getElementById('heroPlayBtn');
           if (heroPlayBtn) heroPlayBtn.style.display = 'inline-flex';
           const heroSignInBtn = document.getElementById('heroSignInBtn');
@@ -7279,31 +7285,31 @@
 
 
 <!-- MOBILE BOTTOM NAV -->
-<div class="mobile-nav" id="mobileNav" style="display:none;">
+<div class="mobile-nav" id="mobileNav">
 
   <!-- Home -->
   <button class="mobile-nav-item active" id="mn-home" onclick="mobileNav('home')">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="mn-svg">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
       <path d="M3 12L12 3L21 12V21H15V15H9V21H3V12Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
     </svg>
-    <span data-t="nav.home">Home</span>
+    <span>Home</span>
   </button>
 
   <!-- Activity -->
   <button class="mobile-nav-item" id="mn-activity" onclick="mobileNav('promotions')">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="mn-svg">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
       <rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
       <rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
       <rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="2"/>
       <path d="M14 17.5H21M17.5 14V21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
     </svg>
-    <span data-t="nav.activity">Activity</span>
+    <span>Promo</span>
   </button>
 
-  <!-- Promotion (center) -->
+  <!-- Center -->
   <button class="mobile-nav-item mobile-nav-center" id="mn-promo" onclick="mobileNav('referral')">
     <div class="mn-icon" style="display:flex;align-items:center;justify-content:center;">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
         <path d="M20 12V22H4V12" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M22 7H2V12H22V7Z" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         <path d="M12 22V7" stroke="#000" stroke-width="2" stroke-linecap="round"/>
@@ -7311,29 +7317,29 @@
         <path d="M12 7H16.5C17.88 7 19 5.88 19 4.5C19 3.12 17.88 2 16.5 2C14 2 12 7 12 7Z" stroke="#000" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
     </div>
-    <span data-t="nav.promotion">Promotion</span>
+    <span>Refer</span>
   </button>
 
   <!-- Wallet -->
   <button class="mobile-nav-item" id="mn-wallet" onclick="mobileNav('wallet')">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="mn-svg">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
       <rect x="2" y="5" width="20" height="15" rx="2" stroke="currentColor" stroke-width="2"/>
       <path d="M2 10H22" stroke="currentColor" stroke-width="2"/>
       <circle cx="17" cy="15" r="1.5" fill="currentColor"/>
     </svg>
-    <span data-t="nav.wallet">Wallet</span>
+    <span>Wallet</span>
   </button>
 
   <!-- Account -->
   <button class="mobile-nav-item" id="mn-account" onclick="mobileNav('profile')">
-    <div style="position:relative;width:26px;height:26px;margin:0 auto;">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" class="mn-svg" style="position:absolute;top:0;left:0;">
+    <div style="position:relative;width:24px;height:24px;margin:0 auto;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="mn-svg" style="position:absolute;top:0;left:0;">
         <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
         <path d="M4 20C4 17 7.58 14 12 14C16.42 14 20 17 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       </svg>
-      <div id="bottomAvatar" style="display:none;width:26px;height:26px;border-radius:50%;background:linear-gradient(135deg,#c07a10,var(--gold2));align-items:center;justify-content:center;font-size:0.75rem;font-weight:800;color:#000;position:absolute;top:0;left:0;">U</div>
+      <div id="bottomAvatar" style="display:none;width:24px;height:24px;border-radius:50%;background:linear-gradient(135deg,#c07a10,var(--gold2));align-items:center;justify-content:center;font-size:0.7rem;font-weight:800;color:#000;position:absolute;top:0;left:0;">U</div>
     </div>
-    <span data-t="nav.account">Account</span>
+    <span>Account</span>
   </button>
 
 </div>
