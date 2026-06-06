@@ -1622,7 +1622,12 @@ function getAdminVipLevel(exp) {
   return { name: 'Bronze', icon: '🥉', color: '#cd7f32' };
 }
 
+var _usersPage = 1;
+const _usersPageSize = 10;
+var _lastUsersData = [];
+
 function renderUsers(users) {
+  _lastUsersData = users;
   const el = document.getElementById('usersList');
   const countEl = document.getElementById('userCount');
   if (countEl) countEl.textContent = users.length;
@@ -1631,7 +1636,11 @@ function renderUsers(users) {
     el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;">No users found</div>';
     return;
   }
-  el.innerHTML = users.map(u => {
+  const totalPages = Math.max(1, Math.ceil(users.length / _usersPageSize));
+  if (_usersPage > totalPages) _usersPage = 1;
+  const pageItems = users.slice((_usersPage-1)*_usersPageSize, _usersPage*_usersPageSize);
+
+  el.innerHTML = pageItems.map(u => {
     const exp = u.vip?.exp || 0;
     const vipLevel = getAdminVipLevel(exp);
     return `
@@ -1657,6 +1666,14 @@ function renderUsers(users) {
       </div>
     </div>`;
   }).join('');
+
+  if (totalPages > 1) {
+    el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;">
+      <button onclick="_usersPage=Math.max(1,_usersPage-1);renderUsers(_lastUsersData);" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.7rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_usersPage<=1?'opacity:0.4;':''}">&lt;</button>
+      <span style="color:var(--muted);font-size:0.75rem;">Page ${_usersPage} / ${totalPages} (${users.length} users)</span>
+      <button onclick="_usersPage=Math.min(${totalPages},_usersPage+1);renderUsers(_lastUsersData);" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.7rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_usersPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
+    </div>`;
+  }
 }
 
 window.filterUsers = function(query) {
