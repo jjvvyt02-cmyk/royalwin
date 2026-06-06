@@ -1068,6 +1068,42 @@
   ::-webkit-scrollbar { width:6px; }
   ::-webkit-scrollbar-track { background:var(--bg); }
   ::-webkit-scrollbar-thumb { background:rgba(240,192,64,0.2); border-radius:3px; }
+
+  /* ── MOBILE RESPONSIVE ── */
+  @media (max-width: 600px) {
+    body { overflow-x: hidden; }
+    .top-nav { padding: 0.6rem 0.8rem; }
+    .nav-logo { font-size: 1rem; }
+    .wallet-page, .profile-page, .vip-page, .promo-page, .support-page, .ref-page { padding: 68px 0.7rem 5rem; max-width: 100%; }
+    .section { padding: 68px 0.7rem 5rem; max-width: 100%; }
+    .auth-card { padding: 1.5rem 1rem; margin: 0 0.5rem; border-radius: 16px; }
+    .card { padding: 1rem; border-radius: 12px; }
+    .btn { padding: 0.65rem 1rem; font-size: 0.85rem; }
+    input, select, textarea { font-size: 16px !important; }
+    .cg-wrap { padding: 62px 0.5rem 5rem; max-width: 100%; }
+    .cg-timer-tab { padding: 0.4rem 0.7rem; font-size: 0.75rem; }
+    .cg-period-box { padding: 0.6rem 0.8rem; }
+    .cg-color-btn { padding: 0.75rem 0.4rem; font-size: 0.8rem; border-radius: 10px; }
+    .cg-num-btn { font-size: 0.85rem; border-radius: 8px; }
+    .cg-confirm-btn { padding: 0.85rem; font-size: 0.85rem; }
+    .cg-bet-btn { padding: 0.35rem 0.55rem; font-size: 0.72rem; }
+    .cg-mult-btn { padding: 0.35rem 0.55rem; font-size: 0.72rem; }
+    .cg-hist-row { font-size: 0.7rem; padding: 0.45rem 0.2rem; }
+    .cg-result-popup { width: 88vw; padding: 1.5rem 1rem; }
+    .hero-title { font-size: 1.7rem; }
+    .game-cards { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+    .game-card { padding: 0.8rem; }
+    .vip-cards { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    .toast { left: 0.5rem; right: 0.5rem; max-width: unset; font-size: 0.8rem; }
+    .stats-bar { gap: 0.6rem; flex-wrap: wrap; }
+    table { font-size: 0.72rem; }
+    th, td { padding: 0.35rem 0.25rem; }
+  }
+  @media (max-width: 380px) {
+    .cg-color-btn { font-size: 0.72rem; padding: 0.65rem 0.2rem; }
+    .cg-num-btn { font-size: 0.78rem; }
+    .cg-timer-tab { padding: 0.35rem 0.5rem; font-size: 0.7rem; }
+  }
 </style>
 </head>
 <body>
@@ -4522,8 +4558,25 @@
     loadGameSettings();
     buildNumGrid();
     startAllTimers();
-    // Load history from Firebase for all timers
     loadAllHistory();
+    // Load my bets from Firebase
+    loadMyBetsFromFirebase();
+  }
+
+  function loadMyBetsFromFirebase() {
+    const db = window.fbDB || fbDB;
+    if (!db || !window.currentUser) return;
+    db.ref('users/' + window.currentUser.uid + '/wingoMyBets')
+      .orderByChild('timestamp').limitToLast(50)
+      .once('value', snap => {
+        if (!snap.val()) return;
+        const bets = Object.values(snap.val()).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+        cgMyBetsByTimer[1] = bets.filter(b => b.timer === 1);
+        cgMyBetsByTimer[3] = bets.filter(b => b.timer === 3);
+        cgMyBetsByTimer[5] = bets.filter(b => b.timer === 5);
+        cgMyBets = cgMyBetsByTimer[cgTimer] || [];
+        renderMyBets();
+      });
   }
 
   function loadAllHistory() {
@@ -4638,6 +4691,9 @@
       if (remaining >= totalSecs - 1 && cgLastResolvedRound[mins] !== roundId) {
         cgLastResolvedRound[mins] = roundId;
         cgBettingOpenByTimer[mins] = true;
+        if (!window._cgPendingBets) window._cgPendingBets = [];
+        // Clean up old bets from 2+ rounds ago
+        window._cgPendingBets = window._cgPendingBets.filter(b => b.round >= roundId - 2);
 
         // Update UI if this is the active timer
         if (cgTimer === mins) {
@@ -4775,10 +4831,23 @@
     const sel = cgSelectedColor ? cgSelectedColor.toUpperCase() : cgSelectedBigSmall ? cgSelectedBigSmall.toUpperCase() : 'Number ' + cgSelectedNum;
     document.getElementById('cgConfirmBtn').disabled = true;
     document.getElementById('cgConfirmBtn').textContent = '✅ Bet Placed!';
+    // Re-enable after 1.5s so user can place another bet on different selection
+    setTimeout(() => {
+      if (cgBettingOpen) {
+        document.getElementById('cgConfirmBtn').disabled = false;
+        document.getElementById('cgConfirmBtn').textContent = 'Select a color or number to bet';
+        document.getElementById('cgConfirmBtn').className = 'cg-confirm-btn default-btn';
+        cgSelectedColor = null; cgSelectedNum = null; cgSelectedBigSmall = null;
+        document.querySelectorAll('.cg-color-btn, .cg-num-btn').forEach(b => b.classList.remove('selected'));
+      }
+    }, 1500);
     window._cgActualBet = actualAmt;
     const selColor = cgSelectedColor === 'green' ? '#27ae60' : cgSelectedColor === 'red' ? '#e02020' : cgSelectedColor === 'violet' ? '#7c4dff' : cgSelectedBigSmall === 'big' ? '#ffd700' : cgSelectedBigSmall === 'small' ? '#2563eb' : '#aaa';
     const selLabel = cgSelectedColor ? cgSelectedColor.charAt(0).toUpperCase()+cgSelectedColor.slice(1) : cgSelectedBigSmall ? cgSelectedBigSmall.charAt(0).toUpperCase()+cgSelectedBigSmall.slice(1) : 'No.'+cgSelectedNum;
-    window._cgPendingBet = { round: cgRoundByTimer[cgTimer], bet: amt, actualBet: actualAmt, selection: selLabel, selColor, savedColor: cgSelectedColor, savedNum: cgSelectedNum, savedBS: cgSelectedBigSmall };
+    // Support multiple bets per round — push to array
+    if (!window._cgPendingBets) window._cgPendingBets = [];
+    window._cgPendingBets.push({ round: cgRoundByTimer[cgTimer], bet: amt, actualBet: actualAmt, selection: selLabel, selColor, savedColor: cgSelectedColor, savedNum: cgSelectedNum, savedBS: cgSelectedBigSmall });
+    window._cgPendingBet = window._cgPendingBets[window._cgPendingBets.length - 1]; // keep for compatibility
 
     // Deduct balance from Firebase + update wager progress
     try {
@@ -4941,8 +5010,13 @@
 
   async function resolveRoundForTimer(timerMode, roundStartTime) {
     roundStartTime = roundStartTime || Date.now();
-    // Save current active timer state
-    const savedPendingBet = window._cgPendingBet;
+    // Get all pending bets for this timer's current round
+    const currentRound = cgRoundByTimer[timerMode];
+    const pendingBetsForRound = (window._cgPendingBets || []).filter(b => b.round === currentRound - 1 || b.round === currentRound);
+    // Remove processed bets from array
+    window._cgPendingBets = (window._cgPendingBets || []).filter(b => b.round !== currentRound - 1 && b.round !== currentRound);
+    window._cgPendingBet = null;
+
     const savedSelectedColor = cgSelectedColor;
     const savedSelectedNum = cgSelectedNum;
     const savedSelectedBS = cgSelectedBigSmall;
@@ -5055,44 +5129,68 @@
     renderHistRows();
 
     // Show result if bet placed
-    // Only show popup and update UI for active timer
     if (isActiveTimer) {
       cgHistory = cgHistoryByTimer[timerMode];
       renderHistRows();
 
-      if (savedSelectedColor !== null || savedSelectedNum !== null || savedSelectedBS !== null) {
-        showCGResult(won, winNum, winColor, winAmt, betAmt);
+      if (pendingBetsForRound.length > 0) {
+        let totalWin = 0;
+        let anyWon = false;
 
-        // ── CREDIT WIN TO FIREBASE BALANCE ──
-        try {
-          const db = window.fbDB || fbDB;
-          const user = window.currentUser;
-          if (db && user) {
-            const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
-            const currentBal = parseFloat(balSnap.val() || 0);
-            let finalBal = currentBal;
-            if (won && winAmt > 0) {
-              finalBal = parseFloat((currentBal + winAmt).toFixed(2));
-              await db.ref('users/' + user.uid + '/balance').set(finalBal);
-              updateBalanceDisplay(finalBal);
+        for (const pendingBet of pendingBetsForRound) {
+          // Calculate win for this specific bet
+          const betActual = pendingBet.actualBet || Math.round(pendingBet.bet * (1 - cgSettings.fee));
+          let betWon = false, betWinAmt = 0;
+
+          if (pendingBet.savedColor === 'violet' && (winColor === 'violet-red' || winColor === 'violet-green')) { betWon=true; betWinAmt=betActual*cgSettings.violetPayout; }
+          else if (pendingBet.savedColor === 'red' && winColor === 'red') { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
+          else if (pendingBet.savedColor === 'green' && winColor === 'green') { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
+          else if (pendingBet.savedColor === 'red' && winColor === 'violet-red') { betWon=true; betWinAmt=betActual*cgSettings.bigSmallPayout; }
+          else if (pendingBet.savedColor === 'green' && winColor === 'violet-green') { betWon=true; betWinAmt=betActual*cgSettings.bigSmallPayout; }
+          else if (pendingBet.savedNum !== null && pendingBet.savedNum === winNum) { betWon=true; betWinAmt=betActual*cgSettings.numPayout; }
+          else if (pendingBet.savedBS === 'big' && winNum >= 5) { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
+          else if (pendingBet.savedBS === 'small' && winNum <= 4) { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
+
+          if (betWon) { totalWin += betWinAmt; anyWon = true; }
+
+          // Save to My Bets
+          const betRecord = {
+            round: pendingBet.round, bet: pendingBet.bet,
+            selection: pendingBet.selection, selColor: pendingBet.selColor,
+            result: histColorLabel + ' / ' + winNum, resultBg: histBg,
+            pl: betWon ? Math.round(betWinAmt) : -pendingBet.bet,
+            timer: timerMode, timestamp: Date.now()
+          };
+          cgMyBetsByTimer[timerMode].unshift(betRecord);
+          if (cgMyBetsByTimer[timerMode].length > 50) cgMyBetsByTimer[timerMode].pop();
+          addBetToHistory('WinGo', pendingBet.bet, histColorLabel + ' / ' + winNum, betWinAmt.toFixed(0), betWon, timerRound.toString(), 0);
+          // Save to Firebase
+          try {
+            const db2 = window.fbDB || fbDB;
+            if (db2 && window.currentUser) {
+              const key = 'wingo' + timerMode + 'min_round_' + pendingBet.round + '_' + Date.now();
+              db2.ref('users/' + window.currentUser.uid + '/wingoMyBets/' + key).set(betRecord);
             }
-            // Save bet history with balance snapshot
-            addBetToHistory('WinGo', betAmt, histColorLabel + ' / ' + winNum, winAmt.toFixed(0), won, timerRound.toString(), finalBal);
-          }
-        } catch(e) {
-          console.warn('Win credit error:', e);
-          addBetToHistory('WinGo', betAmt, histColorLabel + ' / ' + winNum, winAmt.toFixed(0), won, timerRound.toString(), 0);
+          } catch(e) {}
         }
 
-        if (savedPendingBet) {
-          cgMyBetsByTimer[timerMode].unshift({
-            round: savedPendingBet.round, bet: savedPendingBet.bet,
-            selection: savedPendingBet.selection, selColor: savedPendingBet.selColor,
-            result: histColorLabel + ' / ' + winNum, resultBg: histBg,
-            pl: won ? Math.round(winAmt) : -savedPendingBet.bet
-          });
-          renderMyBets();
-          window._cgPendingBet = null;
+        renderMyBets();
+
+        // Show result popup for total win/loss
+        showCGResult(anyWon, winNum, winColor, totalWin, pendingBetsForRound.reduce((s,b)=>s+b.bet,0));
+
+        // Credit total win to balance
+        if (anyWon && totalWin > 0) {
+          try {
+            const db = window.fbDB || fbDB;
+            const user = window.currentUser;
+            if (db && user) {
+              const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
+              const newBal = parseFloat(((balSnap.val()||0) + totalWin).toFixed(2));
+              await db.ref('users/' + user.uid + '/balance').set(newBal);
+              updateBalanceDisplay(newBal);
+            }
+          } catch(e) { console.warn('Win credit error:', e); }
         }
       }
     } else {
@@ -5189,6 +5287,9 @@
     document.getElementById('cgTabMyBets').style.display = tab === 'mybets' ? 'block' : 'none';
   }
 
+  let cgMyBetsPage = 1;
+  const cgMyBetsPageSize = 10;
+
   function renderMyBets() {
     const bets = cgMyBetsByTimer[cgTimer] || [];
     const el = document.getElementById('cgMyBetsRows');
@@ -5197,7 +5298,11 @@
       el.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem;">No bets placed yet</div>';
       return;
     }
-    el.innerHTML = bets.slice(0,30).map(b => {
+    const totalPages = Math.max(1, Math.ceil(bets.length / cgMyBetsPageSize));
+    if (cgMyBetsPage > totalPages) cgMyBetsPage = 1;
+    const pageItems = bets.slice((cgMyBetsPage-1)*cgMyBetsPageSize, cgMyBetsPage*cgMyBetsPageSize);
+
+    el.innerHTML = pageItems.map(b => {
       const plColor = b.pl > 0 ? 'var(--green)' : b.pl < 0 ? 'var(--red2)' : 'var(--muted)';
       const plText = b.pl > 0 ? '+₹'+b.pl : b.pl < 0 ? '−₹'+Math.abs(b.pl) : '⏳';
       return `<div class="cg-hist-row" style="grid-template-columns:1.2fr 0.8fr 1fr 1fr 1fr;">
@@ -5208,6 +5313,14 @@
         <div style="font-weight:700;color:${plColor};">${plText}</div>
       </div>`;
     }).join('');
+
+    if (totalPages > 1) {
+      el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.7rem;">
+        <button onclick="cgMyBetsPage=Math.max(1,cgMyBetsPage-1);renderMyBets();" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.7rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${cgMyBetsPage<=1?'opacity:0.4;':''}">&lt;</button>
+        <span style="color:var(--muted);font-size:0.75rem;">Page ${cgMyBetsPage} / ${totalPages}</span>
+        <button onclick="cgMyBetsPage=Math.min(${totalPages},cgMyBetsPage+1);renderMyBets();" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.7rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${cgMyBetsPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
+      </div>`;
+    }
   }
 
   function renderHistDots() { /* removed */ }
@@ -5401,20 +5514,20 @@
     }
   }
 
+  let _txPage = 1;
+  const _txPageSize = 10;
+  let _lastTxFilter = 'all';
+
   function filterTx(el, filter) {
     document.querySelectorAll('.history-filters .hf-btn').forEach(b => {
-      b.style.background = 'transparent';
-      b.style.color = 'var(--muted)';
-      b.style.borderColor = 'var(--border)';
-      b.classList.remove('active');
+      b.style.background = 'transparent'; b.style.color = 'var(--muted)';
+      b.style.borderColor = 'var(--border)'; b.classList.remove('active');
     });
-    el.style.background = 'rgba(240,192,64,0.15)';
-    el.style.color = 'var(--gold)';
-    el.style.borderColor = 'var(--gold)';
-    el.classList.add('active');
-    currentTxFilter = filter;
+    el.style.background = 'rgba(240,192,64,0.15)'; el.style.color = 'var(--gold)';
+    el.style.borderColor = 'var(--gold)'; el.classList.add('active');
+    currentTxFilter = filter; _txPage = 1; _lastTxFilter = filter;
     const filtered = filter === 'all' ? allTransactions :
-                     allTransactions.filter(tx => tx.type === filter || (filter === 'deposit' && tx.type === 'deposit_bonus'));
+      allTransactions.filter(tx => tx.type === filter || (filter === 'deposit' && tx.type === 'deposit_bonus'));
     renderTxRows(filtered);
   }
 
@@ -5426,26 +5539,31 @@
       return;
     }
     const typeConfig = {
-      deposit:           { icon:'⬇️', label:'Deposit',          color:'#27ae60', sign:'+' },
-      deposit_bonus:     { icon:'🎁', label:'Deposit Bonus',    color:'#f0c040', sign:'+' },
-      withdrawal:        { icon:'⬆️', label:'Withdrawal',       color:'#e02020', sign:'-' },
-      withdrawal_refund: { icon:'↩️', label:'Withdrawal Refund',color:'#27ae60', sign:'+' },
-      win:               { icon:'🏆', label:'Win',              color:'#27ae60', sign:'+' },
-      loss:              { icon:'🎮', label:'Bet Loss',         color:'#e02020', sign:'-' },
-      commission:        { icon:'💰', label:'Commission',       color:'#27ae60', sign:'+' },
-      referral_bonus:    { icon:'👥', label:'Referral Bonus',   color:'#27ae60', sign:'+' },
-      manual_add:        { icon:'➕', label:'Admin Credit',     color:'#27ae60', sign:'+' },
-      manual_deduct:     { icon:'➖', label:'Admin Debit',      color:'#e02020', sign:'-' },
-      spin:              { icon:'🎡', label:'Daily Spin',       color:'#27ae60', sign:'+' },
-      vip_weekly:        { icon:'📅', label:'VIP Weekly Bonus', color:'#27ae60', sign:'+' },
-      vip_monthly:       { icon:'🗓️', label:'VIP Monthly Bonus',color:'#27ae60', sign:'+' },
-      vip_levelup:       { icon:'⬆️', label:'VIP Level Up',    color:'#f0c040', sign:'+' },
-      attendance:        { icon:'📅', label:'Attendance Bonus', color:'#27ae60', sign:'+' },
-      invitation_bonus:  { icon:'👥', label:'Invitation Bonus', color:'#27ae60', sign:'+' },
-      activity_award:    { icon:'🎯', label:'Activity Award',   color:'#27ae60', sign:'+' },
-      gift:              { icon:'🎁', label:'Gift Code',        color:'#27ae60', sign:'+' },
+      deposit:           { icon:'⬇️', label:'Deposit',           color:'#27ae60', sign:'+' },
+      deposit_bonus:     { icon:'🎁', label:'Deposit Bonus',     color:'#f0c040', sign:'+' },
+      withdrawal:        { icon:'⬆️', label:'Withdrawal',        color:'#e02020', sign:'-' },
+      withdrawal_refund: { icon:'↩️', label:'Withdrawal Refund', color:'#27ae60', sign:'+' },
+      win:               { icon:'🏆', label:'Win',               color:'#27ae60', sign:'+' },
+      loss:              { icon:'🎮', label:'Bet Loss',          color:'#e02020', sign:'-' },
+      commission:        { icon:'💰', label:'Commission',        color:'#27ae60', sign:'+' },
+      referral_bonus:    { icon:'👥', label:'Referral Bonus',    color:'#27ae60', sign:'+' },
+      manual_add:        { icon:'➕', label:'Admin Credit',      color:'#27ae60', sign:'+' },
+      manual_deduct:     { icon:'➖', label:'Admin Debit',       color:'#e02020', sign:'-' },
+      spin:              { icon:'🎡', label:'Daily Spin',        color:'#27ae60', sign:'+' },
+      vip_weekly:        { icon:'📅', label:'VIP Weekly Bonus',  color:'#27ae60', sign:'+' },
+      vip_monthly:       { icon:'🗓️', label:'VIP Monthly Bonus', color:'#27ae60', sign:'+' },
+      vip_levelup:       { icon:'⬆️', label:'VIP Level Up',     color:'#f0c040', sign:'+' },
+      attendance:        { icon:'📅', label:'Attendance Bonus',  color:'#27ae60', sign:'+' },
+      invitation_bonus:  { icon:'👥', label:'Invitation Bonus',  color:'#27ae60', sign:'+' },
+      activity_award:    { icon:'🎯', label:'Activity Award',    color:'#27ae60', sign:'+' },
+      gift:              { icon:'🎁', label:'Gift Code',         color:'#27ae60', sign:'+' },
     };
-    container.innerHTML = txs.map(tx => {
+
+    const totalPages = Math.max(1, Math.ceil(txs.length / _txPageSize));
+    if (_txPage > totalPages) _txPage = 1;
+    const pageItems = txs.slice((_txPage-1)*_txPageSize, _txPage*_txPageSize);
+
+    container.innerHTML = pageItems.map(tx => {
       const cfg = typeConfig[tx.type] || { icon:'💸', label: tx.type || 'Transaction', color:'var(--gold)', sign:'+' };
       const amt = Math.abs(tx.amount || 0);
       const time = tx.timestamp ? new Date(tx.timestamp).toLocaleString('en-IN', {day:'numeric', month:'short', hour:'2-digit', minute:'2-digit'}) : '—';
@@ -5463,9 +5581,20 @@
         </div>
       </div>`;
     }).join('');
+
+    if (totalPages > 1) {
+      container.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;">
+        <button onclick="_txPage=Math.max(1,_txPage-1);filterTx(document.querySelector('.history-filters .hf-btn.active'),currentTxFilter||'all');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_txPage<=1?'opacity:0.4;':''}">&lt;</button>
+        <span style="color:var(--muted);font-size:0.75rem;">Page ${_txPage} / ${totalPages}</span>
+        <button onclick="_txPage=Math.min(${totalPages},_txPage+1);filterTx(document.querySelector('.history-filters .hf-btn.active'),currentTxFilter||'all');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_txPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
+      </div>`;
+    }
   }
 
   function renderTransactionHistory() { loadTransactionHistory(); }
+
+  let _betHistPage = 1;
+  const _betHistPageSize = 10;
 
   function renderBetHistory(filter) {
     const container = document.getElementById('betHistoryRows');
@@ -5483,7 +5612,6 @@
     const totalWon = betHistoryData.filter(d => d.won).reduce((s,d) => s + parseFloat(d.profit||0), 0);
     const totalLost = betHistoryData.filter(d => !d.won).reduce((s,d) => s + parseFloat(d.bet||0), 0);
     const netProfit = totalWon - totalLost;
-    // Update account page stats
     const acctBets = document.getElementById('acctTotalBets');
     const acctWon = document.getElementById('acctTotalWon');
     const acctLost = document.getElementById('acctTotalLost');
@@ -5493,27 +5621,34 @@
     if (acctLost) acctLost.textContent = '₹' + totalLost.toLocaleString('en-IN');
     if (acctNet) { acctNet.textContent = (netProfit >= 0 ? '+' : '') + '₹' + netProfit.toLocaleString('en-IN'); acctNet.style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red2)'; }
 
-    if (data.length === 0) { container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="bet.nobets">No bets yet</span></div>'; return; }
+    if (data.length === 0) { container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No bets yet</div>'; return; }
 
-    container.innerHTML = data.map(d => {
-      // Capitalize first letter of result
+    // Reset page if filter changed
+    const totalPages = Math.max(1, Math.ceil(data.length / _betHistPageSize));
+    if (_betHistPage > totalPages) _betHistPage = 1;
+    const pageItems = data.slice((_betHistPage-1)*_betHistPageSize, _betHistPage*_betHistPageSize);
+
+    container.innerHTML = pageItems.map(d => {
       const result = d.result ? d.result.charAt(0).toUpperCase() + d.result.slice(1) : '—';
-      // Format time with seconds
       const timeStr = d.timestamp ? new Date(d.timestamp).toLocaleString('en-IN', {
-        day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+        day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false
       }) : (d.time || '—');
-      return `
-      <div class="bh-row">
-        <div class="bh-game">
-          <div class="bh-dot" style="background:${d.color};"></div>
-          <span>${d.icon} ${d.game}</span>
-        </div>
+      return `<div class="bh-row">
+        <div class="bh-game"><div class="bh-dot" style="background:${d.color};"></div><span>${d.icon} ${d.game}</span></div>
         <div>₹${d.bet}</div>
         <div>${result}</div>
         <div class="${d.won ? 'bh-win' : 'bh-lose'}">${d.won ? '+₹'+d.profit : '-₹'+Math.abs(d.profit)}</div>
         <div style="color:var(--muted);font-size:0.78rem;">${timeStr}</div>
       </div>`;
     }).join('');
+
+    if (totalPages > 1) {
+      container.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;">
+        <button onclick="_betHistPage=Math.max(1,_betHistPage-1);renderBetHistory('${filter||'all'}');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_betHistPage<=1?'opacity:0.4;':''}">&lt;</button>
+        <span style="color:var(--muted);font-size:0.75rem;">Page ${_betHistPage} / ${totalPages}</span>
+        <button onclick="_betHistPage=Math.min(${totalPages},_betHistPage+1);renderBetHistory('${filter||'all'}');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_betHistPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
+      </div>`;
+    }
   }
 
   function filterBets(el, filter) {
@@ -6363,12 +6498,9 @@
 <!-- TRANSACTION HISTORY PAGE -->
 <div class="page" id="page-history">
   <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 2rem;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-      <div style="display:flex;align-items:center;gap:0.8rem;">
-        <button onclick="showPage('profile')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
-        <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💸 Transaction History</div>
-      </div>
-      <button onclick="loadTransactionHistory()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.8rem;color:var(--muted);cursor:pointer;font-size:0.78rem;font-family:'Exo 2',sans-serif;"><span data-t="common.refresh">🔄 Refresh</span></button>
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
+      <button onclick="showPage('profile')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;">←</button>
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💸 Transaction History</div>
     </div>
     <!-- Filter tabs -->
     <div class="history-filters" style="display:flex;gap:0.5rem;margin-bottom:1rem;overflow-x:auto;padding-bottom:0.3rem;scrollbar-width:none;">
@@ -6388,12 +6520,9 @@
 <!-- DEPOSIT HISTORY PAGE -->
 <div class="page" id="page-deposithistory">
   <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 2rem;">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">
-      <div style="display:flex;align-items:center;gap:0.8rem;">
-        <button onclick="showPage('profile')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
-        <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬇️ Deposit History</div>
-      </div>
-      <button onclick="loadDepositHistory()" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.8rem;color:var(--muted);cursor:pointer;font-size:0.78rem;">🔄 Refresh</button>
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
+      <button onclick="showPage('profile')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;">←</button>
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬇️ Deposit History</div>
     </div>
     <!-- Pending deposits banner -->
     <div id="pendingDepositBanner" style="display:none;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.25);border-radius:12px;padding:0.8rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.6rem;">
@@ -6413,7 +6542,7 @@
 <div class="page" id="page-withdrawhistory">
   <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 2rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
-      <button onclick="showPage('profile')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
+      <button onclick="showPage('profile')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬆️ Withdrawal History</div>
     </div>
     <div id="withdrawHistoryPageRows">
@@ -7155,8 +7284,10 @@
 <!-- BET HISTORY PAGE -->
 <div class="page" id="page-bethistory">
   <div class="history-page">
-    <div class="section-title" style="margin-bottom:0.4rem;">🎯 Bet History</div>
-    <div class="section-sub" style="margin-bottom:1.5rem;">Your personal betting records</div>
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
+      <button onclick="showPage('profile')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;">←</button>
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">🎯 Bet History</div>
+    </div>
 
     <!-- Filters -->
     <div class="history-filters" style="margin-bottom:1rem;">
@@ -8109,12 +8240,18 @@ window.claimAttendance = function() {
       updates['users/'+user.uid+'/attendance/lastCheckin'] = today;
       updates['users/'+user.uid+'/attendance/totalEarned'] = newTotal;
       updates['users/'+user.uid+'/balance'] = newBal;
-      db.ref().update(updates).then(function() {
-        db.ref('users/'+user.uid+'/transactions').push({type:'attendance',amount:reward,details:'Day '+newStreak+' attendance bonus',balance:newBal,timestamp:Date.now()});
-        if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-        showToast('🎁 Day '+newStreak+' check-in! +₹'+reward+' credited!');
-        _attendRenderUI(newStreak, true, newTotal);
-      }).catch(function(e) { showToast('❌ '+e.message); });
+      // Add 1x wager requirement
+      db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
+        var w = wSnap.val() || {required:0,completed:0};
+        updates['users/'+user.uid+'/wager/required'] = parseFloat((parseFloat(w.required||0) + reward).toFixed(2));
+        updates['users/'+user.uid+'/wager/completed'] = parseFloat(w.completed||0);
+        db.ref().update(updates).then(function() {
+          db.ref('users/'+user.uid+'/transactions').push({type:'attendance',amount:reward,details:'Day '+newStreak+' attendance bonus (1x wager)',balance:newBal,timestamp:Date.now()});
+          if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+          showToast('🎁 Day '+newStreak+' check-in! +₹'+reward+' credited! (1x wager required)');
+          _attendRenderUI(newStreak, true, newTotal);
+        }).catch(function(e) { showToast('❌ '+e.message); });
+      });
     });
   }).catch(function(e) { showToast('❌ '+e.message); });
 };
@@ -8130,12 +8267,17 @@ window.claimInviteTier = function(tierNum, reward) {
     db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
       var newBal = parseFloat(((balSnap.val()||0)+reward).toFixed(2));
       var updates = {}; updates['users/'+user.uid+'/claimedInviteTiers/tier'+tierNum]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
-      db.ref().update(updates).then(function() {
-        db.ref('users/'+user.uid+'/transactions').push({type:'invitation_bonus',amount:reward,details:'Invitation Bonus Tier '+tierNum,balance:newBal,timestamp:Date.now()});
-        if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-        showToast('🎉 Tier '+tierNum+' bonus! +₹'+reward.toLocaleString('en-IN')+' credited!');
-        if (typeof window.loadInvitationBonusPage==='function') window.loadInvitationBonusPage();
-      }).catch(function(e) { showToast('❌ '+e.message); });
+      db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
+        var w = wSnap.val()||{required:0,completed:0};
+        updates['users/'+user.uid+'/wager/required'] = parseFloat((parseFloat(w.required||0)+reward).toFixed(2));
+        updates['users/'+user.uid+'/wager/completed'] = parseFloat(w.completed||0);
+        db.ref().update(updates).then(function() {
+          db.ref('users/'+user.uid+'/transactions').push({type:'invitation_bonus',amount:reward,details:'Invitation Bonus Tier '+tierNum+' (1x wager)',balance:newBal,timestamp:Date.now()});
+          if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+          showToast('🎉 Tier '+tierNum+' bonus! +₹'+reward.toLocaleString('en-IN')+' credited! (1x wager required)');
+          if (typeof window.loadInvitationBonusPage==='function') window.loadInvitationBonusPage();
+        }).catch(function(e) { showToast('❌ '+e.message); });
+      });
     });
   });
 };
@@ -8152,12 +8294,17 @@ window.claimActivityTask = function(taskId, reward) {
     db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
       var newBal = parseFloat(((balSnap.val()||0)+reward).toFixed(2));
       var updates = {}; updates['users/'+user.uid+'/claimedActivityTasks/'+todayKey+'/task'+taskId]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
-      db.ref().update(updates).then(function() {
-        db.ref('users/'+user.uid+'/transactions').push({type:'activity_award',amount:reward,details:'Activity Award Task '+taskId,balance:newBal,timestamp:Date.now()});
-        if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-        showToast('🎯 Task '+taskId+' reward! +₹'+reward+' credited!');
-        if (typeof window.loadActivityAwardPage==='function') window.loadActivityAwardPage();
-      }).catch(function(e) { showToast('❌ '+e.message); });
+      db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
+        var w = wSnap.val()||{required:0,completed:0};
+        updates['users/'+user.uid+'/wager/required'] = parseFloat((parseFloat(w.required||0)+reward).toFixed(2));
+        updates['users/'+user.uid+'/wager/completed'] = parseFloat(w.completed||0);
+        db.ref().update(updates).then(function() {
+          db.ref('users/'+user.uid+'/transactions').push({type:'activity_award',amount:reward,details:'Activity Award Task '+taskId+' (1x wager)',balance:newBal,timestamp:Date.now()});
+          if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+          showToast('🎯 Task '+taskId+' reward! +₹'+reward+' credited! (1x wager required)');
+          if (typeof window.loadActivityAwardPage==='function') window.loadActivityAwardPage();
+        }).catch(function(e) { showToast('❌ '+e.message); });
+      });
     });
   });
 };
@@ -8187,12 +8334,17 @@ window.claimVipWeekly = function() {
       var level=_getVipLevelData(parseFloat(expSnap.val()||0)), reward=level.weekly;
       db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
         var newBal=parseFloat(((balSnap.val()||0)+reward).toFixed(2));
-        var updates={}; updates['users/'+user.uid+'/vip/claimedWeekly/'+weekKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
-        db.ref().update(updates).then(function() {
-          db.ref('users/'+user.uid+'/transactions').push({type:'vip_weekly',amount:reward,details:level.name+' VIP Weekly Bonus',balance:newBal,timestamp:Date.now()});
-          if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-          showToast('👑 Weekly VIP bonus! +₹'+reward+' credited!');
-          if (typeof loadVipPage==='function') loadVipPage();
+        db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
+          var w=wSnap.val()||{required:0,completed:0};
+          var updates={}; updates['users/'+user.uid+'/vip/claimedWeekly/'+weekKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
+          updates['users/'+user.uid+'/wager/required']=parseFloat((parseFloat(w.required||0)+reward).toFixed(2));
+          updates['users/'+user.uid+'/wager/completed']=parseFloat(w.completed||0);
+          db.ref().update(updates).then(function() {
+            db.ref('users/'+user.uid+'/transactions').push({type:'vip_weekly',amount:reward,details:level.name+' VIP Weekly Bonus (1x wager)',balance:newBal,timestamp:Date.now()});
+            if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+            showToast('👑 Weekly VIP bonus! +₹'+reward+' credited! (1x wager required)');
+            if (typeof loadVipPage==='function') loadVipPage();
+          });
         });
       });
     });
@@ -8208,12 +8360,17 @@ window.claimVipMonthly = function() {
       var level=_getVipLevelData(parseFloat(expSnap.val()||0)), reward=level.monthly;
       db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
         var newBal=parseFloat(((balSnap.val()||0)+reward).toFixed(2));
-        var updates={}; updates['users/'+user.uid+'/vip/claimedMonthly/'+monthKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
-        db.ref().update(updates).then(function() {
-          db.ref('users/'+user.uid+'/transactions').push({type:'vip_monthly',amount:reward,details:level.name+' VIP Monthly Bonus',balance:newBal,timestamp:Date.now()});
-          if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-          showToast('👑 Monthly VIP bonus! +₹'+reward+' credited!');
-          if (typeof loadVipPage==='function') loadVipPage();
+        db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
+          var w=wSnap.val()||{required:0,completed:0};
+          var updates={}; updates['users/'+user.uid+'/vip/claimedMonthly/'+monthKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
+          updates['users/'+user.uid+'/wager/required']=parseFloat((parseFloat(w.required||0)+reward).toFixed(2));
+          updates['users/'+user.uid+'/wager/completed']=parseFloat(w.completed||0);
+          db.ref().update(updates).then(function() {
+            db.ref('users/'+user.uid+'/transactions').push({type:'vip_monthly',amount:reward,details:level.name+' VIP Monthly Bonus (1x wager)',balance:newBal,timestamp:Date.now()});
+            if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+            showToast('👑 Monthly VIP bonus! +₹'+reward+' credited! (1x wager required)');
+            if (typeof loadVipPage==='function') loadVipPage();
+          });
         });
       });
     });
