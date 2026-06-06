@@ -4596,18 +4596,18 @@
 
     function tick() {
       const now = Date.now();
-      // Align elapsed to IST midnight (periods reset at IST midnight)
+      // All timing in IST (UTC+5:30) — matches game engine exactly
       const IST_OFFSET = 5.5 * 60 * 60 * 1000;
       const istNow = now + IST_OFFSET;
+      const istDate = new Date(istNow);
+      // Elapsed since IST midnight aligned to period
       const istMidnight = istNow - (istNow % (24 * 60 * 60 * 1000));
       const msSinceMidnightIST = istNow - istMidnight;
       const elapsed = msSinceMidnightIST % periodMs;
       const remaining = Math.ceil((periodMs - elapsed) / 1000);
       const totalSecs = mins * 60;
 
-      // Period ID using IST counter — same as game engine
-      const IST_OFFSET = 5.5 * 60 * 60 * 1000;
-      const istDate = new Date(now + IST_OFFSET);
+      // Period ID = IST date + counter
       const dateStr = `${istDate.getUTCFullYear()}${String(istDate.getUTCMonth()+1).padStart(2,'0')}${String(istDate.getUTCDate()).padStart(2,'0')}`;
       const minutesSinceMidnight = istDate.getUTCHours() * 60 + istDate.getUTCMinutes();
       const counter = Math.floor(minutesSinceMidnight / mins);
