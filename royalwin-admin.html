@@ -960,16 +960,22 @@ function initAdmin() {
 function startPeriodTracker() {
   function tick() {
     const now = Date.now();
-    const nowDate = new Date(now);
-    const year = nowDate.getFullYear();
-    const month = String(nowDate.getMonth() + 1).padStart(2, '0');
-    const day = String(nowDate.getDate()).padStart(2, '0');
+    // Use IST (UTC+5:30) — same as player site and game engine
+    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
+    const istNow = now + IST_OFFSET;
+    const istDate = new Date(istNow);
+    const year = istDate.getUTCFullYear();
+    const month = String(istDate.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(istDate.getUTCDate()).padStart(2, '0');
     const dateStr = '' + year + month + day;
-    const minutesSinceMidnight = nowDate.getHours() * 60 + nowDate.getMinutes();
+    const minutesSinceMidnight = istDate.getUTCHours() * 60 + istDate.getUTCMinutes();
+    // Align elapsed to IST midnight
+    const istMidnight = istNow - (istNow % (24 * 60 * 60 * 1000));
+    const msSinceMidnightIST = istNow - istMidnight;
 
     [1, 3, 5].forEach(mins => {
       const periodMs = mins * 60 * 1000;
-      const elapsed = now % periodMs;
+      const elapsed = msSinceMidnightIST % periodMs;
       const remaining = Math.ceil((periodMs - elapsed) / 1000);
       const serial = Math.floor(minutesSinceMidnight / mins);
       const serialStr = String(serial).padStart(4, '0');
