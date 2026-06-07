@@ -71,7 +71,7 @@
   }
 
   /* ─── PAGES ─── */
-  .page { display:none; position:relative; z-index:1; min-height:100vh; }
+  .page { display:none; position:relative; z-index:1; }
   .page.active { display:block; }
   /* Home page doesn't need full-height enforced — hero handles it */
   #page-home { min-height: unset; }
@@ -80,7 +80,7 @@
   .mobile-nav { display: none; }
   @media (max-width: 768px) {
     .mobile-nav { display: grid !important; }
-    .page { min-height: unset; }
+    .page { min-height: unset !important; height: auto !important; }
   }
 
   /* ─── NAV ─── */
@@ -612,6 +612,7 @@
     font-family:'Exo 2',sans-serif; background:var(--card); transition:all 0.2s;
   }
   .cg-ttab.active { background:linear-gradient(135deg,#c07a10,var(--gold2)); color:#000; border-color:transparent; }
+
   /* Round info */
   .cg-round-info {
     background:var(--card); border:1px solid var(--border); border-radius:14px;
@@ -833,14 +834,13 @@
   /* ─── MOBILE BOTTOM NAV ─── */
   .mobile-nav {
     display: none;
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
-    background: #1a0a00;
-    border-top: 2px solid rgba(240,192,64,0.3);
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
+    background: #1a1200;
+    border-top: 1px solid rgba(240,192,64,0.25);
     grid-template-columns: repeat(5, 1fr);
-    width: 100%; height: 60px;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.8);
+    width: 100%; height: 58px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.6);
     overflow: hidden;
-    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .mobile-nav-item {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -903,201 +903,338 @@
 
 
   /* ═══════════════════════════════════════════
-     MOBILE — 768px and below
+     MOBILE FIRST — Complete Mobile Overhaul
   ═══════════════════════════════════════════ */
+
+  /* ── Hide desktop nav completely on mobile ── */
+  @media (max-width: 768px) {
+    nav { display: none !important; }
+  }
+
   @media (max-width: 768px) {
 
-    /* BASE */
+    /* ── BASE ── */
     * { -webkit-tap-highlight-color: transparent; }
-    body { padding-bottom: 62px; overflow-x: hidden; }
+    html, body { overflow-x: hidden !important; }
+    body {
+      padding-bottom: 65px !important;
+      padding-top: 0 !important;
+      background: #0a0a0f;
+      font-size: 14px;
+    }
     input, select, textarea { font-size: 16px !important; }
 
-    /* Fix blank space - only target pages that have min-height:100vh */
-    .page { min-height: unset !important; height: auto !important; }
-    .hero { min-height: unset !important; }
-    .auth-wrap { min-height: unset !important; }
-    body { min-height: unset !important; padding-bottom: 58px; }
-    .wallet-page, .profile-page, .vip-page, .promo-page,
-    .support-page, .ref-page, .history-page { min-height: unset !important; }
-
-    /* TOP NAV */
-    nav { padding: 0 1rem; height: 54px; }
-    .nav-logo { font-size: 1.1rem; letter-spacing: 1px; }
-    .nav-links { display: none !important; }
-    #navUser .nav-btn { display: none !important; }
-    #navUser .balance-pill { display: none !important; }
-    #navUser { gap: 0.4rem; }
-    .notif-bell, .avatar { display: flex !important; }
-    .notif-dropdown { right: 0; width: 260px; }
-
-    /* BOTTOM NAV - always grid on mobile, handled by global rule */
-
-    /* HOME — no blank space */
-    .hero {
+    /* ── ALL PAGES: no blank space, proper sizing ── */
+    .page {
       min-height: unset !important;
-      padding: 60px 1rem 1rem;
-      justify-content: flex-start;
+      height: auto !important;
+      padding: 0 !important;
+      margin: 0 !important;
     }
-    .hero-glow { width: 250px; height: 250px; }
-    .hero-badge { font-size: 0.68rem; margin-bottom: 0.6rem; padding: 0.2rem 0.7rem; }
-    .hero h1 { font-size: 1.9rem; margin-bottom: 0.7rem; }
-    .hero p { font-size: 0.83rem; margin-bottom: 1rem; line-height: 1.5; max-width: 100%; }
-    .hero-btns { flex-direction: column; align-items: stretch; width: 100%; gap: 0.5rem; }
-    .hero-btns .btn { width: 100%; padding: 0.8rem; font-size: 0.88rem; text-align: center; }
-    .stats-bar { gap: 1.2rem; flex-wrap: wrap; justify-content: center; margin-top: 1rem; }
-    .stat-val { font-size: 1.1rem; }
-    .stat-lbl { font-size: 0.62rem; }
 
-    /* GAMES SECTION — compact, no extra padding */
-    .section { padding: 0.8rem 0.8rem 1rem; max-width: 100%; }
-    .section-title { font-size: 1rem; margin-bottom: 0.2rem; }
-    .section-sub { font-size: 0.75rem; margin-bottom: 0.6rem; }
-    .games-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .game-thumb { height: 85px; font-size: 2rem; }
-    .game-info { padding: 0.45rem 0.5rem 0.6rem; }
-    .game-name { font-size: 0.76rem; }
-    .game-meta { font-size: 0.62rem; }
-    .promo-banner { flex-direction: column; text-align: center; padding: 0.9rem; gap: 0.5rem; }
-    .promo-amount { font-size: 1.4rem; }
+    /* ── HOME PAGE ── */
+    #desktopHome { display: none !important; }
+    #mobileAppHome {
+      display: block !important;
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      min-height: unset !important;
+    }
+    .hero { display: none !important; }
+    .section { display: none !important; }
 
-    /* AUTH PAGES */
-    .auth-card { padding: 1.4rem 1rem; margin: 0 0.8rem; border-radius: 16px; max-width: 100%; }
-    .form-row { grid-template-columns: 1fr; }
+    /* ── AUTH PAGES (Login/Register) ── */
+    .auth-wrap {
+      min-height: unset !important;
+      padding: 1rem 0 2rem !important;
+      display: block !important;
+    }
+    .auth-card {
+      padding: 1.5rem 1rem !important;
+      margin: 0 0.8rem !important;
+      border-radius: 16px !important;
+      max-width: 100% !important;
+    }
+    .form-row { grid-template-columns: 1fr !important; }
+    .auth-logo-text { font-size: 1.4rem !important; }
+    .auth-title { font-size: 1.1rem !important; }
 
-    /* WALLET PAGE */
-    .wallet-page { padding: 54px 0.8rem 2rem; max-width: 100%; }
-    .wallet-hero { flex-direction: column; padding: 0.9rem; gap: 0.3rem; }
-    .wallet-balance-val { font-size: 1.7rem; }
-    .deposit-methods { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .amount-presets { gap: 0.35rem; flex-wrap: wrap; }
-    .amount-preset { padding: 0.35rem 0.6rem; font-size: 0.76rem; }
+    /* ── TOP MOBILE HEADER (for inner pages) ── */
+    .mobile-page-header {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 200 !important;
+      background: #10101a !important;
+      border-bottom: 1px solid rgba(240,192,64,0.2) !important;
+      padding: 0.7rem 1rem !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.8rem !important;
+    }
 
-    /* REFERRAL PAGE */
-    .ref-page { padding: 54px 0 2rem; max-width: 100%; }
-    .agency-card { margin: 0 0.6rem 0.6rem; padding: 0.9rem; }
-    .sub-grid { gap: 0.4rem; margin: 0 0.6rem 0; }
-    .ref-actions { margin: 0.4rem 0.6rem 0; }
-    .sub-history { margin: 0.4rem 0.6rem 0.6rem; }
+    /* ── WALLET PAGE ── */
+    .wallet-page {
+      padding: 0 0 2rem 0 !important;
+      max-width: 100% !important;
+    }
+    .wallet-hero {
+      flex-direction: column !important;
+      padding: 1rem !important;
+      gap: 0.5rem !important;
+      text-align: center !important;
+    }
+    .wallet-balance-val { font-size: 2rem !important; }
+    .deposit-methods {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 0.5rem !important;
+      padding: 0 0.8rem !important;
+    }
+    .amount-presets { gap: 0.4rem !important; flex-wrap: wrap !important; padding: 0 0.8rem !important; }
+    .amount-preset { padding: 0.4rem 0.7rem !important; font-size: 0.8rem !important; }
 
-    /* VIP PAGE */
-    .vip-page { padding: 54px 0.8rem 2rem; max-width: 100%; }
-    .vip-levels { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .vip-hero h2 { font-size: 1.2rem; }
+    /* ── PROFILE PAGE ── */
+    .profile-page {
+      padding: 0 0 2rem 0 !important;
+      max-width: 100% !important;
+    }
+    .profile-grid { grid-template-columns: 1fr !important; }
+    .profile-hero {
+      flex-direction: column !important;
+      padding: 1rem !important;
+      text-align: center !important;
+    }
 
-    /* PROFILE PAGE */
-    .profile-page { padding: 54px 0.8rem 2rem; max-width: 100%; }
-    .profile-grid { grid-template-columns: 1fr; }
-    .profile-hero { flex-direction: column; padding: 1rem; text-align: center; }
+    /* ── VIP PAGE ── */
+    .vip-page {
+      padding: 0 0.8rem 2rem !important;
+      max-width: 100% !important;
+    }
+    .vip-levels { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
+    .vip-hero h2 { font-size: 1.2rem !important; }
 
-    /* PROMOTIONS PAGE */
-    .promo-page { padding: 54px 0.8rem 2rem; max-width: 100%; }
-    .promo-grid { grid-template-columns: 1fr; gap: 0.6rem; }
+    /* ── PROMOTIONS PAGE ── */
+    .promo-page {
+      padding: 0 0.8rem 2rem !important;
+      max-width: 100% !important;
+    }
+    .promo-grid { grid-template-columns: 1fr !important; gap: 0.6rem !important; }
 
-    /* SUPPORT PAGE */
-    .support-page { padding: 54px 0.8rem 2rem; max-width: 100%; }
-    .support-options { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .chat-window { height: 300px; }
+    /* ── REFERRAL PAGE ── */
+    .ref-page {
+      padding: 0 0 2rem !important;
+      max-width: 100% !important;
+    }
+    .agency-card { margin: 0 0.6rem 0.6rem !important; padding: 0.9rem !important; }
+    .sub-grid { gap: 0.4rem !important; margin: 0 0.6rem !important; }
+    .ref-actions { margin: 0.4rem 0.6rem 0 !important; }
+    .sub-history { margin: 0.4rem 0.6rem 0.6rem !important; }
 
-    /* BET HISTORY PAGE */
-    .history-page { padding: 54px 0.8rem 2rem; max-width: 100%; }
-    .history-summary { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .hs-card { padding: 0.65rem; }
-    .hs-val { font-size: 0.95rem; }
-    .hs-lbl { font-size: 0.62rem; }
-    .history-filters { gap: 0.3rem; flex-wrap: wrap; }
-    .hf-btn { padding: 0.28rem 0.55rem; font-size: 0.7rem; }
-    .bh-row { grid-template-columns: 1.2fr 0.7fr 0.9fr 0.9fr; font-size: 0.72rem; padding: 0.5rem 0.55rem; }
-    .bh-row > *:nth-child(5), .bh-row > *:nth-child(6) { display: none; }
+    /* ── SUPPORT PAGE ── */
+    .support-page {
+      padding: 0 0.8rem 2rem !important;
+      max-width: 100% !important;
+    }
+    .support-options { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
+    .chat-window { height: 300px !important; }
 
-    /* INLINE HISTORY PAGES */
+    /* ── HISTORY PAGES ── */
+    .history-page {
+      padding: 0 0.8rem 2rem !important;
+      max-width: 100% !important;
+    }
     #page-deposithistory > div,
     #page-withdrawhistory > div,
     #page-history > div,
-    #page-bethistory > div { padding: 54px 0.8rem 2rem !important; max-width: 100% !important; }
+    #page-bethistory > div { padding: 0 0.8rem 2rem !important; max-width: 100% !important; }
+    .history-summary { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
+    .hs-card { padding: 0.65rem !important; }
+    .hs-val { font-size: 0.95rem !important; }
+    .hs-lbl { font-size: 0.62rem !important; }
+    .bh-row { grid-template-columns: 1.2fr 0.7fr 0.9fr 0.9fr !important; font-size: 0.72rem !important; padding: 0.5rem 0.55rem !important; }
+    .bh-row > *:nth-child(5), .bh-row > *:nth-child(6) { display: none !important; }
 
-    /* ── WINGO GAME MOBILE ── */
-    .color-game-overlay { background: var(--bg) !important; }
+    /* ── GAMES SECTION ── */
+    .games-grid { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
+    .game-thumb { height: 85px !important; font-size: 2rem !important; }
+    .game-info { padding: 0.45rem 0.5rem 0.6rem !important; }
+    .game-name { font-size: 0.76rem !important; }
+    .game-meta { font-size: 0.62rem !important; }
+
+    /* ── WINGO GAME ── */
+    .color-game-overlay {
+      background: #0a0a0f !important;
+      padding-bottom: 65px !important;
+    }
     .cg-wrap {
-      max-width: 100% !important; width: 100% !important;
-      margin: 0 !important; padding: 0 0 58px 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 0 65px 0 !important;
       box-sizing: border-box !important;
     }
-    /* Sticky header */
     .cg-header {
-      position: sticky !important; top: 0 !important; z-index: 10 !important;
-      background: var(--bg2) !important; border-bottom: 1px solid var(--border) !important;
-      padding: 0.55rem 0.8rem !important; margin-bottom: 0 !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 10 !important;
+      background: #10101a !important;
+      border-bottom: 1px solid rgba(240,192,64,0.2) !important;
+      padding: 0.6rem 0.8rem !important;
+      margin-bottom: 0 !important;
     }
-    .cg-title { font-size: 0.88rem !important; }
-    .cg-close { padding: 0.25rem 0.55rem !important; font-size: 0.7rem !important; }
-    /* All sections get side padding */
+    .cg-title { font-size: 1rem !important; }
+    .cg-close { padding: 0.3rem 0.6rem !important; font-size: 0.75rem !important; }
     .cg-timer-tabs {
-      display: grid !important; grid-template-columns: 1fr 1fr 1fr !important;
-      gap: 0.4rem !important; margin: 0.55rem 0.6rem 0.45rem !important;
+      display: grid !important;
+      grid-template-columns: 1fr 1fr 1fr !important;
+      gap: 0.4rem !important;
+      margin: 0.6rem 0.8rem 0.5rem !important;
     }
-    .cg-ttab { padding: 0.48rem 0.1rem !important; font-size: 0.73rem !important; border-radius: 8px !important; }
-    .cg-round-info { margin: 0 0.6rem 0.45rem !important; padding: 0.5rem 0.75rem !important; }
-    .cg-count-val { font-size: 1.4rem !important; }
-    .cg-count-lbl { font-size: 0.58rem !important; }
-    .cg-status { font-size: 0.58rem !important; }
-    .cg-round-val { font-size: 0.66rem !important; }
+    .cg-ttab {
+      padding: 0.55rem 0.1rem !important;
+      font-size: 0.78rem !important;
+      border-radius: 10px !important;
+      text-align: center !important;
+    }
+    .cg-round-info {
+      margin: 0 0.8rem 0.5rem !important;
+      padding: 0.6rem 0.8rem !important;
+      border-radius: 12px !important;
+    }
+    .cg-count-val { font-size: 1.6rem !important; }
+    .cg-count-lbl { font-size: 0.6rem !important; }
+    .cg-status { font-size: 0.62rem !important; padding: 0.25rem 0.6rem !important; }
+    .cg-round-val { font-size: 0.7rem !important; }
     .cg-colors {
       grid-template-columns: 1fr 1fr 1fr !important;
-      gap: 0.35rem !important; margin: 0 0.6rem 0.45rem !important;
+      gap: 0.4rem !important;
+      margin: 0 0.8rem 0.5rem !important;
     }
-    .cg-color-btn { padding: 0.82rem 0.1rem !important; font-size: 0.8rem !important; border-radius: 9px !important; }
+    .cg-color-btn {
+      padding: 0.9rem 0.1rem !important;
+      font-size: 0.85rem !important;
+      border-radius: 10px !important;
+    }
     .cg-numbers {
-      grid-template-columns: repeat(5,1fr) !important;
-      gap: 0.3rem !important; margin: 0 0.6rem 0.45rem !important;
+      grid-template-columns: repeat(5, 1fr) !important;
+      gap: 0.35rem !important;
+      margin: 0 0.8rem 0.5rem !important;
     }
-    .cg-num-btn { font-size: 0.9rem !important; aspect-ratio: 1 !important; min-height: 40px !important; border-radius: 8px !important; }
+    .cg-num-btn {
+      font-size: 0.95rem !important;
+      aspect-ratio: 1 !important;
+      min-height: 44px !important;
+      border-radius: 50% !important;
+    }
     .cg-color-btn[id="cgBigBtn"],
-    .cg-color-btn[id="cgSmallBtn"] { padding: 0.72rem !important; font-size: 0.88rem !important; }
-    .cg-bet-panel { margin: 0 0.6rem 0.45rem !important; padding: 0.6rem !important; border-radius: 10px !important; }
-    .cg-bet-title { font-size: 0.67rem !important; margin-bottom: 0.38rem !important; }
-    .cg-bet-presets { gap: 0.28rem !important; scrollbar-width: none !important; }
-    .cg-bet-preset { padding: 0.36rem 0.7rem !important; font-size: 0.74rem !important; }
-    .cg-x-btn { padding: 0.38rem 0.38rem !important; font-size: 0.7rem !important; }
-    .cg-confirm-btn {
-      display: block !important; width: calc(100% - 1.2rem) !important;
-      margin: 0 0.6rem 0.45rem !important; padding: 0.82rem !important;
-      font-size: 0.82rem !important; border-radius: 9px !important;
+    .cg-color-btn[id="cgSmallBtn"] {
+      padding: 0.8rem !important;
+      font-size: 1rem !important;
+      border-radius: 30px !important;
     }
-    .cg-history { margin: 0 0.6rem 0.45rem !important; border-radius: 10px !important; }
-    .cg-tab-btns { margin: 0 0.6rem 0.38rem !important; gap: 0.28rem !important; }
-    .cg-tab-btn { padding: 0.36rem 0.85rem !important; font-size: 0.73rem !important; }
-    .cg-hist-row { font-size: 0.65rem !important; padding: 0.4rem 0.5rem !important; }
-    .cg-hist-row.head { font-size: 0.58rem !important; }
-    .cg-result-popup { width: 84vw !important; padding: 1.2rem 0.8rem !important; }
-    .cg-result-title { font-size: 1.1rem !important; }
-    .cg-result-amt { font-size: 1.65rem !important; }
+    .cg-bet-panel {
+      margin: 0 0.8rem 0.5rem !important;
+      padding: 0.7rem !important;
+      border-radius: 12px !important;
+    }
+    .cg-bet-title { font-size: 0.7rem !important; margin-bottom: 0.4rem !important; }
+    .cg-bet-presets { gap: 0.3rem !important; flex-wrap: wrap !important; }
+    .cg-bet-preset { padding: 0.4rem 0.75rem !important; font-size: 0.78rem !important; }
+    .cg-x-btn { padding: 0.4rem !important; font-size: 0.75rem !important; }
+    .cg-confirm-btn {
+      display: block !important;
+      width: calc(100% - 1.6rem) !important;
+      margin: 0 0.8rem 0.5rem !important;
+      padding: 0.85rem !important;
+      font-size: 0.9rem !important;
+      border-radius: 10px !important;
+    }
+    .cg-history { margin: 0 0.8rem 0.5rem !important; border-radius: 12px !important; }
+    .cg-hist-row { font-size: 0.68rem !important; padding: 0.45rem 0.5rem !important; }
+    .cg-hist-row.head { font-size: 0.6rem !important; }
+    .cg-result-popup { width: 86vw !important; padding: 1.4rem 1rem !important; }
+    .cg-result-title { font-size: 1.2rem !important; }
+    .cg-result-amt { font-size: 1.8rem !important; }
 
-    /* SPIN WHEEL */
-    .wheel-wrap { width: 210px; height: 210px; }
-    .wheel-canvas { width: 210px !important; height: 210px !important; }
-    .wheel-title { font-size: 0.95rem; }
+    /* ── BOTTOM NAV ── */
+    .mobile-nav {
+      display: grid !important;
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      z-index: 9999 !important;
+      height: 60px !important;
+      background: #100800 !important;
+      border-top: 1px solid rgba(240,192,64,0.3) !important;
+      grid-template-columns: repeat(5, 1fr) !important;
+      width: 100% !important;
+    }
+    .mobile-nav-item {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      color: rgba(255,255,255,0.45) !important;
+      font-size: 0.55rem !important;
+      font-weight: 600 !important;
+      border: none !important;
+      background: none !important;
+      cursor: pointer !important;
+      padding: 0.2rem 0 !important;
+      gap: 2px !important;
+      height: 100% !important;
+      width: 100% !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+    }
+    .mobile-nav-item svg { width: 22px !important; height: 22px !important; flex-shrink: 0 !important; }
+    .mobile-nav-item span { font-size: 0.55rem !important; display: block !important; }
+    .mobile-nav-item.active { color: #f0c040 !important; }
+    .mobile-nav-center .mn-icon {
+      background: linear-gradient(135deg, #c07a10, #ffd700) !important;
+      border-radius: 50% !important;
+      width: 40px !important;
+      height: 40px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-shadow: 0 2px 12px rgba(240,192,64,0.5) !important;
+      margin-bottom: 2px !important;
+    }
 
-    /* QR MODAL */
-    .qr-card { padding: 1.1rem; margin: 0 0.8rem; max-width: calc(100vw - 1.6rem); }
+    /* ── SPIN WHEEL ── */
+    .wheel-wrap { width: 220px !important; height: 220px !important; }
+    .wheel-canvas { width: 220px !important; height: 220px !important; }
 
-    /* TOAST */
-    .toast { left: 0.5rem !important; right: 0.5rem !important; max-width: unset !important; bottom: 4.2rem !important; font-size: 0.78rem !important; border-radius: 10px !important; }
+    /* ── QR MODAL ── */
+    .qr-card { padding: 1.2rem !important; margin: 0 0.8rem !important; max-width: calc(100vw - 1.6rem) !important; }
 
-    /* SECTION TITLE */
-    .section-title { font-size: 1rem; }
-    .section-sub { font-size: 0.75rem; }
+    /* ── TOAST ── */
+    .toast {
+      left: 0.5rem !important;
+      right: 0.5rem !important;
+      max-width: unset !important;
+      bottom: 4.5rem !important;
+      font-size: 0.8rem !important;
+      border-radius: 10px !important;
+    }
+
+    /* ── SECTION TITLES ── */
+    .section-title { font-size: 1rem !important; }
+    .section-sub { font-size: 0.75rem !important; }
+
+    /* ── MISC FIXES ── */
+    .promo-banner { flex-direction: column !important; text-align: center !important; padding: 0.9rem !important; gap: 0.5rem !important; }
+    .promo-amount { font-size: 1.4rem !important; }
   }
 
-  /* SMALL MOBILE — 400px */
+  /* ── SMALL MOBILE 400px ── */
   @media (max-width: 400px) {
-    .hero h1 { font-size: 1.65rem; }
-    .cg-color-btn { font-size: 0.75rem; padding: 0.72rem 0.05rem; }
-    .cg-num-btn { font-size: 0.82rem; min-height: 36px; }
-    .cg-ttab { font-size: 0.66rem; padding: 0.42rem 0.05rem; }
-    .game-thumb { height: 72px; font-size: 1.8rem; }
-    .cg-result-popup { width: 92vw; padding: 1.1rem 0.75rem; }
-    .mobile-nav-item { font-size: 0.46rem; }
-    .hs-val { font-size: 0.88rem; }
+    .cg-color-btn { font-size: 0.78rem !important; padding: 0.75rem 0.05rem !important; }
+    .cg-num-btn { font-size: 0.85rem !important; min-height: 40px !important; }
+    .cg-ttab { font-size: 0.68rem !important; }
+    .mobile-nav-item { font-size: 0.5rem !important; }
+    .hs-val { font-size: 0.88rem !important; }
   }
 
   /* scrollbar */
@@ -1153,7 +1290,7 @@
 <div class="page active" id="page-home">
 
   <!-- MOBILE APP HOME (shown only on mobile when logged in) -->
-  <div id="mobileAppHome" style="display:none;padding-top:54px;background:var(--bg);min-height:100vh;">
+  <div id="mobileAppHome" style="display:none;background:var(--bg);">
 
     <!-- Announcement bar -->
     <div style="background:#c0392b;color:#fff;font-size:0.7rem;padding:0.3rem 0.8rem;text-align:center;display:flex;justify-content:space-between;align-items:center;">
@@ -4643,7 +4780,6 @@
   let cgHistory = [];
   let cgBettingOpen = true;
 
-
   function buildNumGrid() {
     const grid = document.getElementById('cgNumbers');
     if (!grid) return;
@@ -4756,9 +4892,8 @@
 
   function setTimer(mins) {
     cgTimer = mins;
-    [1, 3, 5].forEach(m => {
-      const el = document.getElementById('ttab-' + m);
-      if (el) el.classList.toggle('active', m === mins);
+    [1,3,5].forEach(m => {
+      document.getElementById('ttab-' + m).classList.toggle('active', m === mins);
     });
     // Load this timer's history
     cgHistPage = 1; // Reset to first page
@@ -7270,9 +7405,9 @@
 
     <!-- Timer Tabs -->
     <div class="cg-timer-tabs">
-      <div class="cg-ttab active" id="ttab-1" onclick="setTimer(1)">1 Min</div>
-      <div class="cg-ttab" id="ttab-3" onclick="setTimer(3)">3 Min</div>
-      <div class="cg-ttab" id="ttab-5" onclick="setTimer(5)">5 Min</div>
+      <div class="cg-ttab active" id="ttab-1" onclick="setTimer(1)">⏱ 1 Min</div>
+      <div class="cg-ttab" id="ttab-3" onclick="setTimer(3)">⏱ 3 Min</div>
+      <div class="cg-ttab" id="ttab-5" onclick="setTimer(5)">⏱ 5 Min</div>
     </div>
 
     <!-- Round Info + Countdown -->
@@ -7433,11 +7568,9 @@
 <div class="mobile-nav" id="mobileNav">
 
   <!-- Promotion -->
-  <button class="mobile-nav-item" id="mn-activity" onclick="mobileNav('promotions')">
+  <button class="mobile-nav-item" id="mn-activity" onclick="mobileNav('referral')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
-      <path d="M20 7H4C2.9 7 2 7.9 2 9V19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V9C22 7.9 21.1 7 20 7Z" stroke="currentColor" stroke-width="2"/>
-      <path d="M16 7V5C16 3.9 15.1 3 14 3H10C8.9 3 8 3.9 8 5V7" stroke="currentColor" stroke-width="2"/>
-      <path d="M12 12V16M10 14H14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
     </svg>
     <span>Promotion</span>
   </button>
@@ -7455,32 +7588,29 @@
   <!-- Home (center) -->
   <button class="mobile-nav-item mobile-nav-center active" id="mn-home" onclick="mobileNav('home')">
     <div class="mn-icon" style="display:flex;align-items:center;justify-content:center;">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
-        <rect x="2" y="6" width="20" height="14" rx="2" fill="#000" stroke="#000" stroke-width="1"/>
-        <circle cx="8" cy="10" r="1.5" fill="#c8a020"/>
-        <rect x="5" y="14" width="6" height="4" rx="1" fill="#c8a020"/>
-        <path d="M14 10h4M14 13h3M14 16h2" stroke="#c8a020" stroke-width="1.5" stroke-linecap="round"/>
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
+        <path d="M3 12L12 3L21 12V21H15V15H9V21H3V12Z" fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round"/>
       </svg>
     </div>
     <span>Home</span>
   </button>
 
   <!-- Activity -->
-  <button class="mobile-nav-item" id="mn-promo" onclick="mobileNav('referral')">
+  <button class="mobile-nav-item" id="mn-promo" onclick="mobileNav('promotions')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
-      <path d="M20 12V22H4V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M22 7H2V12H22V7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
-      <path d="M12 22V7M12 7H7.5C6.12 7 5 5.88 5 4.5C5 3.12 6.12 2 7.5 2C10 2 12 7 12 7ZM12 7H16.5C17.88 7 19 5.88 19 4.5C19 3.12 17.88 2 16.5 2C14 2 12 7 12 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M22 12H18L15 21L9 3L6 12H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
     <span>Activity</span>
   </button>
 
   <!-- Account -->
   <button class="mobile-nav-item" id="mn-account" onclick="mobileNav('profile')">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
-      <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
-      <path d="M4 20C4 17 7.58 14 12 14C16.42 14 20 17 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-    </svg>
+    <div style="position:relative;width:24px;height:24px;margin:0 auto;">
+      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="mn-svg" style="position:absolute;top:0;left:0;">
+        <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
+        <path d="M4 20C4 17 7.58 14 12 14C16.42 14 20 17 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+    </div>
     <span>Account</span>
   </button>
 
