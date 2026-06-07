@@ -615,7 +615,7 @@
 
   /* ─── COLOR PREDICTION GAME ─── */
   .color-game-overlay {
-    display:none; position:fixed; inset:0; z-index:600;
+    display:none; position:fixed; inset:0; bottom:65px; z-index:600;
     background: var(--bg); overflow-y:auto; overflow-x:hidden;
   }
   .color-game-overlay.open { display:block; }
@@ -1079,13 +1079,14 @@
     /* ── WINGO GAME ── */
     .color-game-overlay {
       background: #0a0a0f !important;
-      padding-bottom: 65px !important;
+      padding-bottom: 0 !important;
+      bottom: 60px !important;
     }
     .cg-wrap {
       max-width: 100% !important;
       width: 100% !important;
       margin: 0 !important;
-      padding: 0 0 65px 0 !important;
+      padding: 0 0 1rem 0 !important;
       box-sizing: border-box !important;
     }
     .cg-header {
@@ -1227,12 +1228,20 @@
 
     /* ── TOAST ── */
     .toast {
-      left: 0.5rem !important;
-      right: 0.5rem !important;
-      max-width: unset !important;
-      bottom: 4.5rem !important;
-      font-size: 0.8rem !important;
+      left: 0.8rem !important;
+      right: 0.8rem !important;
+      max-width: calc(100vw - 1.6rem) !important;
+      width: auto !important;
+      bottom: 75px !important;
+      font-size: 0.82rem !important;
       border-radius: 10px !important;
+      transform: translateX(0) translateY(80px) !important;
+      text-align: center !important;
+      white-space: normal !important;
+      word-break: break-word !important;
+    }
+    .toast.show {
+      transform: translateX(0) translateY(0) !important;
     }
 
     /* ── SECTION TITLES ── */
@@ -2305,36 +2314,86 @@
     if (dh) dh.style.display = 'block';
   });
 
+  // ── URL PAGE ROUTER ──
+  // Handles ?page=login, ?page=register etc in the URL
+  (function handlePageRoute() {
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page');
+    if (!page) return;
+
+    const guestPages = ['login', 'register', 'forgot'];
+    if (guestPages.includes(page)) {
+      // These pages don't need auth check - show immediately
+      setTimeout(() => showPage(page), 300);
+    } else {
+      // Protected pages - wait for Firebase auth
+      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+        unsubscribe();
+        if (user) {
+          setTimeout(() => showPage(page), 100);
+        } else {
+          setTimeout(() => showPage('login'), 100);
+        }
+      });
+    }
+  })();
+
   // ── REFERRAL LINK HANDLER ──
-  // Reads ?invitationCode=ROY-XXXX from URL, pre-fills register form and opens it
+  // ── URL PAGE ROUTER ──
+  // Handles ?page=login, ?page=register etc in the URL
+  (function handlePageRoute() {
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page');
+    if (!page) return;
+
+    const guestPages = ['login', 'register', 'forgot'];
+    if (guestPages.includes(page)) {
+      // These pages don't need auth check - show immediately
+      setTimeout(() => showPage(page), 300);
+    } else {
+      // Protected pages - wait for Firebase auth
+      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+        unsubscribe();
+        if (user) {
+          setTimeout(() => showPage(page), 100);
+        } else {
+          setTimeout(() => showPage('login'), 100);
+        }
+      });
+    }
+  })();
+
+  // ── REFERRAL LINK HANDLER ──
+  // Reads ?invitationCode= from URL, waits for Firebase auth, then decides what to do
   (function handleReferralLink() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('invitationCode') || params.get('ref') || params.get('r_code') || params.get('invite');
     if (!code) return;
 
-    // Store the code so it survives any page navigation
+    // Store the code globally so register page can always access it
     window._referralCode = code;
 
-    // Wait for Firebase auth check — if already logged in, skip redirect
-    // Otherwise redirect to register with code pre-filled
-    const waitAndRedirect = () => {
-      if (window.isLoggedIn) return; // already logged in, do nothing
+    // Wait for Firebase to confirm auth state, then act
+    // firebase.auth().onAuthStateChanged fires exactly once on load
+    const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+      unsubscribe(); // only need it once
 
-      // Pre-fill the invite code fields
-      const codeInput = document.getElementById('inviteCodeInput');
-      const codeDisplay = document.getElementById('inviteCodeDisplay');
-      const invitePill = document.getElementById('invitePill');
-      if (codeInput) codeInput.value = code;
-      if (codeDisplay) codeDisplay.textContent = code;
-      if (invitePill) invitePill.style.display = 'flex';
-
-      // Navigate directly to register page
-      showPage('register');
-    };
-
-    // Try immediately, then retry after Firebase loads
-    setTimeout(waitAndRedirect, 800);
-    setTimeout(waitAndRedirect, 2000);
+      if (user) {
+        // Already logged in → go to home page, ignore referral
+        showPage('home');
+      } else {
+        // Not logged in → go to register with code pre-filled
+        setTimeout(() => {
+          const codeInput = document.getElementById('inviteCodeInput');
+          const codeDisplay = document.getElementById('inviteCodeDisplay');
+          const invitePill = document.getElementById('invitePill');
+          if (codeInput) codeInput.value = code;
+          if (codeDisplay) codeDisplay.textContent = code;
+          if (invitePill) invitePill.style.display = 'flex';
+          showPage('register');
+        }, 100);
+      }
+    });
   })();
 
   async function logout() {
@@ -4899,6 +4958,14 @@
   function openColorGame() {
     if (!isLoggedIn) { showPage('login'); showToast('🔐 Please sign in to play'); return; }
     document.getElementById('colorGameOverlay').classList.add('open');
+    // Start real-time balance listener for game
+    const db = window.fbDB || fbDB;
+    const user = window.currentUser;
+    if (db && user) {
+      db.ref('users/' + user.uid + '/balance').on('value', snap => {
+        updateBalanceDisplay(snap.val() || 0);
+      });
+    }
     loadGameSettings();
     buildNumGrid();
     // Only start timers if not already running
@@ -6275,7 +6342,22 @@
     // Update mobile home balance
     const mobileHomeBal = document.getElementById('mobileHomeBalance');
     if (mobileHomeBal) mobileHomeBal.textContent = formatted;
+    // Update game balance display (real-time in WinGo)
+    const cgBal = document.getElementById('cgBalanceDisplay');
+    if (cgBal) cgBal.textContent = bal.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
     window.currentBalance = bal;
+  }
+
+  function refreshCgBalance() {
+    const db = window.fbDB || fbDB;
+    const user = window.currentUser;
+    if (!db || !user) return;
+    const btn = document.querySelector('#cgBalanceDisplay + button');
+    if (btn) btn.style.animation = 'spin 0.5s linear';
+    db.ref('users/' + user.uid + '/balance').once('value').then(snap => {
+      updateBalanceDisplay(snap.val() || 0);
+      if (btn) setTimeout(() => btn.style.animation = '', 500);
+    });
   }
 
   function updateMobileHomeBalance() {
@@ -7529,8 +7611,15 @@
 <div class="color-game-overlay" id="colorGameOverlay">
   <div class="cg-wrap">
     <div class="cg-header">
-      <div class="cg-title">🎯 WinGo Lottery</div>
-      <button class="cg-close" onclick="closeColorGame()">✕ Close</button>
+      <div class="cg-title">🎯 WinGo</div>
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <div style="display:flex;align-items:center;gap:0.3rem;background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.3);border-radius:8px;padding:0.3rem 0.6rem;">
+          <span style="font-size:0.7rem;color:var(--muted);">₹</span>
+          <span id="cgBalanceDisplay" style="font-size:0.85rem;font-weight:700;color:var(--gold);">0.00</span>
+          <button onclick="refreshCgBalance()" style="background:none;border:none;cursor:pointer;padding:0;color:var(--muted);font-size:0.75rem;line-height:1;" title="Refresh balance">🔄</button>
+        </div>
+        <button class="cg-close" onclick="closeColorGame()">✕</button>
+      </div>
     </div>
 
     <!-- Timer Tabs -->
