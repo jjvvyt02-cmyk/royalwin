@@ -76,10 +76,10 @@
   /* Home page doesn't need full-height enforced — hero handles it */
   #page-home { min-height: unset; }
 
-  /* ─── MOBILE BOTTOM NAV — hidden on desktop always ─── */
-  .mobile-nav { display: none !important; }
+  /* ─── MOBILE BOTTOM NAV — always visible on mobile ─── */
+  .mobile-nav { display: none; }
   @media (max-width: 768px) {
-    .mobile-nav.nav-visible { display: grid !important; }
+    .mobile-nav { display: grid !important; }
     .page { min-height: unset; }
   }
 
@@ -913,13 +913,13 @@
     body { padding-bottom: 62px; overflow-x: hidden; }
     input, select, textarea { font-size: 16px !important; }
 
-    /* Kill ALL min-heights that cause blank space on mobile */
-    .page, #page-home, .wallet-page, .profile-page, .vip-page,
-    .promo-page, .support-page, .ref-page, .history-page,
-    .hero, .auth-wrap, .color-game-overlay, .cg-wrap,
-    #mobileAppHome, #desktopHome { min-height: unset !important; }
-    /* Body min-height also */
-    body { min-height: unset !important; }
+    /* Kill ALL blank space - remove every min-height on mobile */
+    *, *::before, *::after { min-height: 0 !important; }
+    /* Re-allow height on specific elements that need it */
+    .mobile-nav { min-height: 58px !important; height: 58px !important; }
+    .cg-num-btn { min-height: 42px !important; }
+    .mn-icon { min-height: unset !important; }
+    body { padding-bottom: 58px !important; }
 
     /* TOP NAV */
     nav { padding: 0 1rem; height: 54px; }
@@ -931,8 +931,7 @@
     .notif-bell, .avatar { display: flex !important; }
     .notif-dropdown { right: 0; width: 260px; }
 
-    /* BOTTOM NAV */
-    .mobile-nav.nav-visible { display: grid; }
+    /* BOTTOM NAV - always grid on mobile, handled by global rule */
 
     /* HOME — no blank space */
     .hero {
@@ -1017,57 +1016,74 @@
     #page-history > div,
     #page-bethistory > div { padding: 54px 0.8rem 2rem !important; max-width: 100% !important; }
 
-    /* WINGO GAME — fit entire game on one screen without scrolling */
-    .color-game-overlay { position: fixed; inset: 0; overflow-y: auto; overflow-x: hidden; z-index: 600; }
-    .cg-wrap { padding: 52px 0.5rem 62px; max-width: 100%; box-sizing: border-box; width: 100%; }
-    .cg-header { margin-bottom: 0.4rem; padding: 0 0.1rem; }
-    .cg-title { font-size: 0.85rem; }
-    .cg-close { padding: 0.2rem 0.5rem; font-size: 0.7rem; }
+    /* WINGO GAME — truly full screen mobile app style */
+    .color-game-overlay {
+      position: fixed !important; inset: 0 !important;
+      overflow-y: auto !important; overflow-x: hidden !important;
+      z-index: 600 !important; background: var(--bg) !important;
+    }
+    .cg-wrap {
+      padding: 0 !important; max-width: 100% !important;
+      width: 100% !important; box-sizing: border-box !important;
+    }
 
-    /* Timer tabs - 3 equal, no overflow */
-    .cg-timer-tabs { display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; gap: 0.25rem; margin-bottom: 0.4rem; }
-    .cg-ttab { padding: 0.42rem 0.05rem; font-size: 0.7rem; border-radius: 8px; text-align: center; }
+    /* Game header - fixed at top */
+    .cg-header {
+      position: sticky; top: 0; z-index: 10;
+      background: var(--bg2); border-bottom: 1px solid var(--border);
+      padding: 0.6rem 0.8rem; margin-bottom: 0;
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .cg-title { font-size: 0.9rem; }
+    .cg-close { padding: 0.25rem 0.6rem; font-size: 0.72rem; }
 
-    /* Period info */
-    .cg-round-info { padding: 0.45rem 0.6rem; margin-bottom: 0.4rem; }
-    .cg-round-num { font-size: 0.58rem; }
-    .cg-round-val { font-size: 0.65rem; }
-    .cg-count-val { font-size: 1.3rem; }
-    .cg-count-lbl { font-size: 0.55rem; }
-    .cg-status { font-size: 0.55rem; padding: 0.15rem 0.35rem; }
+    /* All game content padded */
+    .cg-timer-tabs {
+      display: grid !important; grid-template-columns: 1fr 1fr 1fr !important;
+      gap: 0.4rem; margin: 0.6rem 0.6rem 0.5rem; padding: 0;
+    }
+    .cg-ttab { padding: 0.5rem 0.1rem; font-size: 0.75rem; border-radius: 8px; }
 
-    /* Color buttons */
-    .cg-colors { grid-template-columns: 1fr 1fr 1fr !important; gap: 0.25rem; margin-bottom: 0.4rem; }
-    .cg-color-btn { padding: 0.7rem 0.05rem; font-size: 0.78rem; border-radius: 8px; }
+    .cg-round-info { margin: 0 0.6rem 0.5rem; padding: 0.55rem 0.8rem; border-radius: 10px; }
+    .cg-round-num { font-size: 0.6rem; }
+    .cg-round-val { font-size: 0.68rem; }
+    .cg-count-val { font-size: 1.5rem; }
+    .cg-count-lbl { font-size: 0.6rem; }
+    .cg-status { font-size: 0.6rem; padding: 0.2rem 0.5rem; }
 
-    /* Number grid */
-    .cg-numbers { grid-template-columns: repeat(5, 1fr) !important; gap: 0.22rem; margin-bottom: 0.4rem; }
-    .cg-num-btn { border-radius: 7px; font-size: 0.88rem; aspect-ratio: 1; min-height: 36px; }
+    .cg-colors { margin: 0 0.6rem 0.5rem; grid-template-columns: 1fr 1fr 1fr !important; gap: 0.4rem; }
+    .cg-color-btn { padding: 0.85rem 0.1rem; font-size: 0.82rem; border-radius: 10px; }
 
-    /* Big/Small */
-    .cg-color-btn[id="cgBigBtn"], .cg-color-btn[id="cgSmallBtn"] { padding: 0.65rem; font-size: 0.85rem; }
+    .cg-numbers { margin: 0 0.6rem 0.5rem; grid-template-columns: repeat(5,1fr) !important; gap: 0.3rem; }
+    .cg-num-btn { font-size: 0.92rem; aspect-ratio: 1; min-height: 42px; border-radius: 8px; }
+
+    /* Big/Small row */
+    .cg-bigsmall { margin: 0 0.6rem 0.5rem; }
+    .cg-color-btn[id="cgBigBtn"],
+    .cg-color-btn[id="cgSmallBtn"] { padding: 0.75rem; font-size: 0.9rem; }
 
     /* Bet panel */
-    .cg-bet-panel { padding: 0.5rem; border-radius: 10px; margin-bottom: 0.4rem; }
-    .cg-bet-title { font-size: 0.65rem; margin-bottom: 0.35rem; }
-    .cg-bet-presets { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.25rem; padding-bottom: 0.15rem; scrollbar-width: none; }
+    .cg-bet-panel { margin: 0 0.6rem 0.5rem; padding: 0.65rem; border-radius: 10px; }
+    .cg-bet-title { font-size: 0.68rem; margin-bottom: 0.4rem; }
+    .cg-bet-presets { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.3rem; scrollbar-width: none; }
     .cg-bet-presets::-webkit-scrollbar { display: none; }
-    .cg-bet-preset { flex-shrink: 0; padding: 0.32rem 0.65rem; font-size: 0.72rem; white-space: nowrap; border-radius: 6px; }
-    .cg-x-btn { padding: 0.35rem 0.32rem; font-size: 0.68rem; border-radius: 5px; }
-    .cg-confirm-btn { padding: 0.72rem; font-size: 0.78rem; border-radius: 8px; margin-top: 0.3rem; }
+    .cg-bet-preset { flex-shrink: 0; padding: 0.38rem 0.75rem; font-size: 0.75rem; white-space: nowrap; }
+    .cg-x-btn { padding: 0.4rem 0.4rem; font-size: 0.7rem; }
+    .cg-confirm-btn { margin: 0.4rem 0.6rem 0; padding: 0.85rem; font-size: 0.85rem; border-radius: 10px; display: block; width: calc(100% - 1.2rem); }
 
-    /* History/tabs */
-    .cg-hist-row { font-size: 0.63rem; padding: 0.38rem 0.22rem; }
-    .cg-hist-row.head { font-size: 0.57rem; }
-    .cg-tab-btns { gap: 0.25rem; margin-bottom: 0.5rem; }
-    .cg-tab-btn { padding: 0.32rem 0.8rem; font-size: 0.72rem; }
+    /* History section */
+    .cg-history { margin: 0.6rem; border-radius: 10px; }
+    .cg-hist-row { font-size: 0.67rem; padding: 0.42rem 0.5rem; }
+    .cg-hist-row.head { font-size: 0.6rem; }
+    .cg-tab-btns { margin: 0.6rem 0.6rem 0.4rem; gap: 0.3rem; }
+    .cg-tab-btn { padding: 0.38rem 0.9rem; font-size: 0.75rem; }
 
     /* Result popup */
-    .cg-result-popup { width: 84vw; padding: 1.2rem 0.8rem; border-radius: 12px; }
-    .cg-result-emoji { font-size: 2.4rem; }
+    .cg-result-popup { width: 84vw; padding: 1.3rem 0.9rem; border-radius: 14px; }
+    .cg-result-emoji { font-size: 2.5rem; }
     .cg-result-title { font-size: 1.1rem; }
-    .cg-result-amt { font-size: 1.6rem; }
-    .cg-result-num-badge { width: 40px; height: 40px; font-size: 1rem; }
+    .cg-result-amt { font-size: 1.7rem; }
+    .cg-result-num-badge { width: 42px; height: 42px; font-size: 1.05rem; }
 
     /* SPIN WHEEL */
     .wheel-wrap { width: 210px; height: 210px; }
@@ -1173,7 +1189,7 @@
 
     <!-- Promo Banners (Wheel + VIP) -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;padding:0.6rem 0.8rem 0;">
-      <div onclick="showPage('promotions')" style="background:linear-gradient(135deg,#6a0572,#ab47bc);border-radius:12px;padding:0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;min-height:52px;">
+      <div onclick="showPage('promotions');setTimeout(()=>{document.getElementById('spinWheelBtn')?.click()},300)" style="background:linear-gradient(135deg,#6a0572,#ab47bc);border-radius:12px;padding:0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;min-height:52px;">
         <span style="font-size:1.5rem;">🎡</span>
         <div><div style="font-size:0.7rem;font-weight:800;color:#fff;">WHEEL OF</div><div style="font-size:0.7rem;font-weight:800;color:#fff;">FORTUNE</div></div>
       </div>
@@ -1183,13 +1199,8 @@
       </div>
     </div>
 
-    <!-- Game Category Tabs -->
-    <div style="display:flex;gap:0;padding:0.6rem 0.8rem 0;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;" id="mobileCatTabs">
-      <button onclick="setMobileCat('lobby')" class="mob-cat active" style="flex-shrink:0;padding:0.45rem 0.9rem;border-radius:20px;border:none;background:var(--gold);color:#000;font-size:0.72rem;font-weight:800;cursor:pointer;font-family:'Exo 2',sans-serif;margin-right:0.35rem;">🎮 Lobby</button>
-      <button onclick="setMobileCat('lottery')" class="mob-cat" style="flex-shrink:0;padding:0.45rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;margin-right:0.35rem;">🎯 Lottery</button>
-      <button onclick="setMobileCat('popular')" class="mob-cat" style="flex-shrink:0;padding:0.45rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;margin-right:0.35rem;">🔥 Popular</button>
-      <button onclick="setMobileCat('slots')" class="mob-cat" style="flex-shrink:0;padding:0.45rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:0.72rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">🎰 Slots</button>
-    </div>
+    <!-- Spacer -->
+    <div style="height:0.2rem;"></div>
 
     <!-- LOTTERY Section -->
     <div style="padding:0.6rem 0.8rem 0;">
@@ -1232,21 +1243,28 @@
         <span style="font-size:1rem;">🔥</span>
         <span style="font-size:0.72rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px;">Popular</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
-        <div onclick="loginPrompt()" style="background:linear-gradient(135deg,#1a1000,#2e1c00);border-radius:14px;overflow:hidden;cursor:pointer;border:1px solid rgba(240,192,64,0.15);">
-          <div style="height:100px;display:flex;align-items:center;justify-content:center;font-size:3rem;">🐉</div>
-          <div style="padding:0.4rem 0.6rem 0.6rem;background:rgba(0,0,0,0.3);">
-            <div style="font-size:0.75rem;font-weight:700;color:#fff;">Dragon Tiger</div>
-            <div style="font-size:0.62rem;color:rgba(255,255,255,0.5);">Coming soon</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;">
+        <div onclick="loginPrompt()" style="background:linear-gradient(135deg,#1a0a00,#3d1a00);border-radius:12px;overflow:hidden;cursor:pointer;border:1px solid rgba(240,192,64,0.15);">
+          <div style="height:75px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;">🎰</div>
+          <div style="padding:0.35rem 0.4rem 0.5rem;background:rgba(0,0,0,0.3);">
+            <div style="font-size:0.68rem;font-weight:700;color:#fff;">Mega Slots</div>
+            <div style="font-size:0.55rem;color:rgba(255,255,255,0.4);">Coming soon</div>
           </div>
         </div>
-        <div onclick="loginPrompt()" style="background:linear-gradient(135deg,#0a001a,#1a0033);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;border:1px solid rgba(240,192,64,0.15);">
-          <div style="height:100px;display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;">🎲
-            <div style="position:absolute;top:6px;left:6px;background:#c62828;color:#fff;font-size:0.5rem;font-weight:800;padding:2px 6px;border-radius:4px;">NEW</div>
+        <div onclick="loginPrompt()" style="background:linear-gradient(135deg,#1a1000,#2e1c00);border-radius:12px;overflow:hidden;cursor:pointer;border:1px solid rgba(240,192,64,0.15);">
+          <div style="height:75px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;">🐉</div>
+          <div style="padding:0.35rem 0.4rem 0.5rem;background:rgba(0,0,0,0.3);">
+            <div style="font-size:0.68rem;font-weight:700;color:#fff;">Dragon Tiger</div>
+            <div style="font-size:0.55rem;color:rgba(255,255,255,0.4);">Coming soon</div>
           </div>
-          <div style="padding:0.4rem 0.6rem 0.6rem;background:rgba(0,0,0,0.3);">
-            <div style="font-size:0.75rem;font-weight:700;color:#fff;">Dice Royale</div>
-            <div style="font-size:0.62rem;color:rgba(255,255,255,0.5);">Coming soon</div>
+        </div>
+        <div onclick="loginPrompt()" style="background:linear-gradient(135deg,#0a001a,#1a0033);border-radius:12px;overflow:hidden;cursor:pointer;position:relative;border:1px solid rgba(240,192,64,0.15);">
+          <div style="height:75px;display:flex;align-items:center;justify-content:center;font-size:2.2rem;position:relative;">🎲
+            <div style="position:absolute;top:4px;left:4px;background:#c62828;color:#fff;font-size:0.48rem;font-weight:800;padding:1px 4px;border-radius:3px;">NEW</div>
+          </div>
+          <div style="padding:0.35rem 0.4rem 0.5rem;background:rgba(0,0,0,0.3);">
+            <div style="font-size:0.68rem;font-weight:700;color:#fff;">Dice Royale</div>
+            <div style="font-size:0.55rem;color:rgba(255,255,255,0.4);">Coming soon</div>
           </div>
         </div>
       </div>
@@ -6133,7 +6151,7 @@
           loadAnnouncement();
           document.getElementById('navGuest').style.display = 'none';
           document.getElementById('navUser').style.display = 'flex';
-          document.getElementById('mobileNav').classList.add('nav-visible');
+          
           showTicker();
           // Hide guest buttons, show welcome banner when logged in
           const heroSignIn = document.getElementById('heroSignInBtn');
@@ -6162,7 +6180,7 @@
           isLoggedIn = false;
           document.getElementById('navGuest').style.display = 'flex';
           document.getElementById('navUser').style.display = 'none';
-          document.getElementById('mobileNav').classList.remove('nav-visible');
+          
           const heroPlayBtn = document.getElementById('heroPlayBtn');
           if (heroPlayBtn) heroPlayBtn.style.display = 'inline-flex';
           const heroSignInBtn = document.getElementById('heroSignInBtn');
