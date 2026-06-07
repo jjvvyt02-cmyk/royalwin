@@ -14,6 +14,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="/royalwin/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♠</text></svg>">
   <meta name="theme-color" content="#f0c040">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -3334,10 +3335,7 @@
     const rows = _depHistData;
     if (!rows.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No deposits yet</div>'; return; }
 
-    // Pending banner
-    const pending = rows.filter(r => r.status === 'pending');
-    // Pending deposit banner removed
-    else if (banner) { banner.style.display='none'; }
+    // Pending banner removed - history rows shown as-is
 
     const PER_PAGE = 10, MAX_PAGES = 5;
     const limited = rows.slice(0, PER_PAGE * MAX_PAGES);
@@ -5987,11 +5985,11 @@
       const plColor = isPending ? 'var(--gold)' : b.pl > 0 ? 'var(--green)' : b.pl < 0 ? 'var(--red2)' : 'var(--muted)';
       const plText = isPending ? '⏳' : b.pl > 0 ? '+₹'+b.pl : b.pl < 0 ? '−₹'+Math.abs(b.pl) : '—';
       const rowStyle = isPending ? 'border:1px solid rgba(240,192,64,0.3);background:rgba(240,192,64,0.04);' : '';
-      return `<div class="cg-hist-row" style="grid-template-columns:1.2fr 0.8fr 1fr 1fr 1fr;${rowStyle}">
+      return `<div class="cg-hist-row" style="grid-template-columns:1fr 0.7fr 0.9fr 1.2fr 0.9fr;${rowStyle}">
         <div style="font-size:0.83rem;color:var(--muted);">${b.round}</div>
         <div>₹${b.bet}</div>
         <div style="font-weight:700;color:${b.selColor};">${b.selection}</div>
-        <div>${isPending ? '<span style="color:var(--gold);font-size:0.83rem;">⏳ Pending</span>' : `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${b.resultBg};margin-right:4px;"></span>${b.result}`}</div>
+        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${isPending ? '<span style="color:var(--gold);font-size:0.83rem;">⏳</span>' : `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${b.resultBg};margin-right:3px;flex-shrink:0;"></span>${b.result}`}</div>
         <div style="font-weight:700;color:${plColor};">${plText}</div>
       </div>`;
     }).join('');
@@ -7868,7 +7866,7 @@
       <div style="display:flex;align-items:center;gap:0.5rem;">
         <div style="display:flex;align-items:center;gap:0.3rem;background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.3);border-radius:8px;padding:0.3rem 0.6rem;">
           <span style="font-size:0.7rem;color:var(--muted);">₹</span>
-          <span id="cgBalanceDisplay" style="font-size:0.85rem;font-weight:700;color:var(--gold);">0.00</span>
+          <span id="cgBalanceDisplay" style="font-size:0.85rem;font-weight:700;color:var(--gold);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle;">0.00</span>
           <button onclick="refreshCgBalance()" class="refresh-btn" style="width:24px;height:24px;border-color:rgba(240,192,64,0.2);" title="Refresh balance">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       </button>
@@ -7969,7 +7967,7 @@
       <!-- My Bets Tab -->
       <div id="cgTabMyBets" style="display:none;">
         <div class="cg-hist-rows" style="max-height:none;">
-          <div class="cg-hist-row head" style="grid-template-columns:1.2fr 0.8fr 1fr 1fr 1fr;">
+          <div class="cg-hist-row head" style="grid-template-columns:1fr 0.7fr 0.9fr 1.2fr 0.9fr;">
             <div>Period</div><div>Bet</div><div>Pick</div><div>Result</div><div>P&L</div>
           </div>
           <div id="cgMyBetsRows"><div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem;">No bets placed yet</div></div>
