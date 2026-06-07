@@ -2261,8 +2261,31 @@
     isLoggedIn = false;
     window.currentUser = null;
     window.userProfile = null;
-    document.getElementById('navGuest').style.display = 'flex';
-    document.getElementById('navUser').style.display = 'none';
+
+    // Show guest nav, hide user nav
+    const navGuest = document.getElementById('navGuest');
+    const navUser = document.getElementById('navUser');
+    if (navGuest) navGuest.style.display = 'flex';
+    if (navUser) navUser.style.display = 'none';
+
+    // Show guest home, hide logged-in mobile home
+    const mah = document.getElementById('mobileAppHome');
+    const dh = document.getElementById('desktopHome');
+    if (mah) mah.style.display = 'none';
+    if (dh) dh.style.display = 'block';
+
+    // Show login/register buttons, hide welcome banner
+    const heroPlay = document.getElementById('heroPlayBtn');
+    const heroSignIn = document.getElementById('heroSignInBtn');
+    const heroBanner = document.getElementById('heroWelcomeBanner');
+    if (heroPlay) heroPlay.style.display = 'inline-flex';
+    if (heroSignIn) heroSignIn.style.display = 'inline-flex';
+    if (heroBanner) heroBanner.style.display = 'none';
+
+    // Hide bottom nav for guest
+    const mobileNav = document.getElementById('mobileNav');
+    if (mobileNav) mobileNav.style.display = 'none';
+
     showToast('👋 Signed out. See you soon!');
     showPage('home');
   }
@@ -6303,6 +6326,9 @@
           if (heroPlay) heroPlay.style.display = 'none';
           const heroBanner = document.getElementById('heroWelcomeBanner');
           if (heroBanner) heroBanner.style.display = 'block';
+          // Show bottom nav for logged-in users
+          const mobileNavEl = document.getElementById('mobileNav');
+          if (mobileNavEl) mobileNavEl.style.display = 'grid';
           // Mobile: show app home, hide desktop hero
           if (window.innerWidth <= 768) {
             const mah = document.getElementById('mobileAppHome');
@@ -6335,6 +6361,10 @@
           const dh = document.getElementById('desktopHome');
           if (mah) mah.style.display = 'none';
           if (dh) dh.style.display = 'block';
+          // Hide bottom nav for guest, navigate to home
+          const mobileNavEl = document.getElementById('mobileNav');
+          if (mobileNavEl) mobileNavEl.style.display = 'none';
+          showPage('home');
         }
       });
       // Test read to confirm connection
