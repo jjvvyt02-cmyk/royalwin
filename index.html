@@ -1,3 +1,13 @@
+<!-- LOADING SCREEN -->
+<div id="appLoader" style="position:fixed;inset:0;z-index:99999;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s;">
+  <div style="font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:var(--gold);margin-bottom:0.5rem;">ROYAL<span style="color:#e02020;">♠</span>WIN</div>
+  <div style="font-size:0.8rem;color:var(--muted);letter-spacing:2px;margin-bottom:2rem;">PREMIUM GAMING</div>
+  <div style="width:48px;height:48px;border:3px solid rgba(240,192,64,0.2);border-top-color:var(--gold);border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+</div>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+</style>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -38,9 +48,9 @@
 
   body {
     font-family: 'Exo 2', sans-serif;
+    padding-bottom: 65px;
     background: var(--bg);
     color: var(--text);
-    min-height: 100vh;
     overflow-x: hidden;
   }
 
@@ -61,16 +71,37 @@
   }
 
   /* ─── PAGES ─── */
-  .page { display:none; position:relative; z-index:1; min-height:100vh; }
+  .page { display:none; position:relative; z-index:1; height:auto; }
+  /* Both home sections hidden by default - JS shows correct one */
+  #mobileAppHome { display: none; }
+  #desktopHome { display: none; }
+  /* Guest home: hide games section - only show hero with login/register */
+  #desktopHome .section { display: none !important; }
   .page.active { display:block; }
   /* Home page doesn't need full-height enforced — hero handles it */
   #page-home { min-height: unset; }
 
-  /* ─── MOBILE BOTTOM NAV — always visible on mobile ─── */
-  .mobile-nav { display: none; }
+  /* ─── BOTTOM NAV — hidden until logged in ─── */
+  .mobile-nav {
+    display: none;
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    z-index: 9999;
+    background: #100800;
+    border-top: 1px solid rgba(240,192,64,0.3);
+    border-radius: 20px 20px 0 0;
+    grid-template-columns: repeat(5, 1fr);
+    width: 480px; max-width: 100%; height: 60px;
+    box-shadow: 0 -4px 30px rgba(0,0,0,0.6);
+    overflow: hidden;
+  }
   @media (max-width: 768px) {
-    .mobile-nav { display: grid !important; visibility: visible !important; }
-    .page { min-height: unset; }
+    .mobile-nav {
+      width: 100% !important;
+      border-radius: 0 !important;
+      left: 0 !important;
+      transform: none !important;
+    }
+    .page { min-height: unset !important; height: auto !important; }
   }
 
   /* ─── NAV ─── */
@@ -117,7 +148,7 @@
 
   /* ─── HOME PAGE ─── */
   .hero {
-    min-height: 100vh; padding-top: 64px;
+    padding-top: 2rem; padding-bottom: 2rem;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     text-align: center; position: relative; overflow: hidden;
     padding-left: 1.5rem; padding-right: 1.5rem;
@@ -172,7 +203,7 @@
   .stat-lbl { font-size:0.75rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:0.2rem; }
 
   /* Games section */
-  .section { padding: 5rem 2rem; max-width: 1200px; margin: 0 auto; }
+  .section { padding: 2rem 2rem; max-width: 1200px; margin: 0 auto; }
   .section-title {
     font-family: 'Cinzel', serif; font-size: 1.8rem; font-weight: 800;
     color: var(--gold); margin-bottom: 0.5rem;
@@ -215,9 +246,8 @@
 
   /* ─── AUTH PAGES ─── */
   .auth-wrap {
-    min-height: 100vh; padding-top: 64px;
+    padding: 2rem 1rem;
     display: flex; align-items:center; justify-content:center;
-    padding: 80px 1rem 2rem;
   }
   .auth-card {
     background: var(--card); border: 1px solid var(--border); border-radius: 16px;
@@ -264,7 +294,7 @@
   .checkbox-row a { color:var(--gold); text-decoration:none; }
 
   /* ─── REFERRAL / AGENCY PAGE ─── */
-  .ref-page { padding: 76px 0 5rem; max-width: 520px; margin: 0 auto; }
+  .ref-page { padding: 1.5rem 0 2rem; max-width: 520px; margin: 0 auto; }
 
   /* Agency header card */
   .agency-card {
@@ -375,8 +405,7 @@
     position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px);
     background:var(--card2); border:1px solid var(--border); border-radius:8px;
     padding:0.8rem 1.5rem; color:var(--gold); font-size:0.9rem;
-    transition:transform 0.3s; z-index:9999; pointer-events:none;
-    white-space:nowrap; max-width:90vw; text-align:center;
+    transition:transform 0.3s; z-index:999; pointer-events:none;
   }
   .toast.show { transform:translateX(-50%) translateY(0); }
 
@@ -389,7 +418,7 @@
 
 
   /* ─── WALLET / DEPOSIT / WITHDRAW ─── */
-  .wallet-page { padding: 100px 2rem 4rem; max-width: 1000px; margin: 0 auto; }
+  .wallet-page { padding: 1rem 1rem 2rem; max-width: 1000px; margin: 0 auto; }
   .wallet-hero {
     background: linear-gradient(135deg, #120c00, var(--card));
     border: 1px solid rgba(240,192,64,0.2); border-radius: 16px;
@@ -500,7 +529,7 @@
   .wheel-close { position:absolute; top:1.5rem; right:1.5rem; background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:0.4rem 0.8rem; cursor:pointer; font-family:'Exo 2',sans-serif; }
 
   /* Profile Page */
-  .profile-page { padding:100px 2rem 4rem; max-width:900px; margin:0 auto; }
+  .profile-page { padding:1rem 1rem 2rem; max-width:900px; margin:0 auto; }
   .profile-hero {
     background:linear-gradient(135deg,#0d0a1a,var(--card)); border:1px solid var(--border);
     border-radius:16px; padding:2.5rem; display:flex; gap:2rem; align-items:center;
@@ -523,7 +552,7 @@
   .profile-card h4 { font-family:'Cinzel',serif; color:var(--gold); font-size:0.95rem; margin-bottom:1.2rem; }
 
   /* VIP Page */
-  .vip-page { padding:100px 2rem 4rem; max-width:1000px; margin:0 auto; }
+  .vip-page { padding:1rem 1rem 2rem; max-width:1000px; margin:0 auto; }
   .vip-hero { text-align:center; padding:3rem 2rem; background:linear-gradient(135deg,#0d0800,#1a1000,var(--card)); border:1px solid rgba(240,192,64,0.2); border-radius:16px; margin-bottom:2.5rem; }
   .vip-hero h2 { font-family:'Cinzel',serif; font-size:2.2rem; color:var(--gold2); margin-bottom:0.5rem; }
   .vip-levels { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:1.2rem; margin-bottom:2.5rem; }
@@ -543,7 +572,7 @@
   .progress-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,var(--gold-dim),var(--gold2)); transition:width 1s; }
 
   /* Promotions */
-  .promo-page { padding:100px 2rem 4rem; max-width:1000px; margin:0 auto; }
+  .promo-page { padding:1rem 1rem 2rem; max-width:1000px; margin:0 auto; }
   .promo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1.5rem; }
   .promo-card {
     background:var(--card); border:1px solid var(--border); border-radius:14px;
@@ -559,7 +588,7 @@
   .promo-expiry { font-size:0.75rem; color:var(--muted); }
 
   /* Support */
-  .support-page { padding:100px 2rem 4rem; max-width:900px; margin:0 auto; }
+  .support-page { padding:1rem 1rem 2rem; max-width:900px; margin:0 auto; }
   .chat-window { background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden; height:420px; display:flex; flex-direction:column; margin-bottom:1.2rem; }
   .chat-header { background:linear-gradient(135deg,#0d0a1a,var(--card2)); padding:1rem 1.2rem; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:0.8rem; }
   .agent-avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--purple),var(--red)); display:flex; align-items:center; justify-content:center; font-size:1rem; }
@@ -590,11 +619,10 @@
     background: var(--bg); overflow-y:auto; overflow-x:hidden;
   }
   .color-game-overlay.open { display:block; }
-  .cg-wrap { max-width:520px; margin:0 auto; padding:80px 1rem 3rem; }
+  .cg-wrap { max-width:520px; margin:0 auto; padding:1.5rem 1rem 3rem; }
   .cg-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; }
   .cg-title { font-family:'Cinzel',serif; font-size:1.4rem; color:var(--gold); }
   .cg-close { background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:0.4rem 0.9rem; cursor:pointer; font-family:'Exo 2',sans-serif; }
-  #cgBalanceDelta { transition: opacity 0.3s ease; }
 
   /* Timer tabs */
   .cg-timer-tabs { display:flex; gap:0.5rem; margin-bottom:1.5rem; }
@@ -856,7 +884,7 @@
   .mobile-nav-center svg { width: 20px; height: 20px; }
 
   /* ─── BET HISTORY PAGE ─── */
-  .history-page { padding: 100px 2rem 4rem; max-width: 900px; margin: 0 auto; }
+  .history-page { padding: 1rem 1rem 2rem; max-width: 900px; margin: 0 auto; }
   .history-summary {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;
   }
@@ -895,209 +923,349 @@
 
 
   /* ═══════════════════════════════════════════
-     MOBILE — 768px and below
+     MOBILE FIRST — Complete Mobile Overhaul
   ═══════════════════════════════════════════ */
+
+  /* ── Hide desktop nav completely on mobile ── */
+  @media (max-width: 768px) {
+    nav { display: none !important; }
+  }
+
   @media (max-width: 768px) {
 
-    /* BASE */
+    /* ── BASE ── */
     * { -webkit-tap-highlight-color: transparent; }
-    body { padding-bottom: 62px; overflow-x: hidden; }
+    html, body { overflow-x: hidden !important; }
+    body {
+      padding-bottom: 65px !important;
+      padding-top: 0 !important;
+      background: #0a0a0f;
+      font-size: 14px;
+    }
     input, select, textarea { font-size: 16px !important; }
 
-    /* Fix blank space - only target pages that have min-height:100vh */
-    .page { min-height: unset !important; height: auto !important; }
-    .hero { min-height: unset !important; }
-    .auth-wrap { min-height: unset !important; }
-    body { min-height: unset !important; padding-bottom: 58px; }
-    .wallet-page, .profile-page, .vip-page, .promo-page,
-    .support-page, .ref-page, .history-page { min-height: unset !important; }
-
-    /* TOP NAV */
-    nav { padding: 0 1rem; height: 54px; }
-    .nav-logo { font-size: 1.1rem; letter-spacing: 1px; }
-    .nav-links { display: none !important; }
-    #navUser .nav-btn { display: none !important; }
-    #navUser .balance-pill { display: none !important; }
-    #navUser { gap: 0.4rem; }
-    .notif-bell, .avatar { display: flex !important; }
-    .notif-dropdown { right: 0; width: 260px; }
-
-    /* BOTTOM NAV - always grid on mobile, handled by global rule */
-
-    /* HOME — no blank space */
-    .hero {
+    /* ── ALL PAGES: no blank space, proper sizing ── */
+    .page {
       min-height: unset !important;
-      padding: 60px 1rem 1rem;
-      justify-content: flex-start;
+      height: auto !important;
+      padding: 0 !important;
+      margin: 0 !important;
     }
-    .hero-glow { width: 250px; height: 250px; }
-    .hero-badge { font-size: 0.68rem; margin-bottom: 0.6rem; padding: 0.2rem 0.7rem; }
-    .hero h1 { font-size: 1.9rem; margin-bottom: 0.7rem; }
-    .hero p { font-size: 0.83rem; margin-bottom: 1rem; line-height: 1.5; max-width: 100%; }
-    .hero-btns { flex-direction: column; align-items: stretch; width: 100%; gap: 0.5rem; }
-    .hero-btns .btn { width: 100%; padding: 0.8rem; font-size: 0.88rem; text-align: center; }
-    .stats-bar { gap: 1.2rem; flex-wrap: wrap; justify-content: center; margin-top: 1rem; }
-    .stat-val { font-size: 1.1rem; }
-    .stat-lbl { font-size: 0.62rem; }
 
-    /* GAMES SECTION — compact, no extra padding */
-    .section { padding: 0.8rem 0.8rem 1rem; max-width: 100%; }
-    .section-title { font-size: 1rem; margin-bottom: 0.2rem; }
-    .section-sub { font-size: 0.75rem; margin-bottom: 0.6rem; }
-    .games-grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .game-thumb { height: 85px; font-size: 2rem; }
-    .game-info { padding: 0.45rem 0.5rem 0.6rem; }
-    .game-name { font-size: 0.76rem; }
-    .game-meta { font-size: 0.62rem; }
-    .promo-banner { flex-direction: column; text-align: center; padding: 0.9rem; gap: 0.5rem; }
-    .promo-amount { font-size: 1.4rem; }
+    /* ── HOME PAGE ── */
+    #mobileAppHome {
+      padding-top: 0 !important;
+      padding-bottom: 0 !important;
+      min-height: unset !important;
+    }
 
-    /* AUTH PAGES */
-    .auth-card { padding: 1.4rem 1rem; margin: 0 0.8rem; border-radius: 16px; max-width: 100%; }
-    .form-row { grid-template-columns: 1fr; }
+    /* ── AUTH PAGES (Login/Register) ── */
+    .auth-wrap {
+      min-height: unset !important;
+      padding: 1rem 0 2rem !important;
+      display: block !important;
+    }
+    .auth-card {
+      padding: 1.5rem 1rem !important;
+      margin: 0 0.8rem !important;
+      border-radius: 16px !important;
+      max-width: 100% !important;
+    }
+    .form-row { grid-template-columns: 1fr !important; }
+    .auth-logo-text { font-size: 1.4rem !important; }
+    .auth-title { font-size: 1.1rem !important; }
 
-    /* WALLET PAGE */
-    .wallet-page { padding: 54px 0.8rem 2rem; max-width: 100%; }
-    .wallet-hero { flex-direction: column; padding: 0.9rem; gap: 0.3rem; }
-    .wallet-balance-val { font-size: 1.7rem; }
-    .deposit-methods { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .amount-presets { gap: 0.35rem; flex-wrap: wrap; }
-    .amount-preset { padding: 0.35rem 0.6rem; font-size: 0.76rem; }
+    /* ── TOP MOBILE HEADER (for inner pages) ── */
+    .mobile-page-header {
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 200 !important;
+      background: #10101a !important;
+      border-bottom: 1px solid rgba(240,192,64,0.2) !important;
+      padding: 0.7rem 1rem !important;
+      display: flex !important;
+      align-items: center !important;
+      gap: 0.8rem !important;
+    }
 
-    /* REFERRAL PAGE */
-    .ref-page { padding: 54px 0 2rem; max-width: 100%; }
-    .agency-card { margin: 0 0.6rem 0.6rem; padding: 0.9rem; }
-    .sub-grid { gap: 0.4rem; margin: 0 0.6rem 0; }
-    .ref-actions { margin: 0.4rem 0.6rem 0; }
-    .sub-history { margin: 0.4rem 0.6rem 0.6rem; }
+    /* ── WALLET PAGE ── */
+    .wallet-page {
+      padding: 0 0 2rem 0 !important;
+      max-width: 100% !important;
+    }
+    .wallet-hero {
+      flex-direction: column !important;
+      padding: 1rem !important;
+      gap: 0.5rem !important;
+      text-align: center !important;
+    }
+    .wallet-balance-val { font-size: 2rem !important; }
+    .deposit-methods {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 0.5rem !important;
+      padding: 0 0.8rem !important;
+    }
+    .amount-presets { gap: 0.4rem !important; flex-wrap: wrap !important; padding: 0 0.8rem !important; }
+    .amount-preset { padding: 0.4rem 0.7rem !important; font-size: 0.8rem !important; }
 
-    /* VIP PAGE */
-    .vip-page { padding: 54px 0.8rem 2rem; max-width: 100%; }
-    .vip-levels { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .vip-hero h2 { font-size: 1.2rem; }
+    /* ── PROFILE PAGE ── */
+    .profile-page {
+      padding: 0 0 2rem 0 !important;
+      max-width: 100% !important;
+    }
+    .profile-grid { grid-template-columns: 1fr !important; }
+    .profile-hero {
+      flex-direction: column !important;
+      padding: 1rem !important;
+      text-align: center !important;
+    }
 
-    /* PROFILE PAGE */
-    .profile-page { padding: 54px 0.8rem 2rem; max-width: 100%; }
-    .profile-grid { grid-template-columns: 1fr; }
-    .profile-hero { flex-direction: column; padding: 1rem; text-align: center; }
+    /* ── VIP PAGE ── */
+    .vip-page {
+      padding: 0 0.8rem 2rem !important;
+      max-width: 100% !important;
+    }
+    .vip-levels { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
+    .vip-hero h2 { font-size: 1.2rem !important; }
 
-    /* PROMOTIONS PAGE */
-    .promo-page { padding: 54px 0.8rem 2rem; max-width: 100%; }
-    .promo-grid { grid-template-columns: 1fr; gap: 0.6rem; }
+    /* ── PROMOTIONS PAGE ── */
+    .promo-page {
+      padding: 0 0.8rem 2rem !important;
+      max-width: 100% !important;
+    }
+    .promo-grid { grid-template-columns: 1fr !important; gap: 0.6rem !important; }
 
-    /* SUPPORT PAGE */
-    .support-page { padding: 54px 0.8rem 2rem; max-width: 100%; }
-    .support-options { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .chat-window { height: 300px; }
+    /* ── REFERRAL PAGE ── */
+    .ref-page {
+      padding: 0 0 2rem !important;
+      max-width: 100% !important;
+    }
+    .agency-card { margin: 0 0.6rem 0.6rem !important; padding: 0.9rem !important; }
+    .sub-grid { gap: 0.4rem !important; margin: 0 0.6rem !important; }
+    .ref-actions { margin: 0.4rem 0.6rem 0 !important; }
+    .sub-history { margin: 0.4rem 0.6rem 0.6rem !important; }
 
-    /* BET HISTORY PAGE */
-    .history-page { padding: 54px 0.8rem 2rem; max-width: 100%; }
-    .history-summary { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-    .hs-card { padding: 0.65rem; }
-    .hs-val { font-size: 0.95rem; }
-    .hs-lbl { font-size: 0.62rem; }
-    .history-filters { gap: 0.3rem; flex-wrap: wrap; }
-    .hf-btn { padding: 0.28rem 0.55rem; font-size: 0.7rem; }
-    .bh-row { grid-template-columns: 1.2fr 0.7fr 0.9fr 0.9fr; font-size: 0.72rem; padding: 0.5rem 0.55rem; }
-    .bh-row > *:nth-child(5), .bh-row > *:nth-child(6) { display: none; }
+    /* ── SUPPORT PAGE ── */
+    .support-page {
+      padding: 0 0.8rem 2rem !important;
+      max-width: 100% !important;
+    }
+    .support-options { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
+    .chat-window { height: 300px !important; }
 
-    /* INLINE HISTORY PAGES */
+    /* ── HISTORY PAGES ── */
+    .history-page {
+      padding: 0 0.8rem 2rem !important;
+      max-width: 100% !important;
+    }
     #page-deposithistory > div,
     #page-withdrawhistory > div,
     #page-history > div,
-    #page-bethistory > div { padding: 54px 0.8rem 2rem !important; max-width: 100% !important; }
+    #page-bethistory > div { padding: 0 0.8rem 2rem !important; max-width: 100% !important; }
+    .history-summary { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
+    .hs-card { padding: 0.65rem !important; }
+    .hs-val { font-size: 0.95rem !important; }
+    .hs-lbl { font-size: 0.62rem !important; }
+    .bh-row { grid-template-columns: 1.2fr 0.7fr 0.9fr 0.9fr !important; font-size: 0.72rem !important; padding: 0.5rem 0.55rem !important; }
+    .bh-row > *:nth-child(5), .bh-row > *:nth-child(6) { display: none !important; }
 
-    /* ── WINGO GAME MOBILE ── */
-    .color-game-overlay { background: var(--bg) !important; }
+    /* ── GAMES SECTION ── */
+    .games-grid { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
+    .game-thumb { height: 85px !important; font-size: 2rem !important; }
+    .game-info { padding: 0.45rem 0.5rem 0.6rem !important; }
+    .game-name { font-size: 0.76rem !important; }
+    .game-meta { font-size: 0.62rem !important; }
+
+    /* ── WINGO GAME ── */
+    .color-game-overlay {
+      background: #0a0a0f !important;
+      padding-bottom: 65px !important;
+    }
     .cg-wrap {
-      max-width: 100% !important; width: 100% !important;
-      margin: 0 !important; padding: 0 0 58px 0 !important;
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0 !important;
+      padding: 0 0 65px 0 !important;
       box-sizing: border-box !important;
     }
-    /* Sticky header */
     .cg-header {
-      position: sticky !important; top: 0 !important; z-index: 10 !important;
-      background: var(--bg2) !important; border-bottom: 1px solid var(--border) !important;
-      padding: 0.55rem 0.8rem !important; margin-bottom: 0 !important;
+      position: sticky !important;
+      top: 0 !important;
+      z-index: 10 !important;
+      background: #10101a !important;
+      border-bottom: 1px solid rgba(240,192,64,0.2) !important;
+      padding: 0.6rem 0.8rem !important;
+      margin-bottom: 0 !important;
     }
-    /* Balance bar — sticky below header */
-    #cgBalanceBar {
-      position: sticky !important; top: 34px !important; z-index: 9 !important;
-      padding: 0.3rem 0.8rem !important;
-    }
-    #cgLiveBalance { font-size: 0.85rem !important; }
-    #cgBalanceDelta { font-size: 0.6rem !important; padding: 0.08rem 0.3rem !important; }
-    .cg-title { font-size: 0.88rem !important; }
-    .cg-close { padding: 0.25rem 0.55rem !important; font-size: 0.7rem !important; }
-    /* All sections get side padding */
+    .cg-title { font-size: 1rem !important; }
+    .cg-close { padding: 0.3rem 0.6rem !important; font-size: 0.75rem !important; }
     .cg-timer-tabs {
-      display: grid !important; grid-template-columns: 1fr 1fr 1fr !important;
-      gap: 0.4rem !important; margin: 0.55rem 0.6rem 0.45rem !important;
+      display: grid !important;
+      grid-template-columns: 1fr 1fr 1fr !important;
+      gap: 0.4rem !important;
+      margin: 0.6rem 0.8rem 0.5rem !important;
     }
-    .cg-ttab { padding: 0.48rem 0.1rem !important; font-size: 0.73rem !important; border-radius: 8px !important; }
-    .cg-round-info { margin: 0 0.6rem 0.45rem !important; padding: 0.5rem 0.75rem !important; }
-    .cg-count-val { font-size: 1.4rem !important; }
-    .cg-count-lbl { font-size: 0.58rem !important; }
-    .cg-status { font-size: 0.58rem !important; }
-    .cg-round-val { font-size: 0.66rem !important; }
+    .cg-ttab {
+      padding: 0.55rem 0.1rem !important;
+      font-size: 0.78rem !important;
+      border-radius: 10px !important;
+      text-align: center !important;
+    }
+    .cg-round-info {
+      margin: 0 0.8rem 0.5rem !important;
+      padding: 0.6rem 0.8rem !important;
+      border-radius: 12px !important;
+    }
+    .cg-count-val { font-size: 1.6rem !important; }
+    .cg-count-lbl { font-size: 0.6rem !important; }
+    .cg-status { font-size: 0.62rem !important; padding: 0.25rem 0.6rem !important; }
+    .cg-round-val { font-size: 0.7rem !important; }
     .cg-colors {
       grid-template-columns: 1fr 1fr 1fr !important;
-      gap: 0.35rem !important; margin: 0 0.6rem 0.45rem !important;
+      gap: 0.4rem !important;
+      margin: 0 0.8rem 0.5rem !important;
     }
-    .cg-color-btn { padding: 0.82rem 0.1rem !important; font-size: 0.8rem !important; border-radius: 9px !important; }
+    .cg-color-btn {
+      padding: 0.9rem 0.1rem !important;
+      font-size: 0.85rem !important;
+      border-radius: 10px !important;
+    }
     .cg-numbers {
-      grid-template-columns: repeat(5,1fr) !important;
-      gap: 0.3rem !important; margin: 0 0.6rem 0.45rem !important;
+      grid-template-columns: repeat(5, 1fr) !important;
+      gap: 0.35rem !important;
+      margin: 0 0.8rem 0.5rem !important;
     }
-    .cg-num-btn { font-size: 0.9rem !important; aspect-ratio: 1 !important; min-height: 40px !important; border-radius: 8px !important; }
+    .cg-num-btn {
+      font-size: 0.95rem !important;
+      aspect-ratio: 1 !important;
+      min-height: 44px !important;
+      border-radius: 50% !important;
+    }
     .cg-color-btn[id="cgBigBtn"],
-    .cg-color-btn[id="cgSmallBtn"] { padding: 0.72rem !important; font-size: 0.88rem !important; }
-    .cg-bet-panel { margin: 0 0.6rem 0.45rem !important; padding: 0.6rem !important; border-radius: 10px !important; }
-    .cg-bet-title { font-size: 0.67rem !important; margin-bottom: 0.38rem !important; }
-    .cg-bet-presets { gap: 0.28rem !important; scrollbar-width: none !important; }
-    .cg-bet-preset { padding: 0.36rem 0.7rem !important; font-size: 0.74rem !important; }
-    .cg-x-btn { padding: 0.38rem 0.38rem !important; font-size: 0.7rem !important; }
-    .cg-confirm-btn {
-      display: block !important; width: calc(100% - 1.2rem) !important;
-      margin: 0 0.6rem 0.45rem !important; padding: 0.82rem !important;
-      font-size: 0.82rem !important; border-radius: 9px !important;
+    .cg-color-btn[id="cgSmallBtn"] {
+      padding: 0.8rem !important;
+      font-size: 1rem !important;
+      border-radius: 30px !important;
     }
-    .cg-history { margin: 0 0.6rem 0.45rem !important; border-radius: 10px !important; }
-    .cg-tab-btns { margin: 0 0.6rem 0.38rem !important; gap: 0.28rem !important; }
-    .cg-tab-btn { padding: 0.36rem 0.85rem !important; font-size: 0.73rem !important; }
-    .cg-hist-row { font-size: 0.65rem !important; padding: 0.4rem 0.5rem !important; }
-    .cg-hist-row.head { font-size: 0.58rem !important; }
-    .cg-result-popup { width: 84vw !important; padding: 1.2rem 0.8rem !important; }
-    .cg-result-title { font-size: 1.1rem !important; }
-    .cg-result-amt { font-size: 1.65rem !important; }
+    .cg-bet-panel {
+      margin: 0 0.8rem 0.5rem !important;
+      padding: 0.7rem !important;
+      border-radius: 12px !important;
+    }
+    .cg-bet-title { font-size: 0.7rem !important; margin-bottom: 0.4rem !important; }
+    .cg-bet-presets { gap: 0.3rem !important; flex-wrap: wrap !important; }
+    .cg-bet-preset { padding: 0.4rem 0.75rem !important; font-size: 0.78rem !important; }
+    .cg-x-btn { padding: 0.4rem !important; font-size: 0.75rem !important; }
+    .cg-confirm-btn {
+      display: block !important;
+      width: calc(100% - 1.6rem) !important;
+      margin: 0 0.8rem 0.5rem !important;
+      padding: 0.85rem !important;
+      font-size: 0.9rem !important;
+      border-radius: 10px !important;
+    }
+    .cg-history { margin: 0 0.8rem 0.5rem !important; border-radius: 12px !important; }
+    .cg-hist-row { font-size: 0.68rem !important; padding: 0.45rem 0.5rem !important; }
+    .cg-hist-row.head { font-size: 0.6rem !important; }
+    .cg-result-popup { width: 86vw !important; padding: 1.4rem 1rem !important; }
+    .cg-result-title { font-size: 1.2rem !important; }
+    .cg-result-amt { font-size: 1.8rem !important; }
 
-    /* SPIN WHEEL */
-    .wheel-wrap { width: 210px; height: 210px; }
-    .wheel-canvas { width: 210px !important; height: 210px !important; }
-    .wheel-title { font-size: 0.95rem; }
+    /* ── BOTTOM NAV ── */
+    .mobile-nav {
+      display: grid !important;
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      z-index: 9999 !important;
+      height: 60px !important;
+      background: #100800 !important;
+      border-top: 1px solid rgba(240,192,64,0.3) !important;
+      grid-template-columns: repeat(5, 1fr) !important;
+      width: 100% !important;
+    }
+    .mobile-nav-item {
+      display: flex !important;
+      flex-direction: column !important;
+      align-items: center !important;
+      justify-content: center !important;
+      color: rgba(255,255,255,0.45) !important;
+      font-size: 0.55rem !important;
+      font-weight: 600 !important;
+      border: none !important;
+      background: none !important;
+      cursor: pointer !important;
+      padding: 0.2rem 0 !important;
+      gap: 2px !important;
+      height: 100% !important;
+      width: 100% !important;
+      white-space: nowrap !important;
+      overflow: hidden !important;
+    }
+    .mobile-nav-item svg { width: 22px !important; height: 22px !important; flex-shrink: 0 !important; }
+    .mobile-nav-item span { font-size: 0.55rem !important; display: block !important; }
+    .mobile-nav-item.active { color: #f0c040 !important; }
+    .mobile-nav-center .mn-icon {
+      background: linear-gradient(135deg, #c07a10, #ffd700) !important;
+      border-radius: 50% !important;
+      width: 40px !important;
+      height: 40px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      box-shadow: 0 2px 12px rgba(240,192,64,0.5) !important;
+      margin-bottom: 2px !important;
+    }
 
-    /* QR MODAL */
-    .qr-card { padding: 1.1rem; margin: 0 0.8rem; max-width: calc(100vw - 1.6rem); }
+    /* ── SPIN WHEEL ── */
+    .wheel-wrap { width: 220px !important; height: 220px !important; }
+    .wheel-canvas { width: 220px !important; height: 220px !important; }
 
-    /* TOAST */
-    .toast { left: 0.5rem !important; right: 0.5rem !important; max-width: unset !important; bottom: 68px !important; font-size: 0.78rem !important; border-radius: 10px !important; transform: translateX(0) translateY(80px) !important; white-space: normal !important; }
-    .toast.show { transform: translateX(0) translateY(0) !important; }
+    /* ── QR MODAL ── */
+    .qr-card { padding: 1.2rem !important; margin: 0 0.8rem !important; max-width: calc(100vw - 1.6rem) !important; }
 
-    /* SECTION TITLE */
-    .section-title { font-size: 1rem; }
-    .section-sub { font-size: 0.75rem; }
+    /* ── TOAST ── */
+    .toast {
+      left: 0.5rem !important;
+      right: 0.5rem !important;
+      max-width: unset !important;
+      bottom: 4.5rem !important;
+      font-size: 0.8rem !important;
+      border-radius: 10px !important;
+    }
+
+    /* ── SECTION TITLES ── */
+    .section-title { font-size: 1rem !important; }
+    .section-sub { font-size: 0.75rem !important; }
+
+    /* ── MISC FIXES ── */
+    .promo-banner { flex-direction: column !important; text-align: center !important; padding: 0.9rem !important; gap: 0.5rem !important; }
+    .promo-amount { font-size: 1.4rem !important; }
+
+    /* ── GUEST HOME on mobile ── */
+    #desktopHome .hero {
+      min-height: unset !important;
+      padding: 1.5rem 1rem 1.5rem !important;
+      justify-content: flex-start !important;
+    }
+    #desktopHome .hero h1 { font-size: 2rem !important; margin-bottom: 0.6rem !important; }
+    #desktopHome .hero p { font-size: 0.85rem !important; margin-bottom: 1rem !important; }
+    #desktopHome .hero-btns { flex-direction: column !important; gap: 0.5rem !important; }
+    #desktopHome .hero-btns .btn { width: 100% !important; text-align: center !important; }
+    #desktopHome .section {
+      padding: 1rem 0.8rem !important;
+      max-width: 100% !important;
+    }
   }
 
-  /* SMALL MOBILE — 400px */
+  /* ── SMALL MOBILE 400px ── */
   @media (max-width: 400px) {
-    .hero h1 { font-size: 1.65rem; }
-    .cg-color-btn { font-size: 0.75rem; padding: 0.72rem 0.05rem; }
-    .cg-num-btn { font-size: 0.82rem; min-height: 36px; }
-    .cg-ttab { font-size: 0.66rem; padding: 0.42rem 0.05rem; }
-    .game-thumb { height: 72px; font-size: 1.8rem; }
-    .cg-result-popup { width: 92vw; padding: 1.1rem 0.75rem; }
-    .mobile-nav-item { font-size: 0.46rem; }
-    .hs-val { font-size: 0.88rem; }
+    .cg-color-btn { font-size: 0.78rem !important; padding: 0.75rem 0.05rem !important; }
+    .cg-num-btn { font-size: 0.85rem !important; min-height: 40px !important; }
+    .cg-ttab { font-size: 0.68rem !important; }
+    .mobile-nav-item { font-size: 0.5rem !important; }
+    .hs-val { font-size: 0.88rem !important; }
   }
 
   /* scrollbar */
@@ -1107,13 +1275,6 @@
 </style>
 </head>
 <body>
-
-<!-- LOADING SCREEN -->
-<div id="appLoader" style="position:fixed;inset:0;z-index:99999;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s;">
-  <div style="font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:#f0c040;margin-bottom:0.5rem;">ROYAL<span style="color:#e02020;">♠</span>WIN</div>
-  <div style="font-size:0.8rem;color:#8a8099;letter-spacing:2px;margin-bottom:2rem;">PREMIUM GAMING</div>
-  <div style="width:48px;height:48px;border:3px solid rgba(240,192,64,0.2);border-top-color:#f0c040;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
-</div>
 
 <div class="bg-stars"></div>
 <div class="bg-grid"></div>
@@ -1160,7 +1321,7 @@
 <div class="page active" id="page-home">
 
   <!-- MOBILE APP HOME (shown only on mobile when logged in) -->
-  <div id="mobileAppHome" style="display:none;padding-top:54px;background:var(--bg);min-height:100vh;">
+  <div id="mobileAppHome" style="display:none;background:var(--bg);">
 
     <!-- Announcement bar -->
     <div style="background:#c0392b;color:#fff;font-size:0.7rem;padding:0.3rem 0.8rem;text-align:center;display:flex;justify-content:space-between;align-items:center;">
@@ -1175,7 +1336,7 @@
         <div style="font-size:0.72rem;color:rgba(255,255,255,0.7);margin-top:0.4rem;">India's Leading Trusted Gaming Platform</div>
         <div style="margin-top:0.8rem;display:flex;gap:0.5rem;">
           <button onclick="showPage('wallet')" style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:0.45rem 1rem;font-size:0.75rem;font-weight:800;cursor:pointer;font-family:'Exo 2',sans-serif;">💰 Deposit</button>
-          <button onclick="openColorGame()" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:0.45rem 1rem;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">🎯 Play Now</button>
+          <button onclick="loginPrompt()" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:0.45rem 1rem;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">🎯 Play Now</button>
         </div>
       </div>
       <div style="position:absolute;right:0;top:0;bottom:0;width:40%;background:linear-gradient(135deg,rgba(240,192,64,0.15),rgba(200,50,50,0.2));display:flex;align-items:center;justify-content:center;font-size:4rem;opacity:0.6;">👑</div>
@@ -1183,11 +1344,11 @@
 
     <!-- Promo Banners (Wheel + VIP) -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;padding:0.6rem 0.8rem 0;">
-      <div onclick="showPage('promotions');setTimeout(()=>{document.getElementById('spinWheelBtn')?.click()},300)" style="background:linear-gradient(135deg,#6a0572,#ab47bc);border-radius:12px;padding:0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;min-height:52px;">
+      <div onclick="openWheel()" style="background:linear-gradient(135deg,#6a0572,#ab47bc);border-radius:12px;padding:0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;min-height:52px;">
         <span style="font-size:1.5rem;">🎡</span>
         <div><div style="font-size:0.7rem;font-weight:800;color:#fff;">WHEEL OF</div><div style="font-size:0.7rem;font-weight:800;color:#fff;">FORTUNE</div></div>
       </div>
-      <div onclick="showPage('vip')" style="background:linear-gradient(135deg,#7b1fa2,#e91e63);border-radius:12px;padding:0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;min-height:52px;">
+      <div onclick="loginPrompt()" style="background:linear-gradient(135deg,#7b1fa2,#e91e63);border-radius:12px;padding:0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;min-height:52px;">
         <span style="font-size:1.5rem;">👑</span>
         <div><div style="font-size:0.7rem;font-weight:800;color:#fff;">VIP</div><div style="font-size:0.7rem;font-weight:800;color:#fff;">PRIVILEGES</div></div>
       </div>
@@ -1202,7 +1363,7 @@
         <span style="font-size:1rem;">🎯</span>
         <span style="font-size:0.72rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px;">Lottery</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;" id="mobileGameCards">
+      <div id="mobileGameCards">
         <!-- WinGo -->
         <div onclick="openColorGame()" style="background:linear-gradient(135deg,#0a1929,#1a237e);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;border:1px solid rgba(240,192,64,0.2);">
           <div style="height:100px;display:flex;align-items:center;justify-content:center;position:relative;">
@@ -1211,21 +1372,11 @@
               <div style="font-size:2rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;line-height:1;">WINGO</div>
               <div style="font-size:0.55rem;color:rgba(255,255,255,0.5);margin-top:2px;">1min · 3min · 5min</div>
             </div>
-            <div style="position:absolute;top:6px;left:6px;background:#e65100;color:#fff;font-size:0.5rem;font-weight:800;padding:2px 6px;border-radius:4px;">NEW</div>
+            <div style="position:absolute;top:6px;left:6px;background:#e65100;color:#fff;font-size:0.5rem;font-weight:800;padding:2px 6px;border-radius:4px;">HOT</div>
           </div>
           <div style="padding:0.4rem 0.6rem 0.6rem;background:rgba(0,0,0,0.3);">
             <div style="font-size:0.75rem;font-weight:700;color:#fff;">Win Go</div>
             <div style="font-size:0.62rem;color:rgba(255,255,255,0.5);">Color prediction game</div>
-          </div>
-        </div>
-        <!-- Mega Slots -->
-        <div onclick="loginPrompt()" style="background:linear-gradient(135deg,#1a0a00,#3d1a00);border-radius:14px;overflow:hidden;cursor:pointer;border:1px solid rgba(240,192,64,0.15);">
-          <div style="height:100px;display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;">🎰
-            <div style="position:absolute;top:6px;left:6px;background:var(--gold);color:#000;font-size:0.5rem;font-weight:800;padding:2px 6px;border-radius:4px;">HOT</div>
-          </div>
-          <div style="padding:0.4rem 0.6rem 0.6rem;background:rgba(0,0,0,0.3);">
-            <div style="font-size:0.75rem;font-weight:700;color:#fff;">Mega Slots</div>
-            <div style="font-size:0.62rem;color:rgba(255,255,255,0.5);">Coming soon</div>
           </div>
         </div>
       </div>
@@ -1742,6 +1893,18 @@
   let isLoggedIn = false;
 
   function showPage(name) {
+    // ── AUTH GUARD ──
+    // Only these pages are accessible without login
+    const _guestAllowed = ['home', 'login', 'register', 'forgot', 'terms', 'privacy', 'responsible'];
+    if (!isLoggedIn && !_guestAllowed.includes(name)) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const loginPage = document.getElementById('page-login');
+      if (loginPage) loginPage.classList.add('active');
+      window.scrollTo(0, 0);
+      showToast('🔐 Please sign in to continue');
+      return;
+    }
+
     // Internal function to actually show a page
     function _showPageInternal(pageName) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1814,6 +1977,38 @@
     window._bonus100Locked = false;
     lockBonusCards(false);
     _showPageInternal(name);
+
+    // When showing home, make sure correct section is visible
+    if (name === 'home') {
+      const mah = document.getElementById('mobileAppHome');
+      const dh = document.getElementById('desktopHome');
+      if (isLoggedIn) {
+        if (mah) mah.style.display = 'block';
+        if (dh) dh.style.display = 'none';
+      } else {
+        if (mah) mah.style.display = 'none';
+        if (dh) dh.style.display = 'block';
+        // Make sure login/register buttons are visible
+        const heroPlay = document.getElementById('heroPlayBtn');
+        const heroSignIn = document.getElementById('heroSignInBtn');
+        const heroBanner = document.getElementById('heroWelcomeBanner');
+        if (heroPlay) heroPlay.style.display = 'inline-flex';
+        if (heroSignIn) heroSignIn.style.display = 'inline-flex';
+        if (heroBanner) heroBanner.style.display = 'none';
+      }
+    }
+
+    // Apply stored referral code if navigating to register
+    if (name === 'register' && window._referralCode) {
+      setTimeout(() => {
+        const codeInput = document.getElementById('inviteCodeInput');
+        const codeDisplay = document.getElementById('inviteCodeDisplay');
+        const invitePill = document.getElementById('invitePill');
+        if (codeInput) codeInput.value = window._referralCode;
+        if (codeDisplay) codeDisplay.textContent = window._referralCode;
+        if (invitePill) invitePill.style.display = 'flex';
+      }, 50);
+    }
 
     if (name === 'bethistory') renderBetHistory(currentBetFilter);
     if (name === 'history') loadTransactionHistory();
@@ -2105,30 +2300,53 @@
   // Apply saved language on load
   document.addEventListener('DOMContentLoaded', () => {
     if (window._currentLang === 'hi') applyTranslations('hi');
+    // Default: show guest home until Firebase confirms login state
+    const dh = document.getElementById('desktopHome');
+    if (dh) dh.style.display = 'block';
   });
 
+  // ── REFERRAL LINK HANDLER ──
+  // Reads ?invitationCode=ROY-XXXX from URL, pre-fills register form and opens it
+  (function handleReferralLink() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('invitationCode') || params.get('ref') || params.get('r_code') || params.get('invite');
+    if (!code) return;
+
+    // Store the code so it survives any page navigation
+    window._referralCode = code;
+
+    // Wait for Firebase auth check — if already logged in, skip redirect
+    // Otherwise redirect to register with code pre-filled
+    const waitAndRedirect = () => {
+      if (window.isLoggedIn) return; // already logged in, do nothing
+
+      // Pre-fill the invite code fields
+      const codeInput = document.getElementById('inviteCodeInput');
+      const codeDisplay = document.getElementById('inviteCodeDisplay');
+      const invitePill = document.getElementById('invitePill');
+      if (codeInput) codeInput.value = code;
+      if (codeDisplay) codeDisplay.textContent = code;
+      if (invitePill) invitePill.style.display = 'flex';
+
+      // Navigate directly to register page
+      showPage('register');
+    };
+
+    // Try immediately, then retry after Firebase loads
+    setTimeout(waitAndRedirect, 800);
+    setTimeout(waitAndRedirect, 2000);
+  })();
+
   async function logout() {
-    await firebase.auth().signOut();
-    isLoggedIn = false;
-    window.currentUser = null;
-    window.userProfile = null;
-    // FIX 4: Reset timer flag so timers restart on next login
-    window._cgTimersStarted = false;
-    // Clear pending bets on logout
-    window._cgPendingBets = [];
-    window._cgPendingBet = null;
-    // Stop timers
-    [1,3,5].forEach(m => { if (cgTimerIntervals && cgTimerIntervals[m]) { clearInterval(cgTimerIntervals[m]); cgTimerIntervals[m] = null; } });
-    document.getElementById('navGuest').style.display = 'flex';
-    document.getElementById('navUser').style.display = 'none';
     showToast('👋 Signed out. See you soon!');
-    showPage('home');
+    await firebase.auth().signOut();
+    // onAuthStateChanged will handle all UI reset automatically
   }
 
   function loginPrompt() {
     if (!isLoggedIn) {
+      showPage('login');
       showToast('🔐 Please sign in to play games!');
-      setTimeout(() => showPage('login'), 800);
     }
   }
 
@@ -4152,6 +4370,7 @@
   }
 
   async function openWheel(fromLogin = false) {
+    if (!isLoggedIn && !fromLogin) { showPage('login'); showToast('🔐 Please sign in to spin'); return; }
     if (!isLoggedIn) { showToast('🔐 Please sign in first!'); showPage('login'); return; }
     const db = window.fbDB || fbDB;
     const user = window.currentUser;
@@ -4678,67 +4897,17 @@
   }
 
   function openColorGame() {
+    if (!isLoggedIn) { showPage('login'); showToast('🔐 Please sign in to play'); return; }
     document.getElementById('colorGameOverlay').classList.add('open');
     loadGameSettings();
     buildNumGrid();
+    // Only start timers if not already running
     if (!window._cgTimersStarted) {
       startAllTimers();
       window._cgTimersStarted = true;
     }
     loadAllHistory();
     loadMyBetsFromFirebase();
-    // Start real-time balance listener for game
-    startCGBalanceListener();
-  }
-
-  let _cgBalanceListener = null;
-  let _cgLastBalance = null;
-
-  function startCGBalanceListener() {
-    const db = window.fbDB || fbDB;
-    const user = window.currentUser;
-    if (!db || !user) return;
-    // Remove old listener
-    if (_cgBalanceListener) {
-      db.ref('users/' + user.uid + '/balance').off('value', _cgBalanceListener);
-    }
-    _cgBalanceListener = db.ref('users/' + user.uid + '/balance').on('value', snap => {
-      const bal = parseFloat(snap.val() || 0);
-      const formatted = '₹' + bal.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
-      const el = document.getElementById('cgLiveBalance');
-      const delta = document.getElementById('cgBalanceDelta');
-      if (el) el.textContent = formatted;
-      // Show delta if balance changed
-      if (_cgLastBalance !== null && bal !== _cgLastBalance) {
-        const diff = bal - _cgLastBalance;
-        const sign = diff > 0 ? '+' : '';
-        if (delta) {
-          delta.textContent = sign + '₹' + Math.abs(diff).toLocaleString('en-IN', {minimumFractionDigits:2});
-          delta.style.display = 'inline-block';
-          delta.style.background = diff > 0 ? 'rgba(0,230,118,0.2)' : 'rgba(255,58,58,0.2)';
-          delta.style.color = diff > 0 ? 'var(--green)' : 'var(--red2)';
-          // Animate
-          delta.style.opacity = '1';
-          clearTimeout(delta._hideTimer);
-          delta._hideTimer = setTimeout(() => {
-            delta.style.opacity = '0';
-            setTimeout(() => { delta.style.display = 'none'; }, 300);
-          }, 2500);
-        }
-      }
-      _cgLastBalance = bal;
-      // Also update main balance display
-      updateBalanceDisplay(bal);
-    });
-  }
-
-  function stopCGBalanceListener() {
-    const db = window.fbDB || fbDB;
-    const user = window.currentUser;
-    if (db && user && _cgBalanceListener) {
-      db.ref('users/' + user.uid + '/balance').off('value', _cgBalanceListener);
-      _cgBalanceListener = null;
-    }
   }
 
   function loadMyBetsFromFirebase() {
@@ -4770,21 +4939,12 @@
               bet._firebaseKey = key;
               const exists = window._cgPendingBets.some(b => b.round === bet.round && b.selection === bet.selection);
               if (!exists) window._cgPendingBets.push(bet);
-        // FIX 5: Check for duplicates before adding pending bet to display
-        const timer = bet.timer || cgTimer;
-        if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
-        const alreadyShown = cgMyBetsByTimer[timer].some(b =>
-          b.status === 'pending' &&
-          b.round === bet.round &&
-          b.selection === bet.selection &&
-          b.bet === bet.bet
-        );
-        if (!alreadyShown) {
-          cgMyBetsByTimer[timer].unshift({
-            ...bet, status: 'pending',
-            result: '⏳ Waiting...', resultBg: 'rgba(240,192,64,0.3)', pl: null
-          });
-        }
+              const timer = bet.timer || cgTimer;
+              if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
+              const alreadyShown = cgMyBetsByTimer[timer].some(b => b.round === bet.round && b.selection === bet.selection && b.status === 'pending');
+              if (!alreadyShown) {
+                cgMyBetsByTimer[timer].unshift({ ...bet, status: 'pending', result: '⏳ Waiting...', resultBg: 'rgba(240,192,64,0.3)', pl: null });
+              }
             });
           }
           cgMyBets = cgMyBetsByTimer[cgTimer] || [];
@@ -4823,8 +4983,8 @@
 
   function closeColorGame() {
     document.getElementById('colorGameOverlay').classList.remove('open');
-    stopCGBalanceListener();
-    _cgLastBalance = null;
+    // Don't clear intervals — keep timers running in background for pending bets
+    // Just hide the overlay
   }
 
   function setTimer(mins) {
@@ -4893,21 +5053,13 @@
         const roundEl = document.getElementById('cgRoundNum');
         if (roundEl) roundEl.textContent = roundId;
 
-        // Close betting in last 10 seconds
+        // Close betting in last 5 seconds
         if (remaining <= 10 && cgBettingOpenByTimer[mins]) {
           cgBettingOpenByTimer[mins] = false;
           cgBettingOpen = false;
           updateCGStatus();
           const btn = document.getElementById('cgConfirmBtn');
           if (btn) btn.disabled = true;
-          // FIX 8: Show closing soon toast when active timer
-          if (cgTimer === mins) {
-            showToast('⛔ Betting closed — result coming soon!');
-          }
-        }
-        // FIX 8: Show "closing soon" warning at 15 seconds
-        if (remaining === 15 && cgBettingOpenByTimer[mins] && cgTimer === mins) {
-          showToast('⚠️ Betting closes in 10 seconds!');
         }
       }
 
@@ -5037,11 +5189,6 @@
     const inp = document.getElementById('cgBetAmt');
     let val = Math.round(parseFloat(inp.value) * factor);
     val = Math.max(10, Math.round(val / 10) * 10);
-    // FIX 7: Cap at maxBet
-    if (val > cgSettings.maxBet) {
-      val = cgSettings.maxBet;
-      showToast('⚠️ Maximum bet is ₹' + cgSettings.maxBet.toLocaleString('en-IN'));
-    }
     inp.value = val;
     document.querySelectorAll('.cg-bet-preset').forEach(p => p.classList.remove('selected'));
     updateBetDisplay();
@@ -5055,18 +5202,6 @@
     if (!amt || amt < cgSettings.minBet) { showToast('⚠️ Minimum bet is ₹' + cgSettings.minBet); return; }
     if (amt > cgSettings.maxBet) { showToast('⚠️ Maximum bet is ₹' + cgSettings.maxBet.toLocaleString('en-IN')); return; }
     if (amt % 10 !== 0) { showToast('⚠️ Bet must be a multiple of ₹10'); return; }
-
-    // FIX 2: Check balance FIRST before saving anything
-    try {
-      const db = window.fbDB || fbDB;
-      const user = window.currentUser;
-      if (db && user) {
-        const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
-        const currentBal = parseFloat(balSnap.val() || 0);
-        if (currentBal < amt) { showToast('❌ Insufficient balance! You have ₹' + currentBal.toFixed(2)); return; }
-      }
-    } catch(e) { showToast('❌ Error checking balance. Try again.'); return; }
-
     const fee = Math.round(amt * cgSettings.fee);
     const actualAmt = amt - fee;
     const sel = cgSelectedColor ? cgSelectedColor.toUpperCase() : cgSelectedBigSmall ? cgSelectedBigSmall.toUpperCase() : 'Number ' + cgSelectedNum;
@@ -5370,14 +5505,16 @@
     // Keep max 20 results in memory
     if (cgHistoryByTimer[timerMode].length > 20) cgHistoryByTimer[timerMode].pop();
 
-    // FIX 9: Save only new entry to Firebase (push) instead of full array
+    // Save to Firebase for persistence
     try {
       const db = window.fbDB || fbDB;
       if (db) {
         const histPath = 'wingo/wingo' + timerMode + 'min/history';
-        const newEntry = { round: timerRound, num: winNum, color: histColorLabel, bigSmall, histBg, timestamp: Date.now() };
-        // Push new entry
-        await db.ref(histPath).push(newEntry);
+        const histSnap = await db.ref(histPath).once('value');
+        let existing = histSnap.val() ? Object.values(histSnap.val()) : [];
+        existing.unshift({ round: timerRound, num: winNum, color: histColorLabel, bigSmall, histBg });
+        if (existing.length > 100) existing = existing.slice(0, 100);
+        await db.ref(histPath).set(existing);
       }
     } catch(e) { console.warn('History save failed:', e); }
     if (cgHistory.length > 20) cgHistory.pop();
@@ -5640,6 +5777,15 @@
 
   // ── MOBILE BOTTOM NAV ──
   function mobileNav(page) {
+    // If not logged in, only allow home - everything else goes to login
+    if (!isLoggedIn && page !== 'home') {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const loginPage = document.getElementById('page-login');
+      if (loginPage) loginPage.classList.add('active');
+      window.scrollTo(0, 0);
+      showToast('🔐 Please sign in to continue');
+      return;
+    }
     document.querySelectorAll('.mobile-nav-item').forEach(b => b.classList.remove('active'));
     const pageToNav = {
       home: 'mn-home',
@@ -6244,6 +6390,9 @@
           if (heroPlay) heroPlay.style.display = 'none';
           const heroBanner = document.getElementById('heroWelcomeBanner');
           if (heroBanner) heroBanner.style.display = 'block';
+          // Show bottom nav for logged-in users
+          const mobileNavEl = document.getElementById('mobileNav');
+          if (mobileNavEl) mobileNavEl.style.display = 'grid';
           // Mobile: show app home, hide desktop hero
           if (window.innerWidth <= 768) {
             const mah = document.getElementById('mobileAppHome');
@@ -6262,20 +6411,41 @@
         } else {
           window.currentUser = null;
           isLoggedIn = false;
-          document.getElementById('navGuest').style.display = 'flex';
-          document.getElementById('navUser').style.display = 'none';
-          
+
+          // ── GUEST STATE: reset everything ──
+          // 1. Switch nav
+          const ng = document.getElementById('navGuest');
+          const nu = document.getElementById('navUser');
+          if (ng) ng.style.display = 'flex';
+          if (nu) nu.style.display = 'none';
+
+          // 2. Show login/register buttons, hide welcome banner
           const heroPlayBtn = document.getElementById('heroPlayBtn');
           if (heroPlayBtn) heroPlayBtn.style.display = 'inline-flex';
           const heroSignInBtn = document.getElementById('heroSignInBtn');
           if (heroSignInBtn) heroSignInBtn.style.display = 'inline-flex';
           const heroWelcome = document.getElementById('heroWelcomeBanner');
           if (heroWelcome) heroWelcome.style.display = 'none';
-          // Restore desktop home
+
+          // 3. Show desktop/guest home, hide mobile logged-in home
           const mah = document.getElementById('mobileAppHome');
           const dh = document.getElementById('desktopHome');
           if (mah) mah.style.display = 'none';
           if (dh) dh.style.display = 'block';
+
+          // 4. Hide bottom nav
+          const mobileNavEl = document.getElementById('mobileNav');
+          if (mobileNavEl) mobileNavEl.style.display = 'none';
+
+          // 5. Close game overlay if open
+          const gameOverlay = document.getElementById('colorGameOverlay');
+          if (gameOverlay) gameOverlay.classList.remove('open');
+
+          // 6. Force navigate to home page
+          document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+          const homePage = document.getElementById('page-home');
+          if (homePage) homePage.classList.add('active');
+          window.scrollTo(0, 0);
         }
       });
       // Test read to confirm connection
@@ -7361,16 +7531,6 @@
     <div class="cg-header">
       <div class="cg-title">🎯 WinGo Lottery</div>
       <button class="cg-close" onclick="closeColorGame()">✕ Close</button>
-    </div>
-
-    <!-- Real-time Balance Bar -->
-    <div id="cgBalanceBar" style="display:flex;align-items:center;justify-content:space-between;padding:0.5rem 0.8rem;background:linear-gradient(135deg,#0d1a0d,#1a2d0a);border-bottom:1px solid rgba(0,230,118,0.2);">
-      <div style="display:flex;align-items:center;gap:0.5rem;">
-        <span style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Balance</span>
-        <span style="font-family:'Cinzel',serif;font-size:1rem;font-weight:900;color:var(--green);" id="cgLiveBalance">₹0.00</span>
-        <span id="cgBalanceDelta" style="font-size:0.68rem;font-weight:700;display:none;border-radius:4px;padding:0.1rem 0.35rem;"></span>
-      </div>
-      <button onclick="showPage('wallet');closeColorGame();" style="background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.3);border-radius:6px;padding:0.22rem 0.6rem;color:var(--gold);font-size:0.65rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-weight:700;">+ Deposit</button>
     </div>
 
     <!-- Timer Tabs -->
