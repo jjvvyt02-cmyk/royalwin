@@ -981,14 +981,29 @@
       height: calc(100dvh - 60px) !important;
       overflow-y: auto !important;
       overflow-x: hidden !important;
-      padding: 0 !important;
+      padding: 0 0.75rem !important;
       margin: 0 !important;
       -webkit-overflow-scrolling: touch !important;
       box-sizing: border-box !important;
     }
 
-    /* ── UNIVERSAL PAGE CONTENT PADDING ── */
-    /* Every inner wrapper gets consistent L/R padding */
+    /* ── EXCEPTIONS: pages that manage their own full-width elements ── */
+    /* home page sections that need full width (banners, game cards etc) */
+    #page-home {
+      padding: 0 !important;
+    }
+    /* mobileAppHome inner content gets the padding */
+    #mobileAppHome {
+      padding: 0 0.75rem !important;
+      box-sizing: border-box !important;
+    }
+    /* Auth pages centered via flex - no side padding on page */
+    #page-login,
+    #page-register,
+    #page-forgot {
+      padding: 0 !important;
+    }
+    /* Inner wrappers should not double-pad */
     .wallet-page,
     .profile-page,
     .vip-page,
@@ -996,16 +1011,15 @@
     .ref-page,
     .support-page,
     .history-page {
-      padding-left: 0.75rem !important;
-      padding-right: 0.75rem !important;
+      padding-left: 0 !important;
+      padding-right: 0 !important;
       box-sizing: border-box !important;
+      max-width: 100% !important;
     }
 
     /* ── HOME PAGE ── */
     #mobileAppHome {
-      padding: 0 0.75rem 0 !important;
       min-height: unset !important;
-      box-sizing: border-box !important;
     }
 
     /* ── AUTH PAGES (Login/Register) ── */
@@ -1099,6 +1113,7 @@
     .sub-grid { gap: 0.4rem !important; margin: 0 !important; }
     .ref-actions { margin: 0.4rem 0 0 !important; }
     .sub-history { margin: 0.4rem 0 0.6rem !important; }
+    .ref-page { padding-left: 0 !important; padding-right: 0 !important; }
 
     /* ── SUPPORT PAGE ── */
     .support-page {
@@ -1163,7 +1178,7 @@
       display: grid !important;
       grid-template-columns: 1fr 1fr 1fr !important;
       gap: 0.4rem !important;
-      margin: 0.6rem 0.75rem 0.5rem !important;
+      margin: 0.6rem 0 0.5rem !important;
     }
     .cg-ttab {
       padding: 0.55rem 0.1rem !important;
@@ -1183,7 +1198,7 @@
     .cg-colors {
       grid-template-columns: 1fr 1fr 1fr !important;
       gap: 0.4rem !important;
-      margin: 0 0.75rem 0.5rem !important;
+      margin: 0 0 0.5rem !important;
     }
     .cg-color-btn {
       padding: 0.9rem 0.1rem !important;
@@ -1193,7 +1208,7 @@
     .cg-numbers {
       grid-template-columns: repeat(5, 1fr) !important;
       gap: 0.35rem !important;
-      margin: 0 0.75rem 0.5rem !important;
+      margin: 0 0 0.5rem !important;
     }
     .cg-num-btn {
       font-size: 0.95rem !important;
@@ -1218,13 +1233,13 @@
     .cg-x-btn { padding: 0.4rem !important; font-size: 0.75rem !important; }
     .cg-confirm-btn {
       display: block !important;
-      width: calc(100% - 1.5rem) !important;
-      margin: 0 0.75rem 0.5rem !important;
+      width: 100% !important;
+      margin: 0 0 0.5rem !important;
       padding: 0.85rem !important;
       font-size: 0.9rem !important;
       border-radius: 10px !important;
     }
-    .cg-history { margin: 0 0.75rem 0.5rem !important; border-radius: 12px !important; }
+    .cg-history { margin: 0 0 0.5rem !important; border-radius: 12px !important; }
     .cg-hist-row { font-size: 0.68rem !important; padding: 0.45rem 0.5rem !important; }
     .cg-hist-row.head { font-size: 0.6rem !important; }
     .cg-result-popup { width: 86vw !important; padding: 1.4rem 1rem !important; }
@@ -1333,7 +1348,7 @@
     #page-terms > div,
     #page-responsible > div,
     #page-privacy > div {
-      padding: 0.75rem 0.75rem 2rem !important;
+      padding: 0.75rem 0 2rem !important;
       max-width: 100% !important;
       box-sizing: border-box !important;
     }
@@ -7171,7 +7186,7 @@
 
 <!-- GAME STATS PAGE -->
 <div class="page" id="page-gamestats">
-  <div style="max-width:600px;margin:0 auto;padding:65px 1rem 2rem;">
+  <div style="max-width:600px;margin:0 auto;padding:1.2rem 0 2rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
       <button onclick="showPage('profile')" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.1rem;">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">📊 Game Stats</div>
@@ -7241,7 +7256,7 @@
 </div>
 <!-- TRANSACTION HISTORY PAGE -->
 <div class="page" id="page-history">
-  <div style="max-width:600px;margin:0 auto;padding:65px 1rem 2rem;">
+  <div style="max-width:600px;margin:0 auto;padding:1.2rem 0 2rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
       <button onclick="showPage('profile')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💸 Transaction History</div>
@@ -7263,7 +7278,7 @@
 
 <!-- DEPOSIT HISTORY PAGE -->
 <div class="page" id="page-deposithistory">
-  <div style="max-width:600px;margin:0 auto;padding:65px 1rem 2rem;">
+  <div style="max-width:600px;margin:0 auto;padding:1.2rem 0 2rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
       <button onclick="showPage('profile')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬇️ Deposit History</div>
@@ -7284,7 +7299,7 @@
 
 <!-- WITHDRAWAL HISTORY PAGE -->
 <div class="page" id="page-withdrawhistory">
-  <div style="max-width:600px;margin:0 auto;padding:65px 1rem 2rem;">
+  <div style="max-width:600px;margin:0 auto;padding:1.2rem 0 2rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
       <button onclick="showPage('profile')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.7rem;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬆️ Withdrawal History</div>
@@ -7460,7 +7475,7 @@
 
 <!-- VIP PAGE -->
 <div class="page" id="page-vip">
-  <div style="max-width:520px;margin:0 auto;padding:65px 1rem 2rem;">
+  <div style="max-width:520px;margin:0 auto;padding:1.2rem 0 2rem;">
 
     <!-- Header -->
     <div style="text-align:center;margin-bottom:1.5rem;">
