@@ -1136,6 +1136,47 @@
      HOME PAGE
 ══════════════════════════════════════ -->
 <div class="page active" id="page-home">
+
+  <!-- MOBILE APP HOME (shown only on mobile when logged in) -->
+  <div id="mobileAppHome" style="display:none;padding-top:54px;">
+    <!-- Balance Card -->
+    <div style="padding:0.7rem 0.8rem 0.5rem;">
+      <div onclick="showPage('wallet')" style="background:linear-gradient(135deg,#1a1a2e,#0d1525);border:1px solid var(--border);border-radius:16px;padding:1rem 1.2rem;cursor:pointer;">
+        <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:0.3rem;">Total Balance</div>
+        <div style="font-family:'Cinzel',serif;font-size:1.8rem;font-weight:900;color:var(--gold);" id="mobileHomeBalance">₹0.00</div>
+        <div style="font-size:0.7rem;color:var(--green);margin-top:0.2rem;">● Active · Tap to deposit</div>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:0.5rem;padding:0 0.8rem 0.7rem;">
+      <div onclick="showPage('wallet')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.7rem 0.3rem;text-align:center;cursor:pointer;">
+        <div style="font-size:1.4rem;margin-bottom:0.2rem;">💰</div>
+        <div style="font-size:0.6rem;color:var(--muted);">Deposit</div>
+      </div>
+      <div onclick="showPage('wallet');setTimeout(()=>{document.querySelector('[onclick*=Withdraw]')?.click()},200)" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.7rem 0.3rem;text-align:center;cursor:pointer;">
+        <div style="font-size:1.4rem;margin-bottom:0.2rem;">⬆️</div>
+        <div style="font-size:0.6rem;color:var(--muted);">Withdraw</div>
+      </div>
+      <div onclick="showPage('vip')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.7rem 0.3rem;text-align:center;cursor:pointer;">
+        <div style="font-size:1.4rem;margin-bottom:0.2rem;">👑</div>
+        <div style="font-size:0.6rem;color:var(--muted);">VIP</div>
+      </div>
+      <div onclick="showPage('promotions')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.7rem 0.3rem;text-align:center;cursor:pointer;">
+        <div style="font-size:1.4rem;margin-bottom:0.2rem;">🎁</div>
+        <div style="font-size:0.6rem;color:var(--muted);">Promos</div>
+      </div>
+    </div>
+
+    <!-- Games -->
+    <div style="padding:0 0.8rem 1rem;">
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.9rem;margin-bottom:0.5rem;">🔥 Hot Games</div>
+      <div data-games-grid style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;"></div>
+    </div>
+  </div>
+
+  <!-- DESKTOP / GUEST HOME (original hero) -->
+  <div id="desktopHome">
   <div class="hero">
     <div class="hero-glow"></div>
     <div class="hero-badge">🎰 &nbsp;#1 Online Gaming Platform</div>
@@ -1201,6 +1242,7 @@
       </div>
     </div>
   </div>
+  </div> <!-- end desktopHome -->
 </div>
 
 <!-- ══════════════════════════════════════
@@ -5890,15 +5932,56 @@
     if (balEl) balEl.textContent = '💰 ' + formatted;
     const withdrawBal = document.getElementById('withdrawAvailBalance');
     if (withdrawBal) withdrawBal.textContent = formatted;
-    // Update wallet page balance
     const walletBal = document.getElementById('walletBalanceDisplay');
     if (walletBal) walletBal.textContent = formatted;
-    // Update profile page balance
     const profBal = document.getElementById('profileBalance');
     if (profBal) profBal.textContent = formatted;
-    // Store current balance globally
+    // Update mobile home balance
+    const mobileHomeBal = document.getElementById('mobileHomeBalance');
+    if (mobileHomeBal) mobileHomeBal.textContent = formatted;
     window.currentBalance = bal;
   }
+
+  function updateMobileHomeBalance() {
+    const db = window.fbDB || fbDB;
+    const user = window.currentUser;
+    if (!db || !user) return;
+    db.ref('users/' + user.uid + '/balance').on('value', snap => {
+      updateBalanceDisplay(snap.val() || 0);
+    });
+    // Populate mobile game cards
+    const mobileGamesGrid = document.querySelector('#mobileAppHome [data-games-grid]');
+    if (mobileGamesGrid && mobileGamesGrid.children.length === 0) {
+      mobileGamesGrid.innerHTML = `
+        <div onclick="openColorGame()" style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;">
+          <div style="height:100px;background:linear-gradient(135deg,#0d1f0d,#1a3a1a);display:flex;align-items:center;justify-content:center;font-size:2.5rem;position:relative;">🎯
+            <div style="position:absolute;top:6px;right:6px;background:#e02020;color:#fff;font-size:0.55rem;font-weight:800;padding:2px 6px;border-radius:4px;">NEW</div>
+          </div>
+          <div style="padding:0.5rem 0.7rem 0.7rem;"><div style="font-size:0.82rem;font-weight:700;">WinGo Lottery</div>
+          <div style="display:flex;justify-content:space-between;margin-top:0.2rem;"><span style="font-size:0.65rem;color:var(--muted);">Lottery</span><span style="font-size:0.65rem;color:var(--green);font-weight:700;">RTP 95%</span></div></div>
+        </div>
+        <div onclick="loginPrompt()" style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;">
+          <div style="height:100px;background:linear-gradient(135deg,#1a0a00,#3d1a00);display:flex;align-items:center;justify-content:center;font-size:2.5rem;position:relative;">🎰
+            <div style="position:absolute;top:6px;right:6px;background:var(--gold);color:#000;font-size:0.55rem;font-weight:800;padding:2px 6px;border-radius:4px;">HOT</div>
+          </div>
+          <div style="padding:0.5rem 0.7rem 0.7rem;"><div style="font-size:0.82rem;font-weight:700;">Mega Slots</div>
+          <div style="display:flex;justify-content:space-between;margin-top:0.2rem;"><span style="font-size:0.65rem;color:var(--muted);">Slots</span><span style="font-size:0.65rem;color:var(--green);font-weight:700;">RTP 97%</span></div></div>
+        </div>
+        <div onclick="loginPrompt()" style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;">
+          <div style="height:100px;background:linear-gradient(135deg,#1a1000,#2e1c00);display:flex;align-items:center;justify-content:center;font-size:2.5rem;">🐉</div>
+          <div style="padding:0.5rem 0.7rem 0.7rem;"><div style="font-size:0.82rem;font-weight:700;">Dragon Tiger</div>
+          <div style="display:flex;justify-content:space-between;margin-top:0.2rem;"><span style="font-size:0.65rem;color:var(--muted);">Table</span><span style="font-size:0.65rem;color:var(--green);font-weight:700;">RTP 96%</span></div></div>
+        </div>
+        <div onclick="loginPrompt()" style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;">
+          <div style="height:100px;background:linear-gradient(135deg,#0a001a,#1a0033);display:flex;align-items:center;justify-content:center;font-size:2.5rem;position:relative;">🎲
+            <div style="position:absolute;top:6px;right:6px;background:#e02020;color:#fff;font-size:0.55rem;font-weight:800;padding:2px 6px;border-radius:4px;">NEW</div>
+          </div>
+          <div style="padding:0.5rem 0.7rem 0.7rem;"><div style="font-size:0.82rem;font-weight:700;">Dice Royale</div>
+          <div style="display:flex;justify-content:space-between;margin-top:0.2rem;"><span style="font-size:0.65rem;color:var(--muted);">Dice</span><span style="font-size:0.65rem;color:var(--green);font-weight:700;">RTP 96%</span></div></div>
+        </div>`;
+    }
+  }
+  window.updateMobileHomeBalance = updateMobileHomeBalance;
 
   function updateProfilePage(profile) {
     const usernameEl = document.querySelector('#page-profile input[type="text"]');
@@ -6002,6 +6085,15 @@
           if (heroPlay) heroPlay.style.display = 'none';
           const heroBanner = document.getElementById('heroWelcomeBanner');
           if (heroBanner) heroBanner.style.display = 'block';
+          // Mobile: show app home, hide desktop hero
+          if (window.innerWidth <= 768) {
+            const mah = document.getElementById('mobileAppHome');
+            const dh = document.getElementById('desktopHome');
+            if (mah) mah.style.display = 'block';
+            if (dh) dh.style.display = 'none';
+            // Update mobile home balance
+            updateMobileHomeBalance();
+          }
           // Save last login time
           try {
             const db = window.fbDB || fbDB;
@@ -6020,6 +6112,11 @@
           if (heroSignInBtn) heroSignInBtn.style.display = 'inline-flex';
           const heroWelcome = document.getElementById('heroWelcomeBanner');
           if (heroWelcome) heroWelcome.style.display = 'none';
+          // Restore desktop home
+          const mah = document.getElementById('mobileAppHome');
+          const dh = document.getElementById('desktopHome');
+          if (mah) mah.style.display = 'none';
+          if (dh) dh.style.display = 'block';
         }
       });
       // Test read to confirm connection
