@@ -48,9 +48,9 @@
 
   body {
     font-family: 'Exo 2', sans-serif;
+    padding-bottom: 65px;
     background: var(--bg);
     color: var(--text);
-    min-height: 100vh;
     overflow-x: hidden;
   }
 
@@ -71,15 +71,31 @@
   }
 
   /* ─── PAGES ─── */
-  .page { display:none; position:relative; z-index:1; }
+  .page { display:none; position:relative; z-index:1; height:auto; }
   .page.active { display:block; }
   /* Home page doesn't need full-height enforced — hero handles it */
   #page-home { min-height: unset; }
 
-  /* ─── MOBILE BOTTOM NAV — always visible on mobile ─── */
-  .mobile-nav { display: none; }
+  /* ─── BOTTOM NAV — visible on all screens ─── */
+  .mobile-nav {
+    display: grid !important;
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    z-index: 9999;
+    background: #100800;
+    border-top: 1px solid rgba(240,192,64,0.3);
+    border-radius: 20px 20px 0 0;
+    grid-template-columns: repeat(5, 1fr);
+    width: 480px; max-width: 100%; height: 60px;
+    box-shadow: 0 -4px 30px rgba(0,0,0,0.6);
+    overflow: hidden;
+  }
   @media (max-width: 768px) {
-    .mobile-nav { display: grid !important; }
+    .mobile-nav {
+      width: 100% !important;
+      border-radius: 0 !important;
+      left: 0 !important;
+      transform: none !important;
+    }
     .page { min-height: unset !important; height: auto !important; }
   }
 
@@ -127,7 +143,7 @@
 
   /* ─── HOME PAGE ─── */
   .hero {
-    min-height: 100vh; padding-top: 64px;
+    padding-top: 2rem; padding-bottom: 2rem;
     display: flex; flex-direction: column; align-items: center; justify-content: center;
     text-align: center; position: relative; overflow: hidden;
     padding-left: 1.5rem; padding-right: 1.5rem;
@@ -225,9 +241,8 @@
 
   /* ─── AUTH PAGES ─── */
   .auth-wrap {
-    min-height: 100vh; padding-top: 64px;
+    padding: 2rem 1rem;
     display: flex; align-items:center; justify-content:center;
-    padding: 80px 1rem 2rem;
   }
   .auth-card {
     background: var(--card); border: 1px solid var(--border); border-radius: 16px;
@@ -398,7 +413,7 @@
 
 
   /* ─── WALLET / DEPOSIT / WITHDRAW ─── */
-  .wallet-page { padding: 100px 2rem 4rem; max-width: 1000px; margin: 0 auto; }
+  .wallet-page { padding: 1.5rem 2rem 4rem; max-width: 1000px; margin: 0 auto; }
   .wallet-hero {
     background: linear-gradient(135deg, #120c00, var(--card));
     border: 1px solid rgba(240,192,64,0.2); border-radius: 16px;
@@ -509,7 +524,7 @@
   .wheel-close { position:absolute; top:1.5rem; right:1.5rem; background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:0.4rem 0.8rem; cursor:pointer; font-family:'Exo 2',sans-serif; }
 
   /* Profile Page */
-  .profile-page { padding:100px 2rem 4rem; max-width:900px; margin:0 auto; }
+  .profile-page { padding:1.5rem 2rem 4rem; max-width:900px; margin:0 auto; }
   .profile-hero {
     background:linear-gradient(135deg,#0d0a1a,var(--card)); border:1px solid var(--border);
     border-radius:16px; padding:2.5rem; display:flex; gap:2rem; align-items:center;
@@ -532,7 +547,7 @@
   .profile-card h4 { font-family:'Cinzel',serif; color:var(--gold); font-size:0.95rem; margin-bottom:1.2rem; }
 
   /* VIP Page */
-  .vip-page { padding:100px 2rem 4rem; max-width:1000px; margin:0 auto; }
+  .vip-page { padding:1.5rem 2rem 4rem; max-width:1000px; margin:0 auto; }
   .vip-hero { text-align:center; padding:3rem 2rem; background:linear-gradient(135deg,#0d0800,#1a1000,var(--card)); border:1px solid rgba(240,192,64,0.2); border-radius:16px; margin-bottom:2.5rem; }
   .vip-hero h2 { font-family:'Cinzel',serif; font-size:2.2rem; color:var(--gold2); margin-bottom:0.5rem; }
   .vip-levels { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:1.2rem; margin-bottom:2.5rem; }
@@ -552,7 +567,7 @@
   .progress-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,var(--gold-dim),var(--gold2)); transition:width 1s; }
 
   /* Promotions */
-  .promo-page { padding:100px 2rem 4rem; max-width:1000px; margin:0 auto; }
+  .promo-page { padding:1.5rem 2rem 4rem; max-width:1000px; margin:0 auto; }
   .promo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1.5rem; }
   .promo-card {
     background:var(--card); border:1px solid var(--border); border-radius:14px;
@@ -568,7 +583,7 @@
   .promo-expiry { font-size:0.75rem; color:var(--muted); }
 
   /* Support */
-  .support-page { padding:100px 2rem 4rem; max-width:900px; margin:0 auto; }
+  .support-page { padding:1.5rem 2rem 4rem; max-width:900px; margin:0 auto; }
   .chat-window { background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden; height:420px; display:flex; flex-direction:column; margin-bottom:1.2rem; }
   .chat-header { background:linear-gradient(135deg,#0d0a1a,var(--card2)); padding:1rem 1.2rem; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:0.8rem; }
   .agent-avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--purple),var(--red)); display:flex; align-items:center; justify-content:center; font-size:1rem; }
@@ -599,7 +614,7 @@
     background: var(--bg); overflow-y:auto; overflow-x:hidden;
   }
   .color-game-overlay.open { display:block; }
-  .cg-wrap { max-width:520px; margin:0 auto; padding:80px 1rem 3rem; }
+  .cg-wrap { max-width:520px; margin:0 auto; padding:1.5rem 1rem 3rem; }
   .cg-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:1.5rem; }
   .cg-title { font-family:'Cinzel',serif; font-size:1.4rem; color:var(--gold); }
   .cg-close { background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:0.4rem 0.9rem; cursor:pointer; font-family:'Exo 2',sans-serif; }
@@ -864,7 +879,7 @@
   .mobile-nav-center svg { width: 20px; height: 20px; }
 
   /* ─── BET HISTORY PAGE ─── */
-  .history-page { padding: 100px 2rem 4rem; max-width: 900px; margin: 0 auto; }
+  .history-page { padding: 1.5rem 2rem 4rem; max-width: 900px; margin: 0 auto; }
   .history-summary {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;
   }
@@ -933,7 +948,6 @@
     }
 
     /* ── HOME PAGE ── */
-    #desktopHome { display: none !important; }
     #mobileAppHome {
       display: block !important;
       padding-top: 0 !important;
@@ -1226,6 +1240,21 @@
     /* ── MISC FIXES ── */
     .promo-banner { flex-direction: column !important; text-align: center !important; padding: 0.9rem !important; gap: 0.5rem !important; }
     .promo-amount { font-size: 1.4rem !important; }
+
+    /* ── GUEST HOME on mobile ── */
+    #desktopHome .hero {
+      min-height: unset !important;
+      padding: 1.5rem 1rem 1.5rem !important;
+      justify-content: flex-start !important;
+    }
+    #desktopHome .hero h1 { font-size: 2rem !important; margin-bottom: 0.6rem !important; }
+    #desktopHome .hero p { font-size: 0.85rem !important; margin-bottom: 1rem !important; }
+    #desktopHome .hero-btns { flex-direction: column !important; gap: 0.5rem !important; }
+    #desktopHome .hero-btns .btn { width: 100% !important; text-align: center !important; }
+    #desktopHome .section {
+      padding: 1rem 0.8rem !important;
+      max-width: 100% !important;
+    }
   }
 
   /* ── SMALL MOBILE 400px ── */
@@ -1313,7 +1342,7 @@
 
     <!-- Promo Banners (Wheel + VIP) -->
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;padding:0.6rem 0.8rem 0;">
-      <div onclick="showPage('promotions');setTimeout(()=>{document.getElementById('spinWheelBtn')?.click()},300)" style="background:linear-gradient(135deg,#6a0572,#ab47bc);border-radius:12px;padding:0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;min-height:52px;">
+      <div onclick="openWheel()" style="background:linear-gradient(135deg,#6a0572,#ab47bc);border-radius:12px;padding:0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;min-height:52px;">
         <span style="font-size:1.5rem;">🎡</span>
         <div><div style="font-size:0.7rem;font-weight:800;color:#fff;">WHEEL OF</div><div style="font-size:0.7rem;font-weight:800;color:#fff;">FORTUNE</div></div>
       </div>
@@ -1332,7 +1361,7 @@
         <span style="font-size:1rem;">🎯</span>
         <span style="font-size:0.72rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px;">Lottery</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;" id="mobileGameCards">
+      <div id="mobileGameCards">
         <!-- WinGo -->
         <div onclick="openColorGame()" style="background:linear-gradient(135deg,#0a1929,#1a237e);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;border:1px solid rgba(240,192,64,0.2);">
           <div style="height:100px;display:flex;align-items:center;justify-content:center;position:relative;">
@@ -1341,21 +1370,11 @@
               <div style="font-size:2rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;line-height:1;">WINGO</div>
               <div style="font-size:0.55rem;color:rgba(255,255,255,0.5);margin-top:2px;">1min · 3min · 5min</div>
             </div>
-            <div style="position:absolute;top:6px;left:6px;background:#e65100;color:#fff;font-size:0.5rem;font-weight:800;padding:2px 6px;border-radius:4px;">NEW</div>
+            <div style="position:absolute;top:6px;left:6px;background:#e65100;color:#fff;font-size:0.5rem;font-weight:800;padding:2px 6px;border-radius:4px;">HOT</div>
           </div>
           <div style="padding:0.4rem 0.6rem 0.6rem;background:rgba(0,0,0,0.3);">
             <div style="font-size:0.75rem;font-weight:700;color:#fff;">Win Go</div>
             <div style="font-size:0.62rem;color:rgba(255,255,255,0.5);">Color prediction game</div>
-          </div>
-        </div>
-        <!-- Mega Slots -->
-        <div onclick="loginPrompt()" style="background:linear-gradient(135deg,#1a0a00,#3d1a00);border-radius:14px;overflow:hidden;cursor:pointer;border:1px solid rgba(240,192,64,0.15);">
-          <div style="height:100px;display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;">🎰
-            <div style="position:absolute;top:6px;left:6px;background:var(--gold);color:#000;font-size:0.5rem;font-weight:800;padding:2px 6px;border-radius:4px;">HOT</div>
-          </div>
-          <div style="padding:0.4rem 0.6rem 0.6rem;background:rgba(0,0,0,0.3);">
-            <div style="font-size:0.75rem;font-weight:700;color:#fff;">Mega Slots</div>
-            <div style="font-size:0.62rem;color:rgba(255,255,255,0.5);">Coming soon</div>
           </div>
         </div>
       </div>
