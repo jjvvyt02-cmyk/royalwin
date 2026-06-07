@@ -421,6 +421,19 @@
   }
   .toast.show { opacity:1; visibility:visible; }
 
+  /* ─── REFRESH BUTTON ─── */
+  .refresh-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(240,192,64,0.1); border: 1.5px solid rgba(240,192,64,0.35);
+    cursor: pointer; color: var(--gold); font-size: 0.9rem;
+    transition: background 0.2s, transform 0.2s; outline: none;
+    flex-shrink: 0;
+  }
+  .refresh-btn:active { background: rgba(240,192,64,0.25); transform: scale(0.92); }
+  .refresh-btn.spinning { animation: refreshSpin 0.7s linear; }
+  @keyframes refreshSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
   /* ─── ANIMATIONS ─── */
   @keyframes fadeInUp { from { opacity:0; transform:translateY(24px); } to { opacity:1; transform:translateY(0); } }
   @keyframes fadeInDown { from { opacity:0; transform:translateY(-16px); } to { opacity:1; transform:translateY(0); } }
@@ -971,13 +984,28 @@
       padding: 0 !important;
       margin: 0 !important;
       -webkit-overflow-scrolling: touch !important;
+      box-sizing: border-box !important;
+    }
+
+    /* ── UNIVERSAL PAGE CONTENT PADDING ── */
+    /* Every inner wrapper gets consistent L/R padding */
+    .wallet-page,
+    .profile-page,
+    .vip-page,
+    .promo-page,
+    .ref-page,
+    .support-page,
+    .history-page {
+      padding-left: 0.75rem !important;
+      padding-right: 0.75rem !important;
+      box-sizing: border-box !important;
     }
 
     /* ── HOME PAGE ── */
     #mobileAppHome {
-      padding-top: 0 !important;
-      padding-bottom: 0 !important;
+      padding: 0 0.75rem 0 !important;
       min-height: unset !important;
+      box-sizing: border-box !important;
     }
 
     /* ── AUTH PAGES (Login/Register) ── */
@@ -992,9 +1020,9 @@
     }
     .auth-card {
       padding: 1.5rem 1.2rem !important;
-      margin: 0 !important;
+      margin: 0 0.75rem !important;
       border-radius: 16px !important;
-      width: calc(100% - 2rem) !important;
+      width: calc(100% - 1.5rem) !important;
       max-width: 420px !important;
       box-sizing: border-box !important;
     }
@@ -1049,7 +1077,7 @@
 
     /* ── VIP PAGE ── */
     .vip-page {
-      padding: 0 0.8rem 2rem !important;
+      padding: 0 0.75rem 2rem !important;
       max-width: 100% !important;
     }
     .vip-levels { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
@@ -1057,7 +1085,7 @@
 
     /* ── PROMOTIONS PAGE ── */
     .promo-page {
-      padding: 0 0.8rem 2rem !important;
+      padding: 0 0.75rem 2rem !important;
       max-width: 100% !important;
     }
     .promo-grid { grid-template-columns: 1fr !important; gap: 0.6rem !important; }
@@ -1067,14 +1095,14 @@
       padding: 0 0 2rem !important;
       max-width: 100% !important;
     }
-    .agency-card { margin: 0 0.6rem 0.6rem !important; padding: 0.9rem !important; }
-    .sub-grid { gap: 0.4rem !important; margin: 0 0.6rem !important; }
-    .ref-actions { margin: 0.4rem 0.6rem 0 !important; }
-    .sub-history { margin: 0.4rem 0.6rem 0.6rem !important; }
+    .agency-card { margin: 0 0 0.6rem !important; padding: 0.9rem !important; }
+    .sub-grid { gap: 0.4rem !important; margin: 0 !important; }
+    .ref-actions { margin: 0.4rem 0 0 !important; }
+    .sub-history { margin: 0.4rem 0 0.6rem !important; }
 
     /* ── SUPPORT PAGE ── */
     .support-page {
-      padding: 0 0.8rem 2rem !important;
+      padding: 0 0.75rem 2rem !important;
       max-width: 100% !important;
     }
     .support-options { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
@@ -1135,7 +1163,7 @@
       display: grid !important;
       grid-template-columns: 1fr 1fr 1fr !important;
       gap: 0.4rem !important;
-      margin: 0.6rem 0.8rem 0.5rem !important;
+      margin: 0.6rem 0.75rem 0.5rem !important;
     }
     .cg-ttab {
       padding: 0.55rem 0.1rem !important;
@@ -1144,7 +1172,7 @@
       text-align: center !important;
     }
     .cg-round-info {
-      margin: 0 0.8rem 0.5rem !important;
+      margin: 0 0.75rem 0.5rem !important;
       padding: 0.6rem 0.8rem !important;
       border-radius: 12px !important;
     }
@@ -1155,7 +1183,7 @@
     .cg-colors {
       grid-template-columns: 1fr 1fr 1fr !important;
       gap: 0.4rem !important;
-      margin: 0 0.8rem 0.5rem !important;
+      margin: 0 0.75rem 0.5rem !important;
     }
     .cg-color-btn {
       padding: 0.9rem 0.1rem !important;
@@ -1165,7 +1193,7 @@
     .cg-numbers {
       grid-template-columns: repeat(5, 1fr) !important;
       gap: 0.35rem !important;
-      margin: 0 0.8rem 0.5rem !important;
+      margin: 0 0.75rem 0.5rem !important;
     }
     .cg-num-btn {
       font-size: 0.95rem !important;
@@ -1180,7 +1208,7 @@
       border-radius: 30px !important;
     }
     .cg-bet-panel {
-      margin: 0 0.8rem 0.5rem !important;
+      margin: 0 0.75rem 0.5rem !important;
       padding: 0.7rem !important;
       border-radius: 12px !important;
     }
@@ -1190,13 +1218,13 @@
     .cg-x-btn { padding: 0.4rem !important; font-size: 0.75rem !important; }
     .cg-confirm-btn {
       display: block !important;
-      width: calc(100% - 1.6rem) !important;
-      margin: 0 0.8rem 0.5rem !important;
+      width: calc(100% - 1.5rem) !important;
+      margin: 0 0.75rem 0.5rem !important;
       padding: 0.85rem !important;
       font-size: 0.9rem !important;
       border-radius: 10px !important;
     }
-    .cg-history { margin: 0 0.8rem 0.5rem !important; border-radius: 12px !important; }
+    .cg-history { margin: 0 0.75rem 0.5rem !important; border-radius: 12px !important; }
     .cg-hist-row { font-size: 0.68rem !important; padding: 0.45rem 0.5rem !important; }
     .cg-hist-row.head { font-size: 0.6rem !important; }
     .cg-result-popup { width: 86vw !important; padding: 1.4rem 1rem !important; }
@@ -1259,13 +1287,14 @@
 
     /* ── TOAST ── */
     .toast {
-      left: 1rem !important;
-      right: 1rem !important;
-      max-width: calc(100vw - 2rem) !important;
-      width: auto !important;
+      left: 50% !important;
+      right: auto !important;
+      transform: translateX(-50%) !important;
+      max-width: calc(100vw - 2.5rem) !important;
+      width: max-content !important;
       bottom: 72px !important;
       font-size: 0.82rem !important;
-      transform: translateX(-50%) !important;
+      text-align: center !important;
     }
 
     /* ── SECTION TITLES ── */
@@ -1304,7 +1333,7 @@
     #page-terms > div,
     #page-responsible > div,
     #page-privacy > div {
-      padding: 0.8rem 0.8rem 2rem !important;
+      padding: 0.75rem 0.75rem 2rem !important;
       max-width: 100% !important;
       box-sizing: border-box !important;
     }
@@ -1792,7 +1821,9 @@
     <div style="display:flex;align-items:center;justify-content:space-between;padding:3.5rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
       <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.3rem;font-family:'Exo 2',sans-serif;"><span data-t="common.back">‹ Back</span></button>
       <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Subordinate Data</div>
-      <button onclick="loadSubData()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;">🔄</button>
+      <button onclick="loadSubData()" class="refresh-btn" title="Refresh">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
     </div>
 
     <!-- Filters -->
@@ -1867,7 +1898,9 @@
     <div style="display:flex;align-items:center;justify-content:space-between;padding:3.5rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
       <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.3rem;font-family:'Exo 2',sans-serif;"><span data-t="common.back">‹ Back</span></button>
       <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Commission Details</div>
-      <button onclick="loadCommDetails()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;">🔄</button>
+      <button onclick="loadCommDetails()" class="refresh-btn" title="Refresh">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
     </div>
 
     <!-- Date filter + total -->
@@ -6508,11 +6541,10 @@
     const db = window.fbDB || fbDB;
     const user = window.currentUser;
     if (!db || !user) return;
-    const btn = document.querySelector('#cgBalanceDisplay + button');
-    if (btn) btn.style.animation = 'spin 0.5s linear';
+    const btn = document.querySelector('[onclick="refreshCgBalance()"]');
+    if (btn) { btn.classList.add('spinning'); setTimeout(() => btn.classList.remove('spinning'), 700); }
     db.ref('users/' + user.uid + '/balance').once('value').then(snap => {
       updateBalanceDisplay(snap.val() || 0);
-      if (btn) setTimeout(() => btn.style.animation = '', 500);
     });
   }
 
@@ -6774,7 +6806,9 @@
           <div class="wallet-balance-label">Total Balance</div>
           <div style="display:flex;align-items:center;gap:0.6rem;">
             <div class="wallet-balance-val" id="walletBalanceDisplay">₹0.00</div>
-            <button onclick="refreshWalletBalance()" style="background:none;border:none;cursor:pointer;color:var(--gold);font-size:1.1rem;padding:0.2rem;" title="Refresh balance">🔄</button>
+            <button onclick="refreshWalletBalance()" class="refresh-btn" title="Refresh balance">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
           </div>
           <div class="wallet-balance-sub">💚 Active &nbsp;|&nbsp; Last updated: just now</div>
         </div>
@@ -7770,7 +7804,9 @@
         <div style="display:flex;align-items:center;gap:0.3rem;background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.3);border-radius:8px;padding:0.3rem 0.6rem;">
           <span style="font-size:0.7rem;color:var(--muted);">₹</span>
           <span id="cgBalanceDisplay" style="font-size:0.85rem;font-weight:700;color:var(--gold);">0.00</span>
-          <button onclick="refreshCgBalance()" style="background:none;border:none;cursor:pointer;padding:0;color:var(--muted);font-size:0.75rem;line-height:1;" title="Refresh balance">🔄</button>
+          <button onclick="refreshCgBalance()" class="refresh-btn" style="width:24px;height:24px;border-color:rgba(240,192,64,0.2);" title="Refresh balance">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+      </button>
         </div>
         <button class="cg-close" onclick="closeColorGame()">✕</button>
       </div>
