@@ -24,7 +24,9 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
-<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800;900&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800;900&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --gold: #f0c040;
@@ -50,8 +52,9 @@
     height: 100%;
     overflow: hidden;
   }
+  @font-face { font-display: swap; }
   body {
-    font-family: 'Exo 2', sans-serif;
+    font-family: 'Exo 2', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg);
     color: var(--text);
     overflow: hidden;
@@ -411,7 +414,7 @@
     position:fixed; bottom:2rem; left:50%; transform:translateX(-50%) translateY(80px);
     background:var(--card2); border:1px solid var(--border); border-radius:8px;
     padding:0.8rem 1.5rem; color:var(--gold); font-size:0.9rem;
-    transition:transform 0.3s; z-index:999; pointer-events:none;
+    transition:transform 0.3s; z-index:99998; pointer-events:none;
   }
   .toast.show { transform:translateX(-50%) translateY(0); }
 
@@ -944,8 +947,8 @@
     html, body {
       overflow: hidden !important;
       height: 100% !important;
-      position: fixed !important;
       width: 100% !important;
+      /* No position:fixed — causes iOS Safari keyboard to break input fields */
     }
     body {
       padding-bottom: 0 !important;
@@ -959,6 +962,7 @@
     .page {
       min-height: unset !important;
       height: calc(100vh - 60px) !important;
+      height: calc(100dvh - 60px) !important;
       overflow-y: auto !important;
       overflow-x: hidden !important;
       padding: 0 !important;
@@ -1286,10 +1290,49 @@
     #desktopHome .hero p { font-size: 0.85rem !important; margin-bottom: 1rem !important; }
     #desktopHome .hero-btns { flex-direction: column !important; gap: 0.5rem !important; }
     #desktopHome .hero-btns .btn { width: 100% !important; text-align: center !important; }
-    #desktopHome .section {
-      padding: 1rem 0.8rem !important;
+    #desktopHome .section { padding: 1rem 0.8rem !important; max-width: 100% !important; }
+
+    /* ── SUB-PAGES MOBILE (gamestats, history, terms etc) ── */
+    #page-gamestats > div,
+    #page-history > div,
+    #page-deposithistory > div,
+    #page-withdrawhistory > div,
+    #page-bethistory > div,
+    #page-subdata > div,
+    #page-commdetails > div,
+    #page-rebateratio > div,
+    #page-bonus100 > div,
+    #page-attendance > div,
+    #page-invitation-bonus > div,
+    #page-activity-award > div,
+    #page-terms > div,
+    #page-responsible > div,
+    #page-privacy > div {
+      padding: 0.8rem 0.8rem 2rem !important;
       max-width: 100% !important;
+      box-sizing: border-box !important;
     }
+    /* Sub-page tables */
+    table { width: 100% !important; font-size: 0.72rem !important; }
+    th, td { padding: 0.4rem 0.3rem !important; }
+    /* History rows */
+    .bh-row { font-size: 0.7rem !important; padding: 0.45rem 0.5rem !important; }
+    /* Attendance grid */
+    .attend-grid { grid-template-columns: repeat(4, 1fr) !important; gap: 0.4rem !important; }
+    /* VIP levels */
+    .vip-level-card { padding: 0.7rem !important; }
+    .vip-level-title { font-size: 0.9rem !important; }
+    /* Rebate ratio table */
+    .rebate-table { font-size: 0.72rem !important; }
+    /* Terms/Privacy pages */
+    #page-terms h2, #page-privacy h2, #page-responsible h2 { font-size: 1.1rem !important; }
+    #page-terms p, #page-privacy p, #page-responsible p { font-size: 0.82rem !important; line-height: 1.5 !important; }
+    /* Commission details */
+    .comm-card { padding: 0.7rem !important; margin-bottom: 0.5rem !important; }
+    /* Gamestats */
+    .gs-grid { grid-template-columns: 1fr 1fr !important; gap: 0.5rem !important; }
+    .gs-card { padding: 0.7rem !important; }
+    .gs-val { font-size: 1.1rem !important; }
   }
 
   /* ── SMALL MOBILE 400px ── */
@@ -1462,7 +1505,7 @@
     <div class="hero-btns" id="heroBtns">
       <button class="btn btn-gold" id="heroPlayBtn" onclick="showPage('register')"><span data-t="home.start">🚀 Start Playing</span></button>
       <button class="btn btn-outline" id="heroSignInBtn" onclick="showPage('login')">Sign In</button>
-      <button id="installAppBtn" onclick="installPWA()" style="display:none;background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid rgba(240,192,64,0.4);border-radius:12px;padding:0.7rem 1.5rem;color:var(--gold);font-weight:700;font-size:0.9rem;cursor:pointer;font-family:'Exo 2',sans-serif;">📲 Install App</button>
+      <!-- Install App button removed - PWA not configured -->
     </div>
     <!-- Welcome bonus banner shown when logged in -->
     <div id="heroWelcomeBanner" style="display:none;width:100%;max-width:600px;margin:1rem auto 0;">
@@ -1927,7 +1970,6 @@
 
   function showPage(name) {
     // ── AUTH GUARD ──
-    // Only these pages are accessible without login
     const _guestAllowed = ['home', 'login', 'register', 'forgot', 'terms', 'privacy', 'responsible'];
     if (!isLoggedIn && !_guestAllowed.includes(name)) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1936,6 +1978,12 @@
       window.scrollTo(0, 0);
       showToast('🔐 Please sign in to continue');
       return;
+    }
+    // Hide bottom nav on auth pages, show on all others
+    const mobileNavEl = document.getElementById('mobileNav');
+    const authPages = ['login', 'register', 'forgot'];
+    if (mobileNavEl) {
+      mobileNavEl.style.display = authPages.includes(name) ? 'none' : (isLoggedIn ? 'grid' : 'none');
     }
 
     // Internal function to actually show a page
@@ -2010,6 +2058,16 @@
     window._bonus100Locked = false;
     lockBonusCards(false);
     _showPageInternal(name);
+
+    // Clean up page-specific Firebase listeners when leaving pages
+    const _prevPage = window._currentPage;
+    if (_prevPage === 'referral' || _prevPage === 'subdata') {
+      const db = window.fbDB || fbDB;
+      if (db) {
+        db.ref('users').off();
+      }
+    }
+    window._currentPage = name;
 
     // When showing home, make sure correct section is visible
     if (name === 'home') {
@@ -2337,6 +2395,32 @@
     const dh = document.getElementById('desktopHome');
     if (dh) dh.style.display = 'block';
   });
+
+  // ── NETWORK OFFLINE DETECTION ──
+  (function setupNetworkDetection() {
+    let offlineBanner = null;
+
+    function showOfflineBanner() {
+      if (offlineBanner) return;
+      offlineBanner = document.createElement('div');
+      offlineBanner.id = 'offlineBanner';
+      offlineBanner.innerHTML = '📵 No internet connection. Some features may not work.';
+      offlineBanner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99997;background:#c0392b;color:#fff;text-align:center;padding:0.5rem 1rem;font-size:0.82rem;font-family:Exo 2,sans-serif;font-weight:600;';
+      document.body.appendChild(offlineBanner);
+    }
+
+    function hideOfflineBanner() {
+      if (offlineBanner) {
+        offlineBanner.remove();
+        offlineBanner = null;
+        showToast('✅ Back online!');
+      }
+    }
+
+    window.addEventListener('offline', showOfflineBanner);
+    window.addEventListener('online', hideOfflineBanner);
+    if (!navigator.onLine) showOfflineBanner();
+  })();
 
   // ── URL PAGE ROUTER ──
   // Handles ?page=login, ?page=register etc in the URL
@@ -3240,10 +3324,10 @@
 
     // Pagination
     if (totalPages > 1) {
-      el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;">
-        <button onclick="loadDepositHistoryPage(${_depHistPage-1})" ${_depHistPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.8rem;color:var(--muted);font-size:0.82rem;cursor:pointer;${_depHistPage<=1?'opacity:0.4;':''}">&lt;</button>
-        <span style="color:var(--muted);font-size:0.78rem;">Page ${_depHistPage} / ${totalPages}</span>
-        <button onclick="loadDepositHistoryPage(${_depHistPage+1})" ${_depHistPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.8rem;color:var(--muted);font-size:0.82rem;cursor:pointer;${_depHistPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
+      el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;padding-bottom:1.5rem;">
+        <button onclick="loadDepositHistoryPage(${_depHistPage-1})" ${_depHistPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_depHistPage<=1?'opacity:0.4;':''}">&lt; Prev</button>
+        <span style="color:var(--muted);font-size:0.8rem;padding:0 0.5rem;">Page ${_depHistPage} / ${totalPages}</span>
+        <button onclick="loadDepositHistoryPage(${_depHistPage+1})" ${_depHistPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_depHistPage>=totalPages?'opacity:0.4;':''}">Next &gt;</button>
       </div>`;
     }
   }
@@ -3301,10 +3385,10 @@
 
     // Pagination
     if (totalPages > 1) {
-      el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;">
-        <button onclick="loadWithdrawHistoryPage(${_withHistPage-1})" ${_withHistPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.8rem;color:var(--muted);font-size:0.82rem;cursor:pointer;${_withHistPage<=1?'opacity:0.4;':''}">&lt;</button>
-        <span style="color:var(--muted);font-size:0.78rem;">Page ${_withHistPage} / ${totalPages}</span>
-        <button onclick="loadWithdrawHistoryPage(${_withHistPage+1})" ${_withHistPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.8rem;color:var(--muted);font-size:0.82rem;cursor:pointer;${_withHistPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
+      el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;padding-bottom:1.5rem;">
+        <button onclick="loadWithdrawHistoryPage(${_withHistPage-1})" ${_withHistPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_withHistPage<=1?'opacity:0.4;':''}">&lt; Prev</button>
+        <span style="color:var(--muted);font-size:0.8rem;padding:0 0.5rem;">Page ${_withHistPage} / ${totalPages}</span>
+        <button onclick="loadWithdrawHistoryPage(${_withHistPage+1})" ${_withHistPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_withHistPage>=totalPages?'opacity:0.4;':''}">Next &gt;</button>
       </div>`;
     }
   }
@@ -4066,15 +4150,48 @@
     }, 1000);
   }
 
-  function resendOTP() { showToast('📱 OTP resent!'); startOTPTimer(); }
+  function resendOTP() {
+    // Actually resend by calling sendOTP logic again
+    const emailOrPhone = window._otpEmail || '';
+    if (!emailOrPhone) { showToast('⚠️ Session expired. Please start again.'); showPage('register'); return; }
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    window._expectedOTP = otp;
+    // Send via EmailJS if available, else show in toast for dev
+    if (window.emailjs) {
+      emailjs.send('service_royalwin', 'template_otp', {
+        to_email: emailOrPhone,
+        otp_code: otp,
+        user_name: emailOrPhone
+      }).then(() => {
+        showToast('📱 OTP resent to ' + emailOrPhone);
+      }).catch(() => {
+        showToast('📱 OTP resent!');
+      });
+    } else {
+      showToast('📱 New OTP sent!');
+    }
+    startOTPTimer();
+  }
 
   function otpMove(el, nextId) {
     if (el.value && nextId) document.getElementById(nextId).focus();
   }
 
+  function validatePassword(pass) {
+    if (!pass || pass.length < 8) return 'Password must be at least 8 characters.';
+    if (!/\d/.test(pass)) return 'Password must contain at least one number.';
+    return null;
+  }
+
   async function verifyOTP() {
     const otp = ['otp1','otp2','otp3','otp4','otp5','otp6'].map(id => document.getElementById(id).value).join('');
     if (otp.length < 6) { showToast('⚠️ Please enter the full 6-digit OTP'); return; }
+    // Validate password strength before creating account
+    const pwField = document.getElementById('regPassword');
+    if (pwField) {
+      const pwErr = validatePassword(pwField.value);
+      if (pwErr) { showToast('⚠️ ' + pwErr); return; }
+    }
 
     const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
     const isEmail = contact.includes('@');
@@ -4204,7 +4321,7 @@
       }
     } catch(e) {
       const msg = e.code === 'auth/invalid-verification-code' ? 'Invalid OTP. Please try again.' :
-                  e.code === 'auth/weak-password' ? 'Password too weak. Use at least 6 characters.' : e.message;
+                  e.code === 'auth/weak-password' ? 'Password too weak. Use at least 8 characters with a number.' : e.message;
       showToast('❌ ' + msg);
     }
   }
@@ -4571,7 +4688,8 @@
       const user = userCred.user;
 
       // Generate referral code
-      const myRefCode = 'ROY-' + Math.floor(1000 + Math.random() * 9000);
+      const _rc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      const myRefCode = 'ROY-' + Array.from({length:6}, () => _rc[Math.floor(Math.random() * _rc.length)]).join('');
 
       // Generate unique 6-digit member ID
       let memberId;
@@ -5074,8 +5192,20 @@
 
   function closeColorGame() {
     document.getElementById('colorGameOverlay').classList.remove('open');
-    // Don't clear intervals — keep timers running in background for pending bets
-    // Just hide the overlay
+    // Stop all countdown intervals (save battery/data)
+    // NOTE: Firebase .on listeners for history/schedule kept alive for result resolution
+    if (cgInterval) { clearInterval(cgInterval); cgInterval = null; }
+    Object.keys(cgTimerIntervals).forEach(k => {
+      if (cgTimerIntervals[k]) { clearInterval(cgTimerIntervals[k]); cgTimerIntervals[k] = null; }
+    });
+    window._cgTimersStarted = false;
+    // Remove real-time balance listener specific to game, restart general one
+    const db = window.fbDB || fbDB;
+    const user = window.currentUser;
+    if (db && user) {
+      db.ref('users/' + user.uid + '/balance').off();
+      updateMobileHomeBalance();
+    }
   }
 
   function setTimer(mins) {
@@ -5353,7 +5483,11 @@
         const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
         const currentBal = parseFloat(balSnap.val() || 0);
         if (currentBal < amt) { showToast('❌ Insufficient balance!'); return; }
-        await db.ref('users/' + user.uid + '/balance').set(parseFloat((currentBal - amt).toFixed(2)));
+        await db.ref('users/' + user.uid + '/balance').transaction(bal => {
+          const current = parseFloat(bal || 0);
+          if (current < amt) return; // abort if insufficient
+          return parseFloat((current - amt).toFixed(2));
+        });
         updateBalanceDisplay(currentBal - amt);
 
         // ── TRACK DAILY BETS (for Activity Award) ──
@@ -6100,10 +6234,10 @@
     }).join('');
 
     if (totalPages > 1) {
-      container.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;">
-        <button onclick="_txPage=Math.max(1,_txPage-1);filterTx(document.querySelector('.history-filters .hf-btn.active'),currentTxFilter||'all');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_txPage<=1?'opacity:0.4;':''}">&lt;</button>
-        <span style="color:var(--muted);font-size:0.75rem;">Page ${_txPage} / ${totalPages}</span>
-        <button onclick="_txPage=Math.min(${totalPages},_txPage+1);filterTx(document.querySelector('.history-filters .hf-btn.active'),currentTxFilter||'all');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_txPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
+      container.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;padding-bottom:1.5rem;">
+        <button onclick="_txPage=Math.max(1,_txPage-1);filterTx(document.querySelector('.history-filters .hf-btn.active'),currentTxFilter||'all');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_txPage<=1?'opacity:0.4;':''}">&lt; Prev</button>
+        <span style="color:var(--muted);font-size:0.8rem;padding:0 0.5rem;">Page ${_txPage} / ${totalPages}</span>
+        <button onclick="_txPage=Math.min(${totalPages},_txPage+1);filterTx(document.querySelector('.history-filters .hf-btn.active'),currentTxFilter||'all');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_txPage>=totalPages?'opacity:0.4;':''}">Next &gt;</button>
       </div>`;
     }
   }
@@ -6160,10 +6294,10 @@
     }).join('');
 
     if (totalPages > 1) {
-      container.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;">
-        <button onclick="_betHistPage=Math.max(1,_betHistPage-1);renderBetHistory('${filter||'all'}');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_betHistPage<=1?'opacity:0.4;':''}">&lt;</button>
-        <span style="color:var(--muted);font-size:0.75rem;">Page ${_betHistPage} / ${totalPages}</span>
-        <button onclick="_betHistPage=Math.min(${totalPages},_betHistPage+1);renderBetHistory('${filter||'all'}');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_betHistPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
+      container.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;padding-bottom:1.5rem;">
+        <button onclick="_betHistPage=Math.max(1,_betHistPage-1);renderBetHistory('${filter||'all'}');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_betHistPage<=1?'opacity:0.4;':''}">&lt; Prev</button>
+        <span style="color:var(--muted);font-size:0.8rem;padding:0 0.5rem;">Page ${_betHistPage} / ${totalPages}</span>
+        <button onclick="_betHistPage=Math.min(${totalPages},_betHistPage+1);renderBetHistory('${filter||'all'}');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_betHistPage>=totalPages?'opacity:0.4;':''}">Next &gt;</button>
       </div>`;
     }
   }
@@ -7180,22 +7314,22 @@
     </div>
 
     <!-- Quick action grid -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:0.8rem;">
-      <div onclick="showPage('bethistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:0.8rem;align-items:stretch;">
+      <div onclick="showPage('bethistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;min-height:72px;">
         <div style="width:40px;height:40px;border-radius:10px;background:rgba(39,174,96,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">🎯</div>
-        <div><div style="font-size:0.85rem;font-weight:700;">Bet History</div><div style="font-size:0.7rem;color:var(--muted);">Win & Loss history</div></div>
+        <div><div style="font-size:0.82rem;font-weight:700;">Bet History</div><div style="font-size:0.68rem;color:var(--muted);">Win &amp; Loss history</div></div>
       </div>
-      <div onclick="showPage('history')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
+      <div onclick="showPage('history')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;min-height:72px;">
         <div style="width:40px;height:40px;border-radius:10px;background:rgba(124,77,255,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">💰</div>
-        <div><div style="font-size:0.85rem;font-weight:700;">Transaction</div><div style="font-size:0.7rem;color:var(--muted);"><span data-t="acc.alltx">All transactions</span></div></div>
+        <div><div style="font-size:0.82rem;font-weight:700;">Transaction</div><div style="font-size:0.68rem;color:var(--muted);"><span data-t="acc.alltx">All transactions</span></div></div>
       </div>
-      <div onclick="showPage('deposithistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
+      <div onclick="showPage('deposithistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;min-height:72px;">
         <div style="width:40px;height:40px;border-radius:10px;background:rgba(240,192,64,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">⬇️</div>
-        <div><div style="font-size:0.85rem;font-weight:700;">Deposit History</div><div style="font-size:0.7rem;color:var(--muted);"><span data-t="acc.dephist">My deposit history</span></div></div>
+        <div><div style="font-size:0.82rem;font-weight:700;">Deposit History</div><div style="font-size:0.68rem;color:var(--muted);"><span data-t="acc.dephist">My deposit history</span></div></div>
       </div>
-      <div onclick="showPage('withdrawhistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;">
+      <div onclick="showPage('withdrawhistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;cursor:pointer;display:flex;align-items:center;gap:0.8rem;min-height:72px;">
         <div style="width:40px;height:40px;border-radius:10px;background:rgba(224,32,32,0.15);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">⬆️</div>
-        <div><div style="font-size:0.85rem;font-weight:700;">Withdrawal History</div><div style="font-size:0.7rem;color:var(--muted);"><span data-t="acc.withhist">My withdrawal history</span></div></div>
+        <div><div style="font-size:0.82rem;font-weight:700;">Withdrawal History</div><div style="font-size:0.68rem;color:var(--muted);"><span data-t="acc.withhist">My withdrawal history</span></div></div>
       </div>
     </div>
 
