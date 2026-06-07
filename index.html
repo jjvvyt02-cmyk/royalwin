@@ -596,8 +596,7 @@
   /* ─── COLOR PREDICTION GAME ─── */
   .color-game-overlay {
     display:none; position:fixed; inset:0; z-index:600;
-    background:rgba(0,0,0,0.95); backdrop-filter:blur(10px);
-    overflow-y:auto;
+    background: var(--bg); overflow-y:auto; overflow-x:hidden;
   }
   .color-game-overlay.open { display:block; }
   .cg-wrap { max-width:520px; margin:0 auto; padding:80px 1rem 3rem; }
@@ -913,13 +912,13 @@
     body { padding-bottom: 62px; overflow-x: hidden; }
     input, select, textarea { font-size: 16px !important; }
 
-    /* Kill ALL blank space - remove every min-height on mobile */
-    *, *::before, *::after { min-height: 0 !important; }
-    /* Re-allow height on specific elements that need it */
-    .mobile-nav { min-height: 58px !important; height: 58px !important; }
-    .cg-num-btn { min-height: 42px !important; }
-    .mn-icon { min-height: unset !important; }
-    body { padding-bottom: 58px !important; }
+    /* Fix blank space - only target pages that have min-height:100vh */
+    .page { min-height: unset !important; height: auto !important; }
+    .hero { min-height: unset !important; }
+    .auth-wrap { min-height: unset !important; }
+    body { min-height: unset !important; padding-bottom: 58px; }
+    .wallet-page, .profile-page, .vip-page, .promo-page,
+    .support-page, .ref-page, .history-page { min-height: unset !important; }
 
     /* TOP NAV */
     nav { padding: 0 1rem; height: 54px; }
@@ -1016,74 +1015,62 @@
     #page-history > div,
     #page-bethistory > div { padding: 54px 0.8rem 2rem !important; max-width: 100% !important; }
 
-    /* WINGO GAME — truly full screen mobile app style */
-    .color-game-overlay {
-      position: fixed !important; inset: 0 !important;
-      overflow-y: auto !important; overflow-x: hidden !important;
-      z-index: 600 !important; background: var(--bg) !important;
-    }
+    /* ── WINGO GAME MOBILE ── */
+    .color-game-overlay { background: var(--bg) !important; }
     .cg-wrap {
-      padding: 0 !important; max-width: 100% !important;
-      width: 100% !important; box-sizing: border-box !important;
+      max-width: 100% !important; width: 100% !important;
+      margin: 0 !important; padding: 0 0 58px 0 !important;
+      box-sizing: border-box !important;
     }
-
-    /* Game header - fixed at top */
+    /* Sticky header */
     .cg-header {
-      position: sticky; top: 0; z-index: 10;
-      background: var(--bg2); border-bottom: 1px solid var(--border);
-      padding: 0.6rem 0.8rem; margin-bottom: 0;
-      display: flex; align-items: center; justify-content: space-between;
+      position: sticky !important; top: 0 !important; z-index: 10 !important;
+      background: var(--bg2) !important; border-bottom: 1px solid var(--border) !important;
+      padding: 0.55rem 0.8rem !important; margin-bottom: 0 !important;
     }
-    .cg-title { font-size: 0.9rem; }
-    .cg-close { padding: 0.25rem 0.6rem; font-size: 0.72rem; }
-
-    /* All game content padded */
+    .cg-title { font-size: 0.88rem !important; }
+    .cg-close { padding: 0.25rem 0.55rem !important; font-size: 0.7rem !important; }
+    /* All sections get side padding */
     .cg-timer-tabs {
       display: grid !important; grid-template-columns: 1fr 1fr 1fr !important;
-      gap: 0.4rem; margin: 0.6rem 0.6rem 0.5rem; padding: 0;
+      gap: 0.4rem !important; margin: 0.55rem 0.6rem 0.45rem !important;
     }
-    .cg-ttab { padding: 0.5rem 0.1rem; font-size: 0.75rem; border-radius: 8px; }
-
-    .cg-round-info { margin: 0 0.6rem 0.5rem; padding: 0.55rem 0.8rem; border-radius: 10px; }
-    .cg-round-num { font-size: 0.6rem; }
-    .cg-round-val { font-size: 0.68rem; }
-    .cg-count-val { font-size: 1.5rem; }
-    .cg-count-lbl { font-size: 0.6rem; }
-    .cg-status { font-size: 0.6rem; padding: 0.2rem 0.5rem; }
-
-    .cg-colors { margin: 0 0.6rem 0.5rem; grid-template-columns: 1fr 1fr 1fr !important; gap: 0.4rem; }
-    .cg-color-btn { padding: 0.85rem 0.1rem; font-size: 0.82rem; border-radius: 10px; }
-
-    .cg-numbers { margin: 0 0.6rem 0.5rem; grid-template-columns: repeat(5,1fr) !important; gap: 0.3rem; }
-    .cg-num-btn { font-size: 0.92rem; aspect-ratio: 1; min-height: 42px; border-radius: 8px; }
-
-    /* Big/Small row */
-    .cg-bigsmall { margin: 0 0.6rem 0.5rem; }
+    .cg-ttab { padding: 0.48rem 0.1rem !important; font-size: 0.73rem !important; border-radius: 8px !important; }
+    .cg-round-info { margin: 0 0.6rem 0.45rem !important; padding: 0.5rem 0.75rem !important; }
+    .cg-count-val { font-size: 1.4rem !important; }
+    .cg-count-lbl { font-size: 0.58rem !important; }
+    .cg-status { font-size: 0.58rem !important; }
+    .cg-round-val { font-size: 0.66rem !important; }
+    .cg-colors {
+      grid-template-columns: 1fr 1fr 1fr !important;
+      gap: 0.35rem !important; margin: 0 0.6rem 0.45rem !important;
+    }
+    .cg-color-btn { padding: 0.82rem 0.1rem !important; font-size: 0.8rem !important; border-radius: 9px !important; }
+    .cg-numbers {
+      grid-template-columns: repeat(5,1fr) !important;
+      gap: 0.3rem !important; margin: 0 0.6rem 0.45rem !important;
+    }
+    .cg-num-btn { font-size: 0.9rem !important; aspect-ratio: 1 !important; min-height: 40px !important; border-radius: 8px !important; }
     .cg-color-btn[id="cgBigBtn"],
-    .cg-color-btn[id="cgSmallBtn"] { padding: 0.75rem; font-size: 0.9rem; }
-
-    /* Bet panel */
-    .cg-bet-panel { margin: 0 0.6rem 0.5rem; padding: 0.65rem; border-radius: 10px; }
-    .cg-bet-title { font-size: 0.68rem; margin-bottom: 0.4rem; }
-    .cg-bet-presets { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.3rem; scrollbar-width: none; }
-    .cg-bet-presets::-webkit-scrollbar { display: none; }
-    .cg-bet-preset { flex-shrink: 0; padding: 0.38rem 0.75rem; font-size: 0.75rem; white-space: nowrap; }
-    .cg-x-btn { padding: 0.4rem 0.4rem; font-size: 0.7rem; }
-    .cg-confirm-btn { margin: 0.4rem 0.6rem 0; padding: 0.85rem; font-size: 0.85rem; border-radius: 10px; display: block; width: calc(100% - 1.2rem); }
-
-    /* History section */
-    .cg-history { margin: 0.6rem; border-radius: 10px; }
-    .cg-hist-row { font-size: 0.67rem; padding: 0.42rem 0.5rem; }
-    .cg-hist-row.head { font-size: 0.6rem; }
-    .cg-tab-btns { margin: 0.6rem 0.6rem 0.4rem; gap: 0.3rem; }
-    .cg-tab-btn { padding: 0.38rem 0.9rem; font-size: 0.75rem; }
-
-    /* Result popup */
-    .cg-result-popup { width: 84vw; padding: 1.3rem 0.9rem; border-radius: 14px; }
-    .cg-result-emoji { font-size: 2.5rem; }
-    .cg-result-title { font-size: 1.1rem; }
-    .cg-result-amt { font-size: 1.7rem; }
-    .cg-result-num-badge { width: 42px; height: 42px; font-size: 1.05rem; }
+    .cg-color-btn[id="cgSmallBtn"] { padding: 0.72rem !important; font-size: 0.88rem !important; }
+    .cg-bet-panel { margin: 0 0.6rem 0.45rem !important; padding: 0.6rem !important; border-radius: 10px !important; }
+    .cg-bet-title { font-size: 0.67rem !important; margin-bottom: 0.38rem !important; }
+    .cg-bet-presets { gap: 0.28rem !important; scrollbar-width: none !important; }
+    .cg-bet-preset { padding: 0.36rem 0.7rem !important; font-size: 0.74rem !important; }
+    .cg-x-btn { padding: 0.38rem 0.38rem !important; font-size: 0.7rem !important; }
+    .cg-confirm-btn {
+      display: block !important; width: calc(100% - 1.2rem) !important;
+      margin: 0 0.6rem 0.45rem !important; padding: 0.82rem !important;
+      font-size: 0.82rem !important; border-radius: 9px !important;
+    }
+    .cg-history { margin: 0 0.6rem 0.45rem !important; border-radius: 10px !important; }
+    .cg-tab-btns { margin: 0 0.6rem 0.38rem !important; gap: 0.28rem !important; }
+    .cg-tab-btn { padding: 0.36rem 0.85rem !important; font-size: 0.73rem !important; }
+    .cg-hist-row { font-size: 0.65rem !important; padding: 0.4rem 0.5rem !important; }
+    .cg-hist-row.head { font-size: 0.58rem !important; }
+    .cg-result-popup { width: 84vw !important; padding: 1.2rem 0.8rem !important; }
+    .cg-result-title { font-size: 1.1rem !important; }
+    .cg-result-amt { font-size: 1.65rem !important; }
 
     /* SPIN WHEEL */
     .wheel-wrap { width: 210px; height: 210px; }
