@@ -7985,11 +7985,11 @@
       <input type="hidden" id="cgBetAmt" value="10">
       <!-- Combined: Total Bet + Bet Button in one row -->
       <div style="display:flex;align-items:stretch;gap:0.5rem;">
-        <div style="background:var(--bg3);border:1px solid rgba(240,192,64,0.15);border-radius:8px;padding:0.7rem 0.8rem;display:flex;flex-direction:column;justify-content:center;flex:0 0 auto;">
+        <div style="background:var(--bg3);border:1px solid rgba(240,192,64,0.15);border-radius:8px;padding:0.7rem 0.8rem;display:flex;flex-direction:column;justify-content:center;flex:0 0 40%;box-sizing:border-box;">
           <span style="font-size:0.62rem;color:var(--muted);line-height:1.2;">Total Bet</span>
           <span style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:800;color:var(--gold);line-height:1.2;" id="cgBetDisplay">₹10</span>
         </div>
-        <button class="cg-confirm-btn default-btn" id="cgConfirmBtn" onclick="placeBet()" style="flex:1;margin-top:0;padding:0.7rem 0.5rem;font-size:0.82rem;">Select</button>
+        <button class="cg-confirm-btn default-btn" id="cgConfirmBtn" onclick="placeBet()" style="flex:0 0 calc(60% - 0.5rem);margin-top:0;padding:0.7rem 0.5rem;font-size:0.82rem;box-sizing:border-box;">Select</button>
       </div>
     </div>
 
