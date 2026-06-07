@@ -1,4 +1,4 @@
-name: RoyalWin Signal Bot V1
+name: RoyalWin Signal Bot
 
 on:
   schedule:
