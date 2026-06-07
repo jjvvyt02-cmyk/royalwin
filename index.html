@@ -801,9 +801,9 @@
   .cg-hist-row {
     display:grid; grid-template-columns:1.8fr 1fr 1.2fr 1fr; gap:0.5rem;
     padding:0.6rem 1rem; border-bottom:1px solid rgba(255,255,255,0.04);
-    font-size:0.8rem; align-items:center;
+    font-size:0.88rem; align-items:center;
   }
-  .cg-hist-row.head { background:rgba(255,255,255,0.03); color:var(--muted); font-size:0.72rem; text-transform:uppercase; }
+  .cg-hist-row.head { background:rgba(255,255,255,0.03); color:var(--muted); font-size:0.86rem; text-transform:uppercase; font-weight:700; }
 
 
   /* ─── LIVE WINNER TICKER ─── */
@@ -1237,16 +1237,15 @@
     .cg-bet-preset { padding: 0.44rem 0.83rem !important; font-size: 0.86rem !important; font-weight: 700 !important; }
     .cg-x-btn { padding: 0.44rem 0.4rem !important; font-size: 0.86rem !important; font-weight: 700 !important; }
     .cg-confirm-btn {
-      display: block !important;
-      width: 100% !important;
-      margin: 0 0 0.5rem !important;
-      padding: 0.85rem !important;
-      font-size: 0.9rem !important;
-      border-radius: 10px !important;
+      padding: 0.7rem 0.5rem !important;
+      font-size: 0.82rem !important;
+      border-radius: 8px !important;
+      margin-top: 0 !important;
+      white-space: nowrap !important;
     }
     .cg-history { margin: 0 0 0.5rem !important; border-radius: 12px !important; }
-    .cg-hist-row { font-size: 0.68rem !important; padding: 0.45rem 0.5rem !important; }
-    .cg-hist-row.head { font-size: 0.6rem !important; }
+    .cg-hist-row { font-size: 0.75rem !important; padding: 0.45rem 0.5rem !important; }
+    .cg-hist-row.head { font-size: 0.72rem !important; font-weight: 700 !important; }
     .cg-result-popup { width: 86vw !important; padding: 1.4rem 1rem !important; }
     .cg-result-title { font-size: 1.2rem !important; }
     .cg-result-amt { font-size: 1.8rem !important; }
@@ -5275,7 +5274,7 @@
     cgSelectedColor = null; cgSelectedNum = null; cgSelectedBigSmall = null;
     document.querySelectorAll('.cg-color-btn, .cg-num-btn').forEach(b => b.classList.remove('selected'));
     const btn = document.getElementById('cgConfirmBtn');
-    if (btn) { btn.textContent = 'Select a color or number to bet'; btn.className = 'cg-confirm-btn default-btn'; btn.disabled = false; }
+    if (btn) { btn.textContent = 'Select'; btn.className = 'cg-confirm-btn default-btn'; btn.disabled = false; }
   }
 
   // Each timer has its own interval, history and state
@@ -5349,7 +5348,7 @@
           updateCGStatus();
           const btn = document.getElementById('cgConfirmBtn');
           if (btn) {
-            btn.textContent = 'Select a color or number to bet';
+            btn.textContent = 'Select';
             btn.className = 'cg-confirm-btn default-btn';
             btn.disabled = false;
           }
@@ -5403,7 +5402,8 @@
     const btn = document.getElementById('cgConfirmBtn');
     const labels = {green:'🟢 Bet Green (2×)', violet:'🟣 Bet Violet (4.5×)', red:'🔴 Bet Red (2×)'};
     const classes = {green:'green-btn', violet:'violet-btn', red:'red-btn'};
-    btn.textContent = labels[color]; btn.className = 'cg-confirm-btn ' + classes[color];
+    const shortLabels = {green:'🟢 Bet Green', violet:'🟣 Bet Violet', red:'🔴 Bet Red'};
+    btn.textContent = shortLabels[color]; btn.className = 'cg-confirm-btn ' + classes[color];
     btn.disabled = !cgBettingOpen;
   }
 
@@ -5412,7 +5412,7 @@
     document.querySelectorAll('.cg-color-btn, .cg-num-btn').forEach(b => b.classList.remove('selected'));
     el.classList.add('selected');
     const btn = document.getElementById('cgConfirmBtn');
-    btn.textContent = '🔢 Bet on Number ' + num + ' (9×)';
+    btn.textContent = '🔢 No.' + num;
     btn.className = 'cg-confirm-btn default-btn';
     btn.disabled = !cgBettingOpen;
   }
@@ -5422,7 +5422,7 @@
     document.querySelectorAll('.cg-color-btn, .cg-num-btn').forEach(b => b.classList.remove('selected'));
     el.classList.add('selected');
     const btn = document.getElementById('cgConfirmBtn');
-    btn.textContent = type === 'big' ? '🔼 Bet Big — 5 to 9 (2×)' : '🔽 Bet Small — 0 to 4 (2×)';
+    btn.textContent = type === 'big' ? '🔼 Bet Big' : '🔽 Bet Small';
     btn.className = 'cg-confirm-btn ' + (type === 'big' ? 'default-btn' : 'green-btn');
     btn.disabled = !cgBettingOpen;
   }
@@ -5987,10 +5987,10 @@
       const plText = isPending ? '⏳' : b.pl > 0 ? '+₹'+b.pl : b.pl < 0 ? '−₹'+Math.abs(b.pl) : '—';
       const rowStyle = isPending ? 'border:1px solid rgba(240,192,64,0.3);background:rgba(240,192,64,0.04);' : '';
       return `<div class="cg-hist-row" style="grid-template-columns:1.2fr 0.8fr 1fr 1fr 1fr;${rowStyle}">
-        <div style="font-size:0.75rem;color:var(--muted);">${b.round}</div>
+        <div style="font-size:0.83rem;color:var(--muted);">${b.round}</div>
         <div>₹${b.bet}</div>
         <div style="font-weight:700;color:${b.selColor};">${b.selection}</div>
-        <div>${isPending ? '<span style="color:var(--gold);font-size:0.75rem;">⏳ Pending</span>' : `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${b.resultBg};margin-right:4px;"></span>${b.result}`}</div>
+        <div>${isPending ? '<span style="color:var(--gold);font-size:0.83rem;">⏳ Pending</span>' : `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${b.resultBg};margin-right:4px;"></span>${b.result}`}</div>
         <div style="font-weight:700;color:${plColor};">${plText}</div>
       </div>`;
     }).join('');
@@ -6032,7 +6032,7 @@
     if (nextBtn) nextBtn.style.opacity = cgHistPage >= totalPages ? '0.3' : '1';
 
     el.innerHTML = pageData.map(h => {
-      const circle = `<span style="display:inline-block;width:18px;height:18px;border-radius:50%;background:${h.histBg};border:1px solid rgba(255,255,255,0.15);flex-shrink:0;"></span>`;
+      const circle = `<span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:${h.histBg};border:1px solid rgba(255,255,255,0.15);flex-shrink:0;"></span>`;
       return `<div class="cg-hist-row"><div>${h.round}</div><div style="font-weight:700;">${h.num}</div><div style="display:flex;align-items:center;">${circle}</div><div>${h.bigSmall}</div></div>`;
     }).join('');
   }
@@ -7868,7 +7868,7 @@
     <div class="cg-numbers" id="cgNumbers"></div>
 
     <!-- Big / Small -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1.2rem;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:0.5rem;">
       <button class="cg-color-btn" id="cgBigBtn" onclick="selectBigSmall('big',this)" style="background:linear-gradient(135deg,#b8860b,#ffd700);color:#000;font-size:1.2rem;font-weight:800;letter-spacing:1px;">
         Big
       </button>
@@ -7895,20 +7895,21 @@
       </div>
       <!-- Hidden input to track amount -->
       <input type="hidden" id="cgBetAmt" value="10">
-      <!-- Total bet display -->
-      <div style="background:var(--bg3);border:1px solid rgba(240,192,64,0.15);border-radius:8px;padding:0.45rem 0.8rem;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.72rem;color:var(--muted);">Total Bet</span>
-        <span style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:800;color:var(--gold);" id="cgBetDisplay">₹10</span>
+      <!-- Combined: Total Bet + Bet Button in one row -->
+      <div style="display:flex;align-items:center;gap:0.5rem;">
+        <div style="background:var(--bg3);border:1px solid rgba(240,192,64,0.15);border-radius:8px;padding:0.45rem 0.8rem;display:flex;flex-direction:column;justify-content:center;flex:0 0 auto;">
+          <span style="font-size:0.62rem;color:var(--muted);line-height:1.2;">Total Bet</span>
+          <span style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:800;color:var(--gold);line-height:1.2;" id="cgBetDisplay">₹10</span>
+        </div>
+        <button class="cg-confirm-btn default-btn" id="cgConfirmBtn" onclick="placeBet()" style="flex:1;margin-top:0;padding:0.7rem 0.5rem;font-size:0.82rem;">Select</button>
       </div>
     </div>
-
-    <button class="cg-confirm-btn default-btn" id="cgConfirmBtn" onclick="placeBet()">Select a color or number to bet</button>
 
     <!-- History Tabs -->
     <div class="cg-history">
       <div style="display:flex;border-bottom:1px solid var(--border);">
-        <button class="wallet-tab active" id="cght-results" onclick="switchCGTab('results')" style="font-size:0.8rem;padding:0.7rem;">📊 Results</button>
-        <button class="wallet-tab" id="cght-mybets" onclick="switchCGTab('mybets')" style="font-size:0.8rem;padding:0.7rem;">📋 My Bets</button>
+        <button class="wallet-tab active" id="cght-results" onclick="switchCGTab('results')" style="font-size:0.96rem;padding:0.7rem;font-weight:700;">📊 Results</button>
+        <button class="wallet-tab" id="cght-mybets" onclick="switchCGTab('mybets')" style="font-size:0.96rem;padding:0.7rem;font-weight:700;">📋 My Bets</button>
       </div>
 
       <!-- Results Tab -->
