@@ -75,6 +75,8 @@
   /* Both home sections hidden by default - JS shows correct one */
   #mobileAppHome { display: none; }
   #desktopHome { display: none; }
+  /* Guest home: hide games section - only show hero with login/register */
+  #desktopHome .section { display: none !important; }
   .page.active { display:block; }
   /* Home page doesn't need full-height enforced — hero handles it */
   #page-home { min-height: unset; }
@@ -1334,7 +1336,7 @@
         <div style="font-size:0.72rem;color:rgba(255,255,255,0.7);margin-top:0.4rem;">India's Leading Trusted Gaming Platform</div>
         <div style="margin-top:0.8rem;display:flex;gap:0.5rem;">
           <button onclick="showPage('wallet')" style="background:var(--gold);color:#000;border:none;border-radius:8px;padding:0.45rem 1rem;font-size:0.75rem;font-weight:800;cursor:pointer;font-family:'Exo 2',sans-serif;">💰 Deposit</button>
-          <button onclick="openColorGame()" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:0.45rem 1rem;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">🎯 Play Now</button>
+          <button onclick="loginPrompt()" style="background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.3);border-radius:8px;padding:0.45rem 1rem;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">🎯 Play Now</button>
         </div>
       </div>
       <div style="position:absolute;right:0;top:0;bottom:0;width:40%;background:linear-gradient(135deg,rgba(240,192,64,0.15),rgba(200,50,50,0.2));display:flex;align-items:center;justify-content:center;font-size:4rem;opacity:0.6;">👑</div>
@@ -1346,7 +1348,7 @@
         <span style="font-size:1.5rem;">🎡</span>
         <div><div style="font-size:0.7rem;font-weight:800;color:#fff;">WHEEL OF</div><div style="font-size:0.7rem;font-weight:800;color:#fff;">FORTUNE</div></div>
       </div>
-      <div onclick="showPage('vip')" style="background:linear-gradient(135deg,#7b1fa2,#e91e63);border-radius:12px;padding:0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;min-height:52px;">
+      <div onclick="loginPrompt()" style="background:linear-gradient(135deg,#7b1fa2,#e91e63);border-radius:12px;padding:0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;min-height:52px;">
         <span style="font-size:1.5rem;">👑</span>
         <div><div style="font-size:0.7rem;font-weight:800;color:#fff;">VIP</div><div style="font-size:0.7rem;font-weight:800;color:#fff;">PRIVILEGES</div></div>
       </div>
@@ -1891,6 +1893,18 @@
   let isLoggedIn = false;
 
   function showPage(name) {
+    // ── AUTH GUARD ──
+    // Only these pages are accessible without login
+    const _guestAllowed = ['home', 'login', 'register', 'forgot', 'terms', 'privacy', 'responsible'];
+    if (!isLoggedIn && !_guestAllowed.includes(name)) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const loginPage = document.getElementById('page-login');
+      if (loginPage) loginPage.classList.add('active');
+      window.scrollTo(0, 0);
+      showToast('🔐 Please sign in to continue');
+      return;
+    }
+
     // Internal function to actually show a page
     function _showPageInternal(pageName) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1963,6 +1977,26 @@
     window._bonus100Locked = false;
     lockBonusCards(false);
     _showPageInternal(name);
+
+    // When showing home, make sure correct section is visible
+    if (name === 'home') {
+      const mah = document.getElementById('mobileAppHome');
+      const dh = document.getElementById('desktopHome');
+      if (isLoggedIn) {
+        if (mah) mah.style.display = 'block';
+        if (dh) dh.style.display = 'none';
+      } else {
+        if (mah) mah.style.display = 'none';
+        if (dh) dh.style.display = 'block';
+        // Make sure login/register buttons are visible
+        const heroPlay = document.getElementById('heroPlayBtn');
+        const heroSignIn = document.getElementById('heroSignInBtn');
+        const heroBanner = document.getElementById('heroWelcomeBanner');
+        if (heroPlay) heroPlay.style.display = 'inline-flex';
+        if (heroSignIn) heroSignIn.style.display = 'inline-flex';
+        if (heroBanner) heroBanner.style.display = 'none';
+      }
+    }
 
     // Apply stored referral code if navigating to register
     if (name === 'register' && window._referralCode) {
@@ -2311,8 +2345,8 @@
 
   function loginPrompt() {
     if (!isLoggedIn) {
+      showPage('login');
       showToast('🔐 Please sign in to play games!');
-      setTimeout(() => showPage('login'), 800);
     }
   }
 
@@ -4336,6 +4370,7 @@
   }
 
   async function openWheel(fromLogin = false) {
+    if (!isLoggedIn && !fromLogin) { showPage('login'); showToast('🔐 Please sign in to spin'); return; }
     if (!isLoggedIn) { showToast('🔐 Please sign in first!'); showPage('login'); return; }
     const db = window.fbDB || fbDB;
     const user = window.currentUser;
@@ -4862,6 +4897,7 @@
   }
 
   function openColorGame() {
+    if (!isLoggedIn) { showPage('login'); showToast('🔐 Please sign in to play'); return; }
     document.getElementById('colorGameOverlay').classList.add('open');
     loadGameSettings();
     buildNumGrid();
@@ -5741,6 +5777,15 @@
 
   // ── MOBILE BOTTOM NAV ──
   function mobileNav(page) {
+    // If not logged in, only allow home - everything else goes to login
+    if (!isLoggedIn && page !== 'home') {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const loginPage = document.getElementById('page-login');
+      if (loginPage) loginPage.classList.add('active');
+      window.scrollTo(0, 0);
+      showToast('🔐 Please sign in to continue');
+      return;
+    }
     document.querySelectorAll('.mobile-nav-item').forEach(b => b.classList.remove('active'));
     const pageToNav = {
       home: 'mn-home',
