@@ -72,13 +72,16 @@
 
   /* ─── PAGES ─── */
   .page { display:none; position:relative; z-index:1; height:auto; }
+  /* Both home sections hidden by default - JS shows correct one */
+  #mobileAppHome { display: none; }
+  #desktopHome { display: none; }
   .page.active { display:block; }
   /* Home page doesn't need full-height enforced — hero handles it */
   #page-home { min-height: unset; }
 
-  /* ─── BOTTOM NAV — visible on all screens ─── */
+  /* ─── BOTTOM NAV — hidden until logged in ─── */
   .mobile-nav {
-    display: grid !important;
+    display: none;
     position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
     z-index: 9999;
     background: #100800;
@@ -198,7 +201,7 @@
   .stat-lbl { font-size:0.75rem; color:var(--muted); letter-spacing:1px; text-transform:uppercase; margin-top:0.2rem; }
 
   /* Games section */
-  .section { padding: 5rem 2rem; max-width: 1200px; margin: 0 auto; }
+  .section { padding: 2rem 2rem; max-width: 1200px; margin: 0 auto; }
   .section-title {
     font-family: 'Cinzel', serif; font-size: 1.8rem; font-weight: 800;
     color: var(--gold); margin-bottom: 0.5rem;
@@ -289,7 +292,7 @@
   .checkbox-row a { color:var(--gold); text-decoration:none; }
 
   /* ─── REFERRAL / AGENCY PAGE ─── */
-  .ref-page { padding: 76px 0 5rem; max-width: 520px; margin: 0 auto; }
+  .ref-page { padding: 1.5rem 0 2rem; max-width: 520px; margin: 0 auto; }
 
   /* Agency header card */
   .agency-card {
@@ -413,7 +416,7 @@
 
 
   /* ─── WALLET / DEPOSIT / WITHDRAW ─── */
-  .wallet-page { padding: 1.5rem 2rem 4rem; max-width: 1000px; margin: 0 auto; }
+  .wallet-page { padding: 1rem 1rem 2rem; max-width: 1000px; margin: 0 auto; }
   .wallet-hero {
     background: linear-gradient(135deg, #120c00, var(--card));
     border: 1px solid rgba(240,192,64,0.2); border-radius: 16px;
@@ -524,7 +527,7 @@
   .wheel-close { position:absolute; top:1.5rem; right:1.5rem; background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:0.4rem 0.8rem; cursor:pointer; font-family:'Exo 2',sans-serif; }
 
   /* Profile Page */
-  .profile-page { padding:1.5rem 2rem 4rem; max-width:900px; margin:0 auto; }
+  .profile-page { padding:1rem 1rem 2rem; max-width:900px; margin:0 auto; }
   .profile-hero {
     background:linear-gradient(135deg,#0d0a1a,var(--card)); border:1px solid var(--border);
     border-radius:16px; padding:2.5rem; display:flex; gap:2rem; align-items:center;
@@ -547,7 +550,7 @@
   .profile-card h4 { font-family:'Cinzel',serif; color:var(--gold); font-size:0.95rem; margin-bottom:1.2rem; }
 
   /* VIP Page */
-  .vip-page { padding:1.5rem 2rem 4rem; max-width:1000px; margin:0 auto; }
+  .vip-page { padding:1rem 1rem 2rem; max-width:1000px; margin:0 auto; }
   .vip-hero { text-align:center; padding:3rem 2rem; background:linear-gradient(135deg,#0d0800,#1a1000,var(--card)); border:1px solid rgba(240,192,64,0.2); border-radius:16px; margin-bottom:2.5rem; }
   .vip-hero h2 { font-family:'Cinzel',serif; font-size:2.2rem; color:var(--gold2); margin-bottom:0.5rem; }
   .vip-levels { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:1.2rem; margin-bottom:2.5rem; }
@@ -567,7 +570,7 @@
   .progress-fill { height:100%; border-radius:6px; background:linear-gradient(90deg,var(--gold-dim),var(--gold2)); transition:width 1s; }
 
   /* Promotions */
-  .promo-page { padding:1.5rem 2rem 4rem; max-width:1000px; margin:0 auto; }
+  .promo-page { padding:1rem 1rem 2rem; max-width:1000px; margin:0 auto; }
   .promo-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); gap:1.5rem; }
   .promo-card {
     background:var(--card); border:1px solid var(--border); border-radius:14px;
@@ -583,7 +586,7 @@
   .promo-expiry { font-size:0.75rem; color:var(--muted); }
 
   /* Support */
-  .support-page { padding:1.5rem 2rem 4rem; max-width:900px; margin:0 auto; }
+  .support-page { padding:1rem 1rem 2rem; max-width:900px; margin:0 auto; }
   .chat-window { background:var(--card); border:1px solid var(--border); border-radius:14px; overflow:hidden; height:420px; display:flex; flex-direction:column; margin-bottom:1.2rem; }
   .chat-header { background:linear-gradient(135deg,#0d0a1a,var(--card2)); padding:1rem 1.2rem; border-bottom:1px solid var(--border); display:flex; align-items:center; gap:0.8rem; }
   .agent-avatar { width:38px; height:38px; border-radius:50%; background:linear-gradient(135deg,var(--purple),var(--red)); display:flex; align-items:center; justify-content:center; font-size:1rem; }
@@ -879,7 +882,7 @@
   .mobile-nav-center svg { width: 20px; height: 20px; }
 
   /* ─── BET HISTORY PAGE ─── */
-  .history-page { padding: 1.5rem 2rem 4rem; max-width: 900px; margin: 0 auto; }
+  .history-page { padding: 1rem 1rem 2rem; max-width: 900px; margin: 0 auto; }
   .history-summary {
     display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem;
   }
@@ -949,13 +952,10 @@
 
     /* ── HOME PAGE ── */
     #mobileAppHome {
-      display: block !important;
       padding-top: 0 !important;
       padding-bottom: 0 !important;
       min-height: unset !important;
     }
-    .hero { display: none !important; }
-    .section { display: none !important; }
 
     /* ── AUTH PAGES (Login/Register) ── */
     .auth-wrap {
@@ -1964,6 +1964,18 @@
     lockBonusCards(false);
     _showPageInternal(name);
 
+    // Apply stored referral code if navigating to register
+    if (name === 'register' && window._referralCode) {
+      setTimeout(() => {
+        const codeInput = document.getElementById('inviteCodeInput');
+        const codeDisplay = document.getElementById('inviteCodeDisplay');
+        const invitePill = document.getElementById('invitePill');
+        if (codeInput) codeInput.value = window._referralCode;
+        if (codeDisplay) codeDisplay.textContent = window._referralCode;
+        if (invitePill) invitePill.style.display = 'flex';
+      }, 50);
+    }
+
     if (name === 'bethistory') renderBetHistory(currentBetFilter);
     if (name === 'history') loadTransactionHistory();
     if (name === 'profile') renderBetHistory(currentBetFilter || 'all');
@@ -2254,40 +2266,47 @@
   // Apply saved language on load
   document.addEventListener('DOMContentLoaded', () => {
     if (window._currentLang === 'hi') applyTranslations('hi');
+    // Default: show guest home until Firebase confirms login state
+    const dh = document.getElementById('desktopHome');
+    if (dh) dh.style.display = 'block';
   });
 
+  // ── REFERRAL LINK HANDLER ──
+  // Reads ?invitationCode=ROY-XXXX from URL, pre-fills register form and opens it
+  (function handleReferralLink() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('invitationCode') || params.get('ref') || params.get('r_code') || params.get('invite');
+    if (!code) return;
+
+    // Store the code so it survives any page navigation
+    window._referralCode = code;
+
+    // Wait for Firebase auth check — if already logged in, skip redirect
+    // Otherwise redirect to register with code pre-filled
+    const waitAndRedirect = () => {
+      if (window.isLoggedIn) return; // already logged in, do nothing
+
+      // Pre-fill the invite code fields
+      const codeInput = document.getElementById('inviteCodeInput');
+      const codeDisplay = document.getElementById('inviteCodeDisplay');
+      const invitePill = document.getElementById('invitePill');
+      if (codeInput) codeInput.value = code;
+      if (codeDisplay) codeDisplay.textContent = code;
+      if (invitePill) invitePill.style.display = 'flex';
+
+      // Navigate directly to register page
+      showPage('register');
+    };
+
+    // Try immediately, then retry after Firebase loads
+    setTimeout(waitAndRedirect, 800);
+    setTimeout(waitAndRedirect, 2000);
+  })();
+
   async function logout() {
-    await firebase.auth().signOut();
-    isLoggedIn = false;
-    window.currentUser = null;
-    window.userProfile = null;
-
-    // Show guest nav, hide user nav
-    const navGuest = document.getElementById('navGuest');
-    const navUser = document.getElementById('navUser');
-    if (navGuest) navGuest.style.display = 'flex';
-    if (navUser) navUser.style.display = 'none';
-
-    // Show guest home, hide logged-in mobile home
-    const mah = document.getElementById('mobileAppHome');
-    const dh = document.getElementById('desktopHome');
-    if (mah) mah.style.display = 'none';
-    if (dh) dh.style.display = 'block';
-
-    // Show login/register buttons, hide welcome banner
-    const heroPlay = document.getElementById('heroPlayBtn');
-    const heroSignIn = document.getElementById('heroSignInBtn');
-    const heroBanner = document.getElementById('heroWelcomeBanner');
-    if (heroPlay) heroPlay.style.display = 'inline-flex';
-    if (heroSignIn) heroSignIn.style.display = 'inline-flex';
-    if (heroBanner) heroBanner.style.display = 'none';
-
-    // Hide bottom nav for guest
-    const mobileNav = document.getElementById('mobileNav');
-    if (mobileNav) mobileNav.style.display = 'none';
-
     showToast('👋 Signed out. See you soon!');
-    showPage('home');
+    await firebase.auth().signOut();
+    // onAuthStateChanged will handle all UI reset automatically
   }
 
   function loginPrompt() {
@@ -6347,24 +6366,41 @@
         } else {
           window.currentUser = null;
           isLoggedIn = false;
-          document.getElementById('navGuest').style.display = 'flex';
-          document.getElementById('navUser').style.display = 'none';
-          
+
+          // ── GUEST STATE: reset everything ──
+          // 1. Switch nav
+          const ng = document.getElementById('navGuest');
+          const nu = document.getElementById('navUser');
+          if (ng) ng.style.display = 'flex';
+          if (nu) nu.style.display = 'none';
+
+          // 2. Show login/register buttons, hide welcome banner
           const heroPlayBtn = document.getElementById('heroPlayBtn');
           if (heroPlayBtn) heroPlayBtn.style.display = 'inline-flex';
           const heroSignInBtn = document.getElementById('heroSignInBtn');
           if (heroSignInBtn) heroSignInBtn.style.display = 'inline-flex';
           const heroWelcome = document.getElementById('heroWelcomeBanner');
           if (heroWelcome) heroWelcome.style.display = 'none';
-          // Restore desktop home
+
+          // 3. Show desktop/guest home, hide mobile logged-in home
           const mah = document.getElementById('mobileAppHome');
           const dh = document.getElementById('desktopHome');
           if (mah) mah.style.display = 'none';
           if (dh) dh.style.display = 'block';
-          // Hide bottom nav for guest, navigate to home
+
+          // 4. Hide bottom nav
           const mobileNavEl = document.getElementById('mobileNav');
           if (mobileNavEl) mobileNavEl.style.display = 'none';
-          showPage('home');
+
+          // 5. Close game overlay if open
+          const gameOverlay = document.getElementById('colorGameOverlay');
+          if (gameOverlay) gameOverlay.classList.remove('open');
+
+          // 6. Force navigate to home page
+          document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+          const homePage = document.getElementById('page-home');
+          if (homePage) homePage.classList.add('active');
+          window.scrollTo(0, 0);
         }
       });
       // Test read to confirm connection
