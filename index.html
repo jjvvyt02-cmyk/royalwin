@@ -3422,10 +3422,10 @@
 
     // Pagination
     if (totalPages > 1) {
-      el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;padding-bottom:1.5rem;">
-        <button onclick="loadDepositHistoryPage(${_depHistPage-1})" ${_depHistPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_depHistPage<=1?'opacity:0.4;':''}">&lt; Prev</button>
-        <span style="color:var(--muted);font-size:0.8rem;padding:0 0.5rem;">Page ${_depHistPage} / ${totalPages}</span>
-        <button onclick="loadDepositHistoryPage(${_depHistPage+1})" ${_depHistPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_depHistPage>=totalPages?'opacity:0.4;':''}">Next &gt;</button>
+      el.innerHTML += `<div style="display:flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.7rem 0 1.5rem;border-top:1px solid var(--border);margin-top:0.5rem;">
+        <button onclick="loadDepositHistoryPage(${_depHistPage-1})" ${_depHistPage<=1?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_depHistPage<=1?'opacity:0.4;':''}">◀</button>
+        <span style="color:var(--muted);font-size:0.78rem;min-width:80px;text-align:center;">Page ${_depHistPage} of ${totalPages}</span>
+        <button onclick="loadDepositHistoryPage(${_depHistPage+1})" ${_depHistPage>=totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_depHistPage>=totalPages?'opacity:0.4;':''}">▶</button>
       </div>`;
     }
   }
@@ -3483,10 +3483,10 @@
 
     // Pagination
     if (totalPages > 1) {
-      el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;padding-bottom:1.5rem;">
-        <button onclick="loadWithdrawHistoryPage(${_withHistPage-1})" ${_withHistPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_withHistPage<=1?'opacity:0.4;':''}">&lt; Prev</button>
-        <span style="color:var(--muted);font-size:0.8rem;padding:0 0.5rem;">Page ${_withHistPage} / ${totalPages}</span>
-        <button onclick="loadWithdrawHistoryPage(${_withHistPage+1})" ${_withHistPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_withHistPage>=totalPages?'opacity:0.4;':''}">Next &gt;</button>
+      el.innerHTML += `<div style="display:flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.7rem 0 1.5rem;border-top:1px solid var(--border);margin-top:0.5rem;">
+        <button onclick="loadWithdrawHistoryPage(${_withHistPage-1})" ${_withHistPage<=1?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_withHistPage<=1?'opacity:0.4;':''}">◀</button>
+        <span style="color:var(--muted);font-size:0.78rem;min-width:80px;text-align:center;">Page ${_withHistPage} of ${totalPages}</span>
+        <button onclick="loadWithdrawHistoryPage(${_withHistPage+1})" ${_withHistPage>=totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_withHistPage>=totalPages?'opacity:0.4;':''}">▶</button>
       </div>`;
     }
   }
@@ -3799,9 +3799,9 @@
     }).join('');
     if (totalPages > 1) {
       el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.7rem;">
-        <button onclick="loadDepositHistory(${_walDepPage-1})" ${_walDepPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walDepPage<=1?'opacity:0.4;':''}">&lt;</button>
+        <button onclick="loadDepositHistory(${_walDepPage-1})" ${_walDepPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walDepPage<=1?'opacity:0.4;':''}">&lt;</button>
         <span style="color:var(--muted);font-size:0.75rem;">Page ${_walDepPage} / ${totalPages}</span>
-        <button onclick="loadDepositHistory(${_walDepPage+1})" ${_walDepPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walDepPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
+        <button onclick="loadDepositHistory(${_walDepPage+1})" ${_walDepPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walDepPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
       </div>`;
     }
   }
@@ -3849,9 +3849,9 @@
     }).join('');
     if (totalPages > 1) {
       el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.7rem;">
-        <button onclick="loadWithdrawHistory(${_walWithPage-1})" ${_walWithPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walWithPage<=1?'opacity:0.4;':''}">&lt;</button>
+        <button onclick="loadWithdrawHistory(${_walWithPage-1})" ${_walWithPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walWithPage<=1?'opacity:0.4;':''}">&lt;</button>
         <span style="color:var(--muted);font-size:0.75rem;">Page ${_walWithPage} / ${totalPages}</span>
-        <button onclick="loadWithdrawHistory(${_walWithPage+1})" ${_walWithPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.35rem 0.75rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walWithPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
+        <button onclick="loadWithdrawHistory(${_walWithPage+1})" ${_walWithPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walWithPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
       </div>`;
     }
   }
@@ -6038,11 +6038,11 @@
       const plText = isPending ? '⏳' : b.pl > 0 ? '+₹'+b.pl : b.pl < 0 ? '−₹'+Math.abs(b.pl) : '—';
       const rowStyle = isPending ? 'border:1px solid rgba(240,192,64,0.3);background:rgba(240,192,64,0.04);' : '';
       return `<div class="cg-hist-row" style="grid-template-columns:1fr 0.7fr 0.9fr 1.2fr 0.9fr;${rowStyle}">
-        <div style="font-size:0.83rem;color:var(--muted);">${b.round}</div>
-        <div>₹${b.bet}</div>
-        <div style="font-weight:700;color:${b.selColor};">${b.selection}</div>
-        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${isPending ? '<span style="color:var(--gold);font-size:0.83rem;">⏳</span>' : `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${b.resultBg};margin-right:3px;flex-shrink:0;"></span>${b.result}`}</div>
-        <div style="font-weight:700;color:${plColor};">${plText}</div>
+        <div style="font-size:0.72rem;color:var(--muted);text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.round}</div>
+        <div style="text-align:center;">₹${b.bet}</div>
+        <div style="font-weight:700;color:${b.selColor};text-align:center;">${b.selection}</div>
+        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;">${isPending ? '<span style="color:var(--gold);font-size:0.83rem;">⏳</span>' : `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${b.resultBg};margin-right:3px;flex-shrink:0;vertical-align:middle;"></span>${b.result}`}</div>
+        <div style="font-weight:700;color:${plColor};text-align:center;">${plText}</div>
       </div>`;
     }).join('');
 
@@ -6084,7 +6084,7 @@
 
     el.innerHTML = pageData.map(h => {
       const circle = `<span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:${h.histBg};border:1px solid rgba(255,255,255,0.15);flex-shrink:0;"></span>`;
-      return `<div class="cg-hist-row"><div>${h.round}</div><div style="font-weight:700;">${h.num}</div><div style="display:flex;align-items:center;">${circle}</div><div>${h.bigSmall}</div></div>`;
+      return `<div class="cg-hist-row"><div style="text-align:left;font-size:0.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.round}</div><div style="font-weight:700;text-align:center;">${h.num}</div><div style="display:flex;align-items:center;justify-content:center;">${circle}</div><div style="text-align:center;">${h.bigSmall}</div></div>`;
     }).join('');
   }
 
@@ -6337,10 +6337,10 @@
     }).join('');
 
     if (totalPages > 1) {
-      container.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;padding-bottom:1.5rem;">
-        <button onclick="_txPage=Math.max(1,_txPage-1);filterTx(document.querySelector('.history-filters .hf-btn.active'),currentTxFilter||'all');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_txPage<=1?'opacity:0.4;':''}">&lt; Prev</button>
-        <span style="color:var(--muted);font-size:0.8rem;padding:0 0.5rem;">Page ${_txPage} / ${totalPages}</span>
-        <button onclick="_txPage=Math.min(${totalPages},_txPage+1);filterTx(document.querySelector('.history-filters .hf-btn.active'),currentTxFilter||'all');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_txPage>=totalPages?'opacity:0.4;':''}">Next &gt;</button>
+      container.innerHTML += `<div style="display:flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.7rem 0 1.5rem;border-top:1px solid var(--border);margin-top:0.5rem;">
+        <button onclick="_txPage=Math.max(1,_txPage-1);filterTx(document.querySelector('.history-filters .hf-btn.active'),currentTxFilter||'all');" style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_txPage<=1?'opacity:0.4;':''}">◀</button>
+        <span style="color:var(--muted);font-size:0.78rem;min-width:80px;text-align:center;">Page ${_txPage} of ${totalPages}</span>
+        <button onclick="_txPage=Math.min(${totalPages},_txPage+1);filterTx(document.querySelector('.history-filters .hf-btn.active'),currentTxFilter||'all');" style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_txPage>=totalPages?'opacity:0.4;':''}">▶</button>
       </div>`;
     }
   }
@@ -6397,10 +6397,10 @@
     }).join('');
 
     if (totalPages > 1) {
-      container.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;padding-bottom:1.5rem;">
-        <button onclick="_betHistPage=Math.max(1,_betHistPage-1);renderBetHistory('${filter||'all'}');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_betHistPage<=1?'opacity:0.4;':''}">&lt; Prev</button>
-        <span style="color:var(--muted);font-size:0.8rem;padding:0 0.5rem;">Page ${_betHistPage} / ${totalPages}</span>
-        <button onclick="_betHistPage=Math.min(${totalPages},_betHistPage+1);renderBetHistory('${filter||'all'}');" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1.2rem;color:var(--muted);font-size:0.85rem;cursor:pointer;${_betHistPage>=totalPages?'opacity:0.4;':''}">Next &gt;</button>
+      container.innerHTML += `<div style="display:flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.7rem 0 1.5rem;border-top:1px solid var(--border);margin-top:0.5rem;">
+        <button onclick="_betHistPage=Math.max(1,_betHistPage-1);renderBetHistory('${filter||'all'}');" style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_betHistPage<=1?'opacity:0.4;':''}">◀</button>
+        <span style="color:var(--muted);font-size:0.78rem;min-width:80px;text-align:center;">Page ${_betHistPage} of ${totalPages}</span>
+        <button onclick="_betHistPage=Math.min(${totalPages},_betHistPage+1);renderBetHistory('${filter||'all'}');" style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_betHistPage>=totalPages?'opacity:0.4;':''}">▶</button>
       </div>`;
     }
   }
@@ -8003,7 +8003,7 @@
       <!-- Results Tab -->
       <div id="cgTabResults">
         <div class="cg-hist-rows" style="max-height:none;">
-          <div class="cg-hist-row head"><div>Period</div><div>Number</div><div>Color</div><div>Big/Small</div></div>
+          <div class="cg-hist-row head"><div style="text-align:left;padding-left:0.2rem;">Period</div><div style="text-align:center;">Number</div><div style="text-align:center;">Color</div><div style="text-align:center;">Big/Small</div></div>
           <div id="cgHistRows"></div>
         </div>
         <!-- Pagination -->
@@ -8018,7 +8018,7 @@
       <div id="cgTabMyBets" style="display:none;">
         <div class="cg-hist-rows" style="max-height:none;">
           <div class="cg-hist-row head" style="grid-template-columns:1fr 0.7fr 0.9fr 1.2fr 0.9fr;">
-            <div>Period</div><div>Bet</div><div>Pick</div><div>Result</div><div>P&L</div>
+            <div style="text-align:left;padding-left:0.2rem;">Period</div><div style="text-align:center;">Bet</div><div style="text-align:center;">Pick</div><div style="text-align:center;">Result</div><div style="text-align:center;">P&L</div>
           </div>
           <div id="cgMyBetsRows"><div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem;">No bets placed yet</div></div>
         </div>
