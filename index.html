@@ -294,7 +294,7 @@
   .checkbox-row a { color:var(--gold); text-decoration:none; }
 
   /* ─── REFERRAL / AGENCY PAGE ─── */
-  .ref-page { padding: 1.5rem 0 2rem; max-width: 520px; margin: 0 auto; }
+  .ref-page { padding: 1.5rem 0 2rem; max-width: 520px; margin: 0 auto; overflow-y: auto; height: 100%; }
 
   /* Agency header card */
   .agency-card {
@@ -418,7 +418,7 @@
 
 
   /* ─── WALLET / DEPOSIT / WITHDRAW ─── */
-  .wallet-page { padding: 1rem 1rem 2rem; max-width: 1000px; margin: 0 auto; }
+  .wallet-page { padding: 1rem 1rem 2rem; max-width: 1000px; margin: 0 auto; overflow-y: auto; height: 100%; }
   .wallet-hero {
     background: linear-gradient(135deg, #120c00, var(--card));
     border: 1px solid rgba(240,192,64,0.2); border-radius: 16px;
@@ -529,7 +529,7 @@
   .wheel-close { position:absolute; top:1.5rem; right:1.5rem; background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:0.4rem 0.8rem; cursor:pointer; font-family:'Exo 2',sans-serif; }
 
   /* Profile Page */
-  .profile-page { padding:1rem 1rem 2rem; max-width:900px; margin:0 auto; }
+  .profile-page { padding:1rem 1rem 2rem; max-width:900px; margin:0 auto; overflow-y: auto; height: 100%; }
   .profile-hero {
     background:linear-gradient(135deg,#0d0a1a,var(--card)); border:1px solid var(--border);
     border-radius:16px; padding:2.5rem; display:flex; gap:2rem; align-items:center;
@@ -615,7 +615,7 @@
 
   /* ─── COLOR PREDICTION GAME ─── */
   .color-game-overlay {
-    display:none; position:fixed; inset:0; bottom:65px; z-index:600;
+    display:none; position:fixed; top:0; left:0; right:0; bottom:65px; z-index:600;
     background: var(--bg); overflow-y:auto; overflow-x:hidden;
   }
   .color-game-overlay.open { display:block; }
@@ -948,8 +948,12 @@
     .page {
       min-height: unset !important;
       height: auto !important;
+      max-height: calc(100vh - 60px) !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
       padding: 0 !important;
       margin: 0 !important;
+      -webkit-overflow-scrolling: touch !important;
     }
 
     /* ── HOME PAGE ── */
@@ -1080,7 +1084,11 @@
     .color-game-overlay {
       background: #0a0a0f !important;
       padding-bottom: 0 !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
       bottom: 60px !important;
+      position: fixed !important;
     }
     .cg-wrap {
       max-width: 100% !important;
