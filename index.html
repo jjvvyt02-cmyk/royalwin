@@ -839,32 +839,30 @@
     background: #1a1200;
     border-top: 1px solid rgba(240,192,64,0.25);
     grid-template-columns: repeat(5, 1fr);
-    height: 58px;
+    width: 100%; height: 58px;
     box-shadow: 0 -4px 20px rgba(0,0,0,0.6);
+    overflow: hidden;
   }
   .mobile-nav-item {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
-    gap: 0.1rem; cursor: pointer; padding: 0.2rem 0.1rem;
-    color: rgba(255,255,255,0.45); font-size: 0.5rem; font-family: 'Exo 2', sans-serif;
+    gap: 0; cursor: pointer; padding: 0.15rem 0;
+    color: rgba(255,255,255,0.4); font-size: 0.48rem; font-family: 'Exo 2', sans-serif;
     font-weight: 600; transition: all 0.2s;
     border: none; background: none; height: 100%; width: 100%;
+    min-width: 0; overflow: hidden; white-space: nowrap;
   }
-  .mobile-nav-item .mn-icon {
-    font-size: 1.2rem; line-height: 1; transition: all 0.2s;
-  }
+  .mobile-nav-item svg { width: 20px; height: 20px; flex-shrink: 0; }
+  .mobile-nav-item span { display: block; font-size: 0.46rem; margin-top: 1px; overflow: hidden; text-overflow: ellipsis; max-width: 100%; }
   .mn-svg { transition: all 0.2s; display:block; }
   .mobile-nav-item.active { color: var(--gold); }
-  .mobile-nav-item.active .mn-svg { color: var(--gold); filter: drop-shadow(0 1px 4px rgba(240,192,64,0.5)); }
+  .mobile-nav-item.active .mn-svg { color: var(--gold); }
   .mobile-nav-center .mn-icon {
     background: linear-gradient(135deg, #c07a10, var(--gold2));
-    border-radius: 50%; width: 42px; height: 42px;
+    border-radius: 50%; width: 38px; height: 38px;
     display: flex; align-items: center; justify-content: center;
     box-shadow: 0 2px 12px rgba(240,192,64,0.5);
-    margin-bottom: 1px;
   }
-  .mobile-nav-center.active .mn-icon {
-    box-shadow: 0 4px 16px rgba(240,192,64,0.7);
-  }
+  .mobile-nav-center svg { width: 20px; height: 20px; }
 
   /* ─── BET HISTORY PAGE ─── */
   .history-page { padding: 100px 2rem 4rem; max-width: 900px; margin: 0 auto; }
@@ -915,9 +913,13 @@
     body { padding-bottom: 62px; overflow-x: hidden; }
     input, select, textarea { font-size: 16px !important; }
 
-    /* Kill all min-heights that cause blank space on mobile */
-    .wallet-page, .profile-page, .vip-page, .promo-page,
-    .support-page, .ref-page, .history-page { min-height: unset !important; }
+    /* Kill ALL min-heights that cause blank space on mobile */
+    .page, #page-home, .wallet-page, .profile-page, .vip-page,
+    .promo-page, .support-page, .ref-page, .history-page,
+    .hero, .auth-wrap, .color-game-overlay, .cg-wrap,
+    #mobileAppHome, #desktopHome { min-height: unset !important; }
+    /* Body min-height also */
+    body { min-height: unset !important; }
 
     /* TOP NAV */
     nav { padding: 0 1rem; height: 54px; }
@@ -1015,42 +1017,57 @@
     #page-history > div,
     #page-bethistory > div { padding: 54px 0.8rem 2rem !important; max-width: 100% !important; }
 
-    /* WINGO GAME */
+    /* WINGO GAME — fit entire game on one screen without scrolling */
     .color-game-overlay { position: fixed; inset: 0; overflow-y: auto; overflow-x: hidden; z-index: 600; }
-    .cg-wrap { padding: 54px 0.6rem 2rem; max-width: 100%; box-sizing: border-box; }
-    .cg-header { margin-bottom: 0.5rem; }
-    .cg-title { font-size: 0.88rem; }
-    .cg-close { padding: 0.22rem 0.55rem; font-size: 0.72rem; }
-    .cg-timer-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.3rem; margin-bottom: 0.5rem; }
-    .cg-ttab { padding: 0.48rem 0.1rem; font-size: 0.72rem; border-radius: 8px; text-align: center; }
-    .cg-round-info { padding: 0.5rem 0.65rem; margin-bottom: 0.5rem; }
-    .cg-round-num { font-size: 0.6rem; }
-    .cg-round-val { font-size: 0.68rem; }
-    .cg-count-val { font-size: 1.45rem; }
-    .cg-count-lbl { font-size: 0.58rem; }
-    .cg-status { font-size: 0.58rem; padding: 0.18rem 0.38rem; border-radius: 4px; }
-    .cg-colors { grid-template-columns: 1fr 1fr 1fr; gap: 0.3rem; margin-bottom: 0.5rem; }
-    .cg-color-btn { padding: 0.8rem 0.1rem; font-size: 0.82rem; border-radius: 10px; }
-    .cg-numbers { grid-template-columns: repeat(5, 1fr); gap: 0.28rem; margin-bottom: 0.5rem; }
-    .cg-num-btn { border-radius: 8px; font-size: 0.9rem; aspect-ratio: 1; min-height: 40px; }
-    .cg-color-btn[id="cgBigBtn"],
-    .cg-color-btn[id="cgSmallBtn"] { padding: 0.7rem; font-size: 0.88rem; }
-    .cg-bet-panel { padding: 0.6rem; border-radius: 10px; margin-bottom: 0.5rem; }
-    .cg-bet-title { font-size: 0.7rem; margin-bottom: 0.4rem; }
-    .cg-bet-presets { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.3rem; padding-bottom: 0.2rem; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+    .cg-wrap { padding: 52px 0.5rem 62px; max-width: 100%; box-sizing: border-box; width: 100%; }
+    .cg-header { margin-bottom: 0.4rem; padding: 0 0.1rem; }
+    .cg-title { font-size: 0.85rem; }
+    .cg-close { padding: 0.2rem 0.5rem; font-size: 0.7rem; }
+
+    /* Timer tabs - 3 equal, no overflow */
+    .cg-timer-tabs { display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; gap: 0.25rem; margin-bottom: 0.4rem; }
+    .cg-ttab { padding: 0.42rem 0.05rem; font-size: 0.7rem; border-radius: 8px; text-align: center; }
+
+    /* Period info */
+    .cg-round-info { padding: 0.45rem 0.6rem; margin-bottom: 0.4rem; }
+    .cg-round-num { font-size: 0.58rem; }
+    .cg-round-val { font-size: 0.65rem; }
+    .cg-count-val { font-size: 1.3rem; }
+    .cg-count-lbl { font-size: 0.55rem; }
+    .cg-status { font-size: 0.55rem; padding: 0.15rem 0.35rem; }
+
+    /* Color buttons */
+    .cg-colors { grid-template-columns: 1fr 1fr 1fr !important; gap: 0.25rem; margin-bottom: 0.4rem; }
+    .cg-color-btn { padding: 0.7rem 0.05rem; font-size: 0.78rem; border-radius: 8px; }
+
+    /* Number grid */
+    .cg-numbers { grid-template-columns: repeat(5, 1fr) !important; gap: 0.22rem; margin-bottom: 0.4rem; }
+    .cg-num-btn { border-radius: 7px; font-size: 0.88rem; aspect-ratio: 1; min-height: 36px; }
+
+    /* Big/Small */
+    .cg-color-btn[id="cgBigBtn"], .cg-color-btn[id="cgSmallBtn"] { padding: 0.65rem; font-size: 0.85rem; }
+
+    /* Bet panel */
+    .cg-bet-panel { padding: 0.5rem; border-radius: 10px; margin-bottom: 0.4rem; }
+    .cg-bet-title { font-size: 0.65rem; margin-bottom: 0.35rem; }
+    .cg-bet-presets { display: flex; flex-wrap: nowrap; overflow-x: auto; gap: 0.25rem; padding-bottom: 0.15rem; scrollbar-width: none; }
     .cg-bet-presets::-webkit-scrollbar { display: none; }
-    .cg-bet-preset { flex-shrink: 0; padding: 0.38rem 0.75rem; font-size: 0.76rem; white-space: nowrap; border-radius: 7px; }
-    .cg-x-btn { padding: 0.4rem 0.38rem; font-size: 0.72rem; border-radius: 6px; }
-    .cg-confirm-btn { padding: 0.8rem; font-size: 0.82rem; border-radius: 10px; margin-top: 0.35rem; }
-    .cg-hist-row { font-size: 0.66rem; padding: 0.42rem 0.28rem; }
-    .cg-hist-row.head { font-size: 0.6rem; }
-    .cg-tab-btns { gap: 0.3rem; margin-bottom: 0.6rem; }
-    .cg-tab-btn { padding: 0.38rem 0.9rem; font-size: 0.75rem; }
-    .cg-result-popup { width: 86vw; padding: 1.3rem 0.85rem; border-radius: 14px; }
-    .cg-result-emoji { font-size: 2.6rem; }
-    .cg-result-title { font-size: 1.15rem; }
-    .cg-result-amt { font-size: 1.7rem; }
-    .cg-result-num-badge { width: 42px; height: 42px; font-size: 1.05rem; }
+    .cg-bet-preset { flex-shrink: 0; padding: 0.32rem 0.65rem; font-size: 0.72rem; white-space: nowrap; border-radius: 6px; }
+    .cg-x-btn { padding: 0.35rem 0.32rem; font-size: 0.68rem; border-radius: 5px; }
+    .cg-confirm-btn { padding: 0.72rem; font-size: 0.78rem; border-radius: 8px; margin-top: 0.3rem; }
+
+    /* History/tabs */
+    .cg-hist-row { font-size: 0.63rem; padding: 0.38rem 0.22rem; }
+    .cg-hist-row.head { font-size: 0.57rem; }
+    .cg-tab-btns { gap: 0.25rem; margin-bottom: 0.5rem; }
+    .cg-tab-btn { padding: 0.32rem 0.8rem; font-size: 0.72rem; }
+
+    /* Result popup */
+    .cg-result-popup { width: 84vw; padding: 1.2rem 0.8rem; border-radius: 12px; }
+    .cg-result-emoji { font-size: 2.4rem; }
+    .cg-result-title { font-size: 1.1rem; }
+    .cg-result-amt { font-size: 1.6rem; }
+    .cg-result-num-badge { width: 40px; height: 40px; font-size: 1rem; }
 
     /* SPIN WHEEL */
     .wheel-wrap { width: 210px; height: 210px; }
@@ -1180,58 +1197,60 @@
         <span style="font-size:1rem;">🎯</span>
         <span style="font-size:0.72rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px;">Lottery</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;" id="mobileGameCards">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;" id="mobileGameCards">
         <!-- WinGo -->
-        <div onclick="openColorGame()" style="background:linear-gradient(135deg,#0d2b6b,#1565c0);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;">
-          <div style="height:90px;display:flex;align-items:center;justify-content:center;position:relative;background:linear-gradient(135deg,#0a1929,#1a237e);">
+        <div onclick="openColorGame()" style="background:linear-gradient(135deg,#0a1929,#1a237e);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;border:1px solid rgba(240,192,64,0.2);">
+          <div style="height:100px;display:flex;align-items:center;justify-content:center;position:relative;">
             <div style="text-align:center;">
-              <div style="font-size:0.6rem;color:rgba(255,255,255,0.6);font-weight:600;letter-spacing:1px;">lottery</div>
-              <div style="font-size:1.8rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;line-height:1;">WINGO</div>
+              <div style="font-size:0.6rem;color:rgba(255,255,255,0.6);font-weight:600;letter-spacing:1px;margin-bottom:2px;">LOTTERY</div>
+              <div style="font-size:2rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;line-height:1;">WINGO</div>
+              <div style="font-size:0.55rem;color:rgba(255,255,255,0.5);margin-top:2px;">1min · 3min · 5min</div>
             </div>
+            <div style="position:absolute;top:6px;left:6px;background:#e65100;color:#fff;font-size:0.5rem;font-weight:800;padding:2px 6px;border-radius:4px;">NEW</div>
           </div>
-          <div style="padding:0.35rem 0.5rem 0.5rem;"><div style="font-size:0.62rem;color:var(--muted);">lottery</div><div style="font-size:0.72rem;font-weight:700;color:var(--text);">Win Go</div></div>
+          <div style="padding:0.4rem 0.6rem 0.6rem;background:rgba(0,0,0,0.3);">
+            <div style="font-size:0.75rem;font-weight:700;color:#fff;">Win Go</div>
+            <div style="font-size:0.62rem;color:rgba(255,255,255,0.5);">Color prediction game</div>
+          </div>
         </div>
-        <!-- K3 -->
-        <div onclick="loginPrompt()" style="background:linear-gradient(135deg,#b71c1c,#c62828);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;">
-          <div style="height:90px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#7f0000,#b71c1c);">
-            <div style="text-align:center;"><div style="font-size:2rem;font-weight:900;color:#fff;font-family:'Cinzel',serif;">K3</div></div>
+        <!-- Mega Slots -->
+        <div onclick="loginPrompt()" style="background:linear-gradient(135deg,#1a0a00,#3d1a00);border-radius:14px;overflow:hidden;cursor:pointer;border:1px solid rgba(240,192,64,0.15);">
+          <div style="height:100px;display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;">🎰
+            <div style="position:absolute;top:6px;left:6px;background:var(--gold);color:#000;font-size:0.5rem;font-weight:800;padding:2px 6px;border-radius:4px;">HOT</div>
           </div>
-          <div style="padding:0.35rem 0.5rem 0.5rem;"><div style="font-size:0.62rem;color:var(--muted);">lottery</div><div style="font-size:0.72rem;font-weight:700;color:var(--text);">K3</div></div>
-        </div>
-        <!-- 5D -->
-        <div onclick="loginPrompt()" style="background:linear-gradient(135deg,#1b5e20,#2e7d32);border-radius:14px;overflow:hidden;cursor:pointer;">
-          <div style="height:90px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#003300,#1b5e20);">
-            <div style="text-align:center;"><div style="font-size:2rem;font-weight:900;color:#fff;font-family:'Cinzel',serif;">5D</div></div>
+          <div style="padding:0.4rem 0.6rem 0.6rem;background:rgba(0,0,0,0.3);">
+            <div style="font-size:0.75rem;font-weight:700;color:#fff;">Mega Slots</div>
+            <div style="font-size:0.62rem;color:rgba(255,255,255,0.5);">Coming soon</div>
           </div>
-          <div style="padding:0.35rem 0.5rem 0.5rem;"><div style="font-size:0.62rem;color:var(--muted);">lottery</div><div style="font-size:0.72rem;font-weight:700;color:var(--text);">5D</div></div>
         </div>
       </div>
     </div>
 
     <!-- POPULAR Section -->
-    <div style="padding:0.6rem 0.8rem 1rem;">
+    <div style="padding:0.6rem 0.8rem 1.5rem;">
       <div style="background:linear-gradient(135deg,#880e4f,#c2185b);border-radius:20px;padding:0.3rem 0.8rem;display:inline-flex;align-items:center;gap:0.4rem;margin-bottom:0.6rem;">
         <span style="font-size:1rem;">🔥</span>
         <span style="font-size:0.72rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px;">Popular</span>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;">
-        <div onclick="loginPrompt()" style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;">
-          <div style="height:90px;background:linear-gradient(135deg,#1a0a00,#3d1a00);display:flex;align-items:center;justify-content:center;font-size:2.2rem;">🎰</div>
-          <div style="padding:0.35rem 0.5rem 0.5rem;"><div style="font-size:0.62rem;color:var(--muted);">Slots</div><div style="font-size:0.72rem;font-weight:700;color:var(--text);">Mega Slots</div></div>
-        </div>
-        <div onclick="loginPrompt()" style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;">
-          <div style="height:90px;background:linear-gradient(135deg,#1a1000,#2e1c00);display:flex;align-items:center;justify-content:center;font-size:2.2rem;">🐉</div>
-          <div style="padding:0.35rem 0.5rem 0.5rem;"><div style="font-size:0.62rem;color:var(--muted);">Table</div><div style="font-size:0.72rem;font-weight:700;color:var(--text);">Dragon Tiger</div></div>
-        </div>
-        <div onclick="loginPrompt()" style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;">
-          <div style="height:90px;background:linear-gradient(135deg,#0a001a,#1a0033);display:flex;align-items:center;justify-content:center;font-size:2.2rem;position:relative;">🎲
-            <div style="position:absolute;top:4px;right:4px;background:#c62828;color:#fff;font-size:0.5rem;font-weight:800;padding:1px 5px;border-radius:3px;">NEW</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
+        <div onclick="loginPrompt()" style="background:linear-gradient(135deg,#1a1000,#2e1c00);border-radius:14px;overflow:hidden;cursor:pointer;border:1px solid rgba(240,192,64,0.15);">
+          <div style="height:100px;display:flex;align-items:center;justify-content:center;font-size:3rem;">🐉</div>
+          <div style="padding:0.4rem 0.6rem 0.6rem;background:rgba(0,0,0,0.3);">
+            <div style="font-size:0.75rem;font-weight:700;color:#fff;">Dragon Tiger</div>
+            <div style="font-size:0.62rem;color:rgba(255,255,255,0.5);">Coming soon</div>
           </div>
-          <div style="padding:0.35rem 0.5rem 0.5rem;"><div style="font-size:0.62rem;color:var(--muted);">Dice</div><div style="font-size:0.72rem;font-weight:700;color:var(--text);">Dice Royale</div></div>
+        </div>
+        <div onclick="loginPrompt()" style="background:linear-gradient(135deg,#0a001a,#1a0033);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;border:1px solid rgba(240,192,64,0.15);">
+          <div style="height:100px;display:flex;align-items:center;justify-content:center;font-size:3rem;position:relative;">🎲
+            <div style="position:absolute;top:6px;left:6px;background:#c62828;color:#fff;font-size:0.5rem;font-weight:800;padding:2px 6px;border-radius:4px;">NEW</div>
+          </div>
+          <div style="padding:0.4rem 0.6rem 0.6rem;background:rgba(0,0,0,0.3);">
+            <div style="font-size:0.75rem;font-weight:700;color:#fff;">Dice Royale</div>
+            <div style="font-size:0.62rem;color:rgba(255,255,255,0.5);">Coming soon</div>
+          </div>
         </div>
       </div>
     </div>
-
   </div>
 
   <!-- DESKTOP / GUEST HOME (original hero) -->
@@ -5520,19 +5539,29 @@
   // ── MOBILE BOTTOM NAV ──
   function mobileNav(page) {
     document.querySelectorAll('.mobile-nav-item').forEach(b => b.classList.remove('active'));
-    const pageToNav = { home:'mn-home', promotions:'mn-activity', referral:'mn-promo', wallet:'mn-wallet', profile:'mn-account' };
-    const activeBtn = document.getElementById(pageToNav[page]);
-    if (activeBtn) activeBtn.classList.add('active');
-    const el = document.getElementById('mn-' + page);
-    if (el) el.classList.add('active');
+    const pageToNav = {
+      home: 'mn-home',
+      promotions: 'mn-activity',
+      referral: 'mn-activity',
+      wallet: 'mn-wallet',
+      profile: 'mn-account'
+    };
+    const navId = pageToNav[page];
+    if (navId) { const btn = document.getElementById(navId); if (btn) btn.classList.add('active'); }
     if (page === 'game') { openColorGame(); return; }
     showPage(page);
   }
 
   function updateMobileNav(page) {
     document.querySelectorAll('.mobile-nav-item').forEach(b => b.classList.remove('active'));
-    const map = { home:'mn-home', wallet:'mn-wallet', referral:'mn-referral', profile:'mn-profile' };
-    if (map[page]) document.getElementById(map[page])?.classList.add('active');
+    const map = {
+      home: 'mn-home',
+      wallet: 'mn-wallet',
+      promotions: 'mn-promo',
+      referral: 'mn-activity',
+      profile: 'mn-account'
+    };
+    if (map[page]) { const btn = document.getElementById(map[page]); if (btn) btn.classList.add('active'); }
   }
 
   // ── BET HISTORY ──
@@ -7397,7 +7426,7 @@
 <div class="mobile-nav" id="mobileNav">
 
   <!-- Promotion -->
-  <button class="mobile-nav-item" id="mn-activity" onclick="mobileNav('promotions')">
+  <button class="mobile-nav-item" id="mn-activity" onclick="mobileNav('referral')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
       <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
     </svg>
@@ -7425,7 +7454,7 @@
   </button>
 
   <!-- Activity -->
-  <button class="mobile-nav-item" id="mn-promo" onclick="mobileNav('referral')">
+  <button class="mobile-nav-item" id="mn-promo" onclick="mobileNav('promotions')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
       <path d="M22 12H18L15 21L9 3L6 12H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
