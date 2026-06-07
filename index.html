@@ -977,13 +977,19 @@
     .auth-wrap {
       min-height: unset !important;
       padding: 1rem 0 2rem !important;
-      display: block !important;
+      display: flex !important;
+      align-items: flex-start !important;
+      justify-content: center !important;
+      width: 100% !important;
+      box-sizing: border-box !important;
     }
     .auth-card {
-      padding: 1.5rem 1rem !important;
-      margin: 0 0.8rem !important;
+      padding: 1.5rem 1.2rem !important;
+      margin: 0 !important;
       border-radius: 16px !important;
-      max-width: 100% !important;
+      width: calc(100% - 2rem) !important;
+      max-width: 420px !important;
+      box-sizing: border-box !important;
     }
     .form-row { grid-template-columns: 1fr !important; }
     .auth-logo-text { font-size: 1.4rem !important; }
