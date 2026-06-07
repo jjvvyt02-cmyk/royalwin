@@ -612,7 +612,6 @@
     font-family:'Exo 2',sans-serif; background:var(--card); transition:all 0.2s;
   }
   .cg-ttab.active { background:linear-gradient(135deg,#c07a10,var(--gold2)); color:#000; border-color:transparent; }
-
   /* Round info */
   .cg-round-info {
     background:var(--card); border:1px solid var(--border); border-radius:14px;
@@ -834,13 +833,14 @@
   /* ─── MOBILE BOTTOM NAV ─── */
   .mobile-nav {
     display: none;
-    position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
-    background: #1a1200;
-    border-top: 1px solid rgba(240,192,64,0.25);
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 9999;
+    background: #1a0a00;
+    border-top: 2px solid rgba(240,192,64,0.3);
     grid-template-columns: repeat(5, 1fr);
-    width: 100%; height: 58px;
-    box-shadow: 0 -4px 20px rgba(0,0,0,0.6);
+    width: 100%; height: 60px;
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.8);
     overflow: hidden;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
   }
   .mobile-nav-item {
     display: flex; flex-direction: column; align-items: center; justify-content: center;
@@ -4643,6 +4643,7 @@
   let cgHistory = [];
   let cgBettingOpen = true;
 
+
   function buildNumGrid() {
     const grid = document.getElementById('cgNumbers');
     if (!grid) return;
@@ -4755,8 +4756,9 @@
 
   function setTimer(mins) {
     cgTimer = mins;
-    [1,3,5].forEach(m => {
-      document.getElementById('ttab-' + m).classList.toggle('active', m === mins);
+    [1, 3, 5].forEach(m => {
+      const el = document.getElementById('ttab-' + m);
+      if (el) el.classList.toggle('active', m === mins);
     });
     // Load this timer's history
     cgHistPage = 1; // Reset to first page
@@ -7268,9 +7270,9 @@
 
     <!-- Timer Tabs -->
     <div class="cg-timer-tabs">
-      <div class="cg-ttab active" id="ttab-1" onclick="setTimer(1)">⏱ 1 Min</div>
-      <div class="cg-ttab" id="ttab-3" onclick="setTimer(3)">⏱ 3 Min</div>
-      <div class="cg-ttab" id="ttab-5" onclick="setTimer(5)">⏱ 5 Min</div>
+      <div class="cg-ttab active" id="ttab-1" onclick="setTimer(1)">1 Min</div>
+      <div class="cg-ttab" id="ttab-3" onclick="setTimer(3)">3 Min</div>
+      <div class="cg-ttab" id="ttab-5" onclick="setTimer(5)">5 Min</div>
     </div>
 
     <!-- Round Info + Countdown -->
@@ -7431,9 +7433,11 @@
 <div class="mobile-nav" id="mobileNav">
 
   <!-- Promotion -->
-  <button class="mobile-nav-item" id="mn-activity" onclick="mobileNav('referral')">
+  <button class="mobile-nav-item" id="mn-activity" onclick="mobileNav('promotions')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
-      <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M20 7H4C2.9 7 2 7.9 2 9V19C2 20.1 2.9 21 4 21H20C21.1 21 22 20.1 22 19V9C22 7.9 21.1 7 20 7Z" stroke="currentColor" stroke-width="2"/>
+      <path d="M16 7V5C16 3.9 15.1 3 14 3H10C8.9 3 8 3.9 8 5V7" stroke="currentColor" stroke-width="2"/>
+      <path d="M12 12V16M10 14H14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
     </svg>
     <span>Promotion</span>
   </button>
@@ -7451,29 +7455,32 @@
   <!-- Home (center) -->
   <button class="mobile-nav-item mobile-nav-center active" id="mn-home" onclick="mobileNav('home')">
     <div class="mn-icon" style="display:flex;align-items:center;justify-content:center;">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
-        <path d="M3 12L12 3L21 12V21H15V15H9V21H3V12Z" fill="#000" stroke="#000" stroke-width="1.5" stroke-linejoin="round"/>
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+        <rect x="2" y="6" width="20" height="14" rx="2" fill="#000" stroke="#000" stroke-width="1"/>
+        <circle cx="8" cy="10" r="1.5" fill="#c8a020"/>
+        <rect x="5" y="14" width="6" height="4" rx="1" fill="#c8a020"/>
+        <path d="M14 10h4M14 13h3M14 16h2" stroke="#c8a020" stroke-width="1.5" stroke-linecap="round"/>
       </svg>
     </div>
     <span>Home</span>
   </button>
 
   <!-- Activity -->
-  <button class="mobile-nav-item" id="mn-promo" onclick="mobileNav('promotions')">
+  <button class="mobile-nav-item" id="mn-promo" onclick="mobileNav('referral')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
-      <path d="M22 12H18L15 21L9 3L6 12H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M20 12V22H4V12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M22 7H2V12H22V7Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+      <path d="M12 22V7M12 7H7.5C6.12 7 5 5.88 5 4.5C5 3.12 6.12 2 7.5 2C10 2 12 7 12 7ZM12 7H16.5C17.88 7 19 5.88 19 4.5C19 3.12 17.88 2 16.5 2C14 2 12 7 12 7Z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
     <span>Activity</span>
   </button>
 
   <!-- Account -->
   <button class="mobile-nav-item" id="mn-account" onclick="mobileNav('profile')">
-    <div style="position:relative;width:24px;height:24px;margin:0 auto;">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="mn-svg" style="position:absolute;top:0;left:0;">
-        <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
-        <path d="M4 20C4 17 7.58 14 12 14C16.42 14 20 17 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-    </div>
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
+      <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
+      <path d="M4 20C4 17 7.58 14 12 14C16.42 14 20 17 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
     <span>Account</span>
   </button>
 
