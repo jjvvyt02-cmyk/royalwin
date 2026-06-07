@@ -626,7 +626,7 @@
   .chat-input-row { padding:0.8rem; border-top:1px solid var(--border); display:flex; gap:0.6rem; }
   .chat-input { flex:1; background:var(--bg3); border:1px solid var(--border); border-radius:8px; padding:0.6rem 1rem; color:var(--text); font-family:'Exo 2',sans-serif; font-size:0.88rem; outline:none; }
   .chat-input:focus { border-color:rgba(240,192,64,0.4); }
-  .chat-send { background:linear-gradient(135deg,#c07a10,var(--gold2)); border:none; border-radius:8px; padding:0.6rem 1rem; cursor:pointer; font-size:1rem; }
+  .chat-send { background:linear-gradient(135deg,#c07a10,var(--gold2)); border:none; border-radius:8px; padding:0.6rem 1rem; cursor:pointer; font-size:1rem; flex-shrink:0; line-height:1; display:flex; align-items:center; justify-content:center; }
   .support-options { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:1rem; margin-bottom:2rem; }
   .support-opt { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:1.2rem; text-align:center; cursor:pointer; transition:all 0.2s; }
   .support-opt:hover { border-color:var(--gold); }
@@ -1847,9 +1847,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;padding:3.5rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
       <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.3rem;font-family:'Exo 2',sans-serif;"><span data-t="common.back">‹ Back</span></button>
       <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Subordinate Data</div>
-      <button onclick="loadSubData()" class="refresh-btn" title="Refresh">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-      </button>
+
     </div>
 
     <!-- Filters -->
@@ -1924,9 +1922,7 @@
     <div style="display:flex;align-items:center;justify-content:space-between;padding:3.5rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
       <button onclick="showPage('referral')" style="background:none;border:none;color:var(--gold);font-size:0.9rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.3rem;font-family:'Exo 2',sans-serif;"><span data-t="common.back">‹ Back</span></button>
       <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Commission Details</div>
-      <button onclick="loadCommDetails()" class="refresh-btn" title="Refresh">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
-      </button>
+
     </div>
 
     <!-- Date filter + total -->
@@ -2001,7 +1997,7 @@
         </div>
       </div>
 
-      <div style="margin-top:0.8rem;font-size:0.72rem;color:var(--muted);text-align:center;"><span data-t="ref.ratenote">Commission rates are set by the admin and may change.</span></div>
+
     </div>
   </div>
 </div>
@@ -3340,9 +3336,7 @@
 
     // Pending banner
     const pending = rows.filter(r => r.status === 'pending');
-    const banner = document.getElementById('pendingDepositBanner');
-    const bannerText = document.getElementById('pendingDepositText');
-    if (banner && pending.length > 0) { banner.style.display='flex'; if (bannerText) bannerText.textContent = pending.length + ' deposit(s) pending verification.'; }
+    // Pending deposit banner removed
     else if (banner) { banner.style.display='none'; }
 
     const PER_PAGE = 10, MAX_PAGES = 5;
@@ -6073,7 +6067,10 @@
       promotions: 'mn-activity',
       referral: 'mn-activity',
       wallet: 'mn-wallet',
-      profile: 'mn-account'
+      profile: 'mn-account',
+      livechat: 'mn-account',
+      support: 'mn-account',
+      gifts: 'mn-account'
     };
     const navId = pageToNav[page];
     if (navId) { const btn = document.getElementById(navId); if (btn) btn.classList.add('active'); }
@@ -7301,13 +7298,7 @@
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬇️ Deposit History</div>
     </div>
     <!-- Pending deposits banner -->
-    <div id="pendingDepositBanner" style="display:none;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.25);border-radius:12px;padding:0.8rem 1rem;margin-bottom:1rem;display:flex;align-items:center;gap:0.6rem;">
-      <div style="font-size:1.2rem;">⏳</div>
-      <div>
-        <div style="font-size:0.82rem;font-weight:700;color:var(--gold);">Pending Deposit</div>
-        <div style="font-size:0.72rem;color:var(--muted);" id="pendingDepositText">Verification in progress...</div>
-      </div>
-    </div>
+    <!-- Pending deposit banner removed -->
     <div id="depositHistoryPageRows">
       <div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>
     </div>
@@ -7794,7 +7785,7 @@
         <div class="lbl"><span data-t="sup.telegram">Telegram</span></div>
         <div class="sub"><span data-t="sup.telegram.sub">Instant reply</span></div>
       </div>
-      <div class="support-opt" onclick="document.getElementById('liveChatSection').scrollIntoView({behavior:'smooth'});document.getElementById('chatInput').focus();">
+      <div class="support-opt" onclick="showPage('livechat')">
         <div class="icon">
           <svg width="38" height="38" viewBox="0 0 24 24" fill="none" stroke="#27ae60" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
@@ -7804,22 +7795,35 @@
         <div class="sub"><span style="color:var(--green);">● </span><span data-t="sup.online">Online now</span></div>
       </div>
     </div>
-    <div id="liveChatSection" class="chat-window" style="margin-top:0;">
-      <div class="chat-header">
+  </div>
+</div>
+
+<!-- LIVE CHAT PAGE -->
+<div class="page" id="page-livechat">
+  <div style="display:flex;flex-direction:column;height:100%;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:0.8rem;padding:0 0 0.8rem;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <button onclick="showPage('support')" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.45rem 0.7rem;color:var(--muted);cursor:pointer;font-size:1rem;line-height:1;">←</button>
+      <div style="display:flex;align-items:center;gap:0.7rem;">
         <div class="agent-avatar">👨</div>
-        <div class="agent-info"><h4>RoyalWin — Support Agent</h4><div class="agent-status"><span class="live-dot"></span>Online</div></div>
+        <div>
+          <div style="font-size:0.9rem;font-weight:700;color:var(--text);">RoyalWin Support</div>
+          <div style="display:flex;align-items:center;gap:0.3rem;font-size:0.72rem;color:var(--green);"><span class="live-dot"></span>Online</div>
+        </div>
       </div>
-      <div class="chat-messages" id="chatMessages">
-        <div class="msg agent">👋 Hello! Welcome to RoyalWin Support. How can I help you today?</div>
-        <div class="msg agent">You can ask me about deposits, withdrawals, bonuses, or any issue you face.</div>
-      </div>
-      <div class="chat-input-row">
-        <!-- Hidden file input -->
-        <input type="file" id="chatFileInput" accept="image/*,.pdf,.doc,.docx" style="display:none;" onchange="sendChatFile(this)">
-        <!-- Attachment button -->
-        <button onclick="document.getElementById('chatFileInput').click()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.7rem;color:var(--muted);cursor:pointer;flex-shrink:0;font-size:1rem;" title="Attach file">📎</button>
-        <input class="chat-input" id="chatInput" placeholder="Type your message..." onkeydown="if(event.key==='Enter')sendChat()">
-        <button class="chat-send" onclick="sendChat()">➤</button>
+    </div>
+    <!-- Chat messages -->
+    <div class="chat-messages" id="chatMessages" style="flex:1;overflow-y:auto;padding:0.8rem 0;gap:0.8rem;">
+      <div class="msg agent">👋 Hello! Welcome to RoyalWin Support. How can I help you today?</div>
+      <div class="msg agent">You can ask me about deposits, withdrawals, bonuses, or any issue you face.</div>
+    </div>
+    <!-- Input row — fixed at bottom -->
+    <div style="border-top:1px solid var(--border);padding:0.7rem 0 0;flex-shrink:0;">
+      <input type="file" id="chatFileInput" accept="image/*,.pdf,.doc,.docx" style="display:none;" onchange="sendChatFile(this)">
+      <div style="display:flex;gap:0.5rem;align-items:center;">
+        <button onclick="document.getElementById('chatFileInput').click()" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.7rem;color:var(--muted);cursor:pointer;flex-shrink:0;font-size:1rem;line-height:1;" title="Attach file">📎</button>
+        <input class="chat-input" id="chatInput" placeholder="Type your message..." onkeydown="if(event.key==='Enter')sendChat()" style="flex:1;min-width:0;">
+        <button class="chat-send" onclick="sendChat()" style="flex-shrink:0;padding:0.6rem 1rem;line-height:1;">➤</button>
       </div>
     </div>
   </div>
