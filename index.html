@@ -1165,7 +1165,7 @@
       max-width: 100% !important;
       width: 100% !important;
       margin: 0 !important;
-      padding: 0 0 1rem 0 !important;
+      padding: 0 0.75rem 1rem !important;
       box-sizing: border-box !important;
     }
     .cg-header {
@@ -1174,8 +1174,8 @@
       z-index: 10 !important;
       background: #10101a !important;
       border-bottom: 1px solid rgba(240,192,64,0.2) !important;
-      padding: 0.6rem 0.8rem !important;
-      margin-bottom: 0 !important;
+      padding: 0.6rem 0.75rem !important;
+      margin: 0 -0.75rem 0.6rem !important;
     }
     .cg-title { font-size: 1rem !important; }
     .cg-close { padding: 0.3rem 0.6rem !important; font-size: 0.75rem !important; }
@@ -1192,7 +1192,7 @@
       text-align: center !important;
     }
     .cg-round-info {
-      margin: 0 0.75rem 0.5rem !important;
+      margin: 0 0 0.5rem !important;
       padding: 0.6rem 0.8rem !important;
       border-radius: 12px !important;
     }
@@ -1206,36 +1206,36 @@
       margin: 0 0 0.5rem !important;
     }
     .cg-color-btn {
-      padding: 0.9rem 0.1rem !important;
-      font-size: 0.85rem !important;
+      padding: 0.72rem 0.1rem !important;
+      font-size: 0.68rem !important;
       border-radius: 10px !important;
     }
     .cg-numbers {
       grid-template-columns: repeat(5, 1fr) !important;
-      gap: 0.35rem !important;
+      gap: 0.28rem !important;
       margin: 0 0 0.5rem !important;
     }
     .cg-num-btn {
-      font-size: 0.95rem !important;
+      font-size: 0.76rem !important;
       aspect-ratio: 1 !important;
-      min-height: 44px !important;
+      min-height: 35px !important;
       border-radius: 50% !important;
     }
     .cg-color-btn[id="cgBigBtn"],
     .cg-color-btn[id="cgSmallBtn"] {
-      padding: 0.8rem !important;
-      font-size: 1rem !important;
+      padding: 0.64rem !important;
+      font-size: 0.8rem !important;
       border-radius: 30px !important;
     }
     .cg-bet-panel {
-      margin: 0 0.75rem 0.5rem !important;
+      margin: 0 0 0.5rem !important;
       padding: 0.7rem !important;
       border-radius: 12px !important;
     }
     .cg-bet-title { font-size: 0.7rem !important; margin-bottom: 0.4rem !important; }
-    .cg-bet-presets { gap: 0.3rem !important; flex-wrap: wrap !important; }
-    .cg-bet-preset { padding: 0.4rem 0.75rem !important; font-size: 0.78rem !important; }
-    .cg-x-btn { padding: 0.4rem !important; font-size: 0.75rem !important; }
+    .cg-bet-presets { gap: 0.3rem !important; flex-wrap: wrap !important; margin-bottom: 0.4rem !important; }
+    .cg-bet-preset { padding: 0.44rem 0.83rem !important; font-size: 0.86rem !important; font-weight: 700 !important; }
+    .cg-x-btn { padding: 0.44rem 0.4rem !important; font-size: 0.86rem !important; font-weight: 700 !important; }
     .cg-confirm-btn {
       display: block !important;
       width: 100% !important;
@@ -1382,8 +1382,8 @@
 
   /* ── SMALL MOBILE 400px ── */
   @media (max-width: 400px) {
-    .cg-color-btn { font-size: 0.78rem !important; padding: 0.75rem 0.05rem !important; }
-    .cg-num-btn { font-size: 0.85rem !important; min-height: 40px !important; }
+    .cg-color-btn { font-size: 0.62rem !important; padding: 0.6rem 0.05rem !important; }
+    .cg-num-btn { font-size: 0.68rem !important; min-height: 32px !important; }
     .cg-ttab { font-size: 0.68rem !important; }
     .mobile-nav-item { font-size: 0.5rem !important; }
     .hs-val { font-size: 0.88rem !important; }
@@ -5477,9 +5477,10 @@
     const fee = Math.round(amt * cgSettings.fee);
     const actualAmt = amt - fee;
     const sel = cgSelectedColor ? cgSelectedColor.toUpperCase() : cgSelectedBigSmall ? cgSelectedBigSmall.toUpperCase() : 'Number ' + cgSelectedNum;
+    // Show toast confirmation instead of changing button text
+    showToast('✅ Bet of ₹' + amt + ' placed on ' + sel + '!');
     document.getElementById('cgConfirmBtn').disabled = true;
-    document.getElementById('cgConfirmBtn').textContent = '✅ Bet Placed!';
-    // Re-enable after 1.5s so user can place another bet on different selection
+    // Re-enable after 1.5s so user can place another bet
     setTimeout(() => {
       if (cgBettingOpen) {
         document.getElementById('cgConfirmBtn').disabled = false;
@@ -7886,7 +7887,7 @@
         <div class="cg-bet-preset" onclick="setBet(this,500)">₹500</div>
         <div class="cg-bet-preset" onclick="setBet(this,1000)">₹1,000</div>
       </div>
-      <div style="display:flex;gap:0.5rem;margin-bottom:0.8rem;">
+      <div style="display:flex;gap:0.3rem;margin-bottom:0.5rem;">
         <button class="cg-x-btn" style="flex:1;" onclick="mulBet(2)">×2</button>
         <button class="cg-x-btn" style="flex:1;" onclick="mulBet(3)">×3</button>
         <button class="cg-x-btn" style="flex:1;" onclick="mulBet(5)">×5</button>
@@ -7895,9 +7896,9 @@
       <!-- Hidden input to track amount -->
       <input type="hidden" id="cgBetAmt" value="10">
       <!-- Total bet display -->
-      <div style="background:var(--bg3);border:1px solid rgba(240,192,64,0.2);border-radius:10px;padding:0.7rem 1rem;display:flex;justify-content:space-between;align-items:center;">
-        <span style="font-size:0.82rem;color:var(--muted);">Total Bet Amount</span>
-        <span style="font-family:'Cinzel',serif;font-size:1.2rem;font-weight:800;color:var(--gold);" id="cgBetDisplay">₹10</span>
+      <div style="background:var(--bg3);border:1px solid rgba(240,192,64,0.15);border-radius:8px;padding:0.45rem 0.8rem;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.72rem;color:var(--muted);">Total Bet</span>
+        <span style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:800;color:var(--gold);" id="cgBetDisplay">₹10</span>
       </div>
     </div>
 
