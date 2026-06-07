@@ -721,6 +721,8 @@
   .cg-confirm-btn.green-btn { background:linear-gradient(135deg,#1a7a1a,#27ae60); color:#fff; }
   .cg-confirm-btn.violet-btn { background:linear-gradient(135deg,#3d1a6e,#7c4dff); color:#fff; }
   .cg-confirm-btn.red-btn { background:linear-gradient(135deg,#7a1a1a,#e02020); color:#fff; }
+  .cg-confirm-btn.blue-btn { background:linear-gradient(135deg,#1a3a6e,#2563eb); color:#fff; }
+  .cg-confirm-btn.number-btn { background:linear-gradient(135deg,#1a1200,#2d1f00); color:var(--gold); border:2px solid rgba(240,192,64,0.6); font-family:'Cinzel',serif; font-weight:900; }
   .cg-confirm-btn.default-btn { background:linear-gradient(135deg,#c07a10,var(--gold2)); color:#000; }
   .cg-confirm-btn:hover { filter:brightness(1.1); transform:translateY(-1px); }
   .cg-confirm-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
@@ -1177,7 +1179,7 @@
       padding: 0.6rem 0.75rem !important;
       margin: 0 -0.75rem 0.6rem !important;
     }
-    .cg-title { font-size: 1rem !important; }
+    .cg-title { font-size: 1.2rem !important; }
     .cg-close { padding: 0.3rem 0.6rem !important; font-size: 0.75rem !important; }
     .cg-timer-tabs {
       display: grid !important;
@@ -1186,8 +1188,8 @@
       margin: 0.6rem 0 0.5rem !important;
     }
     .cg-ttab {
-      padding: 0.55rem 0.1rem !important;
-      font-size: 0.78rem !important;
+      padding: 0.66rem 0.1rem !important;
+      font-size: 0.94rem !important;
       border-radius: 10px !important;
       text-align: center !important;
     }
@@ -1198,8 +1200,9 @@
     }
     .cg-count-val { font-size: 1.5rem !important; letter-spacing: 2px !important; }
     .cg-count-lbl { font-size: 0.6rem !important; }
-    .cg-status { font-size: 0.62rem !important; padding: 0.25rem 0.6rem !important; }
-    .cg-round-val { font-size: 0.7rem !important; }
+    .cg-status { font-size: 0.74rem !important; padding: 0.3rem 0.72rem !important; }
+    .cg-round-val { font-size: 0.84rem !important; }
+    .cg-round-num { font-size: 0.78rem !important; }
     .cg-colors {
       grid-template-columns: 1fr 1fr 1fr !important;
       gap: 0.4rem !important;
@@ -1216,9 +1219,9 @@
       margin: 0 0 0.5rem !important;
     }
     .cg-num-btn {
-      font-size: 0.76rem !important;
+      font-size: 0.61rem !important;
       aspect-ratio: 1 !important;
-      min-height: 35px !important;
+      min-height: 28px !important;
       border-radius: 50% !important;
     }
     .cg-color-btn[id="cgBigBtn"],
@@ -1242,6 +1245,10 @@
       border-radius: 8px !important;
       margin-top: 0 !important;
       white-space: nowrap !important;
+    }
+    .cg-confirm-btn.number-btn {
+      font-size: 0.82rem !important;
+      letter-spacing: 1px !important;
     }
     .cg-history { margin: 0 0 0.5rem !important; border-radius: 12px !important; }
     .cg-hist-row { font-size: 0.75rem !important; padding: 0.45rem 0.5rem !important; }
@@ -1382,8 +1389,8 @@
   /* ── SMALL MOBILE 400px ── */
   @media (max-width: 400px) {
     .cg-color-btn { font-size: 0.62rem !important; padding: 0.6rem 0.05rem !important; }
-    .cg-num-btn { font-size: 0.68rem !important; min-height: 32px !important; }
-    .cg-ttab { font-size: 0.68rem !important; }
+    .cg-num-btn { font-size: 0.54rem !important; min-height: 25px !important; }
+    .cg-ttab { font-size: 0.82rem !important; }
     .mobile-nav-item { font-size: 0.5rem !important; }
     .hs-val { font-size: 0.88rem !important; }
   }
@@ -5412,8 +5419,8 @@
     document.querySelectorAll('.cg-color-btn, .cg-num-btn').forEach(b => b.classList.remove('selected'));
     el.classList.add('selected');
     const btn = document.getElementById('cgConfirmBtn');
-    btn.textContent = '🔢 No.' + num;
-    btn.className = 'cg-confirm-btn default-btn';
+    btn.textContent = 'No.' + num;
+    btn.className = 'cg-confirm-btn number-btn';
     btn.disabled = !cgBettingOpen;
   }
 
@@ -5423,7 +5430,7 @@
     el.classList.add('selected');
     const btn = document.getElementById('cgConfirmBtn');
     btn.textContent = type === 'big' ? '🔼 Bet Big' : '🔽 Bet Small';
-    btn.className = 'cg-confirm-btn ' + (type === 'big' ? 'default-btn' : 'green-btn');
+    btn.className = 'cg-confirm-btn ' + (type === 'big' ? 'default-btn' : 'blue-btn');
     btn.disabled = !cgBettingOpen;
   }
 
@@ -7908,8 +7915,8 @@
     <!-- History Tabs -->
     <div class="cg-history">
       <div style="display:flex;border-bottom:1px solid var(--border);">
-        <button class="wallet-tab active" id="cght-results" onclick="switchCGTab('results')" style="font-size:0.96rem;padding:0.7rem;font-weight:700;">📊 Results</button>
-        <button class="wallet-tab" id="cght-mybets" onclick="switchCGTab('mybets')" style="font-size:0.96rem;padding:0.7rem;font-weight:700;">📋 My Bets</button>
+        <button class="wallet-tab active" id="cght-results" onclick="switchCGTab('results')" style="font-size:0.96rem;padding:0.7rem;font-weight:700;display:flex;align-items:center;gap:0.35rem;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Results</button>
+        <button class="wallet-tab" id="cght-mybets" onclick="switchCGTab('mybets')" style="font-size:0.96rem;padding:0.7rem;font-weight:700;display:flex;align-items:center;gap:0.35rem;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg> My Bets</button>
       </div>
 
       <!-- Results Tab -->
