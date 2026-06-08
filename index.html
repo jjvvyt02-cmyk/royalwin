@@ -73,11 +73,7 @@
       radial-gradient(ellipse at 50% 50%, rgba(10,10,20,1) 0%, rgba(5,5,12,1) 100%);
   }
   .bg-grid {
-    position: fixed; inset: 0; z-index: 0; pointer-events: none;
-    background-image:
-      linear-gradient(rgba(240,192,64,0.03) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(240,192,64,0.03) 1px, transparent 1px);
-    background-size: 60px 60px;
+    display: none; /* Removed - was causing visible grid squares on screen */
   }
 
   /* ─── PAGES ─── */
@@ -5219,10 +5215,11 @@
       window._cgTimersStarted = true;
     }
     loadAllHistory();
-    loadMyBetsFromFirebase();
+    // Load bets then resolve any stale pending bets
+    loadMyBetsFromFirebase(true);
   }
 
-  function loadMyBetsFromFirebase() {
+  function loadMyBetsFromFirebase(resolveStalePending) {
     const db = window.fbDB || fbDB;
     if (!db || !window.currentUser) return;
     const uid = window.currentUser.uid;
@@ -5238,24 +5235,85 @@
 
         // Load pending bets and merge at top
         db.ref('users/' + uid + '/wingoPendingBets').once('value', pSnap => {
+          const now = Date.now();
           if (pSnap.val()) {
-            const now = Date.now();
             const pending = Object.entries(pSnap.val());
             window._cgPendingBets = window._cgPendingBets || [];
             pending.forEach(([key, bet]) => {
-              // Skip stale pending bets older than 10 minutes
-              if (now - (bet.timestamp||0) > 10 * 60 * 1000) {
-                db.ref('users/' + uid + '/wingoPendingBets/' + key).remove();
-                return;
-              }
               bet._firebaseKey = key;
-              const exists = window._cgPendingBets.some(b => b.round === bet.round && b.selection === bet.selection);
-              if (!exists) window._cgPendingBets.push(bet);
-              const timer = bet.timer || cgTimer;
-              if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
-              const alreadyShown = cgMyBetsByTimer[timer].some(b => b.round === bet.round && b.selection === bet.selection && b.status === 'pending');
-              if (!alreadyShown) {
-                cgMyBetsByTimer[timer].unshift({ ...bet, status: 'pending', result: '⏳ Waiting...', resultBg: 'rgba(240,192,64,0.3)', pl: null });
+              const timerMs = (bet.timer || 1) * 60 * 1000;
+              const betAge = now - (bet.timestamp || 0);
+
+              // If bet is older than its timer duration, it should be resolved
+              if (resolveStalePending && betAge > timerMs) {
+                // Fetch result from Firebase history for that round
+                const timerMode = bet.timer || 1;
+                db.ref('wingoRounds/' + timerMode + 'min/' + bet.round).once('value', rSnap => {
+                  if (rSnap.val()) {
+                    // Result exists - resolve the bet
+                    const roundData = rSnap.val();
+                    const winNum = roundData.result;
+                    const winColor = roundData.color;
+                    // Trigger resolution
+                    window._cgPendingBets = window._cgPendingBets || [];
+                    const exists = window._cgPendingBets.some(b => b.round === bet.round);
+                    if (!exists) {
+                      window._cgPendingBets.push(bet);
+                      resolveRoundForTimer(timerMode, 0);
+                    }
+                  } else {
+                    // No result found in Firebase yet
+                    // Keep bet for up to 24 hours - never silently delete
+                    if (betAge > 24 * 60 * 60 * 1000) {
+                      // Over 24 hours with no result - mark as unresolved, contact support
+                      const timer = bet.timer || cgTimer;
+                      if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
+                      const alreadyShown = cgMyBetsByTimer[timer].some(b => b.round === bet.round && b.selection === bet.selection);
+                      if (!alreadyShown) {
+                        cgMyBetsByTimer[timer].unshift({
+                          ...bet, status: 'unresolved',
+                          result: '⚠️ Contact Support',
+                          resultBg: 'rgba(224,32,32,0.4)', pl: null
+                        });
+                      }
+                      // DO NOT delete - keep for support reference
+                    } else {
+                      // Under 24 hours - keep as pending, result may come later
+                      const exists = window._cgPendingBets.some(b => b.round === bet.round && b.selection === bet.selection);
+                      if (!exists) window._cgPendingBets.push(bet);
+                      const timer = bet.timer || cgTimer;
+                      if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
+                      const alreadyShown = cgMyBetsByTimer[timer].some(b => b.round === bet.round && b.selection === bet.selection && b.status === 'pending');
+                      if (!alreadyShown) cgMyBetsByTimer[timer].unshift({
+                        ...bet, status: 'pending',
+                        result: betAge > 30 * 60 * 1000 ? '⏳ Contact Support' : '⏳ Waiting...',
+                        resultBg: 'rgba(240,192,64,0.3)', pl: null
+                      });
+                    }
+                  }
+                });
+              } else {
+                // Keep bets for up to 24 hours - never silently delete
+                if (betAge > 24 * 60 * 60 * 1000) {
+                  // Over 24 hours - mark as unresolved but keep in Firebase
+                  const timer = bet.timer || cgTimer;
+                  if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
+                  const alreadyShown = cgMyBetsByTimer[timer].some(b => b.round === bet.round && b.selection === bet.selection);
+                  if (!alreadyShown) {
+                    cgMyBetsByTimer[timer].unshift({
+                      ...bet, status: 'unresolved',
+                      result: '⚠️ Contact Support',
+                      resultBg: 'rgba(224,32,32,0.4)', pl: null
+                    });
+                  }
+                  return;
+                }
+                const exists = window._cgPendingBets.some(b => b.round === bet.round && b.selection === bet.selection);
+                if (!exists) window._cgPendingBets.push(bet);
+                const timer = bet.timer || cgTimer;
+                if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
+                const alreadyShown = cgMyBetsByTimer[timer].some(b => b.round === bet.round && b.selection === bet.selection && b.status === 'pending');
+                if (!alreadyShown) cgMyBetsByTimer[timer].unshift({ ...bet, status: 'pending', result: '⏳ Waiting...', resultBg: 'rgba(240,192,64,0.3)', pl: null });
               }
             });
           }
