@@ -5543,8 +5543,11 @@
           const ss = (remaining % 60).toString().padStart(2, '0');
           el.textContent = mm + ':' + ss;
         }
-        const roundEl = document.getElementById('cgRoundNum');
-        if (roundEl) roundEl.textContent = roundId;
+        // Only update round display for active timer
+        if (cgTimer === mins) {
+          const roundEl = document.getElementById('cgRoundNum');
+          if (roundEl) roundEl.textContent = roundId;
+        }
 
         // Close betting in last 5 seconds
         if (remaining <= 10 && cgBettingOpenByTimer[mins]) {
@@ -5561,8 +5564,10 @@
         cgLastResolvedRound[mins] = roundId;
         cgBettingOpenByTimer[mins] = true;
         if (!window._cgPendingBets) window._cgPendingBets = [];
-        // Clean up old bets from 2+ rounds ago
-        window._cgPendingBets = window._cgPendingBets.filter(b => b.round >= roundId - 2);
+        // Only clean up bets that are 3+ rounds old (safely resolved by now)
+        window._cgPendingBets = window._cgPendingBets.filter(b =>
+          b.round >= roundId - 3 || (b.timer && b.timer !== mins)
+        );
 
         // Update UI if this is the active timer
         if (cgTimer === mins) {
@@ -5924,9 +5929,15 @@
     window._cgPendingBets = (window._cgPendingBets || []).filter(b => b.round !== currentRound - 1 && b.round !== currentRound);
     window._cgPendingBet = null;
 
-    const savedSelectedColor = cgSelectedColor;
-    const savedSelectedNum = cgSelectedNum;
-    const savedSelectedBS = cgSelectedBigSmall;
+    // Use saved values from the bet object, not current UI state
+    // (user may have changed selection after placing bet)
+    const firstBet = (window._cgPendingBets || []).find(b =>
+      (b.timer === timerMode || !b.timer) &&
+      (b.round === cgRoundByTimer[timerMode] - 1 || b.round === cgRoundByTimer[timerMode])
+    );
+    const savedSelectedColor = firstBet ? firstBet.savedColor : cgSelectedColor;
+    const savedSelectedNum = firstBet ? firstBet.savedNum : cgSelectedNum;
+    const savedSelectedBS = firstBet ? firstBet.savedBS : cgSelectedBigSmall;
 
     // Process payout for ALL timers regardless of which is active
     const isActiveTimer = (timerMode === cgTimer);
@@ -6008,8 +6019,10 @@
     else winColor = 'green';
 
     const bigSmall = winNum >= 5 ? 'Big' : 'Small';
-    const betAmt = parseInt(document.getElementById('cgBetAmt').value) || 10;
-    const actualBet = window._cgActualBet || Math.round(betAmt * (1 - cgSettings.fee));
+    // Use amount from pending bet object, not current UI (UI may have changed)
+    const firstPendingBet = pendingBetsForRound[0];
+    const betAmt = firstPendingBet ? firstPendingBet.bet : (parseInt(document.getElementById('cgBetAmt').value) || 10);
+    const actualBet = firstPendingBet ? (firstPendingBet.actualBet || Math.round(betAmt * (1 - cgSettings.fee))) : (window._cgActualBet || Math.round(betAmt * (1 - cgSettings.fee)));
     let won = false, winAmt = 0;
     if (savedSelectedColor === 'violet' && (winColor === 'violet-red' || winColor === 'violet-green')) { won=true; winAmt=actualBet*cgSettings.violetPayout; }
     else if (savedSelectedColor === 'red' && winColor === 'red') { won=true; winAmt=actualBet*cgSettings.colorPayout; }
@@ -6118,16 +6131,15 @@
           showCGResult(anyWon, winNum, winColor, totalWin, pendingBetsForRound.reduce((s,b)=>s+b.bet,0));
         }
 
-        // Credit total win to balance — always, regardless of active timer
+        // Credit total win to balance — atomic transaction to prevent race conditions
         if (anyWon && totalWin > 0) {
           try {
             const db = window.fbDB || fbDB;
             const user = window.currentUser;
             if (db && user) {
-              const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
-              const newBal = parseFloat(((balSnap.val()||0) + totalWin).toFixed(2));
-              await db.ref('users/' + user.uid + '/balance').set(newBal);
-              updateBalanceDisplay(newBal);
+              await db.ref('users/' + user.uid + '/balance').transaction(bal => {
+                return parseFloat(((bal || 0) + totalWin).toFixed(2));
+              });
             }
           } catch(e) { console.warn('Win credit error:', e); }
         }
@@ -6147,46 +6159,73 @@
   }
 
   function showCGResult(won, num, color, winAmt, betAmt) {
-    const popup = document.getElementById('cgResultPopup');
+    // Only show if game is open
+    const gameOverlay = document.getElementById('colorGameOverlay');
+    if (!gameOverlay || !gameOverlay.classList.contains('open')) return;
 
-    // Emoji
-    document.getElementById('cgResEmoji').textContent = won ? '🏆' : '💔';
+    const overlay = document.getElementById('cgResultOverlay');
+    const popup = document.getElementById('cgResultPopup');
+    if (!overlay || !popup) return;
+
+    // Set win/lose class on popup
+    overlay.classList.remove('show', 'hide');
+    popup.className = 'cg-result-popup ' + (won ? 'win' : 'lose');
 
     // Title
-    document.getElementById('cgResTitle').textContent = won ? 'You Won!' : 'Better Luck Next Time!';
-    document.getElementById('cgResTitle').style.color = won ? 'var(--green)' : 'var(--red2)';
+    const titleEl = document.getElementById('cgResTitle');
+    if (titleEl) titleEl.textContent = won ? 'Congratulations' : 'Better Luck!';
 
-    // Number badge
-    const badge = document.getElementById('cgResNumBadge');
-    badge.textContent = num;
-    // Map color names to actual CSS colors/gradients
+    // Color tag
     const colorMap = {
-      'violet-red':   'linear-gradient(135deg, #7c4dff 50%, #e02020 50%)',
-      'violet-green': 'linear-gradient(135deg, #7c4dff 50%, #27ae60 50%)',
+      'violet-red':   'linear-gradient(135deg,#7c4dff 50%,#e02020 50%)',
+      'violet-green': 'linear-gradient(135deg,#7c4dff 50%,#27ae60 50%)',
       'red':          '#e02020',
       'green':        '#27ae60',
       'violet':       '#7c4dff',
     };
-    badge.style.background = colorMap[color] || color || '#7c4dff';
-    badge.style.display = 'inline-flex';
+    const colorLabel = color === 'violet-red' ? 'Red Violet' :
+                       color === 'violet-green' ? 'Green Violet' :
+                       color === 'red' ? 'Red' :
+                       color === 'green' ? 'Green' : 'Violet';
+    const colorTag = document.getElementById('cgResColorTag');
+    if (colorTag) {
+      colorTag.textContent = colorLabel;
+      colorTag.style.background = colorMap[color] || '#555';
+    }
 
-    // Amount
-    document.getElementById('cgResAmt').textContent = won ? '+₹' + parseFloat(winAmt).toFixed(2) : '-₹' + betAmt;
-    document.getElementById('cgResAmt').style.color = won ? 'var(--green)' : 'var(--red2)';
+    // Number badge
+    const badge = document.getElementById('cgResNumBadge');
+    if (badge) {
+      badge.textContent = num !== undefined ? num : '';
+      badge.style.background = colorMap[color] || '#555';
+      badge.style.display = num !== undefined ? 'inline-flex' : 'none';
+    }
 
-    // Subtitle
-    const sub = document.getElementById('cgResSubtitle');
-    if (sub) sub.style.display = 'none';
+    // Big/Small tag
+    const bsTag = document.getElementById('cgResBigSmallTag');
+    if (bsTag) bsTag.textContent = (num >= 5) ? 'Big' : 'Small';
 
-    // Show popup
-    popup.className = 'cg-result-popup show ' + (won ? 'win' : 'lose');
+    // Scroll label and amount
+    const labelEl = document.getElementById('cgResLabel');
+    if (labelEl) labelEl.textContent = won ? 'Bonus' : 'Loss';
 
-    // Confetti for wins
+    const amtEl = document.getElementById('cgResAmt');
+    if (amtEl) amtEl.textContent = (won ? '+' : '-') + '₹' + parseFloat(won ? winAmt : betAmt).toLocaleString('en-IN', {minimumFractionDigits:2});
+
+    // Period
+    const periodEl = document.getElementById('cgResPeriod');
+    if (periodEl) periodEl.textContent = 'Period: ' + (cgRoundByTimer[cgTimer] || '');
+
+    // Confetti only on win
     if (won) spawnConfetti();
 
-    // Auto close after 4 seconds
-    clearTimeout(window._resultTimer);
-    window._resultTimer = setTimeout(() => closeResultPopup(), 4000);
+    // Start animated countdown ring
+    startCountdownRing(3);
+
+    // Show overlay
+    overlay.classList.add('show');
+    if (window._resultTimer) clearTimeout(window._resultTimer);
+    window._resultTimer = setTimeout(() => closeResultPopup(), 3000);
   }
 
   function startCountdownRing(seconds) {
