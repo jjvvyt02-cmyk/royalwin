@@ -5944,30 +5944,61 @@
       }
       const db = window.fbDB || fbDB;
       if (db) {
+        // Step 1: Try lastResult (set by admin/server at round end)
         const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
         const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
         const lastVal = lastSnap.val();
         const lastTime = lastTimeSnap.val() || 0;
 
-        // Only accept result published AFTER this round started
         if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9 && lastTime > roundStartTime - 2000) {
           winNum = parseInt(lastVal);
         } else {
-          // Manual override fallback
-          const snap = await db.ref(timerKey + '/currentResult').once('value');
-          const val = snap.val();
-          if (val !== null && parseInt(val) >= 0 && parseInt(val) <= 9) {
-            winNum = parseInt(val);
-          } else {
-            winNum = Math.floor(Math.random() * 10);
+          // Step 2: Look up the ACTUAL result from history by round number
+          // This is the same data shown in the Results tab — guaranteed to match
+          const histSnap = await db.ref(timerKey + '/history')
+            .orderByChild('round').equalTo(currentRound - 1)
+            .limitToLast(1).once('value');
+          if (histSnap.val()) {
+            const entries = Object.values(histSnap.val());
+            const entry = entries[0];
+            if (entry && entry.num !== undefined && parseInt(entry.num) >= 0) {
+              winNum = parseInt(entry.num);
+            }
+          }
+          // Step 3: Try currentResult override
+          if (winNum === undefined) {
+            const snap = await db.ref(timerKey + '/currentResult').once('value');
+            const val = snap.val();
+            if (val !== null && parseInt(val) >= 0 && parseInt(val) <= 9) {
+              winNum = parseInt(val);
+            }
+          }
+          // Step 4: Also check history for currentRound
+          if (winNum === undefined) {
+            const histSnap2 = await db.ref(timerKey + '/history')
+              .orderByChild('round').equalTo(currentRound)
+              .limitToLast(1).once('value');
+            if (histSnap2.val()) {
+              const entries2 = Object.values(histSnap2.val());
+              if (entries2[0] && entries2[0].num !== undefined) {
+                winNum = parseInt(entries2[0].num);
+              }
+            }
+          }
+          // NEVER use Math.random() — if we can't find the result,
+          // keep the bet as pending until we can
+          if (winNum === undefined) {
+            console.warn('Result not found in Firebase for round', currentRound - 1, '— keeping as pending');
+            return; // Don't resolve yet, wait for next check
           }
         }
       } else {
-        winNum = Math.floor(Math.random() * 10);
+        console.warn('No Firebase DB — cannot resolve bet');
+        return; // Don't resolve without Firebase
       }
     } catch(e) {
-      console.warn('Firebase read failed, using random:', e);
-      winNum = Math.floor(Math.random() * 10);
+      console.warn('Firebase read failed — keeping bet pending:', e);
+      return; // Don't resolve on error
     }
     const winColorRaw = numColors[winNum];
     let winColor;
