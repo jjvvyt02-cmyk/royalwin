@@ -5248,19 +5248,26 @@
               if (resolveStalePending && betAge > timerMs) {
                 // Fetch result from Firebase history for that round
                 const timerMode = bet.timer || 1;
-                db.ref('wingoRounds/' + timerMode + 'min/' + bet.round).once('value', rSnap => {
+                // Check actual history path: wingo/wingoXmin/history
+                db.ref('wingo/wingo' + timerMode + 'min/history').orderByChild('round').equalTo(bet.round).once('value', rSnap => {
+                  let roundData = null;
                   if (rSnap.val()) {
-                    // Result exists - resolve the bet
-                    const roundData = rSnap.val();
-                    const winNum = roundData.result;
-                    const winColor = roundData.color;
-                    // Trigger resolution
+                    const entries = Object.values(rSnap.val());
+                    roundData = entries.find(e => e.round === bet.round);
+                  }
+                  if (roundData) {
+                    // Result found - add to pending and resolve
                     window._cgPendingBets = window._cgPendingBets || [];
-                    const exists = window._cgPendingBets.some(b => b.round === bet.round);
+                    const exists = window._cgPendingBets.some(b => b.round === bet.round && b.selection === bet.selection);
                     if (!exists) {
+                      bet._firebaseKey = key;
                       window._cgPendingBets.push(bet);
-                      resolveRoundForTimer(timerMode, 0);
                     }
+                    // Load history first then resolve
+                    if (!cgHistoryByTimer[timerMode] || cgHistoryByTimer[timerMode].length === 0) {
+                      cgHistoryByTimer[timerMode] = [roundData];
+                    }
+                    setTimeout(() => resolveRoundForTimer(timerMode, 0), 200);
                   } else {
                     // No result found in Firebase yet
                     // Keep bet for up to 24 hours - never silently delete
@@ -6101,12 +6108,12 @@
       const plColor = isPending ? 'var(--gold)' : b.pl > 0 ? 'var(--green)' : b.pl < 0 ? 'var(--red2)' : 'var(--muted)';
       const plText = isPending ? '⏳' : b.pl > 0 ? '+₹'+b.pl : b.pl < 0 ? '−₹'+Math.abs(b.pl) : '—';
       const rowStyle = isPending ? 'border:1px solid rgba(240,192,64,0.3);background:rgba(240,192,64,0.04);' : '';
-      return `<div class="cg-hist-row" style="grid-template-columns:1.3fr 0.6fr 0.8fr 1.1fr 0.8fr;${rowStyle}">
-        <div style="font-size:0.72rem;color:var(--muted);text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.round}</div>
-        <div style="text-align:center;">₹${b.bet}</div>
-        <div style="font-weight:700;color:${b.selColor};text-align:center;">${b.selection}</div>
-        <div style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;">${isPending ? '<span style="color:var(--gold);font-size:0.83rem;">⏳</span>' : `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${b.resultBg};margin-right:3px;flex-shrink:0;vertical-align:middle;"></span>${b.result}`}</div>
-        <div style="font-weight:700;color:${plColor};text-align:center;">${plText}</div>
+      return `<div class="cg-hist-row" style="grid-template-columns:1.6fr 0.6fr 0.8fr 1fr 0.7fr;${rowStyle}">
+        <div style="font-size:0.75rem;color:#fff;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.round}</div>
+        <div style="font-size:0.75rem;text-align:center;">₹${b.bet}</div>
+        <div style="font-size:0.75rem;font-weight:700;color:${b.selColor};text-align:center;">${b.selection}</div>
+        <div style="font-size:0.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;">${isPending ? '<span style="color:var(--gold);">⏳</span>' : `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${b.resultBg};margin-right:3px;flex-shrink:0;vertical-align:middle;"></span>${b.result}`}</div>
+        <div style="font-size:0.75rem;font-weight:700;color:${plColor};text-align:center;">${plText}</div>
       </div>`;
     }).join('');
 
@@ -6148,7 +6155,7 @@
 
     el.innerHTML = pageData.map(h => {
       const circle = `<span style="display:inline-block;width:20px;height:20px;border-radius:50%;background:${h.histBg};border:1px solid rgba(255,255,255,0.15);flex-shrink:0;"></span>`;
-      return `<div class="cg-hist-row"><div style="text-align:left;font-size:0.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.round}</div><div style="font-weight:700;text-align:center;">${h.num}</div><div style="display:flex;align-items:center;justify-content:center;">${circle}</div><div style="text-align:center;">${h.bigSmall}</div></div>`;
+      return `<div class="cg-hist-row"><div style="font-size:0.75rem;color:#fff;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.round}</div><div style="font-size:0.75rem;font-weight:700;text-align:center;">${h.num}</div><div style="font-size:0.75rem;display:flex;align-items:center;justify-content:center;">${circle}</div><div style="font-size:0.75rem;text-align:center;">${h.bigSmall}</div></div>`;
     }).join('');
   }
 
@@ -8091,7 +8098,7 @@
       <!-- My Bets Tab -->
       <div id="cgTabMyBets" style="display:none;">
         <div class="cg-hist-rows" style="max-height:none;">
-          <div class="cg-hist-row head" style="grid-template-columns:1.3fr 0.6fr 0.8fr 1.1fr 0.8fr;">
+          <div class="cg-hist-row head" style="grid-template-columns:1.6fr 0.6fr 0.8fr 1fr 0.7fr;">
             <div style="text-align:left;padding-left:0.2rem;">Period</div><div style="text-align:center;">Bet</div><div style="text-align:center;">Pick</div><div style="text-align:center;">Result</div><div style="text-align:center;">P&L</div>
           </div>
           <div id="cgMyBetsRows"><div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem;">No bets placed yet</div></div>
