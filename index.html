@@ -654,6 +654,7 @@
   .color-game-overlay {
     display:none; position:fixed; top:0; left:0; right:0; bottom:65px; z-index:600;
     background: var(--bg); overflow-y:auto; overflow-x:hidden;
+    isolation: isolate;
   }
   .color-game-overlay.open { display:block; }
   .cg-wrap { max-width:520px; margin:0 auto; padding:1.5rem 1rem 3rem; }
@@ -7820,8 +7821,13 @@
 <!-- SUPPORT PAGE -->
 <div class="page" id="page-support">
   <div class="support-page">
-    <div class="section-title" style="margin-bottom:0.4rem;">💬 <span data-t="sup.title">Support Center</span></div>
-    <div class="section-sub" style="margin-bottom:1.2rem;"><span data-t="sup.sub">We're here 24/7 to help you</span></div>
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
+      <button onclick="showPage('profile')" class="back-btn">←</button>
+      <div>
+        <div class="section-title" style="margin-bottom:0.1rem;">💬 <span data-t="sup.title">Support Center</span></div>
+        <div class="section-sub"><span data-t="sup.sub">We're here 24/7 to help you</span></div>
+      </div>
+    </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
       <div class="support-opt" onclick="window.open('https://t.me/royalwinsupport','_blank')">
         <div class="icon">
@@ -8098,14 +8104,12 @@
     <span>Promotion</span>
   </button>
 
-  <!-- Wallet -->
-  <button class="mobile-nav-item" id="mn-wallet" onclick="mobileNav('wallet')">
+  <!-- Activity (was Wallet position) -->
+  <button class="mobile-nav-item" id="mn-promo" onclick="mobileNav('promotions')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
-      <rect x="2" y="5" width="20" height="15" rx="2" stroke="currentColor" stroke-width="2"/>
-      <path d="M2 10H22" stroke="currentColor" stroke-width="2"/>
-      <circle cx="17" cy="15" r="1.5" fill="currentColor"/>
+      <path d="M22 12H18L15 21L9 3L6 12H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>
-    <span>Wallet</span>
+    <span>Activity</span>
   </button>
 
   <!-- Home (center) -->
@@ -8118,12 +8122,14 @@
     <span>Home</span>
   </button>
 
-  <!-- Activity -->
-  <button class="mobile-nav-item" id="mn-promo" onclick="mobileNav('promotions')">
+  <!-- Wallet (was Activity position) -->
+  <button class="mobile-nav-item" id="mn-wallet" onclick="mobileNav('wallet')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
-      <path d="M22 12H18L15 21L9 3L6 12H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="2" y="5" width="20" height="15" rx="2" stroke="currentColor" stroke-width="2"/>
+      <path d="M2 10H22" stroke="currentColor" stroke-width="2"/>
+      <circle cx="17" cy="15" r="1.5" fill="currentColor"/>
     </svg>
-    <span>Activity</span>
+    <span>Wallet</span>
   </button>
 
   <!-- Account -->
