@@ -1496,7 +1496,8 @@
   </div>
   <!-- Logged in nav — minimal, just notification bell -->
   <div class="nav-user" id="navUser" style="display:none;">
-    <div class="notif-bell" onclick="toggleNotif()" title="Notifications">🔔<span class="notif-badge" id="notifBadge" style="display:none;">0</span></div>
+    <span id="userBalance" style="display:none;"></span>
+    <span id="userAvatar" style="display:none;"></span><div class="notif-bell" onclick="toggleNotif()" title="Notifications">🔔<span class="notif-badge" id="notifBadge" style="display:none;">0</span></div>
     <div class="notif-dropdown" id="notifDropdown">
       <div class="notif-title">🔔 <span data-t="notif.title">Notifications</span></div>
       <div id="notifList"><div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;"><span data-t="notif.none">No notifications yet</span></div></div>
@@ -1931,7 +1932,9 @@
       <!-- Search -->
       <div style="flex:1;display:flex;align-items:center;gap:0.4rem;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.8rem;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input id="subdataSearch" type="text" placeholder="Search subordinate UID..." oninput="filterSubData()" style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:0.78rem;font-family:'Exo 2',sans-serif;">
+        <input id="refSearchInput" type="text" placeholder="Search UID..." oninput="filterSubData()" style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:0.78rem;font-family:'Exo 2',sans-serif;">
+        <span id="refSearchCount" style="font-size:0.68rem;color:var(--muted);white-space:nowrap;"></span>
+        <button id="refSearchClear" onclick="document.getElementById('refSearchInput').value='';filterSubData();" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;padding:0;display:none;">✕</button>
       </div>
       <!-- Search button -->
       <button onclick="filterSubData()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.5rem 0.8rem;color:#000;font-weight:800;cursor:pointer;font-size:0.9rem;">🔍</button>
@@ -2345,7 +2348,7 @@
       // Credit balance
       const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
       const newBal = parseFloat(((balSnap.val() || 0) + giftData.amount).toFixed(2));
-      await db.ref('users/' + user.uid + '/balance').set(newBal);
+      await db.ref('users/' + user.uid + '/balance').transaction(() => newBal);
       updateBalanceDisplay(newBal);
 
       // Record redemption
@@ -2828,7 +2831,7 @@
         const amt = level.weekly;
         const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
         const newBal = parseFloat(((balSnap.val() || 0) + amt).toFixed(2));
-        await db.ref('users/' + user.uid + '/balance').set(newBal);
+        await db.ref('users/' + user.uid + '/balance').transaction(() => newBal);
         await db.ref('users/' + user.uid + '/vip/weeklyClaimedAt').set(Date.now());
         await db.ref('users/' + user.uid + '/transactions/' + Date.now()).set({
           type: 'vip_weekly', amount: amt, details: level.name + ' VIP Weekly Bonus',
@@ -2844,7 +2847,7 @@
         const amt = level.monthly;
         const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
         const newBal = parseFloat(((balSnap.val() || 0) + amt).toFixed(2));
-        await db.ref('users/' + user.uid + '/balance').set(newBal);
+        await db.ref('users/' + user.uid + '/balance').transaction(() => newBal);
         await db.ref('users/' + user.uid + '/vip/monthlyClaimedAt').set(Date.now());
         await db.ref('users/' + user.uid + '/transactions/' + Date.now()).set({
           type: 'vip_monthly', amount: amt, details: level.name + ' VIP Monthly Bonus',
@@ -2879,7 +2882,7 @@
           // Credit level-up bonus
           const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
           const newBal = parseFloat(((balSnap.val() || 0) + newLevel.levelupBonus).toFixed(2));
-          await db.ref('users/' + user.uid + '/balance').set(newBal);
+          await db.ref('users/' + user.uid + '/balance').transaction(() => newBal);
           await db.ref('users/' + user.uid + '/vip/levelupClaimed').set([...claimed, newLevel.name]);
           await db.ref('users/' + user.uid + '/transactions/' + Date.now()).set({
             type: 'vip_levelup', amount: newLevel.levelupBonus,
@@ -3064,7 +3067,7 @@
   function loadSubData() { renderSubDataRows(window._refAllData || []); }
 
   function renderSubDataRows(allRefs) {
-    const searchVal = (document.getElementById('subdataSearch')?.value || '').trim().toLowerCase();
+    const searchVal = (document.getElementById('refSearchInput')?.value || '').trim().toLowerCase();
     const levelVal = document.getElementById('subdataLevel')?.value || 'all';
     const dateVal = document.getElementById('subdataDate')?.value || '';
 
@@ -3644,7 +3647,8 @@
     switchWalletTab('history');
   }
   function showWithdrawHistory() {
-    showPage('withdraw');
+    showPage('wallet');
+    setTimeout(() => switchWalletTab('withdraw'), 50);
   }
 
   function calcBonus100(val) {
@@ -4202,12 +4206,12 @@
 
       // ── DEDUCT BALANCE IMMEDIATELY ──
       const newBal = parseFloat((bal - amt).toFixed(2));
-      await db.ref('users/' + window.currentUser.uid + '/balance').set(newBal);
+      await db.ref('users/' + window.currentUser.uid + '/balance').transaction(() => newBal);
       updateBalanceDisplay(newBal);
 
       // Check USDT restriction
       if (currentWithdrawMethod === 'usdt' && !window._userHasUsdtDeposit) {
-        await db.ref('users/' + window.currentUser.uid + '/balance').set(bal);
+        await db.ref('users/' + window.currentUser.uid + '/balance').transaction(() => bal);
         updateBalanceDisplay(bal);
         showToast('❌ USDT withdrawal only available if you deposited via USDT');
         return;
@@ -4217,7 +4221,7 @@
       const savedSnap = await db.ref('users/' + window.currentUser.uid + '/withdrawDetails/' + currentWithdrawMethod).once('value');
       const saved = savedSnap.val();
       if (!saved) {
-        await db.ref('users/' + window.currentUser.uid + '/balance').set(bal);
+        await db.ref('users/' + window.currentUser.uid + '/balance').transaction(() => bal);
         updateBalanceDisplay(bal);
         showToast('⚠️ Please save your ' + currentWithdrawMethod.toUpperCase() + ' details first');
         return;
@@ -4818,7 +4822,7 @@
           if (db && user) {
             const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
             const newBal = parseFloat((parseFloat(balSnap.val() || 0) + winAmt).toFixed(2));
-            await db.ref('users/' + user.uid + '/balance').set(newBal);
+            await db.ref('users/' + user.uid + '/balance').transaction(() => newBal);
             await db.ref('users/' + user.uid + '/lastSpinDate').set(new Date().toDateString());
             updateBalanceDisplay(newBal);
             await db.ref('users/' + user.uid + '/transactions/' + Date.now()).set({
@@ -6653,10 +6657,10 @@
     const totalWon = betHistoryData.filter(d => d.won).reduce((s,d) => s + parseFloat(d.profit||0), 0);
     const totalLost = betHistoryData.filter(d => !d.won).reduce((s,d) => s + parseFloat(d.bet||0), 0);
     const netProfit = totalWon - totalLost;
-    const acctBets = document.getElementById('acctTotalBets');
-    const acctWon = document.getElementById('acctTotalWon');
-    const acctLost = document.getElementById('acctTotalLost');
-    const acctNet = document.getElementById('acctNetProfit');
+    const acctBets = document.getElementById('acctTotalBets') || document.getElementById('gsTotalBets');
+    const acctWon = document.getElementById('acctTotalWon') || document.getElementById('gsTotalWon');
+    const acctLost = document.getElementById('acctTotalLost') || document.getElementById('gsTotalLost');
+    const acctNet = document.getElementById('acctNetProfit') || document.getElementById('gsNetProfit');
     if (acctBets) acctBets.textContent = totalBets;
     if (acctWon) acctWon.textContent = '₹' + totalWon.toLocaleString('en-IN');
     if (acctLost) acctLost.textContent = '₹' + totalLost.toLocaleString('en-IN');
@@ -6850,7 +6854,7 @@
       // Update profile page balance + username
       const profBal = document.getElementById('profileBalance');
       if (profBal) profBal.textContent = '₹' + parseFloat(profile.balance || 0).toLocaleString('en-IN', {minimumFractionDigits:2});
-      const profUser = document.getElementById('profileUsername');
+      const profUser = document.getElementById('profileUsername') || document.getElementById('profileUsernameDisplay');
       if (profUser) profUser.textContent = '@' + (profile.username || '—') + ' · ' + (profile.contact || profile.mobile || profile.email || '');
 
       // Update balance
@@ -6897,7 +6901,10 @@
     if (profBal) profBal.textContent = formatted;
     // Update mobile home balance
     const mobileHomeBal = document.getElementById('mobileHomeBalance');
-    if (mobileHomeBal) mobileHomeBal.textContent = formatted;
+    if (mobileHomeBal) mobileHomeBal.textContent = bal.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+    // Also update mobileBalanceAmt if exists
+    const mobileBalAmt = document.getElementById('mobileBalanceAmt');
+    if (mobileBalAmt && !mobileHomeBal) mobileBalAmt.textContent = formatted;
     // Update game balance display (real-time in WinGo) - compact format for large amounts
     const cgBal = document.getElementById('cgBalanceDisplay');
     if (cgBal) {
@@ -6922,6 +6929,7 @@
     });
   }
 
+  // mobileHomeBalance element created dynamically if needed
   function updateMobileHomeBalance() {
     const db = window.fbDB || fbDB;
     const user = window.currentUser;
@@ -8480,6 +8488,7 @@
         <circle cx="12" cy="8" r="4" stroke="currentColor" stroke-width="2"/>
         <path d="M4 20C4 17 7.58 14 12 14C16.42 14 20 17 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       </svg>
+      <div id="bottomAvatar" style="display:none;position:absolute;top:0;left:0;width:24px;height:24px;border-radius:50%;background:var(--gold);color:#000;font-size:0.65rem;font-weight:800;align-items:center;justify-content:center;"></div>
     </div>
     <span>Account</span>
   </button>
