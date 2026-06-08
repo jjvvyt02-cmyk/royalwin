@@ -741,63 +741,125 @@
   .cg-confirm-btn:disabled { opacity:0.4; cursor:not-allowed; transform:none; }
 
   /* Result popup */
+  /* ══ K30-STYLE WIN/LOSS POPUP ══ */
+  .cg-result-overlay {
+    display:none; position:fixed; inset:0; z-index:99990;
+    background:rgba(0,0,0,0.65); backdrop-filter:blur(6px);
+    align-items:center; justify-content:center;
+    padding-top:40px;
+  }
+  .cg-result-overlay.show { display:flex; animation:overlayIn 0.25s ease forwards; }
+  .cg-result-overlay.hide { animation:overlayOut 0.2s ease forwards; }
+  @keyframes overlayIn { from{opacity:0} to{opacity:1} }
+  @keyframes overlayOut { from{opacity:1} to{opacity:0} }
+
+  /* Outer wrap — needed so coin can overflow top */
+  .cg-result-wrap {
+    position:relative; width:min(300px,84vw);
+    display:flex; flex-direction:column; align-items:center;
+  }
+  /* Rocket coin at top */
+  .cg-result-coin {
+    position:absolute; top:-52px; left:50%; transform:translateX(-50%);
+    width:100px; height:100px; z-index:2;
+    filter:drop-shadow(0 8px 20px rgba(0,0,0,0.6));
+    animation:coinBounce 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  }
+  @keyframes coinBounce {
+    0%   { transform:translateX(-50%) scale(0) translateY(-20px); opacity:0; }
+    100% { transform:translateX(-50%) scale(1) translateY(0); opacity:1; }
+  }
+  /* Main card */
   .cg-result-popup {
-    display:none; position:fixed; top:50%; left:50%; transform:translate(-50%,-50%) scale(0.5);
-    z-index:700; background:var(--card2); border:2px solid var(--border);
-    border-radius:24px; padding:2.5rem 3rem; text-align:center;
-    box-shadow:0 32px 80px rgba(0,0,0,0.8); min-width:300px;
-    opacity:0; transition:none;
+    position:relative; width:100%; border-radius:24px;
+    text-align:center; overflow:hidden; opacity:0;
+    padding-top:56px;
   }
-  .cg-result-popup.show {
-    display:block;
-    animation:resultPopIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards;
+  .cg-result-overlay.show .cg-result-popup {
+    animation:popupIn 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.1s forwards;
   }
-  .cg-result-popup.hide {
-    animation:resultPopOut 0.3s ease-in forwards;
+  .cg-result-overlay.hide .cg-result-popup {
+    animation:popupOut 0.2s ease forwards;
   }
+  @keyframes popupIn {
+    0%   { opacity:0; transform:scale(0.7) translateY(20px); }
+    100% { opacity:1; transform:scale(1) translateY(0); }
+  }
+  @keyframes popupOut {
+    0%   { opacity:1; transform:scale(1); }
+    100% { opacity:0; transform:scale(0.8); }
+  }
+  /* WIN: orange/coral gradient */
   .cg-result-popup.win {
-    border-color:var(--green);
-    box-shadow:0 32px 80px rgba(0,0,0,0.8), 0 0 40px rgba(39,174,96,0.3);
+    background:linear-gradient(175deg,#e8652a,#f08030,#e05a20);
+    box-shadow:0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(240,128,48,0.3);
   }
+  /* LOSE: cool purple/navy gradient */
   .cg-result-popup.lose {
-    border-color:var(--red2);
-    box-shadow:0 32px 80px rgba(0,0,0,0.8), 0 0 40px rgba(224,32,32,0.2);
+    background:linear-gradient(175deg,#2a2a6e,#3a3a9e,#252565);
+    box-shadow:0 20px 60px rgba(0,0,0,0.8), 0 0 40px rgba(80,80,200,0.25);
   }
-  @keyframes resultPopIn {
-    0%   { transform:translate(-50%,-50%) scale(0.4); opacity:0; }
-    60%  { transform:translate(-50%,-50%) scale(1.08); opacity:1; }
-    80%  { transform:translate(-50%,-50%) scale(0.96); }
-    100% { transform:translate(-50%,-50%) scale(1); opacity:1; }
+  .cg-result-title {
+    font-size:1.5rem; font-weight:800; color:#fff;
+    font-family:'Exo 2',sans-serif; margin-bottom:0.8rem;
+    text-shadow:0 2px 8px rgba(0,0,0,0.3);
   }
-  @keyframes resultPopOut {
-    0%   { transform:translate(-50%,-50%) scale(1); opacity:1; }
-    100% { transform:translate(-50%,-50%) scale(0.6); opacity:0; }
+  /* Lottery result row */
+  .cg-result-row {
+    display:flex; align-items:center; justify-content:center;
+    gap:0.4rem; margin-bottom:1rem; font-size:0.75rem; color:rgba(255,255,255,0.85);
+    font-weight:600;
   }
-  @keyframes winFloat {
-    0%,100% { transform:translateY(0); }
-    50%     { transform:translateY(-8px); }
+  .cg-result-tag {
+    padding:0.2rem 0.6rem; border-radius:20px;
+    font-size:0.7rem; font-weight:700; color:#fff;
+    background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.3);
   }
-  @keyframes confettiFall {
-    0%   { transform:translateY(-10px) rotate(0deg); opacity:1; }
-    100% { transform:translateY(60px) rotate(360deg); opacity:0; }
-  }
-  .cg-result-emoji {
-    font-size:3.5rem; margin-bottom:0.5rem;
-    display:block;
-    animation:winFloat 1.5s ease-in-out infinite;
-  }
-  .cg-result-popup.lose .cg-result-emoji { animation:none; }
-  .cg-result-title { font-family:'Cinzel',serif; font-size:1.5rem; margin-bottom:0.3rem; }
-  .cg-result-amt { font-family:'Cinzel',serif; font-size:2.2rem; font-weight:900; margin-bottom:0.5rem; }
   .cg-result-num-badge {
     display:inline-flex; align-items:center; justify-content:center;
-    width:52px; height:52px; border-radius:50%;
-    font-family:'Cinzel',serif; font-size:1.4rem; font-weight:900; color:#fff;
-    margin:0.5rem auto 1rem; box-shadow:0 4px 16px rgba(0,0,0,0.4);
+    width:28px; height:28px; border-radius:50%;
+    font-family:'Cinzel',serif; font-size:0.85rem; font-weight:900; color:#fff;
+    box-shadow:0 2px 8px rgba(0,0,0,0.4);
   }
-  .confetti-container {
-    position:absolute; top:0; left:0; width:100%; height:100%;
-    pointer-events:none; overflow:hidden; border-radius:24px;
+  /* White receipt scroll */
+  .cg-result-scroll {
+    background:#fff; border-radius:14px;
+    margin:0 1rem 1rem; padding:0.9rem 1rem 0.8rem;
+    box-shadow:0 4px 16px rgba(0,0,0,0.2);
+  }
+  .cg-result-scroll-label {
+    font-size:0.72rem; font-weight:700; margin-bottom:0.2rem;
+  }
+  .win .cg-result-scroll-label { color:#e05a20; }
+  .lose .cg-result-scroll-label { color:#4040aa; }
+  .cg-result-amt {
+    font-family:'Cinzel',serif; font-size:2rem; font-weight:900; line-height:1.1;
+  }
+  .win .cg-result-amt { color:#e05a20; }
+  .lose .cg-result-amt { color:#4040aa; }
+  .cg-result-period {
+    font-size:0.62rem; color:#999; margin-top:0.3rem;
+  }
+  /* Countdown row */
+  .cg-result-countdown {
+    display:flex; align-items:center; justify-content:center;
+    gap:0.5rem; padding:0 1rem 1rem; color:rgba(255,255,255,0.7);
+    font-size:0.72rem;
+  }
+  .cg-countdown-ring {
+    width:22px; height:22px; flex-shrink:0;
+  }
+  .cg-countdown-ring circle {
+    fill:none; stroke:rgba(255,255,255,0.3); stroke-width:2.5;
+  }
+  .cg-countdown-ring .progress {
+    stroke:rgba(255,255,255,0.9); stroke-linecap:round;
+    stroke-dasharray:56.5; stroke-dashoffset:0;
+    transform:rotate(-90deg); transform-origin:center;
+    transition:stroke-dashoffset 0.1s linear;
+  }
+  /* Confetti */
+  .cg-confetti { position:absolute; top:0; left:0; width:100%; height:100%; pointer-events:none; overflow:hidden; border-radius:24px;
   }
   .confetti-piece {
     position:absolute; top:0; width:8px; height:8px; border-radius:2px;
@@ -2647,6 +2709,10 @@
       console.warn('VIP load error:', e);
       updateVipUI(0, { weeklyClaimedAt: 0, monthlyClaimedAt: 0 });
     }
+    // Real-time VIP exp listener
+    db.ref('users/' + user.uid + '/vip/exp').on('value', expSnap => {
+      if (expSnap.val() != null) updateVipUI(expSnap.val() || 0, {});
+    });
   }
 
   function updateVipUI(exp, vipData) {
@@ -3316,6 +3382,12 @@
       const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
       const yKey = yesterday.toISOString().split('T')[0];
       const yCommSnap = await db.ref('users/' + user.uid + '/dailyCommission/' + yKey).once('value');
+      // Real-time today's commission
+      db.ref('users/' + user.uid + '/dailyCommission/' + new Date().toISOString().slice(0,10)).on('value', commSnap => {
+        const todayComm = commSnap.val() || 0;
+        const todayEl = document.querySelector('.agency-today-comm');
+        if (todayEl) todayEl.textContent = '₹' + parseFloat(todayComm).toLocaleString('en-IN', {minimumFractionDigits:2});
+      });
       const yestComm = yCommSnap.val() || 0;
       const el_yest = document.getElementById('agencyYesterdayComm');
       if (el_yest) el_yest.textContent = Number(yestComm).toFixed(2);
@@ -5217,6 +5289,29 @@
     loadAllHistory();
     // Load bets then resolve any stale pending bets
     loadMyBetsFromFirebase(true);
+    // Real-time listener: auto-resolve if result appears in Firebase
+    const db2 = window.fbDB || fbDB;
+    const user2 = window.currentUser;
+    if (db2 && user2) {
+      // Listen for pending bets being removed (resolved by another session)
+      db2.ref('users/' + user2.uid + '/wingoPendingBets').on('child_removed', snap => {
+        // A pending bet was resolved - reload my bets
+        setTimeout(() => loadMyBetsFromFirebase(false), 300);
+      });
+      // Also check history every time a new result is added
+      [1, 3, 5].forEach(t => {
+        db2.ref('wingo/wingo' + t + 'min/history').limitToLast(1).on('child_added', snap => {
+          const newRound = snap.val();
+          if (!newRound) return;
+          // Check if any pending bet matches this round
+          const pending = window._cgPendingBets || [];
+          const match = pending.find(b => (b.timer === t || !b.timer) && b.round === newRound.round);
+          if (match) {
+            setTimeout(() => resolveRoundForTimer(t, 0), 200);
+          }
+        });
+      });
+    }
   }
 
   function loadMyBetsFromFirebase(resolveStalePending) {
@@ -5360,20 +5455,25 @@
 
   function closeColorGame() {
     document.getElementById('colorGameOverlay').classList.remove('open');
+    // Close result popup if showing
+    closeResultPopup();
     // Stop all countdown intervals (save battery/data)
-    // NOTE: Firebase .on listeners for history/schedule kept alive for result resolution
     if (cgInterval) { clearInterval(cgInterval); cgInterval = null; }
     Object.keys(cgTimerIntervals).forEach(k => {
       if (cgTimerIntervals[k]) { clearInterval(cgTimerIntervals[k]); cgTimerIntervals[k] = null; }
     });
     window._cgTimersStarted = false;
-    // Remove real-time balance listener specific to game, restart general one
+    // Remove game-specific Firebase listeners
     const db = window.fbDB || fbDB;
     const user = window.currentUser;
     if (db && user) {
       db.ref('users/' + user.uid + '/balance').off();
+      db.ref('users/' + user.uid + '/wingoPendingBets').off();
+      [1,3,5].forEach(t => db.ref('wingo/wingo' + t + 'min/history').off());
       updateMobileHomeBalance();
     }
+    // Reset bet lock
+    _isPlacingBet = false;
   }
 
   function setTimer(mins) {
@@ -5588,7 +5688,9 @@
     updateBetDisplay();
   }
 
+  let _isPlacingBet = false;
   async function placeBet() {
+    if (_isPlacingBet) return; // prevent double-tap
     if (!isLoggedIn) { showToast('🔐 Please sign in to place bets!'); closeColorGame(); showPage('login'); return; }
     if (!cgBettingOpen) { showToast('⛔ Betting is closed for this round!'); return; }
     if (cgSelectedColor === null && cgSelectedNum === null && cgSelectedBigSmall === null) { showToast('⚠️ Select a color, number, Big or Small first!'); return; }
@@ -5600,16 +5702,18 @@
     const actualAmt = amt - fee;
     const sel = cgSelectedColor ? cgSelectedColor.toUpperCase() : cgSelectedBigSmall ? cgSelectedBigSmall.toUpperCase() : 'Number ' + cgSelectedNum;
     // Show toast confirmation instead of changing button text
+    _isPlacingBet = true;
     showToast('✅ Bet of ₹' + amt + ' placed on ' + sel + '!');
     document.getElementById('cgConfirmBtn').disabled = true;
     // Re-enable after 1.5s so user can place another bet
     setTimeout(() => {
       if (cgBettingOpen) {
         document.getElementById('cgConfirmBtn').disabled = false;
-        document.getElementById('cgConfirmBtn').textContent = 'Select a color or number to bet';
+        document.getElementById('cgConfirmBtn').textContent = 'Select';
         document.getElementById('cgConfirmBtn').className = 'cg-confirm-btn default-btn';
         cgSelectedColor = null; cgSelectedNum = null; cgSelectedBigSmall = null;
         document.querySelectorAll('.cg-color-btn, .cg-num-btn').forEach(b => b.classList.remove('selected'));
+        _isPlacingBet = false;
       }
     }, 1500);
     window._cgActualBet = actualAmt;
@@ -6054,6 +6158,29 @@
     window._resultTimer = setTimeout(() => closeResultPopup(), 4000);
   }
 
+  function startCountdownRing(seconds) {
+    const ring = document.getElementById('cgCountdownRing');
+    const text = document.getElementById('cgCountdownText');
+    if (!ring) return;
+    const circumference = 56.5;
+    ring.style.strokeDashoffset = 0;
+    let elapsed = 0;
+    const interval = 50; // ms
+    const total = seconds * 1000;
+    if (window._countdownInterval) clearInterval(window._countdownInterval);
+    window._countdownInterval = setInterval(() => {
+      elapsed += interval;
+      const progress = elapsed / total;
+      ring.style.strokeDashoffset = circumference * progress;
+      const remaining = Math.max(0, Math.ceil((total - elapsed) / 1000));
+      if (text) text.textContent = remaining + ' second' + (remaining !== 1 ? 's' : '') + ' auto close';
+      if (elapsed >= total) {
+        clearInterval(window._countdownInterval);
+        window._countdownInterval = null;
+      }
+    }, interval);
+  }
+
   function spawnConfetti() {
     const container = document.getElementById('confettiContainer');
     if (!container) return;
@@ -6108,8 +6235,22 @@
       const plColor = isPending ? 'var(--gold)' : b.pl > 0 ? 'var(--green)' : b.pl < 0 ? 'var(--red2)' : 'var(--muted)';
       const plText = isPending ? '⏳' : b.pl > 0 ? '+₹'+b.pl : b.pl < 0 ? '−₹'+Math.abs(b.pl) : '—';
       const rowStyle = isPending ? 'border:1px solid rgba(240,192,64,0.3);background:rgba(240,192,64,0.04);' : '';
+      // Format timestamp subtly
+      const _ts = b.timestamp ? new Date(b.timestamp) : null;
+      const _timeStr = _ts ? (
+        String(_ts.getFullYear()).slice(2) + '/' +
+        String(_ts.getMonth()+1).padStart(2,'0') + '/' +
+        String(_ts.getDate()).padStart(2,'0') +
+        ' ' +
+        String(_ts.getHours()).padStart(2,'0') + ':' +
+        String(_ts.getMinutes()).padStart(2,'0') + ':' +
+        String(_ts.getSeconds()).padStart(2,'0')
+      ) : '';
       return `<div class="cg-hist-row" style="grid-template-columns:1.6fr 0.6fr 0.8fr 1fr 0.7fr;${rowStyle}">
-        <div style="font-size:0.75rem;color:#fff;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.round}</div>
+        <div style="text-align:left;overflow:hidden;">
+          <div style="font-size:0.75rem;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${b.round}</div>
+          ${_timeStr ? `<div style="font-size:0.58rem;color:var(--muted);white-space:nowrap;margin-top:1px;">${_timeStr}</div>` : ''}
+        </div>
         <div style="font-size:0.75rem;text-align:center;">₹${b.bet}</div>
         <div style="font-size:0.75rem;font-weight:700;color:${b.selColor};text-align:center;">${b.selection}</div>
         <div style="font-size:0.75rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center;">${isPending ? '<span style="color:var(--gold);">⏳</span>' : `<span style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${b.resultBg};margin-right:3px;flex-shrink:0;vertical-align:middle;"></span>${b.result}`}</div>
@@ -6554,12 +6695,13 @@
 
       // Load real bet history from Firebase
       try {
-        const histSnap = await firebase.database().ref('users/' + uid + '/betHistory').once('value');
-        if (histSnap.val()) {
-          betHistoryData = Object.values(histSnap.val())
-            .sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
-          renderBetHistory(currentBetFilter || 'all');
-        }
+        firebase.database().ref('users/' + uid + '/betHistory').on('value', histSnap => {
+          if (histSnap.val()) {
+            betHistoryData = Object.values(histSnap.val())
+              .sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
+            renderBetHistory(currentBetFilter || 'all');
+          }
+        });
       } catch(e) {}
 
       // Load real transactions (deposits/withdrawals)
@@ -6686,9 +6828,16 @@
     // Update mobile home balance
     const mobileHomeBal = document.getElementById('mobileHomeBalance');
     if (mobileHomeBal) mobileHomeBal.textContent = formatted;
-    // Update game balance display (real-time in WinGo)
+    // Update game balance display (real-time in WinGo) - compact format for large amounts
     const cgBal = document.getElementById('cgBalanceDisplay');
-    if (cgBal) cgBal.textContent = bal.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+    if (cgBal) {
+      let cgBalText;
+      if (bal >= 10000000) cgBalText = (bal/10000000).toFixed(1) + 'Cr';
+      else if (bal >= 100000) cgBalText = (bal/100000).toFixed(1) + 'L';
+      else if (bal >= 1000) cgBalText = bal.toLocaleString('en-IN', {maximumFractionDigits:0});
+      else cgBalText = bal.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+      cgBal.textContent = cgBalText;
+    }
     window.currentBalance = bal;
   }
 
@@ -7997,7 +8146,7 @@
       <div style="display:flex;align-items:center;gap:0.5rem;">
         <div style="display:flex;align-items:center;gap:0.3rem;background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.3);border-radius:8px;padding:0.3rem 0.6rem;">
           <span style="font-size:0.7rem;color:var(--muted);">₹</span>
-          <span id="cgBalanceDisplay" style="font-size:0.85rem;font-weight:700;color:var(--gold);max-width:80px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle;">0.00</span>
+          <span id="cgBalanceDisplay" style="font-size:0.85rem;font-weight:700;color:var(--gold);max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block;vertical-align:middle;">0.00</span>
           <button onclick="refreshCgBalance()" class="refresh-btn" style="width:24px;height:24px;border-color:rgba(240,192,64,0.2);" title="Refresh balance">
         <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
       </button>
@@ -8108,15 +8257,62 @@
   </div>
 </div>
 
-<!-- RESULT POPUP -->
-<div class="cg-result-popup" id="cgResultPopup">
-  <div class="confetti-container" id="confettiContainer"></div>
-  <div class="cg-result-emoji" id="cgResEmoji"></div>
-  <div class="cg-result-title" id="cgResTitle"></div>
-  <div class="cg-result-num-badge" id="cgResNumBadge"></div>
-  <div class="cg-result-amt" id="cgResAmt"></div>
-  <div id="cgResSubtitle" style="font-size:0.82rem;color:var(--muted);margin-bottom:1rem;"></div>
-  <button class="btn btn-gold" onclick="closeResultPopup()" style="padding:0.6rem 1.8rem;">OK</button>
+<!-- RESULT POPUP - K30 Style -->
+<div class="cg-result-overlay" id="cgResultOverlay" onclick="if(event.target===this)closeResultPopup()">
+  <div class="cg-result-wrap">
+    <!-- Rocket coin icon floating above card -->
+    <div class="cg-result-coin" id="cgResCoin">
+      <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+        <!-- Wings -->
+        <ellipse cx="18" cy="58" rx="16" ry="10" fill="#f5a623" opacity="0.9"/>
+        <ellipse cx="82" cy="58" rx="16" ry="10" fill="#f5a623" opacity="0.9"/>
+        <!-- Coin body -->
+        <circle cx="50" cy="50" r="38" fill="url(#coinGrad)"/>
+        <circle cx="50" cy="50" r="32" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
+        <!-- Rocket -->
+        <path d="M50 22 C50 22 38 36 38 52 L50 58 L62 52 C62 36 50 22 50 22Z" fill="#fff" opacity="0.95"/>
+        <circle cx="50" cy="54" r="5" fill="#f5a623"/>
+        <path d="M44 58 L40 68 L50 64 L60 68 L56 58Z" fill="#fff" opacity="0.8"/>
+        <!-- Shine -->
+        <circle cx="38" cy="34" r="5" fill="rgba(255,255,255,0.4)"/>
+        <defs>
+          <radialGradient id="coinGrad" cx="40%" cy="35%">
+            <stop offset="0%" stop-color="#ffd700"/>
+            <stop offset="60%" stop-color="#f5a623"/>
+            <stop offset="100%" stop-color="#e08010"/>
+          </radialGradient>
+        </defs>
+      </svg>
+    </div>
+    <!-- Main card -->
+    <div class="cg-result-popup" id="cgResultPopup">
+      <div class="cg-confetti" id="confettiContainer"></div>
+      <div style="padding:0 1rem 0;">
+        <div class="cg-result-title" id="cgResTitle">Congratulations</div>
+        <!-- Lottery result row -->
+        <div class="cg-result-row">
+          <span style="color:rgba(255,255,255,0.8);font-size:0.7rem;">Lottery results</span>
+          <span class="cg-result-tag" id="cgResColorTag"></span>
+          <span class="cg-result-num-badge" id="cgResNumBadge"></span>
+          <span class="cg-result-tag" id="cgResBigSmallTag"></span>
+        </div>
+      </div>
+      <!-- White scroll/receipt -->
+      <div class="cg-result-scroll">
+        <div class="cg-result-scroll-label" id="cgResLabel">Bonus</div>
+        <div class="cg-result-amt" id="cgResAmt">₹0</div>
+        <div class="cg-result-period" id="cgResPeriod"></div>
+      </div>
+      <!-- Countdown -->
+      <div class="cg-result-countdown">
+        <svg class="cg-countdown-ring" viewBox="0 0 22 22">
+          <circle cx="11" cy="11" r="9"/>
+          <circle class="progress" id="cgCountdownRing" cx="11" cy="11" r="9"/>
+        </svg>
+        <span id="cgCountdownText">3 seconds auto close</span>
+      </div>
+    </div>
+  </div>
 </div>
 
 
