@@ -1527,6 +1527,20 @@
   <!-- MOBILE APP HOME (shown only on mobile when logged in) -->
   <div id="mobileAppHome" style="display:none;background:var(--bg);">
 
+    <!-- Top Header with Notification Bell -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0 0.4rem;margin-bottom:0.2rem;">
+      <div style="font-family:'Cinzel',serif;font-size:1.3rem;font-weight:900;color:var(--gold);">ROYAL<span style="color:#e02020;">♠</span>WIN</div>
+      <div style="position:relative;" onclick="toggleNotif()">
+        <div style="width:38px;height:38px;border-radius:50%;background:rgba(240,192,64,0.08);border:1.5px solid rgba(240,192,64,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+          </svg>
+        </div>
+        <span id="notifBadge2" style="display:none;position:absolute;top:-4px;right:-4px;background:#e02020;color:#fff;font-size:0.55rem;font-weight:800;min-width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);">0</span>
+      </div>
+    </div>
+
     <!-- Announcement bar -->
     <div style="background:#c0392b;color:#fff;font-size:0.7rem;padding:0.3rem 0.8rem;text-align:center;display:flex;justify-content:space-between;align-items:center;">
       <span id="mobileAnnounceText">Welcome to RoyalWin! India's #1 gaming platform.</span>
@@ -2122,6 +2136,10 @@
       if (pageEl) { pageEl.classList.add('active'); pageEl.scrollTop = 0; }
       window.scrollTo(0, 0);
       updateMobileNav(pageName);
+      // Push to browser history so back button works
+      if (window.history && window.history.pushState) {
+        window.history.pushState({ page: pageName }, '', '#' + pageName);
+      }
     }
 
     if (name === 'rebateratio') {
@@ -2523,6 +2541,49 @@
     // Default: show guest home until Firebase confirms login state
     const dh = document.getElementById('desktopHome');
     if (dh) dh.style.display = 'block';
+  });
+
+  // ── MOBILE BACK BUTTON HANDLER ──
+  window.addEventListener('popstate', (event) => {
+    // If game is open, close it first
+    const gameOverlay = document.getElementById('colorGameOverlay');
+    if (gameOverlay && gameOverlay.classList.contains('open')) {
+      closeColorGame();
+      return;
+    }
+    // If result popup is showing, close it
+    const resultOverlay = document.getElementById('cgResultOverlay');
+    if (resultOverlay && resultOverlay.classList.contains('show')) {
+      closeResultPopup();
+      return;
+    }
+    // Navigate to previous page from state
+    if (event.state && event.state.page) {
+      const prevPage = event.state.page;
+      // Show that page without pushing new history entry
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const pageEl = document.getElementById('page-' + prevPage);
+      if (pageEl) { pageEl.classList.add('active'); pageEl.scrollTop = 0; }
+      updateMobileNav(prevPage);
+    } else {
+      // No state — at root, go to home
+      if (isLoggedIn) {
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        const homePage = document.getElementById('page-home');
+        if (homePage) { homePage.classList.add('active'); homePage.scrollTop = 0; }
+        updateMobileNav('home');
+      } else {
+        // Let browser exit — user is at root guest page
+        window.history.pushState(null, '', window.location.href);
+      }
+    }
+  });
+
+  // Push initial state so first back press doesn't exit
+  window.addEventListener('load', () => {
+    if (window.history && window.history.pushState) {
+      window.history.pushState({ page: 'home' }, '', '#home');
+    }
   });
 
   // ── NETWORK OFFLINE DETECTION ──
@@ -7108,11 +7169,9 @@
       window.fbDB = fbDB;
       window.fbAuth = firebase.auth();
 
-      // ── HIDE LOADER ──
-      setTimeout(() => {
-        const loader = document.getElementById('appLoader');
-        if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 500); }
-      }, 1200);
+      // ── HIDE LOADER — wait for Firebase auth confirmation ──
+      // Do NOT hide loader on fixed timeout — wait for onAuthStateChanged
+      // This prevents guest page flash for already-logged-in users
 
       // Listen for auth state changes
       firebase.auth().onAuthStateChanged((user) => {
@@ -7123,6 +7182,9 @@
           loadNotifications();
           loadAnnouncement();
           document.getElementById('navGuest').style.display = 'none';
+          // Hide loader now that we know user is logged in — show correct page
+          const loader = document.getElementById('appLoader');
+          if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 400); }
           document.getElementById('navUser').style.display = 'flex';
           
           showTicker();
