@@ -1585,33 +1585,28 @@ let allUsers = [];
 function loadUsers() {
   const el = document.getElementById('usersList');
   if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;">Loading...</div>';
-  // Load users + deposits + withdrawals together
-  Promise.all([
-    get(ref(db, 'users')),
-    get(ref(db, 'adminRequests/deposits')),
-    get(ref(db, 'adminRequests/withdrawals'))
-  ]).then(([snap, depSnap, withSnap]) => {
-    const data = snap.val();
+  // Real-time listeners for users + deposits + withdrawals
+  // Store latest snapshots
+  let _usersSnap = null, _depsSnap = null, _withsSnap = null;
+
+  function rebuildUsers() {
+    if (!_usersSnap) return;
+    const data = _usersSnap;
     const countEl = document.getElementById('userCount');
     if (!data) {
       if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);">No users yet</div>';
       if (countEl) countEl.textContent = '0';
       return;
     }
-    // Build per-user deposit/withdrawal totals (approved only)
     const userDeps = {}, userWiths = {};
-    if (depSnap.val()) {
-      Object.values(depSnap.val()).forEach(d => {
-        if (d.status === 'approved') {
-          userDeps[d.uid] = (userDeps[d.uid] || 0) + (d.amount || 0);
-        }
+    if (_depsSnap) {
+      Object.values(_depsSnap).forEach(d => {
+        if (d.status === 'approved') userDeps[d.uid] = (userDeps[d.uid]||0) + (d.amount||0);
       });
     }
-    if (withSnap.val()) {
-      Object.values(withSnap.val()).forEach(w => {
-        if (w.status === 'approved') {
-          userWiths[w.uid] = (userWiths[w.uid] || 0) + (w.amount || 0);
-        }
+    if (_withsSnap) {
+      Object.values(_withsSnap).forEach(w => {
+        if (w.status === 'approved') userWiths[w.uid] = (userWiths[w.uid]||0) + (w.amount||0);
       });
     }
     allUsers = Object.entries(data).map(([uid, u]) => ({
@@ -1620,10 +1615,31 @@ function loadUsers() {
       _totalWithdrawals: userWiths[uid] || 0
     }));
     if (countEl) countEl.textContent = allUsers.length;
-    renderUsers(allUsers);
-  }).catch((e) => {
-    console.error('loadUsers error:', e);
+    // Preserve current search query
+    const searchEl = document.getElementById('userSearch');
+    const q = searchEl ? searchEl.value.trim() : '';
+    if (q) filterUsers(q);
+    else renderUsers(allUsers);
+  }
+
+  // Real-time users listener
+  onValue(ref(db, 'users'), (snap) => {
+    _usersSnap = snap.val();
+    rebuildUsers();
+  }, (e) => {
     if (el) el.innerHTML = '<div style="text-align:center;color:var(--red2);padding:1rem;">❌ Error: ' + e.message + '</div>';
+  });
+
+  // Real-time deposits listener
+  onValue(ref(db, 'adminRequests/deposits'), (snap) => {
+    _depsSnap = snap.val();
+    rebuildUsers();
+  });
+
+  // Real-time withdrawals listener
+  onValue(ref(db, 'adminRequests/withdrawals'), (snap) => {
+    _withsSnap = snap.val();
+    rebuildUsers();
   });
 }
 
@@ -1791,11 +1807,11 @@ window.resetWithdrawDetails = async function(uid) {
 };
 
 
-window.loadFraudAlerts = async function() {
+window.loadFraudAlerts = function() {
   const el = document.getElementById('fraudAlertsList');
   if (!el) return;
+  onValue(ref(db, 'users'), (snap) => {
   try {
-    const snap = await get(ref(db, 'users'));
     const allUsers = snap.val() || {};
     const alerts = [];
     for (const [uid, u] of Object.entries(allUsers)) {
