@@ -1770,11 +1770,9 @@ window.deleteSingleBet = async function(uid, key) {
 };
 
 window.editSingleBet = async function(uid, key, bet) {
-  const newPl = prompt('Enter new P&L amount (use negative for loss):
-Current: ' + (bet.pl||0), bet.pl||0);
+  const newPl = prompt('Enter new P&L (negative for loss). Current: ' + (bet.pl||0), bet.pl||0);
   if (newPl === null) return;
-  const newResult = prompt('Enter new result (e.g. "red / 2"):
-Current: ' + (bet.result||''), bet.result||'');
+  const newResult = prompt('Enter new result e.g. red / 2. Current: ' + (bet.result||''), bet.result||'');
   if (newResult === null) return;
   try {
     await update(ref(db, 'users/' + uid + '/wingoMyBets/' + key), {
