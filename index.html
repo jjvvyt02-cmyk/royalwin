@@ -5440,6 +5440,10 @@
   function loadAllHistory() {
     const db = window.fbDB || fbDB;
     if (!db) return;
+    // Clear memory completely before loading — prevents duplicates on reopen
+    cgHistoryByTimer[1] = [];
+    cgHistoryByTimer[3] = [];
+    cgHistoryByTimer[5] = [];
     // Listen for real-time history updates for all timers
     [1, 3, 5].forEach(mins => {
       db.ref('wingo/wingo' + mins + 'min/history').off();
