@@ -5290,6 +5290,14 @@
       startAllTimers();
       window._cgTimersStarted = true;
     }
+    // Reset scroll to top and show Results tab (not remembered state)
+    const overlay = document.getElementById('colorGameOverlay');
+    if (overlay) overlay.scrollTop = 0;
+    // Always show Results tab on open
+    switchCGTab('results');
+    // Reset history page to 1
+    cgHistPage = 1;
+    cgMyBetsPage = 1;
     loadAllHistory();
     // Load bets then resolve any stale pending bets
     loadMyBetsFromFirebase(true);
@@ -5438,9 +5446,16 @@
       db.ref('wingo/wingo' + mins + 'min/history').on('value', snap => {
         if (!snap.val()) return;
         const raw = Array.isArray(snap.val()) ? snap.val() : Object.values(snap.val());
+        // Sort newest first, deduplicate by round number
+        const seen = new Set();
         cgHistoryByTimer[mins] = raw
           .filter(h => h && h.round)
-          .sort((a, b) => (b.timestamp || b.round) - (a.timestamp || a.round))
+          .sort((a, b) => (b.round || 0) - (a.round || 0))
+          .filter(h => {
+            if (seen.has(h.round)) return false;
+            seen.add(h.round);
+            return true;
+          })
           .map(h => ({
             ...h,
             histBg: h.histBg || (h.color === 'violet'
@@ -5593,18 +5608,26 @@
           try {
             const db2 = window.fbDB || fbDB;
             if (db2) {
+              // Check history for the resolved round (more reliable than lastResultTime)
+              const hSnap = await db2.ref('wingo/wingo' + mins + 'min/history')
+                .orderByChild('round').equalTo(cgRoundByTimer[mins] - 1)
+                .limitToLast(1).once('value');
+              if (hSnap.val()) {
+                resolveRoundForTimer(mins, roundStartTime);
+                return;
+              }
+              // Also check lastResultTime as fallback
               const tSnap = await db2.ref('wingo/wingo' + mins + 'min/lastResultTime').once('value');
-              const lastTime = tSnap.val() || 0;
-              if (lastTime > roundStartTime - 2000) {
+              if ((tSnap.val() || 0) > roundStartTime - 3000) {
                 resolveRoundForTimer(mins, roundStartTime);
                 return;
               }
             }
           } catch(e) {}
-          if (pollAttempts < 24) setTimeout(pollForResult, 500);
+          if (pollAttempts < 30) setTimeout(pollForResult, 300);
           else resolveRoundForTimer(mins, roundStartTime);
         };
-        setTimeout(pollForResult, 1000);
+        setTimeout(pollForResult, 300);
       }
     }
 
@@ -5961,57 +5984,48 @@
       }
       const db = window.fbDB || fbDB;
       if (db) {
-        // Step 1: Try lastResult (set by admin/server at round end)
-        const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
-        const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
-        const lastVal = lastSnap.val();
-        const lastTime = lastTimeSnap.val() || 0;
-
-        if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9 && lastTime > roundStartTime - 2000) {
-          winNum = parseInt(lastVal);
-        } else {
-          // Step 2: Look up the ACTUAL result from history by round number
-          // This is the same data shown in the Results tab — guaranteed to match
-          const histSnap = await db.ref(timerKey + '/history')
-            .orderByChild('round').equalTo(currentRound - 1)
-            .limitToLast(1).once('value');
-          if (histSnap.val()) {
-            const entries = Object.values(histSnap.val());
-            const entry = entries[0];
-            if (entry && entry.num !== undefined && parseInt(entry.num) >= 0) {
-              winNum = parseInt(entry.num);
-            }
-          }
-          // Step 3: Try currentResult override
-          if (winNum === undefined) {
-            const snap = await db.ref(timerKey + '/currentResult').once('value');
-            const val = snap.val();
-            if (val !== null && parseInt(val) >= 0 && parseInt(val) <= 9) {
-              winNum = parseInt(val);
-            }
-          }
-          // Step 4: Also check history for currentRound
-          if (winNum === undefined) {
-            const histSnap2 = await db.ref(timerKey + '/history')
-              .orderByChild('round').equalTo(currentRound)
-              .limitToLast(1).once('value');
-            if (histSnap2.val()) {
-              const entries2 = Object.values(histSnap2.val());
-              if (entries2[0] && entries2[0].num !== undefined) {
-                winNum = parseInt(entries2[0].num);
-              }
-            }
-          }
-          // NEVER use Math.random() — if we can't find the result,
-          // keep the bet as pending until we can
-          if (winNum === undefined) {
-            console.warn('Result not found in Firebase for round', currentRound - 1, '— keeping as pending');
-            return; // Don't resolve yet, wait for next check
+        // PRIORITY 1: Check history for resolvedRoundId (currentRound-1)
+        // This is EXACTLY what Results tab shows — guaranteed match
+        const histSnap = await db.ref(timerKey + '/history')
+          .orderByChild('round').equalTo(currentRound - 1)
+          .limitToLast(3).once('value');
+        if (histSnap.val()) {
+          const entries = Object.values(histSnap.val())
+            .filter(e => e.round === currentRound - 1);
+          if (entries.length > 0 && entries[0].num !== undefined) {
+            winNum = parseInt(entries[0].num);
           }
         }
+
+        // PRIORITY 2: lastResult (if history not available yet)
+        if (winNum === undefined) {
+          const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
+          const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
+          const lastVal = lastSnap.val();
+          const lastTime = lastTimeSnap.val() || 0;
+          if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9
+              && lastTime > roundStartTime - 5000) {
+            winNum = parseInt(lastVal);
+          }
+        }
+
+        // PRIORITY 3: currentResult override
+        if (winNum === undefined) {
+          const snap = await db.ref(timerKey + '/currentResult').once('value');
+          const val = snap.val();
+          if (val !== null && parseInt(val) >= 0 && parseInt(val) <= 9) {
+            winNum = parseInt(val);
+          }
+        }
+
+        // No result found — keep pending
+        if (winNum === undefined) {
+          console.warn('Result not in Firebase yet for round', currentRound - 1, '— keeping pending');
+          return;
+        }
       } else {
-        console.warn('No Firebase DB — cannot resolve bet');
-        return; // Don't resolve without Firebase
+        console.warn('No Firebase DB — cannot resolve');
+        return;
       }
     } catch(e) {
       console.warn('Firebase read failed — keeping bet pending:', e);
@@ -6053,13 +6067,8 @@
     // The round that just ENDED is currentRound-1 (we resolve at start of next round)
     const resolvedRoundId = currentRound - 1;
     if (!cgHistoryByTimer[timerMode]) cgHistoryByTimer[timerMode] = [];
-    // Only add if not already in history (prevent duplicates)
-    const alreadyInHistory = cgHistoryByTimer[timerMode].some(h => h.round === resolvedRoundId);
-    if (!alreadyInHistory) {
-      cgHistoryByTimer[timerMode].unshift({ round: resolvedRoundId, num: winNum, color: histColorLabel, bigSmall, histBg });
-      // Keep max 20 results in memory
-      if (cgHistoryByTimer[timerMode].length > 20) cgHistoryByTimer[timerMode].pop();
-    }
+    // DO NOT add to memory here - loadAllHistory real-time listener handles display
+    // This prevents duplicates from double-write (local + Firebase listener)
 
     // Save to Firebase for persistence — use push() to avoid overwrite race conditions
     try {
@@ -6315,6 +6324,15 @@
     });
     document.getElementById('cgTabResults').style.display = tab === 'results' ? 'block' : 'none';
     document.getElementById('cgTabMyBets').style.display = tab === 'mybets' ? 'block' : 'none';
+    // Reset to page 1 and scroll to top on tab switch
+    if (tab === 'results') { cgHistPage = 1; renderHistRows(); }
+    if (tab === 'mybets') { cgMyBetsPage = 1; renderMyBets(); }
+    // Scroll game overlay to the history section
+    const overlay = document.getElementById('colorGameOverlay');
+    const histEl = document.querySelector('.cg-history');
+    if (overlay && histEl) {
+      setTimeout(() => overlay.scrollTop = histEl.offsetTop - 10, 50);
+    }
   }
 
   let cgMyBetsPage = 1;
