@@ -1,28 +1,26 @@
 name: Royalwin Telegram Bot
 
 on:
-schedule:
-- cron: '*/5 * * * *'
+  schedule:
+    - cron: '*/5 * * * *'
 
 jobs:
-run-bot:
-runs-on: ubuntu-latest
+  run-bot:
+    runs-on: ubuntu-latest
 
-```
-steps:
-  - uses: actions/checkout@v4
+    steps:
+      - uses: actions/checkout@v4
 
-  - uses: actions/setup-node@v4
-    with:
-      node-version: 20
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
 
-  - name: Install packages
-    run: npm install
+      - name: Install packages
+        run: npm install
 
-  - name: Run Bot
-    env:
-      FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
-      TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
-      TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
-    run: node bot.js
-```
+      - name: Run Bot
+        env:
+          FIREBASE_JSON: ${{ secrets.FIREBASE_JSON }}
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHANNEL: ${{ secrets.TELEGRAM_CHANNEL }}
+        run: node bot.js
