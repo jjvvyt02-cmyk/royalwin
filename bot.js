@@ -10,12 +10,11 @@ admin.initializeApp({
 const db = admin.database();
 
 async function main() {
-  const snap = await db.ref('wingo/wingo5min').once('value');
-  const data = snap.val();
+  const snap = await db.ref('wingo/wingo5min/history').once('value');
 
-  console.log('Firebase Connected');
-  console.log('Last Result:', data.lastResult);
-  console.log('Last Period:', data.lastProcessedPeriod);
+  const history = snap.val();
+
+  console.log(JSON.stringify(history, null, 2));
 }
 
 main().catch(console.error);
