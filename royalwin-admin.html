@@ -189,9 +189,9 @@
     </div>
     <div class="form-group">
       <label class="form-label">Password</label>
-      <input class="form-input" type="password" id="adminPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter')doAdminLogin()">
+      <input class="form-input" type="password" id="adminPassword" placeholder="••••••••" id="adminPassword">
     </div>
-    <button class="btn btn-gold btn-full" onclick="doAdminLogin()">🔐 Sign In to Admin</button>
+    <button class="btn btn-gold btn-full" id="adminLoginBtn">🔐 Sign In to Admin</button>
     <div class="error-msg" id="loginError">❌ Invalid credentials. Access denied.</div>
     <div style="margin-top:1.5rem;padding:1rem;background:var(--bg3);border-radius:8px;font-size:0.78rem;color:var(--muted);line-height:1.7;">
       <strong style="color:var(--gold);">Setup required:</strong><br>
@@ -918,6 +918,14 @@ onAuthStateChanged(auth, (user) => {
     document.getElementById('loginWrap').style.display = 'flex';
     document.getElementById('adminWrap').style.display = 'none';
   }
+});
+
+// Attach login button after module loads
+document.addEventListener('DOMContentLoaded', () => {
+  const btn = document.getElementById('adminLoginBtn');
+  const pwd = document.getElementById('adminPassword');
+  if (btn) btn.addEventListener('click', () => window.doAdminLogin && window.doAdminLogin());
+  if (pwd) pwd.addEventListener('keydown', (e) => { if (e.key === 'Enter') window.doAdminLogin && window.doAdminLogin(); });
 });
 
 window.doAdminLogin = async function() {
