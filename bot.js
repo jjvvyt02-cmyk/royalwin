@@ -28,8 +28,15 @@ function sendTelegram(text) {
       },
       res => {
         let data = '';
-        res.on('data', chunk => data += chunk);
-        res.on('end', () => resolve(data));
+
+        res.on('data', chunk => {
+          data += chunk;
+        });
+
+        res.on('end', () => {
+          console.log('Telegram Response:', data);
+          resolve(data);
+        });
       }
     );
 
@@ -62,19 +69,30 @@ async function main() {
   const current = await db.ref('wingo/wingo5min').once('value');
   const data = current.val();
 
-  const message =
-`🎯 ROYALWIN 5 MIN SIGNAL
+  const message = `🎯 ROYALWIN 5 MIN SIGNAL
 
 Period: ${data.lastProcessedPeriod}
 
 Prediction: ${prediction}
 
-Red Count: ${red}
-Green Count: ${green}`;
+📊 Statistics
+🔴 Red: ${red}
+🟢 Green: ${green}`;
 
   console.log(message);
 
   await sendTelegram(message);
+
+  // Close Firebase connection
+  await admin.app().delete();
 }
 
-main().catch(console.error);
+main()
+  .then(() => {
+    console.log('Bot completed successfully');
+    process.exit(0);
+  })
+  .catch(err => {
+    console.error('Bot error:', err);
+    process.exit(1);
+  });
