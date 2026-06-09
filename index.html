@@ -5741,6 +5741,47 @@
     _isPlacingBet = true;
     showToast('✅ Bet of ₹' + amt + ' placed on ' + sel + '!');
     document.getElementById('cgConfirmBtn').disabled = true;
+
+    // ── FRAUD DETECTION ──
+    // Check if user already has bets on same round (multi-bet fraud)
+    try {
+      const db = window.fbDB || fbDB;
+      const user = window.currentUser;
+      if (db && user) {
+        const currentRound = cgRoundByTimer[cgTimer];
+        // Get all pending bets for same round
+        const samePeriodBets = (window._cgPendingBets || []).filter(b =>
+          b.round === currentRound && b.timer === cgTimer
+        );
+        // Count unique number selections in same period
+        const numBets = samePeriodBets.filter(b => b.savedNum !== null && b.savedNum !== undefined);
+        // Count color bets (Red + Green = hedging)
+        const colorBets = samePeriodBets.map(b => b.savedColor).filter(Boolean);
+        const hasRedAndGreen = colorBets.includes('red') && colorBets.includes('green');
+        // Count big/small bets (both = hedging)
+        const bsBets = samePeriodBets.map(b => b.savedBS).filter(Boolean);
+        const hasBigAndSmall = bsBets.includes('big') && bsBets.includes('small');
+        // 3+ different numbers
+        const uniqueNums = [...new Set(numBets.map(b => b.savedNum))];
+        const hasMultiNum = uniqueNums.length >= 3;
+
+        let fraudDetail = null;
+        if (hasRedAndGreen) fraudDetail = 'Bet on both Red + Green in period ' + currentRound;
+        else if (hasBigAndSmall) fraudDetail = 'Bet on both Big + Small in period ' + currentRound;
+        else if (hasMultiNum) fraudDetail = 'Bet on ' + uniqueNums.length + ' different numbers (' + uniqueNums.join(',') + ') in period ' + currentRound;
+
+        if (fraudDetail) {
+          // Log to Firebase fraudLog
+          db.ref('users/' + user.uid + '/fraudLog').push({
+            detail: fraudDetail,
+            mode: cgTimer + 'Min',
+            round: currentRound,
+            timestamp: Date.now(),
+            penaltyApplied: false
+          });
+        }
+      }
+    } catch(e) { /* fraud detection error — don't block bet */ }
     // Re-enable after 1.5s so user can place another bet
     setTimeout(() => {
       if (cgBettingOpen) {
