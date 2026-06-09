@@ -773,7 +773,7 @@
   .cg-result-popup {
     position:relative; width:100%; border-radius:24px;
     text-align:center; overflow:hidden; opacity:0;
-    padding-top:56px;
+    padding-top:72px;
   }
   .cg-result-overlay.show .cg-result-popup {
     animation:popupIn 0.45s cubic-bezier(0.34,1.56,0.64,1) 0.1s forwards;
@@ -1329,7 +1329,7 @@
     .cg-history { margin: 0 0 0.5rem !important; border-radius: 12px !important; }
     .cg-hist-row { font-size: 0.75rem !important; padding: 0.45rem 0.5rem !important; }
     .cg-hist-row.head { font-size: 0.72rem !important; font-weight: 700 !important; }
-    .cg-result-popup { width: 86vw !important; padding: 1.4rem 1rem !important; }
+    .cg-result-popup { width: 86vw !important; padding-left: 1rem !important; padding-right: 1rem !important; padding-bottom: 1rem !important; }
     .cg-result-title { font-size: 1.2rem !important; }
     .cg-result-amt { font-size: 1.8rem !important; }
 
@@ -6132,7 +6132,8 @@
 
         // Show result popup only for active timer
         if (isActiveTimer) {
-          showCGResult(anyWon, winNum, winColor, totalWin, pendingBetsForRound.reduce((s,b)=>s+b.bet,0));
+          const resolvedRound = pendingBetsForRound[0] ? pendingBetsForRound[0].round : (currentRound - 1);
+          showCGResult(anyWon, winNum, winColor, totalWin, pendingBetsForRound.reduce((s,b)=>s+b.bet,0), resolvedRound);
         }
 
         // Credit total win to balance — atomic transaction to prevent race conditions
@@ -6162,7 +6163,7 @@
     }
   }
 
-  function showCGResult(won, num, color, winAmt, betAmt) {
+  function showCGResult(won, num, color, winAmt, betAmt, resolvedRound) {
     // Only show if game is open
     const gameOverlay = document.getElementById('colorGameOverlay');
     if (!gameOverlay || !gameOverlay.classList.contains('open')) return;
@@ -6216,20 +6217,25 @@
     const amtEl = document.getElementById('cgResAmt');
     if (amtEl) amtEl.textContent = (won ? '+' : '-') + '₹' + parseFloat(won ? winAmt : betAmt).toLocaleString('en-IN', {minimumFractionDigits:2});
 
-    // Period
+    // Period - show the RESOLVED round not current running round
     const periodEl = document.getElementById('cgResPeriod');
-    if (periodEl) periodEl.textContent = 'Period: ' + (cgRoundByTimer[cgTimer] || '');
+    if (periodEl) periodEl.textContent = 'Period: ' + (resolvedRound || cgRoundByTimer[cgTimer] || '');
+
+    // Show overlay FIRST
+    overlay.classList.add('show');
 
     // Confetti only on win
     if (won) spawnConfetti();
 
-    // Start animated countdown ring
-    startCountdownRing(3);
+    // Clear any existing timer
+    if (window._resultTimer) { clearTimeout(window._resultTimer); window._resultTimer = null; }
+    if (window._countdownInterval) { clearInterval(window._countdownInterval); window._countdownInterval = null; }
 
-    // Show overlay
-    overlay.classList.add('show');
-    if (window._resultTimer) clearTimeout(window._resultTimer);
-    window._resultTimer = setTimeout(() => closeResultPopup(), 3000);
+    // Start countdown ring and auto-dismiss after animation settles
+    setTimeout(() => {
+      startCountdownRing(3);
+      window._resultTimer = setTimeout(() => closeResultPopup(), 3000);
+    }, 100);
   }
 
   function startCountdownRing(seconds) {
