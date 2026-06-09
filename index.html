@@ -5928,20 +5928,22 @@
     roundStartTime = roundStartTime || Date.now();
     // Get all pending bets for this timer's current round
     const currentRound = cgRoundByTimer[timerMode];
-    const pendingBetsForRound = (window._cgPendingBets || []).filter(b => b.round === currentRound - 1 || b.round === currentRound);
-    // Remove processed bets from array
-    window._cgPendingBets = (window._cgPendingBets || []).filter(b => b.round !== currentRound - 1 && b.round !== currentRound);
-    window._cgPendingBet = null;
-
-    // Use saved values from the bet object, not current UI state
-    // (user may have changed selection after placing bet)
-    const firstBet = (window._cgPendingBets || []).find(b =>
+    const pendingBetsForRound = (window._cgPendingBets || []).filter(b =>
       (b.timer === timerMode || !b.timer) &&
-      (b.round === cgRoundByTimer[timerMode] - 1 || b.round === cgRoundByTimer[timerMode])
+      (b.round === currentRound - 1 || b.round === currentRound)
     );
+    // Use FIRST bet's saved values BEFORE removing (important: search before removal)
+    const firstBet = pendingBetsForRound[0] || null;
     const savedSelectedColor = firstBet ? firstBet.savedColor : cgSelectedColor;
-    const savedSelectedNum = firstBet ? firstBet.savedNum : cgSelectedNum;
+    const savedSelectedNum = firstBet ? (firstBet.savedNum !== undefined ? firstBet.savedNum : null) : cgSelectedNum;
     const savedSelectedBS = firstBet ? firstBet.savedBS : cgSelectedBigSmall;
+
+    // Now remove processed bets from array
+    window._cgPendingBets = (window._cgPendingBets || []).filter(b =>
+      !(  (b.timer === timerMode || !b.timer) &&
+          (b.round === currentRound - 1 || b.round === currentRound)  )
+    );
+    window._cgPendingBet = null;
 
     // Process payout for ALL timers regardless of which is active
     const isActiveTimer = (timerMode === cgTimer);
@@ -6048,25 +6050,27 @@
     // Add to history
     const timerRound = cgRoundByTimer[timerMode] || 20250513001;
     // Store history per timer in memory
+    // The round that just ENDED is currentRound-1 (we resolve at start of next round)
+    const resolvedRoundId = currentRound - 1;
     if (!cgHistoryByTimer[timerMode]) cgHistoryByTimer[timerMode] = [];
-    cgHistoryByTimer[timerMode].unshift({ round: timerRound, num: winNum, color: histColorLabel, bigSmall, histBg });
+    cgHistoryByTimer[timerMode].unshift({ round: resolvedRoundId, num: winNum, color: histColorLabel, bigSmall, histBg });
     // Keep max 20 results in memory
     if (cgHistoryByTimer[timerMode].length > 20) cgHistoryByTimer[timerMode].pop();
 
-    // Save to Firebase for persistence
+    // Save to Firebase for persistence — use push() to avoid overwrite race conditions
     try {
       const db = window.fbDB || fbDB;
       if (db) {
         const histPath = 'wingo/wingo' + timerMode + 'min/history';
-        const histSnap = await db.ref(histPath).once('value');
-        let existing = histSnap.val() ? Object.values(histSnap.val()) : [];
-        existing.unshift({ round: timerRound, num: winNum, color: histColorLabel, bigSmall, histBg });
-        if (existing.length > 100) existing = existing.slice(0, 100);
-        await db.ref(histPath).set(existing);
+        await db.ref(histPath).push({ round: resolvedRoundId, num: winNum, color: histColorLabel, bigSmall, histBg, timestamp: Date.now() });
       }
     } catch(e) { console.warn('History save failed:', e); }
     if (cgHistory.length > 20) cgHistory.pop();
-    document.getElementById('cgRoundNum').textContent = cgRoundByTimer[cgTimer];
+    // Keep showing current round in header (not resolved round)
+    if (cgTimer === timerMode) {
+      const roundEl = document.getElementById('cgRoundNum');
+      if (roundEl) roundEl.textContent = cgRoundByTimer[cgTimer];
+    }
 
     renderHistRows();
 
