@@ -1,0 +1,14 @@
+name: Royalwin Telegram Bot
+
+on:
+  schedule:
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+
+jobs:
+  run-bot:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Test
+        run: echo "Bot triggered successfully"
