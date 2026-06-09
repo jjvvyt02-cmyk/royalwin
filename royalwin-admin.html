@@ -535,7 +535,6 @@
           <div id="depositRequests" style="display:flex;flex-direction:column;gap:0.4rem;">
             <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending deposits</div>
           </div>
-          <div id="depPagination" style="display:flex;justify-content:center;gap:0.3rem;margin-top:0.6rem;"></div>
         </div>
 
         <!-- Withdrawal Requests -->
@@ -547,7 +546,6 @@
           <div id="withdrawRequests" style="display:flex;flex-direction:column;gap:0.4rem;">
             <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending withdrawals</div>
           </div>
-          <div id="withPagination" style="display:flex;justify-content:center;gap:0.3rem;margin-top:0.6rem;"></div>
         </div>
 
       </div>
@@ -615,7 +613,7 @@
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.8rem;">
         <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">👥 Registered Users (<span id="userCount">0</span>)</div>
-        <input class="form-input" type="text" id="userSearch" placeholder="🔍 Search by username, UID or phone..." style="max-width:320px;font-size:0.85rem;" oninput="filterUsers(this.value)">
+        <input class="form-input" type="text" id="userSearch" placeholder="🔍 Search by Member ID, username, phone or UID..." style="max-width:320px;font-size:0.85rem;" oninput="filterUsers(this.value)">
       </div>
       <div id="usersList" style="display:flex;flex-direction:column;gap:0.6rem;">
         <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">Loading users...</div>
@@ -950,7 +948,6 @@ function initAdmin() {
   startPeriodTracker();
   updateNextResultBadges();
   loadFinance();
-  loadWithdrawals();
   loadRevenueStats();
   // Pre-load settings data
   setTimeout(() => { loadGiftCodes(); loadCommissionRates(); loadLimits(); }, 1000);
@@ -960,22 +957,16 @@ function initAdmin() {
 function startPeriodTracker() {
   function tick() {
     const now = Date.now();
-    // Use IST (UTC+5:30) — same as player site and game engine
-    const IST_OFFSET = 5.5 * 60 * 60 * 1000;
-    const istNow = now + IST_OFFSET;
-    const istDate = new Date(istNow);
-    const year = istDate.getUTCFullYear();
-    const month = String(istDate.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(istDate.getUTCDate()).padStart(2, '0');
+    const nowDate = new Date(now);
+    const year = nowDate.getFullYear();
+    const month = String(nowDate.getMonth() + 1).padStart(2, '0');
+    const day = String(nowDate.getDate()).padStart(2, '0');
     const dateStr = '' + year + month + day;
-    const minutesSinceMidnight = istDate.getUTCHours() * 60 + istDate.getUTCMinutes();
-    // Align elapsed to IST midnight
-    const istMidnight = istNow - (istNow % (24 * 60 * 60 * 1000));
-    const msSinceMidnightIST = istNow - istMidnight;
+    const minutesSinceMidnight = nowDate.getHours() * 60 + nowDate.getMinutes();
 
     [1, 3, 5].forEach(mins => {
       const periodMs = mins * 60 * 1000;
-      const elapsed = msSinceMidnightIST % periodMs;
+      const elapsed = now % periodMs;
       const remaining = Math.ceil((periodMs - elapsed) / 1000);
       const serial = Math.floor(minutesSinceMidnight / mins);
       const serialStr = String(serial).padStart(4, '0');
@@ -1136,11 +1127,7 @@ function updateNextResultBadges() {
     });
     // Listen for last results per mode
     onValue(ref(db, 'wingo/wingo' + mins + 'min/history'), (snap) => {
-      const raw = snap.val();
-      if (!raw) { renderLastResults(mins, []); return; }
-      const history = (Array.isArray(raw) ? raw : Object.values(raw))
-        .filter(h => h && h.round)
-        .sort((a, b) => (b.timestamp || b.round) - (a.timestamp || a.round));
+      const history = snap.val() ? Object.values(snap.val()) : [];
       renderLastResults(mins, history);
     });
     // Listen for bet summary per mode
@@ -1598,7 +1585,12 @@ let allUsers = [];
 function loadUsers() {
   const el = document.getElementById('usersList');
   if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;">Loading...</div>';
-  get(ref(db, 'users')).then((snap) => {
+  // Load users + deposits + withdrawals together
+  Promise.all([
+    get(ref(db, 'users')),
+    get(ref(db, 'adminRequests/deposits')),
+    get(ref(db, 'adminRequests/withdrawals'))
+  ]).then(([snap, depSnap, withSnap]) => {
     const data = snap.val();
     const countEl = document.getElementById('userCount');
     if (!data) {
@@ -1606,7 +1598,27 @@ function loadUsers() {
       if (countEl) countEl.textContent = '0';
       return;
     }
-    allUsers = Object.entries(data).map(([uid, u]) => ({ uid, ...u }));
+    // Build per-user deposit/withdrawal totals (approved only)
+    const userDeps = {}, userWiths = {};
+    if (depSnap.val()) {
+      Object.values(depSnap.val()).forEach(d => {
+        if (d.status === 'approved') {
+          userDeps[d.uid] = (userDeps[d.uid] || 0) + (d.amount || 0);
+        }
+      });
+    }
+    if (withSnap.val()) {
+      Object.values(withSnap.val()).forEach(w => {
+        if (w.status === 'approved') {
+          userWiths[w.uid] = (userWiths[w.uid] || 0) + (w.amount || 0);
+        }
+      });
+    }
+    allUsers = Object.entries(data).map(([uid, u]) => ({
+      uid, ...u,
+      _totalDeposits: userDeps[uid] || 0,
+      _totalWithdrawals: userWiths[uid] || 0
+    }));
     if (countEl) countEl.textContent = allUsers.length;
     renderUsers(allUsers);
   }).catch((e) => {
@@ -1622,12 +1634,7 @@ function getAdminVipLevel(exp) {
   return { name: 'Bronze', icon: '🥉', color: '#cd7f32' };
 }
 
-var _usersPage = 1;
-const _usersPageSize = 10;
-var _lastUsersData = [];
-
 function renderUsers(users) {
-  _lastUsersData = users;
   const el = document.getElementById('usersList');
   const countEl = document.getElementById('userCount');
   if (countEl) countEl.textContent = users.length;
@@ -1636,11 +1643,7 @@ function renderUsers(users) {
     el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;">No users found</div>';
     return;
   }
-  const totalPages = Math.max(1, Math.ceil(users.length / _usersPageSize));
-  if (_usersPage > totalPages) _usersPage = 1;
-  const pageItems = users.slice((_usersPage-1)*_usersPageSize, _usersPage*_usersPageSize);
-
-  el.innerHTML = pageItems.map(u => {
+  el.innerHTML = users.map(u => {
     const exp = u.vip?.exp || 0;
     const vipLevel = getAdminVipLevel(exp);
     return `
@@ -1651,9 +1654,14 @@ function renderUsers(users) {
           <span style="font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:4px;border:1px solid ${vipLevel.color}33;background:${vipLevel.color}18;color:${vipLevel.color};">${vipLevel.icon} ${vipLevel.name}</span>
           ${u.isBlocked ? '<span style="background:rgba(224,32,32,0.15);color:var(--red2);font-size:0.65rem;padding:0.1rem 0.4rem;border-radius:4px;border:1px solid rgba(224,32,32,0.3);">BLOCKED</span>' : ''}
         </div>
-        <div style="font-size:0.72rem;color:var(--gold);">UID: ${u.memberId || u.uid?.substring(0,8) || '—'} · <span style="color:${vipLevel.color};">${exp} EXP</span></div>
+        <div style="font-size:0.72rem;color:var(--gold);">ID: ${u.memberId || '—'} · <span style="color:${vipLevel.color};">${exp} EXP</span></div>
         <div style="font-size:0.72rem;color:var(--muted);">${u.contact || u.mobile || u.email || '—'}</div>
         <div style="font-size:0.7rem;color:var(--muted);">Joined: ${u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-IN') : '—'} · Ref: ${u.referralCode || '—'}</div>
+        <div style="font-size:0.7rem;margin-top:0.3rem;display:flex;gap:0.8rem;flex-wrap:wrap;">
+          <span style="color:#27ae60;">⬇ Dep: ₹${(u._totalDeposits||0).toLocaleString('en-IN')}</span>
+          <span style="color:#e02020;">⬆ With: ₹${(u._totalWithdrawals||0).toLocaleString('en-IN')}</span>
+          <span style="color:#a87dff;">🎯 Wager: ₹${(u.wager?.completed||0).toLocaleString('en-IN')} / ₹${(u.wager?.required||0).toLocaleString('en-IN')} <span style="color:var(--gold);">(₹${Math.max(0,(u.wager?.required||0)-(u.wager?.completed||0)).toLocaleString('en-IN')} left)</span></span>
+        </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem;">
         <div style="font-family:'Cinzel',serif;color:var(--green);font-weight:700;">₹${(u.balance || 0).toLocaleString('en-IN')}</div>
@@ -1662,19 +1670,99 @@ function renderUsers(users) {
           <button onclick="toggleBlockUser('${u.uid}', ${!u.isBlocked})" style="font-size:0.68rem;background:${u.isBlocked ? 'rgba(0,230,118,0.1)' : 'rgba(224,32,32,0.1)'};border:1px solid ${u.isBlocked ? 'rgba(0,230,118,0.2)' : 'rgba(224,32,32,0.2)'};border-radius:4px;padding:0.2rem 0.5rem;color:${u.isBlocked ? 'var(--green)' : 'var(--red2)'};cursor:pointer;">${u.isBlocked ? '✅ Unblock' : '🚫 Block'}</button>
           <button onclick="resetWithdrawDetails('${u.uid}')" style="font-size:0.68rem;background:rgba(124,77,255,0.1);border:1px solid rgba(124,77,255,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:#7c4dff;cursor:pointer;">🔓 Reset Withdraw</button>
           <button onclick="deleteUser('${u.uid}', '${u.username || 'Unknown'}')" style="font-size:0.68rem;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:4px;padding:0.2rem 0.5rem;color:var(--red2);cursor:pointer;">🗑️ Delete</button>
+          <button onclick="deleteAllBets('${u.uid}', '${u.username || 'Unknown'}')" style="font-size:0.68rem;background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:var(--red2);cursor:pointer;">🎯 Clear Bets</button>
+          <button onclick="openEditBets('${u.uid}', '${u.username || 'Unknown'}')" style="font-size:0.68rem;background:rgba(124,77,255,0.08);border:1px solid rgba(124,77,255,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:#a87dff;cursor:pointer;">✏️ Edit Bets</button>
         </div>
       </div>
     </div>`;
   }).join('');
-
-  if (totalPages > 1) {
-    el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.8rem;">
-      <button onclick="_usersPage=Math.max(1,_usersPage-1);renderUsers(_lastUsersData);" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.7rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_usersPage<=1?'opacity:0.4;':''}">&lt;</button>
-      <span style="color:var(--muted);font-size:0.75rem;">Page ${_usersPage} / ${totalPages} (${users.length} users)</span>
-      <button onclick="_usersPage=Math.min(${totalPages},_usersPage+1);renderUsers(_lastUsersData);" style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.7rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_usersPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
-    </div>`;
-  }
 }
+
+// ── DELETE ALL BETS ──
+window.deleteAllBets = async function(uid, username) {
+  if (!confirm('Delete ALL bet history for ' + username + '? This cannot be undone.')) return;
+  try {
+    await Promise.all([
+      set(ref(db, 'users/' + uid + '/wingoMyBets'), null),
+      set(ref(db, 'users/' + uid + '/wingoPendingBets'), null),
+      set(ref(db, 'users/' + uid + '/betHistory'), null)
+    ]);
+    showToast('✅ All bet history cleared for ' + username);
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
+// ── EDIT BETS MODAL ──
+window.openEditBets = async function(uid, username) {
+  // Create modal
+  let modal = document.getElementById('editBetsModal');
+  if (modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'editBetsModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.8);display:flex;align-items:center;justify-content:center;padding:1rem;';
+  modal.innerHTML = `
+    <div style="background:#1a1a2e;border:1px solid rgba(240,192,64,0.3);border-radius:16px;width:min(600px,100%);max-height:80vh;overflow-y:auto;padding:1.5rem;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">✏️ Edit Bets — ${username}</div>
+        <button onclick="document.getElementById('editBetsModal').remove()" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
+      </div>
+      <div id="editBetsList" style="display:flex;flex-direction:column;gap:0.5rem;">
+        <div style="text-align:center;color:var(--muted);padding:1rem;">Loading bets...</div>
+      </div>
+    </div>`;
+  document.body.appendChild(modal);
+
+  // Load bets
+  try {
+    const snap = await get(ref(db, 'users/' + uid + '/wingoMyBets'));
+    const el = document.getElementById('editBetsList');
+    if (!snap.val()) { el.innerHTML = '<div style="text-align:center;color:var(--muted);">No bet history</div>'; return; }
+    const bets = Object.entries(snap.val()).sort((a,b) => (b[1].timestamp||0)-(a[1].timestamp||0));
+    el.innerHTML = bets.map(([key, b]) => {
+      const won = (b.pl||0) > 0;
+      const time = b.timestamp ? new Date(b.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+      return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:0.6rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:0.78rem;font-weight:700;color:${won?'#27ae60':'#e02020'}">${won?'WIN':'LOSS'} · ₹${(Math.abs(b.pl||0)).toLocaleString('en-IN')}</div>
+          <div style="font-size:0.68rem;color:var(--muted);">${b.round||'—'} · ${b.selection||'—'} · ₹${b.bet||0} · ${time}</div>
+        </div>
+        <div style="display:flex;gap:0.3rem;">
+          <button onclick="deleteSingleBet('${uid}','${key}')" style="font-size:0.65rem;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:#e02020;cursor:pointer;">🗑 Delete</button>
+          <button onclick="editSingleBet('${uid}','${key}',${JSON.stringify(b).replace(/'/g,'&#39;')})" style="font-size:0.65rem;background:rgba(124,77,255,0.1);border:1px solid rgba(124,77,255,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:#a87dff;cursor:pointer;">✏ Edit</button>
+        </div>
+      </div>`;
+    }).join('');
+  } catch(e) { document.getElementById('editBetsList').innerHTML = '❌ Error: ' + e.message; }
+};
+
+window.deleteSingleBet = async function(uid, key) {
+  if (!confirm('Delete this bet entry?')) return;
+  try {
+    await set(ref(db, 'users/' + uid + '/wingoMyBets/' + key), null);
+    showToast('✅ Bet deleted');
+    // Refresh the modal
+    const modal = document.getElementById('editBetsModal');
+    if (modal) modal.remove();
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
+window.editSingleBet = async function(uid, key, bet) {
+  const newPl = prompt('Enter new P&L amount (use negative for loss):
+Current: ' + (bet.pl||0), bet.pl||0);
+  if (newPl === null) return;
+  const newResult = prompt('Enter new result (e.g. "red / 2"):
+Current: ' + (bet.result||''), bet.result||'');
+  if (newResult === null) return;
+  try {
+    await update(ref(db, 'users/' + uid + '/wingoMyBets/' + key), {
+      pl: parseFloat(newPl),
+      result: newResult,
+      status: parseFloat(newPl) > 0 ? 'won' : 'lost'
+    });
+    showToast('✅ Bet updated');
+    const modal = document.getElementById('editBetsModal');
+    if (modal) modal.remove();
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
 
 window.filterUsers = function(query) {
   if (!query) { renderUsers(allUsers); return; }
@@ -1826,165 +1914,130 @@ window.deleteUser = async function(uid, username) {
 
 
 // ── FINANCE ──
-var _lastDepCount = 0;
-function _playAlertSound() {
-  try {
-    const ctx = new (window.AudioContext || window.webkitAudioContext)();
-    [800, 1000, 1200].forEach((freq, i) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain); gain.connect(ctx.destination);
-      osc.type = 'sine'; osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.2);
-      osc.start(ctx.currentTime + i * 0.15);
-      osc.stop(ctx.currentTime + i * 0.15 + 0.2);
-    });
-  } catch(e) {}
-}
-
 function loadFinance() {
-  onValue(ref(db, 'adminRequests/deposits'), (snap) => {
-    const data = snap.val();
-    const requests = data ? Object.entries(data).reverse() : [];
-    window._lastDepRequests = requests;
-    window.renderDepRequests(requests);
-  });
-}
+  // Listen for deposit requests
+  // Deposit sound alert
+  var _lastDepCount = 0;
+  function _playAlertSound() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      [800, 1000, 1200].forEach((freq, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.type = 'sine'; osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.2);
+        osc.start(ctx.currentTime + i * 0.15);
+        osc.stop(ctx.currentTime + i * 0.15 + 0.2);
+      });
+    } catch(e) {}
+  }
 
-window.renderDepRequests = async function(requests, page) {
+  onValue(ref(db, 'adminRequests/deposits'), (snap) => {
     const el = document.getElementById('depositRequests');
     if (!el) return;
-    if (!requests || requests.length === 0) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending deposits</div>'; return; }
+    const data = snap.val();
+    if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending deposits</div>'; return; }
+    const requests = Object.entries(data).reverse();
     const pendingCount = requests.filter(([,r]) => r.status === 'pending').length;
-    if (_lastDepCount > 0 && pendingCount > _lastDepCount) { _playAlertSound(); showToast('🔔 New deposit request!'); }
+    if (_lastDepCount > 0 && pendingCount > _lastDepCount) {
+      _playAlertSound();
+      showToast('🔔 New deposit request!');
+    }
     _lastDepCount = pendingCount;
-    const pendingDeps = requests.filter(([,r]) => r.status === 'pending' && !r.autoApproved);
-    const historyDeps = requests.filter(([,r]) => r.status !== 'pending' || r.autoApproved);
+
+    // Split pending vs history
+    const pendingDeps = requests.filter(([,r]) => r.status === 'pending');
+    const historyDeps = requests.filter(([,r]) => r.status !== 'pending');
+
+    // Update badge
     const depBadge = document.getElementById('depPendingBadge');
     if (depBadge) { depBadge.textContent = pendingDeps.length; depBadge.style.display = pendingDeps.length > 0 ? 'inline' : 'none'; }
-    const showDepHistory = window._showDepHistory || false;
-    const allToShow = showDepHistory ? requests.slice(0, 50) : pendingDeps;
-    const perPage = 10;
-    const totalPages = Math.min(5, Math.ceil(allToShow.length / perPage));
-    const currentPage = Math.max(1, Math.min(page || window._depPage || 1, totalPages));
-    window._depPage = currentPage;
-    const pageItems = allToShow.slice((currentPage-1)*perPage, currentPage*perPage);
 
-    const memberIdCache = {};
-    for (const [, r] of pageItems) {
-      if (!memberIdCache[r.uid] && r.uid) {
-        if (r.memberId && r.memberId.length <= 10) { memberIdCache[r.uid] = r.memberId; }
-        else { try { const s = await get(ref(db, 'users/'+r.uid+'/memberId')); memberIdCache[r.uid] = s.val() || '—'; } catch(e) { memberIdCache[r.uid] = '—'; } }
-      }
-    }
+    // Decide which to show
+    const showDepHistory = window._showDepHistory || false;
+    const toShow = showDepHistory ? requests : pendingDeps;
 
     function renderDepRow([key, r]) {
-      const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-      const memberId = memberIdCache[r.uid] || '—';
-      return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.5rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
-        <div style="display:flex;align-items:center;gap:0.8rem;flex:1;min-width:0;">
-          <div style="font-size:0.72rem;color:var(--gold);font-weight:700;white-space:nowrap;">#${memberId}</div>
-          <div style="font-weight:800;color:var(--green);font-size:0.9rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}${r.bonusAmt > 0 ? '<span style="color:var(--gold);font-size:0.65rem;margin-left:3px;">+₹'+r.bonusAmt+'('+r.bonusPct+'%)</span>' : ''}</div>
-          <div style="font-size:0.68rem;color:var(--muted);white-space:nowrap;">${r.method || 'UPI'}</div>
-          <div style="font-size:0.63rem;color:var(--muted);white-space:nowrap;">${time}</div>
+      return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+        <div style="display:flex;align-items:center;gap:0.6rem;flex:1;min-width:0;">
+          <div style="font-weight:800;color:var(--green);font-size:0.92rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}${r.bonusAmt > 0 ? '<span style="color:var(--gold);font-size:0.68rem;margin-left:3px;">+₹'+r.bonusAmt+'</span>' : ''}</div>
+          <div style="font-size:0.75rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.username || 'Unknown'}</div>
+          <div style="font-size:0.68rem;color:var(--muted);white-space:nowrap;">${r.contact || '—'}</div>
+          <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
         </div>
         <div style="display:flex;gap:0.3rem;flex-shrink:0;">
           ${r.status === 'pending' ? `
           <button onclick="approveDeposit('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">✅</button>
           <button onclick="rejectRequest('deposits','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.25rem 0.6rem;color:var(--red2);font-size:0.72rem;cursor:pointer;">❌</button>
-          ` : `<span style="font-size:0.68rem;color:${r.status==='approved'?'var(--green)':r.status==='cancelled'?'var(--muted)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>`}
+          ` : `<span style="font-size:0.68rem;color:${r.status==='approved'?'var(--green)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>`}
         </div>
       </div>`;
     }
 
-    if (pageItems.length === 0) {
+    if (toShow.length === 0) {
       el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${showDepHistory ? 'No deposits yet' : '✅ No pending deposits'}</div>`;
     } else {
-      el.innerHTML = pageItems.map(renderDepRow).join('');
-      if (totalPages > 1) {
-        el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.5rem;margin-top:0.6rem;font-size:0.75rem;">
-          <button onclick="window.renderDepRequests(window._lastDepRequests,${currentPage-1})" ${currentPage<=1?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:var(--muted);cursor:pointer;${currentPage<=1?'opacity:0.4;':''}">&lt;</button>
-          <span style="color:var(--muted);">Page ${currentPage} / ${totalPages}</span>
-          <button onclick="window.renderDepRequests(window._lastDepRequests,${currentPage+1})" ${currentPage>=totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:var(--muted);cursor:pointer;${currentPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
-        </div>`;
-      }
+      el.innerHTML = toShow.map(renderDepRow).join('');
     }
-};
+    if (showDepHistory && historyDeps.length > 0) {
+      el.innerHTML += `<div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:0.3rem;">Showing all ${requests.length} records</div>`;
+    }
+  });
 
-function loadWithdrawals() {
+  // Listen for withdrawal requests
   onValue(ref(db, 'adminRequests/withdrawals'), (snap) => {
     const el = document.getElementById('withdrawRequests');
     if (!el) return;
     const data = snap.val();
     if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending withdrawals</div>'; return; }
     const requests = Object.entries(data).reverse();
-    window._lastWithRequests = requests;
-    renderWithRequests(requests);
-  });
-}
-
-var _withPage = 1;
-function renderWithRequests(requests, page) {
-    _withPage = page || _withPage || 1;
-    const el = document.getElementById('withdrawRequests');
-    const pagEl = document.getElementById('withPagination');
-    if (!el) return;
-    if (!requests || requests.length === 0) {
-      el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending withdrawals</div>';
-      if (pagEl) pagEl.innerHTML = '';
-      return;
-    }
     const pendingWith = requests.filter(([,r]) => r.status === 'pending').length;
     if (typeof _lastWithCount !== 'undefined' && _lastWithCount > 0 && pendingWith > _lastWithCount) {
       _playAlertSound(); showToast('🔔 New withdrawal request!');
     }
     window._lastWithCount = pendingWith;
-    const pendingWiths = requests.filter(([,r]) => (r.status === 'pending' || r.status === 'processing' || r.status === 'failed') && !r.autoProcessed);
+
+    // Split pending vs history
+    const pendingWiths = requests.filter(([,r]) => r.status === 'pending');
+    const historyWiths = requests.filter(([,r]) => r.status !== 'pending');
+
+    // Update badge
     const withBadge = document.getElementById('withPendingBadge');
     if (withBadge) { withBadge.textContent = pendingWiths.length; withBadge.style.display = pendingWiths.length > 0 ? 'inline' : 'none'; }
-    const showHistory = window._showWithHistory || false;
-    const allItems = showHistory ? requests.slice(0,50) : pendingWiths.slice(0,50);
-    const PER_PAGE = 10, MAX_PAGES = 5;
-    const totalPages = Math.min(Math.ceil(allItems.length/PER_PAGE), MAX_PAGES) || 1;
-    if (_withPage > totalPages) _withPage = 1;
-    const pageItems = allItems.slice((_withPage-1)*PER_PAGE, _withPage*PER_PAGE);
 
-    const fetchAndRender = async () => {
-      const midCache = {};
-      for (const [,r] of pageItems) {
-        if (!midCache[r.uid] && r.uid) {
-          if (r.memberId && r.memberId.length<=10) { midCache[r.uid]=r.memberId; }
-          else { try { const s=await get(ref(db,'users/'+r.uid+'/memberId')); midCache[r.uid]=s.val()||'—'; } catch(e) { midCache[r.uid]='—'; } }
-        }
-      }
-      function withRow([key,r]) {
-        const time=r.timestamp?new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
-        const mid=midCache[r.uid]||'—';
-        return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.5rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
-          <div style="display:flex;align-items:center;gap:0.7rem;flex:1;min-width:0;">
-            <div style="font-size:0.72rem;color:var(--gold);font-weight:700;white-space:nowrap;">#${mid}</div>
-            <div style="font-weight:800;color:var(--red2);font-size:0.88rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}</div>
-            <div style="font-size:0.68rem;color:var(--muted);white-space:nowrap;">${r.method||'UPI'}</div>
-            <div style="font-size:0.66rem;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100px;" title="${r.upiId||''}">${r.upiId||'—'}</div>
-            <div style="font-size:0.63rem;color:var(--muted);white-space:nowrap;">${time}</div>
-          </div>
-          <div style="display:flex;gap:0.3rem;flex-shrink:0;">
-            ${r.status==='pending'?`<button onclick="autoPayWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--gold);border:none;border-radius:5px;padding:0.2rem 0.5rem;color:#000;font-size:0.7rem;font-weight:700;cursor:pointer;">⚡</button><button onclick="approveWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:5px;padding:0.2rem 0.5rem;color:#000;font-size:0.7rem;font-weight:700;cursor:pointer;">✅</button><button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.2rem 0.5rem;color:var(--red2);font-size:0.7rem;cursor:pointer;">❌</button>`:r.status==='processing'||r.status==='failed'?`<span style="font-size:0.66rem;color:${r.status==='processing'?'var(--gold)':'var(--red2)'};padding:0.15rem 0.4rem;background:var(--bg3);border-radius:5px;">${r.status}</span><button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.2rem 0.4rem;color:var(--red2);font-size:0.7rem;cursor:pointer;">❌</button>`:`<span style="font-size:0.66rem;color:${r.status==='approved'?'var(--green)':'var(--red2)'};padding:0.15rem 0.4rem;background:var(--bg3);border-radius:5px;">${r.status}</span>`}
-          </div>
-        </div>`;
-      }
-      if (pageItems.length===0) {
-        el.innerHTML=`<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${showHistory?'No withdrawals yet':'✅ No pending withdrawals'}</div>`;
-        if (pagEl) pagEl.innerHTML='';
-      } else {
-        el.innerHTML=pageItems.map(withRow).join('');
-        if (pagEl&&totalPages>1) {
-          pagEl.innerHTML=`<button onclick="renderWithRequests(window._lastWithRequests,${_withPage-1})" ${_withPage<=1?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:var(--muted);cursor:pointer;${_withPage<=1?'opacity:0.4;':''}">&lt;</button><span style="color:var(--muted);font-size:0.75rem;padding:0 0.4rem;">Page ${_withPage}/${totalPages}</span><button onclick="renderWithRequests(window._lastWithRequests,${_withPage+1})" ${_withPage>=totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:var(--muted);cursor:pointer;${_withPage>=totalPages?'opacity:0.4;':''}">&gt;</button>`;
-        } else if (pagEl) pagEl.innerHTML='';
-      }
-    };
-    fetchAndRender();
+    // Decide which to show
+    const showWithHistory = window._showWithHistory || false;
+    const toShowWith = showWithHistory ? requests : pendingWiths;
+
+    function renderWithRow([key, r]) {
+      return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
+        <div style="display:flex;align-items:center;gap:0.6rem;flex:1;min-width:0;">
+          <div style="font-weight:800;color:var(--red2);font-size:0.92rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}</div>
+          <div style="font-size:0.75rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.username || 'Unknown'}</div>
+          <div style="font-size:0.68rem;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;" title="${r.upiId || ''}">${r.upiId || '—'}</div>
+          <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+        <div style="display:flex;gap:0.3rem;flex-shrink:0;">
+          ${r.status === 'pending' ? `
+          <button onclick="autoPayWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--gold);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">⚡ Auto</button>
+          <button onclick="approveWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">✅</button>
+          <button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.25rem 0.6rem;color:var(--red2);font-size:0.72rem;cursor:pointer;">❌</button>
+          ` : `<span style="font-size:0.68rem;color:${r.status==='approved'?'var(--green)':r.status==='processing'?'var(--gold)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>`}
+        </div>
+      </div>`;
+    }
+
+    if (toShowWith.length === 0) {
+      el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${showWithHistory ? 'No withdrawals yet' : '✅ No pending withdrawals'}</div>`;
+    } else {
+      el.innerHTML = toShowWith.map(renderWithRow).join('');
+    }
+    if (showWithHistory && historyWiths.length > 0) {
+      el.innerHTML += `<div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:0.3rem;">Showing all ${requests.length} records</div>`;
+    }
+  });
 }
 
 window.approveDeposit = async function(key, uid, amount) {
@@ -2720,13 +2773,11 @@ window.toggleDepHistory = function() {
   window._showDepHistory = !window._showDepHistory;
   const btn = document.getElementById('depHistBtn');
   if (btn) btn.textContent = window._showDepHistory ? 'Hide History' : 'Show History';
-  if (window._lastDepRequests) window.renderDepRequests(window._lastDepRequests);
 };
 window.toggleWithHistory = function() {
   window._showWithHistory = !window._showWithHistory;
   const btn = document.getElementById('withHistBtn');
   if (btn) btn.textContent = window._showWithHistory ? 'Hide History' : 'Show History';
-  if (window._lastWithRequests) renderWithRequests(window._lastWithRequests);
 };
 
 // ── TOAST ──
