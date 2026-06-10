@@ -4000,24 +4000,30 @@
     const recurringSection = document.getElementById('recurringBonusInfo');
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
-    if (bonusSection) bonusSection.style.display = 'block';
+
+    // IMPORTANT: Hide BOTH sections by default until Firebase confirms
+    // Never show bonusSelectionSection before Firebase responds
+    // This prevents the First Deposit Bonus flicker on every wallet tap
+    if (bonusSection) bonusSection.style.display = 'none';
     if (recurringSection) recurringSection.style.display = 'none';
-    updateBonusPreview();
 
     if (!user || !db) return;
     try {
       const snap = await db.ref('users/' + user.uid + '/hasDeposited').once('value');
       const hasDeposited = snap.val();
       if (hasDeposited) {
+        // User already deposited — show recurring bonus only
         if (bonusSection) bonusSection.style.display = 'none';
         if (recurringSection) recurringSection.style.display = 'block';
-        updateBonusPreview();
       } else {
+        // First time depositor — show first deposit bonus
         if (bonusSection) bonusSection.style.display = 'block';
         if (recurringSection) recurringSection.style.display = 'none';
-        updateBonusPreview();
       }
-    } catch(e) {}
+      updateBonusPreview();
+    } catch(e) {
+      // On error keep both hidden — safe default
+    }
   }
 
   async function doDeposit() {
