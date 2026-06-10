@@ -1530,14 +1530,22 @@
     <!-- Top Header with Notification Bell -->
     <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0 0.4rem;margin-bottom:0.2rem;">
       <div style="font-family:'Cinzel',serif;font-size:1.3rem;font-weight:900;color:var(--gold);">ROYAL<span style="color:#e02020;">♠</span>WIN</div>
-      <div style="position:relative;" onclick="toggleNotif()">
-        <div style="width:38px;height:38px;border-radius:50%;background:rgba(240,192,64,0.08);border:1.5px solid rgba(240,192,64,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer;">
+      <div style="position:relative;">
+        <div onclick="toggleMobileNotif()" style="width:38px;height:38px;border-radius:50%;background:rgba(240,192,64,0.08);border:1.5px solid rgba(240,192,64,0.2);display:flex;align-items:center;justify-content:center;cursor:pointer;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
           </svg>
         </div>
         <span id="notifBadge2" style="display:none;position:absolute;top:-4px;right:-4px;background:#e02020;color:#fff;font-size:0.55rem;font-weight:800;min-width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);">0</span>
+        <!-- Mobile notification dropdown -->
+        <div id="mobileNotifDropdown" style="display:none;position:fixed;top:56px;right:0.8rem;width:min(320px,calc(100vw - 1.6rem));max-height:400px;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.6);z-index:99995;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.8rem 1rem;border-bottom:1px solid var(--border);">
+            <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);">🔔 Notifications</div>
+            <button onclick="markAllRead();toggleMobileNotif();" style="background:none;border:none;color:var(--gold);font-size:0.72rem;cursor:pointer;">Mark all read</button>
+          </div>
+          <div id="mobileNotifList"><div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;">No notifications yet</div></div>
+        </div>
       </div>
     </div>
 
@@ -3016,7 +3024,7 @@
       const notifs = Object.entries(data).map(([k,v]) => ({...v, key: k})).sort((a,b) => (b.timestamp||0) - (a.timestamp||0)).slice(0, 5);
       const unread = notifs.filter(n => !n.read).length;
       if (badge) { badge.style.display = unread > 0 ? 'flex' : 'none'; badge.textContent = unread > 9 ? '9+' : unread; }
-      listEl.innerHTML = notifs.map(n => `
+      const notifHTML = notifs.map(n => `
         <div onclick="markNotifRead('${n.key}')" style="padding:0.7rem 1rem;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;background:${n.read?'transparent':'rgba(240,192,64,0.04)'};display:flex;gap:0.6rem;align-items:flex-start;">
           <div style="font-size:1.1rem;flex-shrink:0;">${n.icon||'🔔'}</div>
           <div style="flex:1;">
@@ -3026,6 +3034,13 @@
           </div>
           ${!n.read?'<div style="width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:4px;"></div>':''}
         </div>`).join('');
+      listEl.innerHTML = notifHTML;
+      // Also update mobile notification list
+      const mobileListEl = document.getElementById('mobileNotifList');
+      if (mobileListEl) mobileListEl.innerHTML = notifHTML || '<div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;">No notifications yet</div>';
+      // Update badge2
+      const badge2 = document.getElementById('notifBadge2');
+      if (badge2) { badge2.style.display = unread > 0 ? 'flex' : 'none'; badge2.textContent = unread > 9 ? '9+' : unread; }
     });
   }
 
@@ -4468,6 +4483,24 @@
 
 
   // Notification Bell
+  function toggleMobileNotif() {
+    const dd = document.getElementById('mobileNotifDropdown');
+    if (!dd) return;
+    const isOpen = dd.style.display === 'block';
+    dd.style.display = isOpen ? 'none' : 'block';
+    // Close when clicking outside
+    if (!isOpen) {
+      setTimeout(() => {
+        document.addEventListener('click', function closeMobileNotif(e) {
+          if (!e.target.closest('#mobileNotifDropdown') && !e.target.closest('[onclick*="toggleMobileNotif"]')) {
+            dd.style.display = 'none';
+            document.removeEventListener('click', closeMobileNotif);
+          }
+        });
+      }, 10);
+    }
+  }
+
   function toggleNotif() {
     document.getElementById('notifDropdown').classList.toggle('open');
   }
