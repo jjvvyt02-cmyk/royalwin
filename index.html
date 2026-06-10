@@ -2934,7 +2934,7 @@
     const db = window.fbDB || fbDB;
     if (!db || !uid) return;
     try { await db.ref('users/' + uid + '/notifications').push({ icon, title, body, read: false, timestamp: Date.now() }); }
-    catch(e) { // console.warn('Push notif failed:', e); }
+    catch(e) { /* push notif failed */ }
   }
   function loadAnnouncement() {
     const db = window.fbDB || fbDB;
