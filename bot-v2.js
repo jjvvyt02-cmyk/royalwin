@@ -48,7 +48,19 @@ function sendTelegram(text) {
 }
 
 async function runBot() {
-  console.log('BOT V2 STARTED');
+  try {
+    const currentSnap = await db.ref('wingo/wingo5min').once('value');
+    const current = currentSnap.val();
+
+    const historySnap = await db.ref('wingo/wingo5min/history').once('value');
+    const history = historySnap.val();
+
+    console.log('Current Period:', current.lastProcessedPeriod);
+    console.log('Latest Result:', history[0]);
+
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 runBot();
