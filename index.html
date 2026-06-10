@@ -1522,12 +1522,12 @@
         </div>
         <span id="notifBadge2" style="display:none;position:absolute;top:-4px;right:-4px;background:#e02020;color:#fff;font-size:0.55rem;font-weight:800;min-width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);">0</span>
         
-        <div id="mobileNotifDropdown" style="display:none;position:fixed;top:56px;right:0.8rem;width:min(320px,calc(100vw - 1.6rem));max-height:400px;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.6);z-index:99995;">
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.8rem 1rem;border-bottom:1px solid var(--border);">
-            <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);">🔔 Notifications</div>
-            <button onclick="markAllRead();toggleMobileNotif();" style="background:none;border:none;color:var(--gold);font-size:0.72rem;cursor:pointer;">Mark all read</button>
+        <div id="mobileNotifDropdown" style="display:none;position:fixed;top:58px;right:0.75rem;width:min(320px,calc(100vw - 1.5rem));max-height:420px;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.7);z-index:99995;">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;border-bottom:1px solid var(--border);position:sticky;top:0;background:var(--card);border-radius:16px 16px 0 0;z-index:1;">
+            <div style="font-size:0.78rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;">🔔 Notifications</div>
+            <button onclick="markAllRead();" style="background:none;border:none;color:var(--gold);font-size:0.72rem;font-weight:600;cursor:pointer;font-family:'Exo 2',sans-serif;padding:0;">Mark all as read</button>
           </div>
-          <div id="mobileNotifList"><div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;">No notifications yet</div></div>
+          <div id="mobileNotifList"><div style="text-align:center;color:var(--muted);padding:1.5rem;font-size:0.82rem;">No notifications yet</div></div>
         </div>
       </div>
     </div>
@@ -2103,7 +2103,12 @@
     if (mobileNavEl) {
       mobileNavEl.style.display = authPages.includes(name) ? 'none' : (isLoggedIn ? 'grid' : 'none');
     }
+    let _lastNavPage = null;
     function _showPageInternal(pageName) {
+      // Prevent rapid re-navigation to same page
+      if (_lastNavPage === pageName) return;
+      _lastNavPage = pageName;
+      setTimeout(() => { _lastNavPage = null; }, 500);
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       const pageEl = document.getElementById('page-' + pageName);
       if (pageEl) { pageEl.classList.add('active'); pageEl.scrollTop = 0; }
@@ -3811,9 +3816,9 @@
     if (tab === 'withdraw') { _walWithData = []; _walWithPage = 1; loadWagerProgress(); loadWithdrawHistory(); loadSavedWithdrawDetails(); }
     if (tab === 'deposit') {
       _walDepData = []; _walDepPage = 1;
-      // Clear bonus area before re-rendering to prevent stacking
-      const bonusArea = document.getElementById('depositBonusArea');
-      if (bonusArea) bonusArea.innerHTML = '';
+      // Clear history rows before reloading to prevent stacking
+      const histRows = document.getElementById('depositHistoryRows');
+      if (histRows) histRows.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
       checkDepositBonus();
       loadDepositHistory();
     }
