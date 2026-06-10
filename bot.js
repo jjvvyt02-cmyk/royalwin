@@ -5,7 +5,8 @@ const serviceAccount = JSON.parse(process.env.FIREBASE_JSON);
 
 admin.initializeApp({
   credential: admin.credential.cert(serviceAccount),
-  databaseURL: 'https://royalwin-32d97-default-rtdb.asia-southeast1.firebasedatabase.app'
+  databaseURL:
+    'https://royalwin-32d97-default-rtdb.asia-southeast1.firebasedatabase.app'
 });
 
 const db = admin.database();
@@ -82,17 +83,22 @@ Prediction: ${prediction}
   console.log(message);
 
   await sendTelegram(message);
-
-  // Close Firebase connection
-  await admin.app().delete();
 }
 
-main()
-  .then(() => {
+async function runBot() {
+  try {
+    console.log('Running bot:', new Date().toISOString());
+    await main();
     console.log('Bot completed successfully');
-    process.exit(0);
-  })
-  .catch(err => {
+  } catch (err) {
     console.error('Bot error:', err);
-    process.exit(1);
-  });
+  }
+}
+
+// Run immediately on startup
+runBot();
+
+// Run every 5 minutes
+setInterval(() => {
+  runBot();
+}, 5 * 60 * 1000);
