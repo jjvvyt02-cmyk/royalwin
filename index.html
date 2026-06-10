@@ -4106,6 +4106,7 @@
     const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
     const username = document.getElementById('regUsername') ? document.getElementById('regUsername').value.trim() : '';
     const password = document.getElementById('regPassword') ? document.getElementById('regPassword').value : '';
+    if (!inviteCode) { showToast('⚠️ Invite code is mandatory to register'); return; }
     if (!contact) { showToast('⚠️ Enter your mobile or email'); return; }
     if (!username) { showToast('⚠️ Enter a username'); return; }
     if (!password || password.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
@@ -4638,6 +4639,7 @@
     const username = document.getElementById('regUsername') ? document.getElementById('regUsername').value.trim() : '';
     const password = document.getElementById('regPassword') ? document.getElementById('regPassword').value : '';
     const inviteCode = document.getElementById('inviteCodeInput') ? document.getElementById('inviteCodeInput').value.trim() : '';
+    if (!inviteCode) { showToast('⚠️ Invite code is mandatory to register'); return; }
     if (!contact) { showToast('⚠️ Enter your mobile or email'); return; }
     if (!username) { showToast('⚠️ Enter a username'); return; }
     if (!password || password.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
@@ -4719,9 +4721,14 @@
       const avatarEl = document.getElementById('userAvatar');
       if (avatarEl) avatarEl.textContent = username.charAt(0).toUpperCase();
 
-      showToast('🎉 Welcome to RoyalWin, ' + username + '!');
-      showPage('home');
-      showTicker();
+      // Sign out and redirect to login — user must login consciously
+      await firebase.auth().signOut();
+      isLoggedIn = false;
+      window.currentUser = null;
+      showToast('🎉 Registration successful! Please login to continue');
+      setTimeout(() => {
+        showPage('login');
+      }, 800);
     setTimeout(async () => {
       const db = window.fbDB || fbDB;
       const user = window.currentUser || firebase.auth().currentUser;
