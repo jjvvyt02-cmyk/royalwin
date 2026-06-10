@@ -3809,7 +3809,14 @@
       if (panelEl) panelEl.classList.toggle('active', t === tab);
     });
     if (tab === 'withdraw') { _walWithData = []; _walWithPage = 1; loadWagerProgress(); loadWithdrawHistory(); loadSavedWithdrawDetails(); }
-    if (tab === 'deposit') { _walDepData = []; _walDepPage = 1; checkDepositBonus(); loadDepositHistory(); }
+    if (tab === 'deposit') {
+      _walDepData = []; _walDepPage = 1;
+      // Clear bonus area before re-rendering to prevent stacking
+      const bonusArea = document.getElementById('depositBonusArea');
+      if (bonusArea) bonusArea.innerHTML = '';
+      checkDepositBonus();
+      loadDepositHistory();
+    }
   }
 
   function selectMethod(el, method) {
