@@ -2227,7 +2227,6 @@
     if (name === 'activity-award') { _showPageInternal('activity-award'); setTimeout(window.loadActivityAwardPage, 200); return; }
     if (name === 'wallet') {
       switchWalletTab('deposit');
-      checkDepositBonus();
       loadWagerProgress();
     }
   }
@@ -3839,7 +3838,6 @@
       // Clear history rows before reloading to prevent stacking
       const histRows = document.getElementById('depositHistoryRows');
       if (histRows) histRows.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
-      checkDepositBonus();
       loadDepositHistory();
     }
   }
@@ -6604,6 +6602,7 @@
           isLoggedIn = true;
           loadUserProfile(user.uid);
           loadNotifications();
+          checkDepositBonus();
           loadAnnouncement();
           document.getElementById('navGuest').style.display = 'none';
           const loader = document.getElementById('appLoader');
