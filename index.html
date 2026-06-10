@@ -1,4 +1,3 @@
-<!-- LOADING SCREEN -->
 <div id="appLoader" style="position:fixed;inset:0;z-index:99999;background:#0a0a0f;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity 0.5s;">
   <div style="font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:var(--gold);margin-bottom:0.5rem;">ROYAL<span style="color:#e02020;">♠</span>WIN</div>
   <div style="font-size:0.8rem;color:var(--muted);letter-spacing:2px;margin-bottom:2rem;">PREMIUM GAMING</div>
@@ -20,7 +19,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="RoyalWin">
 <title>RoyalWin — Premium Gaming Platform</title>
-<!-- Firebase Compat SDK — load first -->
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
@@ -452,7 +451,6 @@
   @keyframes pulse { 0%,100%{opacity:1;} 50%{opacity:0.5;} }
   .live-dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--red2); margin-right:5px; animation:pulse 1.5s infinite; }
 
-
   /* ─── WALLET / DEPOSIT / WITHDRAW ─── */
   .wallet-page { padding: 1rem 1rem 2rem; max-width: 1000px; margin: 0 auto; }
   .wallet-hero {
@@ -516,7 +514,6 @@
   .otp-timer { text-align:center; color:var(--muted); font-size:0.82rem; margin-bottom:1rem; }
   .otp-timer span { color:var(--gold); font-weight:700; }
   .resend-btn { background:none; border:none; color:var(--gold); cursor:pointer; font-size:0.82rem; text-decoration:underline; font-family:'Exo 2',sans-serif; }
-
 
   /* Notification Bell */
   .notif-bell { position:relative; font-size:1.3rem; cursor:pointer; padding:4px; }
@@ -647,7 +644,6 @@
 
   /* Forgot Password */
   .forgot-sent { display:none; text-align:center; padding:1rem 0; }
-
 
   /* ─── COLOR PREDICTION GAME ─── */
   .color-game-overlay {
@@ -882,7 +878,6 @@
   }
   .cg-hist-row.head { background:rgba(255,255,255,0.03); color:var(--muted); font-size:0.86rem; text-transform:uppercase; font-weight:700; }
 
-
   /* ─── LIVE WINNER TICKER ─── */
   .ticker-wrap {
     background: linear-gradient(90deg, rgba(10,10,15,0.98), rgba(26,16,0,0.95), rgba(10,10,15,0.98));
@@ -951,7 +946,6 @@
   .qr-timer span { font-weight: 800; font-size: 1rem; }
   .qr-confirmed { display: none; padding: 1.5rem 0; }
   .qr-confirmed .big-check { font-size: 3rem; margin-bottom: 0.5rem; }
-
 
   /* ─── MOBILE BOTTOM NAV ─── */
   .mobile-nav {
@@ -1023,7 +1017,6 @@
   .bh-win { color: var(--green); font-weight: 700; }
   .bh-lose { color: var(--red2); font-weight: 700; }
   .bh-pending { color: var(--gold); font-weight: 600; }
-
 
   /* ═══════════════════════════════════════════
      MOBILE FIRST — Complete Mobile Overhaul
@@ -1482,19 +1475,17 @@
 <div class="bg-stars"></div>
 <div class="bg-grid"></div>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 <div id="recaptchaContainer"></div>
 
-<!-- NAV -->
 <nav id="mainNav">
   <div class="nav-logo" onclick="showPage('home')">ROYAL<span>♠</span>WIN</div>
-  <!-- Guest nav -->
+  
   <div class="nav-links" id="navGuest">
     <button class="nav-btn" onclick="showPage('login')">Sign In</button>
     <button class="nav-btn primary" onclick="showPage('register')">Join Now</button>
   </div>
-  <!-- Logged in nav — minimal, just notification bell -->
+  
   <div class="nav-user" id="navUser" style="display:none;">
     <span id="userBalance" style="display:none;"></span>
     <span id="userAvatar" style="display:none;"></span><div class="notif-bell" onclick="toggleNotif()" title="Notifications">🔔<span class="notif-badge" id="notifBadge" style="display:none;">0</span></div>
@@ -1506,8 +1497,6 @@
   </div>
 </nav>
 
-
-<!-- ANNOUNCEMENT BANNER -->
 <div id="announcementBanner" style="display:none;background:linear-gradient(90deg,#c07a10,var(--gold2));padding:0.5rem 1rem;align-items:center;justify-content:space-between;gap:0.5rem;position:sticky;top:60px;z-index:100;">
   <div style="display:flex;align-items:center;gap:0.5rem;flex:1;">
     <span style="font-size:0.85rem;">📢</span>
@@ -1516,18 +1505,12 @@
   <button onclick="document.getElementById('announcementBanner').style.display='none'" style="background:rgba(0,0,0,0.15);border:none;color:#000;border-radius:4px;padding:0.2rem 0.5rem;cursor:pointer;font-size:0.75rem;flex-shrink:0;">✕</button>
 </div>
 
-<!-- LIVE WINNER TICKER -->
-
-
-<!-- ══════════════════════════════════════
-     HOME PAGE
-══════════════════════════════════════ -->
 <div class="page active" id="page-home">
 
-  <!-- MOBILE APP HOME (shown only on mobile when logged in) -->
+  
   <div id="mobileAppHome" style="display:none;background:var(--bg);">
 
-    <!-- Top Header with Notification Bell -->
+    
     <div style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0 0.4rem;margin-bottom:0.2rem;">
       <div style="font-family:'Cinzel',serif;font-size:1.3rem;font-weight:900;color:var(--gold);">ROYAL<span style="color:#e02020;">♠</span>WIN</div>
       <div style="position:relative;">
@@ -1538,7 +1521,7 @@
           </svg>
         </div>
         <span id="notifBadge2" style="display:none;position:absolute;top:-4px;right:-4px;background:#e02020;color:#fff;font-size:0.55rem;font-weight:800;min-width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg);">0</span>
-        <!-- Mobile notification dropdown -->
+        
         <div id="mobileNotifDropdown" style="display:none;position:fixed;top:56px;right:0.8rem;width:min(320px,calc(100vw - 1.6rem));max-height:400px;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,0.6);z-index:99995;">
           <div style="display:flex;justify-content:space-between;align-items:center;padding:0.8rem 1rem;border-bottom:1px solid var(--border);">
             <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);">🔔 Notifications</div>
@@ -1549,13 +1532,13 @@
       </div>
     </div>
 
-    <!-- Announcement bar -->
+    
     <div style="background:#c0392b;color:#fff;font-size:0.7rem;padding:0.3rem 0.8rem;text-align:center;display:flex;justify-content:space-between;align-items:center;">
       <span id="mobileAnnounceText">Welcome to RoyalWin! India's #1 gaming platform.</span>
       <button onclick="this.parentElement.style.display='none'" style="background:rgba(255,255,255,0.2);border:none;color:#fff;border-radius:4px;padding:0.1rem 0.4rem;font-size:0.65rem;cursor:pointer;">✕</button>
     </div>
 
-    <!-- Hero Banner -->
+    
     <div style="position:relative;width:100%;overflow:hidden;background:linear-gradient(135deg,#1a0500,#3d1500);">
       <div style="padding:1.2rem 1rem;min-height:140px;display:flex;flex-direction:column;justify-content:center;">
         <div style="font-family:'Cinzel',serif;font-size:1.5rem;font-weight:900;color:var(--gold);line-height:1.2;">WIN BIG.<br><span style="color:#fff;">PLAY ROYAL.</span></div>
@@ -1568,7 +1551,7 @@
       <div style="position:absolute;right:0;top:0;bottom:0;width:40%;background:linear-gradient(135deg,rgba(240,192,64,0.15),rgba(200,50,50,0.2));display:flex;align-items:center;justify-content:center;font-size:4rem;opacity:0.6;">👑</div>
     </div>
 
-    <!-- Promo Banners (Wheel + VIP) -->
+    
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;padding:0.6rem 0.8rem 0;">
       <div onclick="openWheel()" style="background:linear-gradient(135deg,#6a0572,#ab47bc);border-radius:12px;padding:0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;min-height:52px;">
         <span style="font-size:1.5rem;">🎡</span>
@@ -1580,17 +1563,17 @@
       </div>
     </div>
 
-    <!-- Spacer -->
+    
     <div style="height:0.2rem;"></div>
 
-    <!-- LOTTERY Section -->
+    
     <div style="padding:0.6rem 0.8rem 0;">
       <div style="background:linear-gradient(135deg,#e65100,#ff6d00);border-radius:20px;padding:0.3rem 0.8rem;display:inline-flex;align-items:center;gap:0.4rem;margin-bottom:0.6rem;">
         <span style="font-size:1rem;">🎯</span>
         <span style="font-size:0.72rem;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:1px;">Lottery</span>
       </div>
       <div id="mobileGameCards">
-        <!-- WinGo -->
+        
         <div onclick="openColorGame()" style="background:linear-gradient(135deg,#0a1929,#1a237e);border-radius:14px;overflow:hidden;cursor:pointer;position:relative;border:1px solid rgba(240,192,64,0.2);">
           <div style="height:100px;display:flex;align-items:center;justify-content:center;position:relative;">
             <div style="text-align:center;">
@@ -1608,7 +1591,7 @@
       </div>
     </div>
 
-    <!-- POPULAR Section -->
+    
     <div style="padding:0.6rem 0.8rem 1.5rem;">
       <div style="background:linear-gradient(135deg,#880e4f,#c2185b);border-radius:20px;padding:0.3rem 0.8rem;display:inline-flex;align-items:center;gap:0.4rem;margin-bottom:0.6rem;">
         <span style="font-size:1rem;">🔥</span>
@@ -1642,7 +1625,7 @@
     </div>
   </div>
 
-  <!-- DESKTOP / GUEST HOME (original hero) -->
+  
   <div id="desktopHome">
   <div class="hero">
     <div class="hero-glow"></div>
@@ -1655,9 +1638,9 @@
     <div class="hero-btns" id="heroBtns">
       <button class="btn btn-gold" id="heroPlayBtn" onclick="showPage('register')"><span data-t="home.start">🚀 Start Playing</span></button>
       <button class="btn btn-outline" id="heroSignInBtn" onclick="showPage('login')">Sign In</button>
-      <!-- Install App button removed - PWA not configured -->
+      
     </div>
-    <!-- Welcome bonus banner shown when logged in -->
+    
     <div id="heroWelcomeBanner" style="display:none;width:100%;max-width:600px;margin:1rem auto 0;">
       <div onclick="showPage('wallet')" style="background:linear-gradient(135deg,#1a0d00,#2d1500);border:1px solid rgba(240,192,64,0.3);border-radius:16px;padding:1.2rem 1.5rem;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:1rem;">
         <div>
@@ -1708,12 +1691,9 @@
       </div>
     </div>
   </div>
-  </div> <!-- end desktopHome -->
+  </div> 
 </div>
 
-<!-- ══════════════════════════════════════
-     REGISTER PAGE
-══════════════════════════════════════ -->
 <div class="page" id="page-register">
   <div class="auth-wrap">
     <div class="auth-card">
@@ -1774,9 +1754,6 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     LOGIN PAGE
-══════════════════════════════════════ -->
 <div class="page" id="page-login">
   <div class="auth-wrap">
     <div class="auth-card">
@@ -1798,13 +1775,10 @@
   </div>
 </div>
 
-<!-- ══════════════════════════════════════
-     REFERRAL PAGE
-══════════════════════════════════════ -->
 <div class="page" id="page-referral">
   <div class="ref-page">
 
-    <!-- Agency Header Card -->
+    
     <div class="agency-card">
       <div class="agency-top">
         <div class="agency-label"><span data-t="ref.agency">🏆 Agency</span></div>
@@ -1812,7 +1786,7 @@
       <div class="agency-commission-val" id="agencyYesterdayComm">0.00</div>
       <div class="agency-commission-lbl">Yesterday's total commission (₹)</div>
 
-      <!-- Total commission row -->
+      
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:0.8rem;border-top:1px solid rgba(240,192,64,0.12);">
         <div>
           <div style="font-size:0.68rem;color:var(--muted);"><span data-t="ref.totalcomm">Total Commission Earned</span></div>
@@ -1825,9 +1799,9 @@
       </div>
     </div>
 
-    <!-- Direct & Team Subordinates -->
+    
     <div class="sub-grid">
-      <!-- Direct -->
+      
       <div class="sub-card">
         <div class="sub-card-title">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
@@ -1853,7 +1827,7 @@
         </div>
       </div>
 
-      <!-- Team -->
+      
       <div class="sub-card">
         <div class="sub-card-title">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><path d="M2 20c0-3 3-5 7-5M14 20c0-3 3-5 7-5"/></svg>
@@ -1880,7 +1854,7 @@
       </div>
     </div>
 
-    <!-- Action Buttons -->
+    
     <div class="ref-actions">
       <button class="ref-action-btn" onclick="downloadRefQR()">⬇️ Download QR Code</button>
       <div class="ref-invite-row" onclick="copyCode()">
@@ -1890,14 +1864,14 @@
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
         </span>
       </div>
-      <!-- Invite link row -->
+      
       <div class="ref-invite-row" onclick="copyLink()" style="gap:0.5rem;">
         <span class="ref-invite-label" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="refLink">https://jjvvyt02-cmyk.github.io/royalwin</span>
         <span style="color:var(--gold);font-size:0.78rem;white-space:nowrap;font-weight:700;">Copy Link 🔗</span>
       </div>
     </div>
 
-    <!-- Nav to detail pages -->
+    
     <div class="ref-nav-grid" style="margin:0.8rem 1rem 0;">
       <div class="ref-nav-card" onclick="showPage('subdata')">
         <div class="ref-nav-left">
@@ -1920,7 +1894,7 @@
         <div class="ref-nav-arrow">›</div>
       </div>
     </div>
-    <!-- Rebate ratio - full width -->
+    
     <div style="margin:0.6rem 1rem 1rem;">
       <div class="ref-nav-card" onclick="showPage('rebateratio')" style="width:100%;box-sizing:border-box;">
         <div class="ref-nav-left">
@@ -1934,35 +1908,34 @@
       </div>
     </div>
 
-    <!-- Hidden QR canvas for download -->
+    
     <canvas id="refQrCanvas" width="200" height="200" style="display:none;"></canvas>
   </div>
 </div>
 
-<!-- SUBORDINATE DATA PAGE -->
 <div class="page" id="page-subdata">
   <div style="max-width:520px;margin:0 auto;padding:0 0 5rem;">
-    <!-- Header -->
+    
     <div style="display:flex;align-items:center;justify-content:space-between;padding:3.5rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
       <button onclick="showPage('referral')" class="back-btn">←</button>
       <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Subordinate Data</div>
 
     </div>
 
-    <!-- Filters -->
+    
     <div style="padding:0.8rem 1rem;display:flex;gap:0.6rem;align-items:center;">
-      <!-- Search -->
+      
       <div style="flex:1;display:flex;align-items:center;gap:0.4rem;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.8rem;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
         <input id="refSearchInput" type="text" placeholder="Search UID..." oninput="filterSubData()" style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:0.78rem;font-family:'Exo 2',sans-serif;">
         <span id="refSearchCount" style="font-size:0.68rem;color:var(--muted);white-space:nowrap;"></span>
         <button id="refSearchClear" onclick="document.getElementById('refSearchInput').value='';filterSubData();" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;padding:0;display:none;">✕</button>
       </div>
-      <!-- Search button -->
+      
       <button onclick="filterSubData()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.5rem 0.8rem;color:#000;font-weight:800;cursor:pointer;font-size:0.9rem;">🔍</button>
     </div>
 
-    <!-- Level + Date filters -->
+    
     <div style="padding:0 1rem 0.8rem;display:flex;gap:0.6rem;">
       <select id="subdataLevel" onchange="filterSubData()" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.8rem;color:var(--text);font-size:0.82rem;font-family:'Exo 2',sans-serif;outline:none;">
         <option value="all">All</option>
@@ -1974,7 +1947,7 @@
       <input id="subdataDate" type="date" onchange="filterSubData()" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.8rem;color:var(--text);font-size:0.82rem;font-family:'Exo 2',sans-serif;outline:none;color-scheme:dark;">
     </div>
 
-    <!-- Stats grid -->
+    
     <div style="margin:0 1rem 0.8rem;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
       <div style="display:grid;grid-template-columns:1fr 1fr;">
         <div style="padding:1rem;border-right:1px solid var(--border);border-bottom:1px solid var(--border);">
@@ -2004,7 +1977,7 @@
       </div>
     </div>
 
-    <!-- Data table -->
+    
     <div style="margin:0 1rem;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
       <div style="display:grid;grid-template-columns:0.4fr 1.2fr 0.9fr 0.8fr 0.8fr;gap:0.2rem;padding:0.6rem 0.9rem;background:rgba(255,255,255,0.03);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;">
         <div>Lv</div><div>UID</div><div>Joined</div><div>Deposit</div><div>Bet</div>
@@ -2016,17 +1989,16 @@
   </div>
 </div>
 
-<!-- COMMISSION DETAILS PAGE -->
 <div class="page" id="page-commdetails">
   <div style="max-width:520px;margin:0 auto;padding:0 0 5rem;">
-    <!-- Header -->
+    
     <div style="display:flex;align-items:center;justify-content:space-between;padding:3.5rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
       <button onclick="showPage('referral')" class="back-btn">←</button>
       <div style="font-family:'Cinzel',serif;font-size:0.95rem;color:var(--gold);">Commission Details</div>
 
     </div>
 
-    <!-- Date filter + total -->
+    
     <div style="margin:0.8rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;">
       <input id="commdetailsDate" type="date" onchange="loadCommDetails()" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.6rem 1rem;color:var(--text);font-size:0.85rem;font-family:'Exo 2',sans-serif;outline:none;color-scheme:dark;margin-bottom:0.8rem;box-sizing:border-box;">
       <div style="display:flex;align-items:center;justify-content:space-between;">
@@ -2035,7 +2007,7 @@
       </div>
     </div>
 
-    <!-- Commission list -->
+    
     <div style="margin:0 1rem;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
       <div style="display:grid;grid-template-columns:0.4fr 1.2fr 1fr 0.8fr;gap:0.2rem;padding:0.6rem 0.9rem;background:rgba(255,255,255,0.03);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;">
         <div>Lv</div><div>UID</div><div>Type</div><div>Amount</div>
@@ -2047,7 +2019,6 @@
   </div>
 </div>
 
-<!-- REBATE RATIO PAGE -->
 <div class="page" id="page-rebateratio">
   <div style="max-width:520px;margin:0 auto;padding:0 0 5rem;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:3.5rem 1rem 0.8rem;position:sticky;top:0;background:var(--bg2);z-index:10;border-bottom:1px solid var(--border);">
@@ -2057,17 +2028,17 @@
     </div>
 
     <div style="padding:1rem;">
-      <!-- Lottery tab only -->
+      
       <div style="margin-bottom:1rem;">
         <div style="display:inline-block;background:linear-gradient(135deg,#c07a10,var(--gold2));color:#000;font-weight:800;font-size:0.85rem;padding:0.4rem 1.2rem;border-radius:8px;">Lottery</div>
       </div>
 
-      <!-- Rebate level card -->
+      
       <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
         <div style="padding:1rem 1.2rem;border-bottom:1px solid var(--border);">
           <div style="font-size:0.9rem;font-weight:800;color:var(--text);"><span data-t="ref.rebatelevel">Rebate level L0</span></div>
         </div>
-        <!-- Level rows -->
+        
         <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.2rem;border-bottom:1px solid rgba(255,255,255,0.05);">
           <div style="display:flex;align-items:center;gap:0.7rem;">
             <span class="ref-level-badge lv1" style="font-size:0.72rem;">L1</span>
@@ -2098,12 +2069,10 @@
         </div>
       </div>
 
-
     </div>
   </div>
 </div>
 
-<!-- DAILY SPIN WHEEL OVERLAY -->
 <div class="wheel-overlay" id="wheelOverlay">
   <button class="wheel-close" onclick="closeWheel()">✕ Close</button>
   <div class="wheel-title">🎡 Daily Free Spin</div>
@@ -2120,7 +2089,6 @@
   let isLoggedIn = false;
 
   function showPage(name) {
-    // ── AUTH GUARD ──
     const _guestAllowed = ['home', 'login', 'register', 'forgot', 'terms', 'privacy', 'responsible', 'gifts'];
     if (!isLoggedIn && !_guestAllowed.includes(name)) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -2130,21 +2098,17 @@
       showToast('🔐 Please sign in to continue');
       return;
     }
-    // Hide bottom nav on auth pages, show on all others
     const mobileNavEl = document.getElementById('mobileNav');
     const authPages = ['login', 'register', 'forgot'];
     if (mobileNavEl) {
       mobileNavEl.style.display = authPages.includes(name) ? 'none' : (isLoggedIn ? 'grid' : 'none');
     }
-
-    // Internal function to actually show a page
     function _showPageInternal(pageName) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       const pageEl = document.getElementById('page-' + pageName);
       if (pageEl) { pageEl.classList.add('active'); pageEl.scrollTop = 0; }
       window.scrollTo(0, 0);
       updateMobileNav(pageName);
-      // Push to browser history so back button works
       if (window.history && window.history.pushState) {
         window.history.pushState({ page: pageName }, '', '#' + pageName);
       }
@@ -2158,7 +2122,6 @@
 
     if (name === 'subdata') {
       _showPageInternal('subdata');
-      // Set today's date by default
       const dateEl = document.getElementById('subdataDate');
       if (dateEl && !dateEl.value) dateEl.value = new Date().toISOString().split('T')[0];
       loadSubData();
@@ -2175,7 +2138,6 @@
 
     if (name === 'vip') { _showPageInternal('vip'); updateMobileNav('account'); loadVipPage(); return; }
     if (name === 'bonus100') {
-      // Go to wallet deposit tab with 100% bonus locked
       _showPageInternal('wallet');
       switchWalletTab('deposit');
       updateMobileNav('wallet');
@@ -2208,13 +2170,9 @@
       loadWagerProgress();
       return;
     }
-
-    // Default - show any other page
     window._bonus100Locked = false;
     lockBonusCards(false);
     _showPageInternal(name);
-
-    // Clean up page-specific Firebase listeners when leaving pages
     const _prevPage = window._currentPage;
     if (_prevPage === 'referral' || _prevPage === 'subdata') {
       const db = window.fbDB || fbDB;
@@ -2223,8 +2181,6 @@
       }
     }
     window._currentPage = name;
-
-    // When showing home, make sure correct section is visible
     if (name === 'home') {
       const mah = document.getElementById('mobileAppHome');
       const dh = document.getElementById('desktopHome');
@@ -2234,7 +2190,6 @@
       } else {
         if (mah) mah.style.display = 'none';
         if (dh) dh.style.display = 'block';
-        // Make sure login/register buttons are visible
         const heroPlay = document.getElementById('heroPlayBtn');
         const heroSignIn = document.getElementById('heroSignInBtn');
         const heroBanner = document.getElementById('heroWelcomeBanner');
@@ -2243,8 +2198,6 @@
         if (heroBanner) heroBanner.style.display = 'none';
       }
     }
-
-    // Apply stored referral code if navigating to register
     if (name === 'register' && window._referralCode) {
       setTimeout(() => {
         const codeInput = document.getElementById('inviteCodeInput');
@@ -2297,8 +2250,6 @@
       showToast('❌ ' + msg);
     }
   }
-
-  // ── GIFTS ──
   function showGiftsModal() {
     const m = document.getElementById('giftsModal');
     if (m) { m.style.display = 'flex'; loadGiftHistory(); }
@@ -2334,12 +2285,9 @@
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
     if (!user || !db) { showToast('🔐 Please sign in'); return; }
-
-    // Show loading state
     if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = 'var(--muted)'; statusEl.textContent = '⏳ Checking code...'; }
 
     try {
-      // Check if code exists
       const codeSnap = await db.ref('giftCodes/' + code).once('value');
       const giftData = codeSnap.val();
       if (!giftData) {
@@ -2352,8 +2300,6 @@
         showToast('❌ This code has expired');
         return;
       }
-
-      // Check if already redeemed by this user
       const redeemedSnap = await db.ref('users/' + user.uid + '/redeemedGifts/' + code).once('value');
       if (redeemedSnap.val()) {
         if (statusEl) {
@@ -2363,25 +2309,17 @@
         showToast('⚠️ You already redeemed this code!');
         return;
       }
-
-      // Check max redemptions
       if (giftData.maxUses && (giftData.usedCount || 0) >= giftData.maxUses) {
         if (statusEl) { statusEl.style.color = 'var(--red2)'; statusEl.textContent = '❌ This code has reached its maximum usage limit.'; }
         showToast('❌ This code has reached its limit');
         return;
       }
-
-      // Credit balance
       const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
       const newBal = parseFloat(((balSnap.val() || 0) + giftData.amount).toFixed(2));
       await db.ref('users/' + user.uid + '/balance').transaction(() => newBal);
       updateBalanceDisplay(newBal);
-
-      // Record redemption
       await db.ref('users/' + user.uid + '/redeemedGifts/' + code).set({ code, amount: giftData.amount, redeemedAt: Date.now() });
       await db.ref('giftCodes/' + code + '/usedCount').set((giftData.usedCount || 0) + 1);
-
-      // Save to transaction history
       await db.ref('users/' + user.uid + '/transactions').push({
         type: 'gift', amount: giftData.amount,
         details: 'Gift code: ' + code,
@@ -2396,14 +2334,10 @@
     } catch(e) {
       if (statusEl) { statusEl.style.color = 'var(--red2)'; statusEl.textContent = '❌ Error: ' + e.message; }
       showToast('❌ Redemption failed: ' + e.message);
-      console.warn('redeemGiftCode error:', e);
+      // console.warn('redeemGiftCode error:', e);
     }
   }
-
-  // ── LANGUAGE ──
   window._currentLang = localStorage.getItem('royalwin_lang') || 'en';
-
-  // ── TRANSLATION SYSTEM ──
   const _T = {
     en: {
       'nav.home':'Home','nav.activity':'Activity','nav.promotion':'Promotion',
@@ -2531,7 +2465,6 @@
     localStorage.setItem('royalwin_lang', lang);
     updateLangUI(lang);
     if (lang === 'en' && prev !== 'en') {
-      // Reload to restore English
       showToast('🇬🇧 Language set: English');
       setTimeout(() => location.reload(), 800);
     } else if (lang === 'hi') {
@@ -2542,59 +2475,44 @@
       setTimeout(closeLanguageModal, 800);
     }
   }
-
-  // Apply saved language on load
   document.addEventListener('DOMContentLoaded', () => {
     if (window._currentLang === 'hi') applyTranslations('hi');
-    // Default: show guest home until Firebase confirms login state
     const dh = document.getElementById('desktopHome');
     if (dh) dh.style.display = 'block';
   });
-
-  // ── MOBILE BACK BUTTON HANDLER ──
   window.addEventListener('popstate', (event) => {
-    // If game is open, close it first
     const gameOverlay = document.getElementById('colorGameOverlay');
     if (gameOverlay && gameOverlay.classList.contains('open')) {
       closeColorGame();
       return;
     }
-    // If result popup is showing, close it
     const resultOverlay = document.getElementById('cgResultOverlay');
     if (resultOverlay && resultOverlay.classList.contains('show')) {
       closeResultPopup();
       return;
     }
-    // Navigate to previous page from state
     if (event.state && event.state.page) {
       const prevPage = event.state.page;
-      // Show that page without pushing new history entry
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       const pageEl = document.getElementById('page-' + prevPage);
       if (pageEl) { pageEl.classList.add('active'); pageEl.scrollTop = 0; }
       updateMobileNav(prevPage);
     } else {
-      // No state — at root, go to home
       if (isLoggedIn) {
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
         const homePage = document.getElementById('page-home');
         if (homePage) { homePage.classList.add('active'); homePage.scrollTop = 0; }
         updateMobileNav('home');
       } else {
-        // Let browser exit — user is at root guest page
         window.history.pushState(null, '', window.location.href);
       }
     }
   });
-
-  // Push initial state so first back press doesn't exit
   window.addEventListener('load', () => {
     if (window.history && window.history.pushState) {
       window.history.pushState({ page: 'home' }, '', '#home');
     }
   });
-
-  // ── NETWORK OFFLINE DETECTION ──
   (function setupNetworkDetection() {
     let offlineBanner = null;
 
@@ -2619,9 +2537,6 @@
     window.addEventListener('online', hideOfflineBanner);
     if (!navigator.onLine) showOfflineBanner();
   })();
-
-  // ── URL PAGE ROUTER ──
-  // Handles ?page=login, ?page=register etc in the URL
   (function handlePageRoute() {
     const params = new URLSearchParams(window.location.search);
     const page = params.get('page');
@@ -2629,10 +2544,8 @@
 
     const guestPages = ['login', 'register', 'forgot'];
     if (guestPages.includes(page)) {
-      // These pages don't need auth check - show immediately
       setTimeout(() => showPage(page), 300);
     } else {
-      // Protected pages - wait for Firebase auth
       const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
         unsubscribe();
         if (user) {
@@ -2643,10 +2556,6 @@
       });
     }
   })();
-
-  // ── REFERRAL LINK HANDLER ──
-  // ── URL PAGE ROUTER ──
-  // Handles ?page=login, ?page=register etc in the URL
   (function handlePageRoute() {
     const params = new URLSearchParams(window.location.search);
     const page = params.get('page');
@@ -2654,10 +2563,8 @@
 
     const guestPages = ['login', 'register', 'forgot'];
     if (guestPages.includes(page)) {
-      // These pages don't need auth check - show immediately
       setTimeout(() => showPage(page), 300);
     } else {
-      // Protected pages - wait for Firebase auth
       const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
         unsubscribe();
         if (user) {
@@ -2668,27 +2575,17 @@
       });
     }
   })();
-
-  // ── REFERRAL LINK HANDLER ──
-  // Reads ?invitationCode= from URL, waits for Firebase auth, then decides what to do
   (function handleReferralLink() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('invitationCode') || params.get('ref') || params.get('r_code') || params.get('invite');
     if (!code) return;
-
-    // Store the code globally so register page can always access it
     window._referralCode = code;
-
-    // Wait for Firebase to confirm auth state, then act
-    // firebase.auth().onAuthStateChanged fires exactly once on load
     const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
       unsubscribe(); // only need it once
 
       if (user) {
-        // Already logged in → go to home page, ignore referral
         showPage('home');
       } else {
-        // Not logged in → go to register with code pre-filled
         setTimeout(() => {
           const codeInput = document.getElementById('inviteCodeInput');
           const codeDisplay = document.getElementById('inviteCodeDisplay');
@@ -2705,7 +2602,6 @@
   async function logout() {
     showToast('👋 Signed out. See you soon!');
     await firebase.auth().signOut();
-    // onAuthStateChanged will handle all UI reset automatically
   }
 
   function loginPrompt() {
@@ -2749,8 +2645,6 @@
     catch(e) { showToast('❌ Copy failed. Please copy manually.'); }
     document.body.removeChild(ta);
   }
-
-  // ── VIP EXP SYSTEM ──
   const VIP_LEVELS = [
     { name: 'Bronze',  icon: '🥉', color: '#cd7f32', minExp: 0,    maxExp: 199,  levelupBonus: 50,   weekly: 25,  monthly: 50   },
     { name: 'Silver',  icon: '🥈', color: '#c0c0c0', minExp: 200,  maxExp: 499,  levelupBonus: 200,  weekly: 125, monthly: 250  },
@@ -2769,7 +2663,6 @@
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
     if (!user || !db) {
-      // Not logged in — show default Bronze view
       updateVipUI(0, { weeklyClaimedAt: 0, monthlyClaimedAt: 0 });
       return;
     }
@@ -2778,10 +2671,9 @@
       const vipData = snap.val() || { exp: 0, weeklyClaimedAt: 0, monthlyClaimedAt: 0, levelupClaimed: [] };
       updateVipUI(vipData.exp || 0, vipData);
     } catch(e) {
-      console.warn('VIP load error:', e);
+      // console.warn('VIP load error:', e);
       updateVipUI(0, { weeklyClaimedAt: 0, monthlyClaimedAt: 0 });
     }
-    // Real-time VIP exp listener
     db.ref('users/' + user.uid + '/vip/exp').on('value', expSnap => {
       if (expSnap.val() != null) updateVipUI(expSnap.val() || 0, {});
     });
@@ -2791,14 +2683,10 @@
       const level = getVipLevel(exp);
       const levelIdx = VIP_LEVELS.findIndex(l => l.name === level.name);
       const nextLevel = VIP_LEVELS[levelIdx + 1];
-
-      // Update level name
       const nameEl = document.getElementById('vipLevelName');
       if (nameEl) { nameEl.textContent = level.icon + ' ' + level.name; nameEl.style.color = level.color; }
       const expEl = document.getElementById('vipTotalExp');
       if (expEl) expEl.textContent = exp.toLocaleString('en-IN');
-
-      // Progress bar
       const barEl = document.getElementById('vipProgressBar');
       const progressEl = document.getElementById('vipExpProgress');
       const nextEl = document.getElementById('vipNextLevel');
@@ -2818,8 +2706,6 @@
         if (nextEl) nextEl.textContent = '👑 Max Level!';
         if (neededEl) neededEl.textContent = 'You have reached the highest VIP level!';
       }
-
-      // Highlight level cards
       ['bronze','silver','gold','diamond'].forEach((l, i) => {
         const card = document.getElementById('vipCard-' + l);
         if (!card) return;
@@ -2837,8 +2723,6 @@
           card.style.boxShadow = '';
         }
       });
-
-      // Scroll slider to current level
       const levelNames = ['bronze','silver','gold','diamond'];
       const currentIdx = levelNames.indexOf(level.name.toLowerCase());
       if (currentIdx >= 0) setTimeout(() => scrollVipSlider(currentIdx), 300);
@@ -2846,8 +2730,6 @@
       const monthlyAmtEl = document.getElementById('vipMonthlyAmt');
       if (weeklyAmtEl) weeklyAmtEl.textContent = '₹' + level.weekly;
       if (monthlyAmtEl) monthlyAmtEl.textContent = '₹' + level.monthly;
-
-      // Claim buttons
       const weekStart = getWeekStart();
       const monthStart = getMonthStart();
       const weeklyBtn = document.getElementById('vipWeeklyBtn');
@@ -2943,12 +2825,9 @@
       const newLevel = getVipLevel(newExp);
 
       await db.ref('users/' + user.uid + '/vip/exp').set(newExp);
-
-      // Check level up
       if (newLevel.name !== oldLevel.name) {
         const claimed = vipData.levelupClaimed || [];
         if (!claimed.includes(newLevel.name)) {
-          // Credit level-up bonus
           const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
           const newBal = parseFloat(((balSnap.val() || 0) + newLevel.levelupBonus).toFixed(2));
           await db.ref('users/' + user.uid + '/balance').transaction(() => newBal);
@@ -2958,16 +2837,13 @@
             details: '🎉 Level up! ' + oldLevel.name + ' → ' + newLevel.name,
             balance: newBal, timestamp: Date.now()
           });
-          // Push notification
           await pushNotification(user.uid, newLevel.icon, 'VIP Level Up! ' + newLevel.name, '₹' + newLevel.levelupBonus + ' bonus credited to your wallet!');
           updateBalanceDisplay(newBal);
           showToast('🎉 Level Up! ' + newLevel.icon + ' ' + newLevel.name + ' — ₹' + newLevel.levelupBonus + ' bonus credited!');
         }
       }
-    } catch(e) { console.warn('VIP EXP error:', e); }
+    } catch(e) { /* suppressed */ }
   }
-
-  // Add vip_weekly and vip_monthly to transaction typeConfig
   const _vipTypes = {
     vip_weekly:  { icon:'📅', label:'VIP Weekly Bonus',  color:'#27ae60', sign:'+' },
     vip_monthly: { icon:'🗓️', label:'VIP Monthly Bonus', color:'#27ae60', sign:'+' },
@@ -2978,7 +2854,6 @@
     if (!slider) return;
     const card = slider.children[idx];
     if (card) card.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    // Update dots
     for (let i = 0; i < 4; i++) {
       const dot = document.getElementById('vipDot' + i);
       if (!dot) continue;
@@ -2986,8 +2861,6 @@
       else { dot.style.width = '6px'; dot.style.background = 'var(--border)'; }
     }
   }
-
-  // Auto-update dots on scroll
   document.addEventListener('DOMContentLoaded', () => {
     const slider = document.getElementById('vipSlider');
     if (slider) {
@@ -3002,8 +2875,6 @@
       });
     }
   });
-
-  // ── REAL NOTIFICATIONS SYSTEM ──
   let _notifListener = null;
 
   function loadNotifications() {
@@ -3035,10 +2906,8 @@
           ${!n.read?'<div style="width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:4px;"></div>':''}
         </div>`).join('');
       listEl.innerHTML = notifHTML;
-      // Also update mobile notification list
       const mobileListEl = document.getElementById('mobileNotifList');
       if (mobileListEl) mobileListEl.innerHTML = notifHTML || '<div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;">No notifications yet</div>';
-      // Update badge2
       const badge2 = document.getElementById('notifBadge2');
       if (badge2) { badge2.style.display = unread > 0 ? 'flex' : 'none'; badge2.textContent = unread > 9 ? '9+' : unread; }
     });
@@ -3065,10 +2934,8 @@
     const db = window.fbDB || fbDB;
     if (!db || !uid) return;
     try { await db.ref('users/' + uid + '/notifications').push({ icon, title, body, read: false, timestamp: Date.now() }); }
-    catch(e) { console.warn('Push notif failed:', e); }
+    catch(e) { // console.warn('Push notif failed:', e); }
   }
-
-  // ── ANNOUNCEMENT BANNER ──
   function loadAnnouncement() {
     const db = window.fbDB || fbDB;
     if (!db) return;
@@ -3083,8 +2950,6 @@
       } else { banner.style.display = 'none'; }
     });
   }
-
-  // ── PROFILE STATS ──
   async function loadProfileStats() {
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
@@ -3103,14 +2968,12 @@
       const winRate = totalBets > 0 ? Math.round(wins / totalBets * 100) : 0;
       const totalDeposited = deps.reduce((s,d) => s + (d.amount||0), 0);
       const joinedAt = profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
-
-      // Update profile stats elements
       const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
       setText('profileMemberSince', 'Member since: ' + joinedAt);
       setText('profileTotalBets', totalBets);
       setText('profileWinRate', winRate + '%');
       setText('profileTotalDeposited', '₹' + totalDeposited.toLocaleString('en-IN'));
-    } catch(e) { console.warn('Profile stats error:', e); }
+    } catch(e) { /* suppressed */ }
   }
 
   function loadRebateRates() {
@@ -3122,9 +2985,7 @@
         if (el) el.textContent = fmt(rates[l] != null ? rates[l] : defaults[l]);
       });
     };
-    // Apply defaults immediately so user never sees —
     applyRates(defaults);
-    // Then try Firebase, retry until fbDB is ready
     const tryFirebase = () => {
       const db = window.fbDB;
       if (!db) { setTimeout(tryFirebase, 400); return; }
@@ -3132,12 +2993,10 @@
         db.ref('settings/commissionRates').on('value', snap => {
           applyRates(snap.val() || {});
         });
-      } catch(e) { console.warn('Rebate rates Firebase error:', e); }
+      } catch(e) { /* suppressed */ }
     };
     tryFirebase();
   }
-
-  // ── SUBORDINATE DATA PAGE ──
   function filterSubData() { renderSubDataRows(window._refAllData || []); }
 
   function loadSubData() { renderSubDataRows(window._refAllData || []); }
@@ -3148,21 +3007,13 @@
     const dateVal = document.getElementById('subdataDate')?.value || '';
 
     let filtered = allRefs;
-
-    // Level filter
     if (levelVal !== 'all') filtered = filtered.filter(r => String(r.level || 1) === levelVal);
-
-    // Date filter — joined on that day
     if (dateVal) {
       const dayStart = new Date(dateVal).setHours(0,0,0,0);
       const dayEnd = dayStart + 86400000;
       filtered = filtered.filter(r => (r.joinedAt || 0) >= dayStart && (r.joinedAt || 0) < dayEnd);
     }
-
-    // Search filter
     if (searchVal) filtered = filtered.filter(r => (r.uid||'').toLowerCase().includes(searchVal) || (r.memberId||'').toLowerCase().includes(searchVal));
-
-    // Update stats
     const deps = filtered.filter(r => r.firstDepositAmt > 0);
     const bettors = filtered.filter(r => r.totalBet > 0);
     document.getElementById('sd-deposits').textContent = deps.length;
@@ -3171,16 +3022,10 @@
     document.getElementById('sd-totalbet').textContent = filtered.reduce((s,r) => s + (r.totalBet||0), 0).toLocaleString('en-IN', {minimumFractionDigits:2});
     document.getElementById('sd-firstdeps').textContent = deps.length;
     document.getElementById('sd-firstamt').textContent = deps.reduce((s,r) => s + (r.firstDepositAmt||0), 0).toLocaleString('en-IN', {minimumFractionDigits:2});
-
-    // Render rows with pagination
     const rowsEl = document.getElementById('subdataRows');
     if (!rowsEl) return;
     if (filtered.length === 0) { rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;"><span data-t="ref.nodata">No data</span></div>'; return; }
-
-    // Sort: newest first
     filtered.sort((a,b) => (b.joinedAt||0) - (a.joinedAt||0));
-
-    // Pagination
     const SD_PER_PAGE = 10;
     if (!window._sdPage) window._sdPage = 1;
     const sdTotalPages = Math.max(1, Math.ceil(filtered.length / SD_PER_PAGE));
@@ -3205,8 +3050,6 @@
         <div style="font-size:0.7rem;color:${r.totalBet?'var(--gold)':'var(--muted)'};">${bet}</div>
       </div>`;
     }).join('');
-
-    // Pagination controls
     if (sdTotalPages > 1) {
       rowsEl.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.5rem;padding:0.8rem;border-top:1px solid var(--border);">
         <button onclick="window._sdPage=Math.max(1,window._sdPage-1);renderSubDataRows(window._sdFiltered);" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;color:var(--muted);font-size:0.82rem;cursor:pointer;${window._sdPage<=1?'opacity:0.4;':''}">&lt; Prev</button>
@@ -3215,8 +3058,6 @@
       </div>`;
     }
   }
-
-  // ── COMMISSION DETAILS PAGE ──
   function loadCommDetails() {
     const allRefs = window._refAllData || [];
     const dateVal = document.getElementById('commdetailsDate')?.value || '';
@@ -3228,8 +3069,6 @@
       if (r.bonus && r.bonus > 0) commRows.push({lv: r.level||1, uid: r.uid||'', memberId: r.memberId||'', date: r.creditedAt||r.joinedAt, amount: r.bonus, type: 'Reg Bonus'});
       if (r.commission && r.commission > 0) commRows.push({lv: r.level||1, uid: r.uid||'', memberId: r.memberId||'', date: r.creditedAt||r.joinedAt, amount: r.commission, type: 'Commission'});
     });
-
-    // Date filter
     if (dateVal) {
       const dayStart = new Date(dateVal).setHours(0,0,0,0);
       const dayEnd = dayStart + 86400000;
@@ -3237,8 +3076,6 @@
     }
 
     commRows.sort((a,b) => (b.date||0) - (a.date||0));
-
-    // Cap at 50 latest entries
     commRows = commRows.slice(0, 50);
 
     const total = commRows.reduce((s,c) => s + (c.amount||0), 0);
@@ -3246,8 +3083,6 @@
 
     if (!rowsEl) return;
     if (commRows.length === 0) { rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;"><span data-t="ref.nodata">No data</span></div>'; return; }
-
-    // Pagination - 10 per page, max 5 pages
     const CD_PER_PAGE = 10;
     if (!window._cdPage) window._cdPage = 1;
     const cdTotalPages = Math.min(5, Math.max(1, Math.ceil(commRows.length / CD_PER_PAGE)));
@@ -3265,8 +3100,6 @@
         <div style="font-size:0.72rem;font-weight:700;color:var(--green);">+₹${Number(c.amount).toLocaleString('en-IN')}</div>
       </div>`;
     }).join('');
-
-    // Pagination controls
     if (cdTotalPages > 1) {
       rowsEl.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.5rem;padding:0.8rem;border-top:1px solid var(--border);">
         <button onclick="window._cdPage=Math.max(1,window._cdPage-1);document.getElementById('commdetailsRows').innerHTML='';loadCommDetails();" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;color:var(--muted);font-size:0.82rem;cursor:pointer;${window._cdPage<=1?'opacity:0.4;':''}">&lt; Prev</button>
@@ -3275,8 +3108,6 @@
       </div>`;
     }
   }
-
-  // ── REFERRAL AGENCY SYSTEM ──
   window._refAllData = [];  // all referral rows
   window._refLevelFilter = 'all';
   window._refCurrentSubTab = 'subordinates';
@@ -3342,11 +3173,7 @@
     if (!histEl) return;
     const data = window._refAllData || [];
     const query = (window._refSearchQuery || '').toLowerCase();
-
-    // Level filter
     let filtered = window._refLevelFilter === 'all' ? data : data.filter(r => String(r.level || 1) === window._refLevelFilter);
-
-    // Search filter
     if (query) {
       filtered = filtered.filter(r => {
         const mid = (r.memberId || '').toLowerCase();
@@ -3396,8 +3223,6 @@
       if (r.commission && r.commission > 0) commRows.push({ lv: r.level||1, user: r.username||('UID:' + (r.uid||'').substring(0,6)), uid: r.uid||'', memberId: r.memberId||'', date: r.creditedAt||r.joinedAt, amount: r.commission, type: 'Commission' });
     });
     commRows.sort((a,b) => (b.date||0) - (a.date||0));
-
-    // Search filter
     let filtered = commRows;
     if (query) {
       filtered = commRows.filter(c => (c.uid || '').toLowerCase().includes(query) || (c.memberId || '').toLowerCase().includes(query));
@@ -3433,11 +3258,7 @@
     try {
       const snap = await db.ref('users/' + user.uid + '/referrals').once('value');
       const raw = snap.val() ? snap.val() : {};
-
-      // Level 1 referrals (direct) — already stored
       const level1 = Object.values(raw).map(r => ({...r, level: 1}));
-
-      // Try to load level 2–4 from firebase (stored under users/{uid}/referrals_l2, l3, l4)
       const [snap2, snap3, snap4] = await Promise.all([
         db.ref('users/' + user.uid + '/referrals_l2').once('value'),
         db.ref('users/' + user.uid + '/referrals_l3').once('value'),
@@ -3449,19 +3270,14 @@
 
       const allRefs = [...level1, ...level2, ...level3, ...level4];
       window._refAllData = allRefs;
-
-      // --- Agency card stats ---
       const totalComm = allRefs.reduce((s, r) => s + (r.bonus || 0) + (r.commission || 0), 0);
       const el_totalComm = document.getElementById('agencyTotalComm');
       const el_totalRefs = document.getElementById('agencyTotalRefs');
       if (el_totalComm) el_totalComm.textContent = '₹' + totalComm.toLocaleString('en-IN', {minimumFractionDigits:2});
       if (el_totalRefs) el_totalRefs.textContent = allRefs.length;
-
-      // Yesterday commission — read from dailyCommission node
       const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
       const yKey = yesterday.toISOString().split('T')[0];
       const yCommSnap = await db.ref('users/' + user.uid + '/dailyCommission/' + yKey).once('value');
-      // Real-time today's commission
       db.ref('users/' + user.uid + '/dailyCommission/' + new Date().toISOString().slice(0,10)).on('value', commSnap => {
         const todayComm = commSnap.val() || 0;
         const todayEl = document.querySelector('.agency-today-comm');
@@ -3470,45 +3286,35 @@
       const yestComm = yCommSnap.val() || 0;
       const el_yest = document.getElementById('agencyYesterdayComm');
       if (el_yest) el_yest.textContent = Number(yestComm).toFixed(2);
-
-
-      // --- Direct subordinates card ---
       const dirDeps = level1.filter(r => r.firstDepositAmt > 0);
       document.getElementById('dirRegCount').textContent = level1.length;
       document.getElementById('dirDepCount').textContent = dirDeps.length;
       document.getElementById('dirDepAmt').textContent = dirDeps.reduce((s,r) => s + (r.firstDepositAmt||0), 0).toLocaleString('en-IN', {minimumFractionDigits:2});
       document.getElementById('dirFirstDep').textContent = dirDeps.length;
-
-      // --- Team subordinates card (L2+L3+L4) ---
       const teamAll = [...level2, ...level3, ...level4];
       const teamDeps = teamAll.filter(r => r.firstDepositAmt > 0);
       document.getElementById('teamRegCount').textContent = teamAll.length;
       document.getElementById('teamDepCount').textContent = teamDeps.length;
       document.getElementById('teamDepAmt').textContent = teamDeps.reduce((s,r) => s + (r.firstDepositAmt||0), 0).toLocaleString('en-IN', {minimumFractionDigits:2});
       document.getElementById('teamFirstDep').textContent = teamDeps.length;
-
-      // Render tables
       renderRefRows();
       renderCommissionRows(allRefs);
 
-    } catch(e) { console.warn('Referral load failed:', e); }
+    } catch(e) { /* suppressed */ }
   }
 
   function downloadRefQR() {
     const profile = window.userProfile;
     const code = profile && profile.referralCode ? profile.referralCode : (document.getElementById('myRefCode') ? document.getElementById('myRefCode').textContent : 'ROYALWIN');
     const link = 'https://jjvvyt02-cmyk.github.io/royalwin?invitationCode=' + code;
-    // Generate QR on canvas then download
     const canvas = document.getElementById('refQrCanvas');
     if (!canvas) { showToast('📋 Share link: ' + link); return; }
-    // Simple QR placeholder — draw canvas with text (real QR needs library)
     const ctx = canvas.getContext('2d');
     ctx.fillStyle = '#fff'; ctx.fillRect(0,0,200,200);
     ctx.fillStyle = '#000'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
     ctx.fillText('ROYAL WIN', 100, 30);
     ctx.font = '9px monospace';
     ctx.fillText(code, 100, 185);
-    // Draw simple grid pattern as QR placeholder
     for (let i = 0; i < 10; i++) for (let j = 0; j < 10; j++) {
       if (Math.random() > 0.5) { ctx.fillStyle = '#000'; ctx.fillRect(40 + i*13, 40 + j*13, 11, 11); }
     }
@@ -3516,8 +3322,6 @@
     a.href = canvas.toDataURL(); a.click();
     showToast('📷 QR Code downloaded!');
   }
-
-
 
   var _depHistPage = 1;
   var _depHistData = [];
@@ -3539,8 +3343,6 @@
 
     const rows = _depHistData;
     if (!rows.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No deposits yet</div>'; return; }
-
-    // Pending banner removed - history rows shown as-is
 
     const PER_PAGE = 10, MAX_PAGES = 5;
     const limited = rows.slice(0, PER_PAGE * MAX_PAGES);
@@ -3572,8 +3374,6 @@
         ${r.status==='cancelled'?'<div style="font-size:0.68rem;color:var(--muted);margin-top:0.3rem;">Payment not completed</div>':''}
       </div>`;
     }).join('');
-
-    // Pagination
     if (totalPages > 1) {
       el.innerHTML += `<div style="display:flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.7rem 0 1.5rem;border-top:1px solid var(--border);margin-top:0.5rem;">
         <button onclick="loadDepositHistoryPage(${_depHistPage-1})" ${_depHistPage<=1?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_depHistPage<=1?'opacity:0.4;':''}">◀</button>
@@ -3633,8 +3433,6 @@
         <div style="font-size:0.8rem;font-weight:700;color:${statusColor};">${statusIcon} ${statusText}</div>
       </div>`;
     }).join('');
-
-    // Pagination
     if (totalPages > 1) {
       el.innerHTML += `<div style="display:flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.7rem 0 1.5rem;border-top:1px solid var(--border);margin-top:0.5rem;">
         <button onclick="loadWithdrawHistoryPage(${_withHistPage-1})" ${_withHistPage<=1?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_withHistPage<=1?'opacity:0.4;':''}">◀</button>
@@ -3644,9 +3442,7 @@
     }
   }
 
-
   async function loadGameStats(period = 'today') {
-    // Update period buttons
     ['today','week','month'].forEach(p => {
       const btn = document.getElementById('gsPeriod' + p.charAt(0).toUpperCase() + p.slice(1));
       if (btn) {
@@ -3667,8 +3463,6 @@
     } else {
       startTime = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
     }
-
-    // Load from Firebase if memory is empty
     let data = betHistoryData;
     if (data.length === 0) {
       try {
@@ -3701,8 +3495,6 @@
     if (netEl) { netEl.textContent = (netProfit >= 0 ? '+' : '') + '₹' + Math.abs(netProfit).toLocaleString('en-IN', {minimumFractionDigits:2}); netEl.style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red2)'; }
     const barEl = document.getElementById('gsWinRateBar');
     if (barEl) barEl.style.width = winRate + '%';
-
-    // VIP EXP display on gamestats
     try {
       const db = window.fbDB || fbDB;
       const user = window.currentUser;
@@ -3771,13 +3563,11 @@
     } catch(e) { showToast('❌ Error: ' + e.message); }
   }
 
-
   async function loadWagerProgress() {
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
     if (!user || !db) return;
     try {
-      // Detach existing listener first then re-attach fresh
       db.ref('users/' + user.uid + '/wager').off();
       db.ref('users/' + user.uid + '/wager').on('value', async (snap) => {
       const wager = snap.val();
@@ -3789,7 +3579,6 @@
       if (!wager || !wager.required || wager.required <= 0) {
         if (progressSection) progressSection.style.display = 'none';
         if (doneSection) doneSection.style.display = 'none';
-        // Show total wagered as 0 even if no wager requirement
         if (totalWageredInfo) totalWageredInfo.style.display = 'block';
         if (totalWageredAmt) totalWageredAmt.textContent = '₹0 — No wager requirement';
         return;
@@ -3798,8 +3587,6 @@
       const required = parseFloat(wager.required);
       const pct = Math.min(100, Math.round(completed / required * 100));
       const remaining = Math.max(0, parseFloat((required - completed).toFixed(2)));
-
-      // Always show total wagered
       if (totalWageredInfo) totalWageredInfo.style.display = 'block';
       if (totalWageredAmt) totalWageredAmt.textContent = '₹' + completed.toLocaleString('en-IN');
       const totalWagerRequired = document.getElementById('totalWagerRequired');
@@ -3818,9 +3605,8 @@
         document.getElementById('wagerRemaining').textContent = '₹' + remaining.toLocaleString('en-IN');
       }
       }); // end of .on listener
-    } catch(e) { console.warn('Wager load failed:', e); }
+    } catch(e) { /* suppressed */ }
   }
-
 
   async function saveWithdrawDetails(method) {
     const db = window.fbDB || fbDB;
@@ -3861,34 +3647,26 @@
     try {
       const snap = await db.ref('users/' + user.uid + '/withdrawDetails').once('value');
       const data = snap.val() || {};
-
-      // UPI
       if (data.upi) {
         document.getElementById('savedUpiDisplay').style.display = 'flex';
         document.getElementById('savedUpiText').textContent = data.upi.upiId;
         document.getElementById('newUpiForm').style.display = 'none';
       }
-
-      // Bank
       if (data.bank) {
         document.getElementById('savedBankDisplay').style.display = 'block';
         document.getElementById('savedBankText').innerHTML =
           `<strong>${data.bank.name}</strong><br>${data.bank.bank} · ${data.bank.acc}<br>IFSC: ${data.bank.ifsc}`;
         document.getElementById('newBankForm').style.display = 'none';
       }
-
-      // USDT
       if (data.usdt) {
         document.getElementById('savedUsdtDisplay').style.display = 'flex';
         document.getElementById('savedUsdtText').textContent = data.usdt.addr;
         document.getElementById('newUsdtForm').style.display = 'none';
       }
-
-      // Check USDT deposit restriction
       const depSnap = await db.ref('users/' + user.uid + '/hasUsdtDeposit').once('value');
       window._userHasUsdtDeposit = depSnap.val() || false;
 
-    } catch(e) { console.warn('Load withdraw details failed:', e); }
+    } catch(e) { /* suppressed */ }
   }
 
   let currentWithdrawMethod = 'upi';
@@ -3901,7 +3679,6 @@
       const f = document.getElementById('withdrawFields-' + m);
       if (f) f.style.display = m === method ? 'block' : 'none';
     });
-    // Update min display and placeholder
     const minMap = { upi: 300, bank: 500, usdt: 3000 };
     const min = minMap[method];
     const minEl = document.getElementById('withdrawMinDisplay');
@@ -3909,7 +3686,6 @@
     const amtInput = document.getElementById('withdrawAmount');
     if (amtInput) amtInput.placeholder = 'Enter amount (min ₹' + min.toLocaleString('en-IN') + ')';
   }
-
 
   var _walDepPage = 1, _walDepData = [];
   async function loadDepositHistory(page) {
@@ -4047,7 +3823,6 @@
     const usdtEq = document.getElementById('usdtEquivalent');
 
     if (method === 'usdt') {
-      // USDT presets — start from ₹1,000
       if (presetsEl) presetsEl.innerHTML = `
         <div class="amount-preset selected" onclick="setAmount(this,'1000')">₹1,000</div>
         <div class="amount-preset" onclick="setAmount(this,'2000')">₹2,000</div>
@@ -4059,7 +3834,6 @@
       if (labelEl) labelEl.textContent = 'Or enter custom amount (Min ₹1,000)';
       if (usdtEq) { usdtEq.style.display = 'block'; _updateUsdtEquivalent(); }
     } else {
-      // UPI presets — start from ₹300
       if (presetsEl) presetsEl.innerHTML = `
         <div class="amount-preset selected" onclick="setAmount(this,'300')">₹300</div>
         <div class="amount-preset" onclick="setAmount(this,'500')">₹500</div>
@@ -4073,8 +3847,6 @@
       if (usdtEq) usdtEq.style.display = 'none';
     }
     updateBonusPreview();
-
-    // Switch button
     const btn = document.getElementById('depositActionBtn');
     if (btn) {
       if (method === 'usdt') {
@@ -4099,15 +3871,12 @@
     el.classList.add('selected');
     const inp = el.closest('.wallet-panel').querySelector('input[type="number"]');
     if (inp) inp.value = val;
-    // Instantly update bonus preview
     updateBonusPreview();
   }
-
 
   let selectedBonusOption = 0; // 0=none, 1=8%, 2=15%
 
   function lockBonusCards(lock) {
-    // Show/hide locked banner
     let lockBanner = document.getElementById('bonusLockBanner');
     if (lock) {
       if (!lockBanner) {
@@ -4161,7 +3930,6 @@
 
   function updateBonusPreview() {
     const amt = parseFloat(document.getElementById('depositAmount')?.value || 0);
-    // Update USDT equivalent if USDT method selected
     if (window._currentDepositMethod === 'usdt') {
       const usdt = amt > 0 ? (amt / 100).toFixed(2) : '0';
       const el = document.getElementById('usdtAmountDisplay');
@@ -4173,20 +3941,14 @@
       return;
     }
     if (!amt) return;
-
-    // Update first deposit bonus amounts
     const b1 = Math.round(amt * 0.08);
     const b2 = Math.round(amt * 0.15);
     const el1 = document.getElementById('bonusAmt1');
     const el2 = document.getElementById('bonusAmt2');
     if (el1) el1.textContent = '+₹' + b1 + ' bonus';
     if (el2) el2.textContent = '+₹' + b2 + ' bonus';
-
-    // Update recurring bonus
     const recurringEl = document.getElementById('recurringBonusAmt');
     if (recurringEl) recurringEl.textContent = '5% = +₹' + Math.round(amt * 0.05) + ' bonus on this deposit';
-
-    // Update info box
     const b3 = amt; // 100%
     const infoEl = document.getElementById('selectedBonusInfo');
     if (infoEl && selectedBonusOption > 0) {
@@ -4206,8 +3968,6 @@
     const recurringSection = document.getElementById('recurringBonusInfo');
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
-
-    // Show first deposit bonus by default while loading
     if (bonusSection) bonusSection.style.display = 'block';
     if (recurringSection) recurringSection.style.display = 'none';
     updateBonusPreview();
@@ -4217,12 +3977,10 @@
       const snap = await db.ref('users/' + user.uid + '/hasDeposited').once('value');
       const hasDeposited = snap.val();
       if (hasDeposited) {
-        // Recurring deposit
         if (bonusSection) bonusSection.style.display = 'none';
         if (recurringSection) recurringSection.style.display = 'block';
         updateBonusPreview();
       } else {
-        // First deposit
         if (bonusSection) bonusSection.style.display = 'block';
         if (recurringSection) recurringSection.style.display = 'none';
         updateBonusPreview();
@@ -4231,7 +3989,6 @@
   }
 
   async function doDeposit() {
-    // Manual deposit disabled — all deposits go through gateway
     showToast('⚠️ Please use the Pay Now button to deposit.');
   }
 
@@ -4242,7 +3999,6 @@
     if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
     const db = window.fbDB || fbDB;
     try {
-      // Check wager requirement
       const wagerSnap = await db.ref('users/' + window.currentUser.uid + '/wager').once('value');
       const wager = wagerSnap.val();
       if (wager && wager.required > 0 && wager.completed < wager.required) {
@@ -4250,8 +4006,6 @@
         showToast('❌ Wager incomplete! ₹' + remaining.toLocaleString('en-IN') + ' more to wager before withdrawing.');
         return;
       }
-
-      // ── CHECK: No pending withdrawal allowed ──
       const allWithSnap = await db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(window.currentUser.uid).once('value');
       const allWithData = allWithSnap.val();
       if (allWithData) {
@@ -4261,8 +4015,6 @@
           return;
         }
       }
-
-      // ── CHECK: Max 2 withdrawals per day ──
       const todayStart = new Date(); todayStart.setHours(0,0,0,0);
       const todayStartTs = todayStart.getTime();
       if (allWithData) {
@@ -4274,26 +4026,18 @@
           return;
         }
       }
-
-      // Check balance
       const balSnap = await db.ref('users/' + window.currentUser.uid + '/balance').once('value');
       const bal = parseFloat(balSnap.val() || 0);
       if (amt > bal) { showToast('❌ Insufficient balance! Your balance: ₹' + bal.toLocaleString('en-IN')); return; }
-
-      // ── DEDUCT BALANCE IMMEDIATELY ──
       const newBal = parseFloat((bal - amt).toFixed(2));
       await db.ref('users/' + window.currentUser.uid + '/balance').transaction(() => newBal);
       updateBalanceDisplay(newBal);
-
-      // Check USDT restriction
       if (currentWithdrawMethod === 'usdt' && !window._userHasUsdtDeposit) {
         await db.ref('users/' + window.currentUser.uid + '/balance').transaction(() => bal);
         updateBalanceDisplay(bal);
         showToast('❌ USDT withdrawal only available if you deposited via USDT');
         return;
       }
-
-      // Get saved details
       const savedSnap = await db.ref('users/' + window.currentUser.uid + '/withdrawDetails/' + currentWithdrawMethod).once('value');
       const saved = savedSnap.val();
       if (!saved) {
@@ -4321,8 +4065,6 @@
       loadWithdrawHistory();
     } catch(e) { showToast('❌ Withdrawal failed: ' + e.message); }
   }
-
-  // OTP
   let otpInterval;
   async function sendOTP() {
     const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
@@ -4336,7 +4078,6 @@
 
     try {
       if (isEmail) {
-        // Email OTP — store in memory only, no Firebase needed
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         window._regOTP = otp;
         window._regOTPExpiry = Date.now() + 300000;
@@ -4344,14 +4085,9 @@
         showToast('📧 OTP: ' + otp + ' (copy this)');
 
       } else {
-        // Phone OTP — use Firebase Phone Auth
         showToast('⏳ Sending OTP to ' + contact + '...');
-
-        // Format phone number
         let phone = contact.replace(/\s/g, '');
         if (!phone.startsWith('+')) phone = '+91' + phone;
-
-        // Setup recaptcha (invisible)
         if (!window.recaptchaVerifier) {
           window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
             size: 'invisible',
@@ -4364,8 +4100,6 @@
         window._regIsEmail = false;
         showToast('📱 OTP sent to ' + phone + '!');
       }
-
-      // Hide form, show OTP inputs
       const fields = document.getElementById('registerFormFields');
       if (fields) fields.style.display = 'none';
       document.getElementById('otpWrap').style.display = 'block';
@@ -4374,7 +4108,6 @@
 
     } catch(e) {
       console.error('OTP send error:', e);
-      // Reset recaptcha on error
       if (window.recaptchaVerifier) {
         window.recaptchaVerifier.clear();
         window.recaptchaVerifier = null;
@@ -4402,12 +4135,10 @@
   }
 
   function resendOTP() {
-    // Actually resend by calling sendOTP logic again
     const emailOrPhone = window._otpEmail || '';
     if (!emailOrPhone) { showToast('⚠️ Session expired. Please start again.'); showPage('register'); return; }
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
     window._expectedOTP = otp;
-    // Send via EmailJS if available, else show in toast for dev
     if (window.emailjs) {
       emailjs.send('service_royalwin', 'template_otp', {
         to_email: emailOrPhone,
@@ -4437,7 +4168,6 @@
   async function verifyOTP() {
     const otp = ['otp1','otp2','otp3','otp4','otp5','otp6'].map(id => document.getElementById(id).value).join('');
     if (otp.length < 6) { showToast('⚠️ Please enter the full 6-digit OTP'); return; }
-    // Validate password strength before creating account
     const pwField = document.getElementById('regPassword');
     if (pwField) {
       const pwErr = validatePassword(pwField.value);
@@ -4449,7 +4179,6 @@
 
     try {
       if (isEmail) {
-        // Verify email OTP from Firebase
         const db = window.fbDB || fbDB;
         if (db) {
           const snap = await db.ref('otpVerification/' + contact.replace(/[.#$\[\]]/g, '_')).once('value');
@@ -4457,20 +4186,17 @@
           if (!data) { showToast('❌ OTP expired. Please request a new one.'); return; }
           if (Date.now() > data.expires) { showToast('❌ OTP expired. Please request a new one.'); return; }
           if (data.otp !== otp) { showToast('❌ Wrong OTP. Please try again.'); return; }
-          // Delete OTP after use
           await db.ref('otpVerification/' + contact.replace(/[.#$\[\]]/g, '_')).remove();
         }
         showToast('✅ Email verified!');
         await doRegister();
 
       } else {
-        // Verify phone OTP with Firebase
         if (!window._phoneConfirmResult && !window._confirmResult) { showToast('❌ Please request OTP again.'); return; }
         showToast('⏳ Verifying OTP...');
         const confirmResult = window._phoneConfirmResult || window._confirmResult;
         await confirmResult.confirm(otp);
         showToast('✅ Phone verified!');
-        // Phone is verified — now complete registration
         await doRegister();
       }
     } catch(e) {
@@ -4480,15 +4206,11 @@
       showToast('❌ ' + msg);
     }
   }
-
-
-  // Notification Bell
   function toggleMobileNotif() {
     const dd = document.getElementById('mobileNotifDropdown');
     if (!dd) return;
     const isOpen = dd.style.display === 'block';
     dd.style.display = isOpen ? 'none' : 'block';
-    // Close when clicking outside
     if (!isOpen) {
       setTimeout(() => {
         document.addEventListener('click', function closeMobileNotif(e) {
@@ -4509,8 +4231,6 @@
       document.getElementById('notifDropdown').classList.remove('open');
     }
   });
-
-  // Password Strength
   function checkStrength(val) {
     let score = 0;
     if (val.length >= 8) score++;
@@ -4529,8 +4249,6 @@
       if (el) { el.textContent = val.length > 0 ? labels[score] : ''; el.style.color = colors[score]; }
     });
   }
-
-  // Forgot Password
   async function sendForgotOTP() {
     const v = document.getElementById('forgotInput').value.trim();
     if (!v) { showToast('⚠️ Enter your mobile or email'); return; }
@@ -4538,14 +4256,12 @@
     const isEmail = v.includes('@');
     try {
       if (isEmail) {
-        // Send password reset email via Firebase
         await firebase.auth().sendPasswordResetEmail(v);
         showToast('📧 Password reset email sent to ' + v);
         document.getElementById('forgotForm').style.display = 'none';
         document.getElementById('forgotOTPWrap').style.display = 'block';
         setTimeout(() => document.getElementById('fotp1').focus(), 100);
       } else {
-        // Phone reset — send OTP
         let phone = v.replace(/\s/g, '');
         if (!phone.startsWith('+')) phone = '+91' + phone;
         try {
@@ -4577,14 +4293,12 @@
     if (!newPass || newPass.length < 6) { showToast('⚠️ Password must be at least 6 characters'); return; }
     try {
       if (window._forgotConfirmResult) {
-        // Phone OTP — verify and update password
         const cred = await window._forgotConfirmResult.confirm(otp);
         await cred.user.updatePassword(newPass);
         showToast('✅ Password reset successfully!');
         await firebase.auth().signOut();
         setTimeout(() => showPage('login'), 1200);
       } else {
-        // Email reset — already sent, just confirm
         showToast('✅ Check your email for the reset link!');
         setTimeout(() => showPage('login'), 1200);
       }
@@ -4594,8 +4308,6 @@
       showToast('❌ ' + msg);
     }
   }
-
-  // ── LIVE CHAT (Firebase Real-time) ──
   let _chatListener = null;
 
   async function initLiveChat() {
@@ -4607,11 +4319,7 @@
     const chatRef = db.ref('chats/' + user.uid + '/messages');
     const msgsEl = document.getElementById('chatMessages');
     if (!msgsEl) return;
-
-    // Remove old listener if any
     if (_chatListener) db.ref('chats/' + user.uid + '/messages').off('value', _chatListener);
-
-    // Mark chat as open + save user info for admin
     await db.ref('chats/' + user.uid + '/info').set({
       uid: user.uid,
       username: window.userProfile?.username || 'User',
@@ -4619,13 +4327,9 @@
       lastSeen: Date.now(),
       status: 'open'
     });
-
-    // Listen for messages in real-time
     _chatListener = chatRef.on('value', snap => {
       const messages = snap.val();
       msgsEl.innerHTML = '';
-
-      // Welcome message always first
       const welcome = document.createElement('div');
       welcome.className = 'msg agent';
       welcome.innerHTML = '👋 Hello <b>' + (window.userProfile?.username || 'there') + '</b>! Welcome to RoyalWin Support. How can I help you?';
@@ -4652,8 +4356,6 @@
           } else {
             div.textContent = m.text || '';
           }
-
-          // Timestamp
           const time = document.createElement('div');
           time.style.cssText = 'font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:3px;text-align:' + (m.sender === 'admin' ? 'left' : 'right');
           time.textContent = new Date(m.timestamp).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
@@ -4662,8 +4364,6 @@
         });
       }
       msgsEl.scrollTop = msgsEl.scrollHeight;
-
-      // Mark admin messages as read
       if (messages) {
         Object.entries(messages).forEach(([key, m]) => {
           if (m.sender === 'admin' && !m.readByUser) {
@@ -4681,18 +4381,13 @@
     const user = window.currentUser;
     const db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
     if (!user || !db) { showToast('🔐 Please sign in to send files'); return; }
-
-    // Auto-init chat if needed
     if (!window._chatInitialized) await initLiveChat();
-
-    // Check file size (max 5MB)
     if (file.size > 5 * 1024 * 1024) { showToast('❌ File too large! Max 5MB'); return; }
 
     showToast('📤 Uploading...');
 
     try {
       const isImage = file.type.startsWith('image/');
-      // Convert to base64
       const base64 = await new Promise((res, rej) => {
         const reader = new FileReader();
         reader.onload = () => res(reader.result);
@@ -4729,8 +4424,6 @@
     const inp = document.getElementById('chatInput');
     const msg = inp ? inp.value.trim() : '';
     if (!msg) return;
-
-    // Wait for Firebase if not ready yet
     const db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
     const user = window.currentUser;
 
@@ -4744,8 +4437,6 @@
       showToast('⏳ Connecting... please try again in a moment');
       return;
     }
-
-    // Auto-init chat if not already done
     if (!window._chatInitialized) {
       await initLiveChat();
     }
@@ -4770,22 +4461,15 @@
       console.error('sendChat error:', e);
     }
   }
-
-  // ── DAILY SPIN WHEEL ──
-  // 5 segments visible: ₹18, ₹48, ₹88, ₹288, ₹488
-  // But only 3 can win: ₹18=80%, ₹48=15%, ₹88=5%
   const wheelPrizes = ['₹18', '₹48', '₹88', '₹288', '₹488'];
   const wheelColors = ['#27ae60', '#c07a10', '#7c4dff', '#e02020', '#b8912a'];
   const wheelWeightedPool = [
     ...Array(80).fill(18),  // 80%
     ...Array(15).fill(48),  // 15%
     ...Array(5).fill(88),   // 5%
-    // 288 and 488 = 0% — never win, pointer never stops here
   ];
   const prizeIndexMap = { 18: 0, 48: 1, 88: 2, 288: 3, 488: 4 };
   let spinning = false;
-
-
 
   function drawWheel(rotation) {
     const canvas = document.getElementById('wheelCanvas');
@@ -4800,11 +4484,8 @@
     ctx.clearRect(0, 0, canvas.width, canvas.height);
 
     for (let i = 0; i < slices; i++) {
-      // Start drawing from -PI/2 (top) so slice 0 is at the top initially
       const startAngle = rotation + (-Math.PI / 2) + i * arc;
       const endAngle = startAngle + arc;
-
-      // Slice
       ctx.beginPath();
       ctx.moveTo(cx, cy);
       ctx.arc(cx, cy, radius, startAngle, endAngle);
@@ -4814,8 +4495,6 @@
       ctx.strokeStyle = '#111';
       ctx.lineWidth = 2;
       ctx.stroke();
-
-      // Label
       ctx.save();
       ctx.translate(cx, cy);
       ctx.rotate(startAngle + arc / 2);
@@ -4827,8 +4506,6 @@
       ctx.fillText(wheelPrizes[i], radius - 12, 5);
       ctx.restore();
     }
-
-    // Center circle
     ctx.beginPath();
     ctx.arc(cx, cy, 18, 0, 2 * Math.PI);
     ctx.fillStyle = '#1a1000';
@@ -4847,7 +4524,6 @@
       try {
         const snap = await db.ref('users/' + user.uid + '/lastSpinDate').once('value');
         if (snap.val() === new Date().toDateString()) {
-          // Already claimed today — don't show wheel
           if (!fromLogin) showToast('🎡 Already claimed today! Come back tomorrow.');
           return;
         }
@@ -4867,21 +4543,12 @@
     spinning = true;
     document.getElementById('spinBtn').disabled = true;
     document.getElementById('wheelResult').style.display = 'none';
-
-    // Pick winner from weighted pool (only ₹18, ₹48, ₹88 can win)
     const winAmt = wheelWeightedPool[Math.floor(Math.random() * wheelWeightedPool.length)];
     const winIndex = prizeIndexMap[winAmt];
 
     const slices = wheelPrizes.length; // 5
     const arc = (2 * Math.PI) / slices;
-
-    // Since drawWheel starts slices from -PI/2 + rotation,
-    // slice i center is at: rotation + (-PI/2) + i*arc + arc/2
-    // We want that to equal 0 (top = pointer position after accounting for -PI/2 offset)
-    // So: rotation = -(i*arc + arc/2)
-    // Add extra full spins
     const extraSpins = 5 + Math.floor(Math.random() * 3);
-    // Land anywhere within the winning slice (not always dead center)
     const sliceOffset = (Math.random() * 0.6 - 0.3) * arc; // ±30% of slice
     const baseAngle = -(winIndex * arc + arc / 2) + sliceOffset;
     const normalizedBase = ((baseAngle % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI);
@@ -4895,20 +4562,15 @@
       const elapsed = ts - start;
       const duration = 5000;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease out — slow down near end
       const ease = 1 - Math.pow(1 - progress, 4);
       currentRotation = targetAngle * ease;
       drawWheel(currentRotation);
 
       if (progress < 1) { requestAnimationFrame(animate); return; }
-
-      // Done spinning
       spinning = false;
       const resultEl = document.getElementById('wheelResult');
       resultEl.innerHTML = '🎉 You won <strong style="color:var(--gold2);">₹' + winAmt + '</strong>!';
       resultEl.style.display = 'block';
-
-      // Credit to Firebase
       (async () => {
         try {
           const db = window.fbDB || fbDB;
@@ -4927,27 +4589,22 @@
             showToast('💰 ₹' + winAmt + ' added to your wallet!');
             setTimeout(() => closeWheel(), 5000);
           }
-        } catch(e) { console.warn('Wheel error:', e); }
+        } catch(e) { /* wheel error */ }
       })();
     }
     requestAnimationFrame(animate);
   }
 
   async function doRegister() {
-    // Get form values
     const firstName = document.getElementById('regFirstName') ? document.getElementById('regFirstName').value.trim() : '';
     const lastName = document.getElementById('regLastName') ? document.getElementById('regLastName').value.trim() : '';
     const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
     const username = document.getElementById('regUsername') ? document.getElementById('regUsername').value.trim() : '';
     const password = document.getElementById('regPassword') ? document.getElementById('regPassword').value : '';
     const inviteCode = document.getElementById('inviteCodeInput') ? document.getElementById('inviteCodeInput').value.trim() : '';
-
-    // Validation
     if (!contact) { showToast('⚠️ Enter your mobile or email'); return; }
     if (!username) { showToast('⚠️ Enter a username'); return; }
     if (!password || password.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
-
-    // Determine if email or mobile
     const isEmail = contact.includes('@');
     const email = isEmail ? contact : contact.replace(/\s/g,'') + '@royalwin.app';
 
@@ -4955,12 +4612,8 @@
       showToast('⏳ Creating your account...');
       const userCred = await firebase.auth().createUserWithEmailAndPassword(email, password);
       const user = userCred.user;
-
-      // Generate referral code
       const _rc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       const myRefCode = 'ROY-' + Array.from({length:6}, () => _rc[Math.floor(Math.random() * _rc.length)]).join('');
-
-      // Generate unique 6-digit member ID
       let memberId;
       let isUnique = false;
       while (!isUnique) {
@@ -4968,10 +4621,7 @@
         const snap = await firebase.database().ref('memberIds/' + memberId).once('value');
         if (!snap.val()) isUnique = true;
       }
-      // Reserve the member ID
       await firebase.database().ref('memberIds/' + memberId).set(user.uid);
-
-      // Save user profile to Firebase
       await firebase.database().ref('users/' + user.uid).set({
         memberId,
         uid: user.uid,
@@ -4988,22 +4638,15 @@
         kycStatus: 'pending',
         isActive: true
       });
-
-      // ── MULTI-LEVEL REFERRAL CHAIN (L1 → L4) ──
       if (inviteCode) {
         try {
           const db = firebase.database();
           const allUsersSnap = await db.ref('users').once('value');
           const allUsers = allUsersSnap.val() || {};
-
-          // Build a map: referralCode → { uid, referredBy, username, memberId }
           const codeToUser = {};
           Object.entries(allUsers).forEach(([uid, u]) => {
             if (u.referralCode) codeToUser[u.referralCode] = { uid, referredBy: u.referredBy || '', username: u.username || '', memberId: u.memberId || '' };
           });
-
-          // Walk up the chain: newUser used inviteCode → that's L1 referrer
-          // L1 referrer's referrer = L2, and so on up to L4
           const newUserInfo = {
             uid: user.uid,
             username: username,
@@ -5020,8 +4663,6 @@
           for (let level = 1; level <= 4; level++) {
             const referrer = codeToUser[currentCode];
             if (!referrer) break;
-
-            // Store referrer UID in chain
             referrerChain['l' + level] = referrer.uid;
 
             const refKey = level === 1 ? 'referrals' : 'referrals_l' + level;
@@ -5029,35 +4670,27 @@
               ...newUserInfo,
               level: level
             });
-
-            // Move up the chain
             currentCode = referrer.referredBy;
             if (!currentCode) break;
           }
-
-          // Save referrerChain on new user's profile (used for fast commission lookup)
           if (Object.keys(referrerChain).length > 0) {
             await db.ref('users/' + user.uid + '/referrerChain').set(referrerChain);
           }
         } catch(refErr) {
-          console.warn('Referral chain error:', refErr);
+          // console.warn('Referral chain error:', refErr);
         }
       }
-
-      // Update avatar with first letter of username
       const avatarEl = document.getElementById('userAvatar');
       if (avatarEl) avatarEl.textContent = username.charAt(0).toUpperCase();
 
       showToast('🎉 Welcome to RoyalWin, ' + username + '!');
       showPage('home');
       showTicker();
-      // Check if daily spin already claimed before showing
     setTimeout(async () => {
       const db = window.fbDB || fbDB;
       const user = window.currentUser || firebase.auth().currentUser;
       if (db && user) {
         const snap = await db.ref('users/' + user.uid + '/lastSpinDate').once('value');
-        // Only open if not claimed today — pass fromLogin=true so no toast if already claimed
 } else {
 }
     }, 1200);
@@ -5069,10 +4702,6 @@
       showToast('❌ ' + msg);
     }
   }
-
-
-
-  // ── LIVE WINNER TICKER ──
   const tickerWinners = [
     {name:'Raj***', amt:'₹2,500', game:'WinGo', icon:'🎯'},
     {name:'Pri***', amt:'₹1,200', game:'Mega Slots', icon:'🎰'},
@@ -5093,11 +4722,6 @@
 
   function showTicker() { /* removed */ }
   function buildTicker() { /* removed */ }
-
-  // Show ticker after login/register
-  // doLogin ticker patch — handled inline
-
-  // ── QR DEPOSIT ──
   let qrTimerInterval = null;
 
   var _qrInstance = null;
@@ -5114,15 +4738,9 @@
           correctLevel: QRCode.CorrectLevel.M
         });
       }
-    } catch(e) { console.warn('QR error:', e); }
+    } catch(e) { /* suppressed */ }
   }
-
-  // Load admin UPI ID from Firebase settings
   var _activeUpiId = 'royalwin@upi';
-
-  // ── ROUND-ROBIN UPI ASSIGNMENT ──
-  // Each user gets assigned one UPI ID based on their memberId
-  // Assignment is stored in Firebase so it's consistent across sessions
   function loadAdminUpiIds(cb) {
     const db = window.fbDB || fbDB;
     if (!db) { cb([{id:'royalwin@upi', label:'Default'}]); return; }
@@ -5147,12 +4765,10 @@
       if (data && typeof data === 'object') {
         const ids = Object.values(data).filter(u => u.active && u.id);
         if (ids.length > 0) {
-          // Pick a random active UPI ID each time
           const random = ids[Math.floor(Math.random() * ids.length)];
           return random.id;
         }
       }
-      // Fallback to single upiId
       const single = await db.ref('settings/upiId').once('value');
       return single.val() || 'royalwin@upi';
     } catch(e) {
@@ -5161,7 +4777,6 @@
   }
 
   function openQR() {
-    // Manual QR disabled — all deposits go through gateway
     showToast('⚠️ Please use Pay Now button to deposit.');
   }
   async function confirmQRPayment() {
@@ -5183,7 +4798,6 @@
       if (el) el.textContent = upiId;
       const stepEl = document.getElementById('qrUpiStep');
       if (stepEl) stepEl.textContent = upiId;
-      // Generate real QR code
       const qrContainer = document.getElementById('qrCanvas');
       if (qrContainer && typeof QRCode !== 'undefined') {
         qrContainer.innerHTML = '';
@@ -5234,7 +4848,6 @@
       if (selectedBonusOption===1){bonusPct=8;bonusAmt=Math.round(amt*0.08);wagerReq=1;}
       else if (selectedBonusOption===2){bonusPct=15;bonusAmt=Math.round(amt*0.15);wagerReq=2.5;}
       else {
-        // 5% recurring bonus for all deposits after first
         const hasDepSnap = await db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value');
         if (hasDepSnap.val()) { bonusPct=5; bonusAmt=Math.round(amt*0.05); wagerReq=1; }
       }
@@ -5247,8 +4860,6 @@
         isFirstDeposit: !window.userProfile?.hasDeposited,
         timestamp: Date.now()
       });
-
-      // Auto-cancel after 5 minutes if still pending
       const depositKey = depositRef.key;
       setTimeout(async () => {
         try {
@@ -5270,12 +4881,10 @@
         window.open(data.url, '_blank');
         showToast('✅ Payment page opened!');
       } else {
-        // Cancel the gateway deposit record
         db.ref('adminRequests/deposits/' + depositKey + '/status').set('cancelled');
         showToast('❌ ' + (data.msg || 'Payment gateway error. Please try again.'));
       }
     } catch(e) {
-      // Cancel gateway deposit record if it was created
       try { if (depositKey) db.ref('adminRequests/deposits/' + depositKey + '/status').set('cancelled'); } catch(err) {}
       showToast('❌ Payment gateway unavailable. Please try again later.');
     }
@@ -5315,12 +4924,8 @@
       setTimeout(() => closeQR(), 4000);
     } catch(e) { showToast('❌ Error: ' + e.message); }
   }
-
-  // ── COLOR PREDICTION GAME ──
-  // 0 = violet+red, 5 = violet+green, 2,4,6,8 = red, 1,3,7,9 = green
   const numColors = ['violet-red','#27ae60','#e02020','#27ae60','#e02020','violet-green','#e02020','#27ae60','#e02020','#27ae60'];
   const numBigSmall = ['Small','Small','Small','Small','Small','Big','Big','Big','Big','Big'];
-  // ── GAME SETTINGS (loaded from Firebase, fallback to defaults) ──
   let cgSettings = { fee: 0.04, minBet: 10, maxBet: 50000, colorPayout: 2, violetPayout: 4.5, numPayout: 9, bigSmallPayout: 1.5 };
   async function loadGameSettings() {
     try {
@@ -5336,7 +4941,7 @@
         if (s.violetPayout != null) cgSettings.violetPayout = parseFloat(s.violetPayout);
         if (s.numPayout != null) cgSettings.numPayout = parseFloat(s.numPayout);
       }
-    } catch(e) { console.warn('Game settings load failed, using defaults'); }
+    } catch(e) { /* suppressed */ }
   }
 
   let cgTimer = 1, cgSeconds = 60, cgInterval = null;
@@ -5369,7 +4974,6 @@
   function openColorGame() {
     if (!isLoggedIn) { showPage('login'); showToast('🔐 Please sign in to play'); return; }
     document.getElementById('colorGameOverlay').classList.add('open');
-    // Start real-time balance listener for game
     const db = window.fbDB || fbDB;
     const user = window.currentUser;
     if (db && user) {
@@ -5379,37 +4983,27 @@
     }
     loadGameSettings();
     buildNumGrid();
-    // Only start timers if not already running
     if (!window._cgTimersStarted) {
       startAllTimers();
       window._cgTimersStarted = true;
     }
-    // Reset scroll to top and show Results tab (not remembered state)
     const overlay = document.getElementById('colorGameOverlay');
     if (overlay) overlay.scrollTop = 0;
-    // Always show Results tab on open
     switchCGTab('results');
-    // Reset history page to 1
     cgHistPage = 1;
     cgMyBetsPage = 1;
     loadAllHistory();
-    // Load bets then resolve any stale pending bets
     loadMyBetsFromFirebase(true);
-    // Real-time listener: auto-resolve if result appears in Firebase
     const db2 = window.fbDB || fbDB;
     const user2 = window.currentUser;
     if (db2 && user2) {
-      // Listen for pending bets being removed (resolved by another session)
       db2.ref('users/' + user2.uid + '/wingoPendingBets').on('child_removed', snap => {
-        // A pending bet was resolved - reload my bets
         setTimeout(() => loadMyBetsFromFirebase(false), 300);
       });
-      // Also check history every time a new result is added
       [1, 3, 5].forEach(t => {
         db2.ref('wingo/wingo' + t + 'min/history').limitToLast(1).on('child_added', snap => {
           const newRound = snap.val();
           if (!newRound) return;
-          // Check if any pending bet matches this round
           const pending = window._cgPendingBets || [];
           const match = pending.find(b => (b.timer === t || !b.timer) && b.round === newRound.round);
           if (match) {
@@ -5424,8 +5018,6 @@
     const db = window.fbDB || fbDB;
     if (!db || !window.currentUser) return;
     const uid = window.currentUser.uid;
-
-    // Load completed bets
     db.ref('users/' + uid + '/wingoMyBets')
       .orderByChild('timestamp').limitToLast(50)
       .once('value', snap => {
@@ -5433,8 +5025,6 @@
         cgMyBetsByTimer[1] = completed.filter(b => b.timer === 1);
         cgMyBetsByTimer[3] = completed.filter(b => b.timer === 3);
         cgMyBetsByTimer[5] = completed.filter(b => b.timer === 5);
-
-        // Load pending bets and merge at top
         db.ref('users/' + uid + '/wingoPendingBets').once('value', pSnap => {
           const now = Date.now();
           if (pSnap.val()) {
@@ -5444,12 +5034,8 @@
               bet._firebaseKey = key;
               const timerMs = (bet.timer || 1) * 60 * 1000;
               const betAge = now - (bet.timestamp || 0);
-
-              // If bet is older than its timer duration, it should be resolved
               if (resolveStalePending && betAge > timerMs) {
-                // Fetch result from Firebase history for that round
                 const timerMode = bet.timer || 1;
-                // Check actual history path: wingo/wingoXmin/history
                 db.ref('wingo/wingo' + timerMode + 'min/history').orderByChild('round').equalTo(bet.round).once('value', rSnap => {
                   let roundData = null;
                   if (rSnap.val()) {
@@ -5457,23 +5043,18 @@
                     roundData = entries.find(e => e.round === bet.round);
                   }
                   if (roundData) {
-                    // Result found - add to pending and resolve
                     window._cgPendingBets = window._cgPendingBets || [];
                     const exists = window._cgPendingBets.some(b => b.round === bet.round && b.selection === bet.selection);
                     if (!exists) {
                       bet._firebaseKey = key;
                       window._cgPendingBets.push(bet);
                     }
-                    // Load history first then resolve
                     if (!cgHistoryByTimer[timerMode] || cgHistoryByTimer[timerMode].length === 0) {
                       cgHistoryByTimer[timerMode] = [roundData];
                     }
                     setTimeout(() => resolveRoundForTimer(timerMode, 0), 200);
                   } else {
-                    // No result found in Firebase yet
-                    // Keep bet for up to 24 hours - never silently delete
                     if (betAge > 24 * 60 * 60 * 1000) {
-                      // Over 24 hours with no result - mark as unresolved, contact support
                       const timer = bet.timer || cgTimer;
                       if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
                       const alreadyShown = cgMyBetsByTimer[timer].some(b => b.round === bet.round && b.selection === bet.selection);
@@ -5484,9 +5065,7 @@
                           resultBg: 'rgba(224,32,32,0.4)', pl: null
                         });
                       }
-                      // DO NOT delete - keep for support reference
                     } else {
-                      // Under 24 hours - keep as pending, result may come later
                       const exists = window._cgPendingBets.some(b => b.round === bet.round && b.selection === bet.selection);
                       if (!exists) window._cgPendingBets.push(bet);
                       const timer = bet.timer || cgTimer;
@@ -5501,9 +5080,7 @@
                   }
                 });
               } else {
-                // Keep bets for up to 24 hours - never silently delete
                 if (betAge > 24 * 60 * 60 * 1000) {
-                  // Over 24 hours - mark as unresolved but keep in Firebase
                   const timer = bet.timer || cgTimer;
                   if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
                   const alreadyShown = cgMyBetsByTimer[timer].some(b => b.round === bet.round && b.selection === bet.selection);
@@ -5534,17 +5111,14 @@
   function loadAllHistory() {
     const db = window.fbDB || fbDB;
     if (!db) return;
-    // Clear memory completely before loading — prevents duplicates on reopen
     cgHistoryByTimer[1] = [];
     cgHistoryByTimer[3] = [];
     cgHistoryByTimer[5] = [];
-    // Listen for real-time history updates for all timers
     [1, 3, 5].forEach(mins => {
       db.ref('wingo/wingo' + mins + 'min/history').off();
       db.ref('wingo/wingo' + mins + 'min/history').on('value', snap => {
         if (!snap.val()) return;
         const raw = Array.isArray(snap.val()) ? snap.val() : Object.values(snap.val());
-        // Sort newest first, deduplicate by round number
         const seen = new Set();
         cgHistoryByTimer[mins] = raw
           .filter(h => h && h.round)
@@ -5560,7 +5134,6 @@
               ? (h.num === 0 ? 'linear-gradient(135deg,#7c4dff 50%,#e02020 50%)' : 'linear-gradient(135deg,#7c4dff 50%,#27ae60 50%)')
               : h.color === 'red' ? '#e02020' : '#27ae60')
           }));
-        // Update UI if this is the active timer
         if (mins === cgTimer) {
           cgHistory = cgHistoryByTimer[cgTimer] || [];
           renderHistDots();
@@ -5572,15 +5145,12 @@
 
   function closeColorGame() {
     document.getElementById('colorGameOverlay').classList.remove('open');
-    // Close result popup if showing
     closeResultPopup();
-    // Stop all countdown intervals (save battery/data)
     if (cgInterval) { clearInterval(cgInterval); cgInterval = null; }
     Object.keys(cgTimerIntervals).forEach(k => {
       if (cgTimerIntervals[k]) { clearInterval(cgTimerIntervals[k]); cgTimerIntervals[k] = null; }
     });
     window._cgTimersStarted = false;
-    // Remove game-specific Firebase listeners
     const db = window.fbDB || fbDB;
     const user = window.currentUser;
     if (db && user) {
@@ -5589,7 +5159,6 @@
       [1,3,5].forEach(t => db.ref('wingo/wingo' + t + 'min/history').off());
       updateMobileHomeBalance();
     }
-    // Reset bet lock
     _isPlacingBet = false;
   }
 
@@ -5598,15 +5167,11 @@
     [1,3,5].forEach(m => {
       document.getElementById('ttab-' + m).classList.toggle('active', m === mins);
     });
-    // Load this timer's history
     cgHistPage = 1; // Reset to first page
     cgHistory = cgHistoryByTimer[mins] || [];
     renderHistRows();
-    // Reload from Firebase if empty
     if (cgHistory.length === 0) loadAllHistory();
-    // Update UI for selected timer
     startCGTimer();
-    // Reset selections
     cgMyBets = cgMyBetsByTimer[mins];
     cgMyBetsPage = 1;
     renderMyBets();
@@ -5615,8 +5180,6 @@
     const btn = document.getElementById('cgConfirmBtn');
     if (btn) { btn.textContent = 'Select'; btn.className = 'cg-confirm-btn default-btn'; btn.disabled = false; }
   }
-
-  // Each timer has its own interval, history and state
   const cgTimerIntervals = {1: null, 3: null, 5: null};
   const cgLastResolvedRound = {1: -1, 3: -1, 5: -1};
   const cgBettingOpenByTimer = {1: true, 3: true, 5: true};
@@ -5632,26 +5195,20 @@
 
     function tick() {
       const now = Date.now();
-      // All timing in IST (UTC+5:30) — matches game engine exactly
       const IST_OFFSET = 5.5 * 60 * 60 * 1000;
       const istNow = now + IST_OFFSET;
       const istDate = new Date(istNow);
-      // Elapsed since IST midnight aligned to period
       const istMidnight = istNow - (istNow % (24 * 60 * 60 * 1000));
       const msSinceMidnightIST = istNow - istMidnight;
       const elapsed = msSinceMidnightIST % periodMs;
       const remaining = Math.ceil((periodMs - elapsed) / 1000);
       const totalSecs = mins * 60;
-
-      // Period ID = IST date + counter
       const dateStr = `${istDate.getUTCFullYear()}${String(istDate.getUTCMonth()+1).padStart(2,'0')}${String(istDate.getUTCDate()).padStart(2,'0')}`;
       const minutesSinceMidnight = istDate.getUTCHours() * 60 + istDate.getUTCMinutes();
       const counter = Math.floor(minutesSinceMidnight / mins);
       const roundId = parseInt(dateStr + String(counter).padStart(4, '0'));
 
       cgRoundByTimer[mins] = roundId;
-
-      // Update UI only for currently selected timer
       if (cgTimer === mins) {
         cgSeconds = remaining;
         const el = document.getElementById('cgCountdown');
@@ -5660,13 +5217,10 @@
           const ss = (remaining % 60).toString().padStart(2, '0');
           el.textContent = mm + ':' + ss;
         }
-        // Only update round display for active timer
         if (cgTimer === mins) {
           const roundEl = document.getElementById('cgRoundNum');
           if (roundEl) roundEl.textContent = roundId;
         }
-
-        // Close betting in last 5 seconds
         if (remaining <= 10 && cgBettingOpenByTimer[mins]) {
           cgBettingOpenByTimer[mins] = false;
           cgBettingOpen = false;
@@ -5675,18 +5229,13 @@
           if (btn) btn.disabled = true;
         }
       }
-
-      // Resolve this timer's round when new round starts — independent of UI
       if (remaining >= totalSecs - 1 && cgLastResolvedRound[mins] !== roundId) {
         cgLastResolvedRound[mins] = roundId;
         cgBettingOpenByTimer[mins] = true;
         if (!window._cgPendingBets) window._cgPendingBets = [];
-        // Only clean up bets that are 3+ rounds old (safely resolved by now)
         window._cgPendingBets = window._cgPendingBets.filter(b =>
           b.round >= roundId - 3 || (b.timer && b.timer !== mins)
         );
-
-        // Update UI if this is the active timer
         if (cgTimer === mins) {
           cgBettingOpen = true;
           updateCGStatus();
@@ -5697,8 +5246,6 @@
             btn.disabled = false;
           }
         }
-
-        // Poll for result published AFTER this round started
         const roundStartTime = Date.now();
         let pollAttempts = 0;
         const pollForResult = async () => {
@@ -5706,7 +5253,6 @@
           try {
             const db2 = window.fbDB || fbDB;
             if (db2) {
-              // Check history for the resolved round (more reliable than lastResultTime)
               const hSnap = await db2.ref('wingo/wingo' + mins + 'min/history')
                 .orderByChild('round').equalTo(cgRoundByTimer[mins] - 1)
                 .limitToLast(1).once('value');
@@ -5714,7 +5260,6 @@
                 resolveRoundForTimer(mins, roundStartTime);
                 return;
               }
-              // Also check lastResultTime as fallback
               const tSnap = await db2.ref('wingo/wingo' + mins + 'min/lastResultTime').once('value');
               if ((tSnap.val() || 0) > roundStartTime - 3000) {
                 resolveRoundForTimer(mins, roundStartTime);
@@ -5734,7 +5279,6 @@
   }
 
   function startCGTimer() {
-    // Just update UI for selected timer — actual timers run independently
     cgBettingOpen = cgBettingOpenByTimer[cgTimer];
     updateCGStatus();
     const roundEl = document.getElementById('cgRoundNum');
@@ -5831,31 +5375,22 @@
     const fee = Math.round(amt * cgSettings.fee);
     const actualAmt = amt - fee;
     const sel = cgSelectedColor ? cgSelectedColor.toUpperCase() : cgSelectedBigSmall ? cgSelectedBigSmall.toUpperCase() : 'Number ' + cgSelectedNum;
-    // Show toast confirmation instead of changing button text
     _isPlacingBet = true;
     showToast('✅ Bet of ₹' + amt + ' placed on ' + sel + '!');
     document.getElementById('cgConfirmBtn').disabled = true;
-
-    // ── FRAUD DETECTION ──
-    // Check if user already has bets on same round (multi-bet fraud)
     try {
       const db = window.fbDB || fbDB;
       const user = window.currentUser;
       if (db && user) {
         const currentRound = cgRoundByTimer[cgTimer];
-        // Get all pending bets for same round
         const samePeriodBets = (window._cgPendingBets || []).filter(b =>
           b.round === currentRound && b.timer === cgTimer
         );
-        // Count unique number selections in same period
         const numBets = samePeriodBets.filter(b => b.savedNum !== null && b.savedNum !== undefined);
-        // Count color bets (Red + Green = hedging)
         const colorBets = samePeriodBets.map(b => b.savedColor).filter(Boolean);
         const hasRedAndGreen = colorBets.includes('red') && colorBets.includes('green');
-        // Count big/small bets (both = hedging)
         const bsBets = samePeriodBets.map(b => b.savedBS).filter(Boolean);
         const hasBigAndSmall = bsBets.includes('big') && bsBets.includes('small');
-        // 3+ different numbers
         const uniqueNums = [...new Set(numBets.map(b => b.savedNum))];
         const hasMultiNum = uniqueNums.length >= 3;
 
@@ -5865,7 +5400,6 @@
         else if (hasMultiNum) fraudDetail = 'Bet on ' + uniqueNums.length + ' different numbers (' + uniqueNums.join(',') + ') in period ' + currentRound;
 
         if (fraudDetail) {
-          // Log to Firebase fraudLog
           db.ref('users/' + user.uid + '/fraudLog').push({
             detail: fraudDetail,
             mode: cgTimer + 'Min',
@@ -5876,7 +5410,6 @@
         }
       }
     } catch(e) { /* fraud detection error — don't block bet */ }
-    // Re-enable after 1.5s so user can place another bet
     setTimeout(() => {
       if (cgBettingOpen) {
         document.getElementById('cgConfirmBtn').disabled = false;
@@ -5890,7 +5423,6 @@
     window._cgActualBet = actualAmt;
     const selColor = cgSelectedColor === 'green' ? '#27ae60' : cgSelectedColor === 'red' ? '#e02020' : cgSelectedColor === 'violet' ? '#7c4dff' : cgSelectedBigSmall === 'big' ? '#ffd700' : cgSelectedBigSmall === 'small' ? '#2563eb' : '#aaa';
     const selLabel = cgSelectedColor ? cgSelectedColor.charAt(0).toUpperCase()+cgSelectedColor.slice(1) : cgSelectedBigSmall ? cgSelectedBigSmall.charAt(0).toUpperCase()+cgSelectedBigSmall.slice(1) : 'No.'+cgSelectedNum;
-    // Support multiple bets per round — push to array
     if (!window._cgPendingBets) window._cgPendingBets = [];
     const pendingBetObj = {
       round: cgRoundByTimer[cgTimer], bet: amt, actualBet: actualAmt,
@@ -5900,8 +5432,6 @@
     };
     window._cgPendingBets.push(pendingBetObj);
     window._cgPendingBet = window._cgPendingBets[window._cgPendingBets.length - 1];
-
-    // Save pending bet to Firebase so it survives page navigation
     try {
       const db2 = window.fbDB || fbDB;
       if (db2 && window.currentUser) {
@@ -5910,8 +5440,6 @@
         pendingBetObj._firebaseKey = pendingKey;
       }
     } catch(e) {}
-
-    // Immediately show as pending in My Bets
     if (!cgMyBetsByTimer[cgTimer]) cgMyBetsByTimer[cgTimer] = [];
     const pendingEntry = {
       round: cgRoundByTimer[cgTimer], bet: amt, actualBet: actualAmt,
@@ -5923,8 +5451,6 @@
     cgMyBetsByTimer[cgTimer].unshift(pendingEntry);
     cgMyBetsPage = 1;
     renderMyBets();
-
-    // Deduct balance from Firebase + update wager progress
     try {
       const db = window.fbDB || fbDB;
       const user = window.currentUser;
@@ -5938,8 +5464,6 @@
           return parseFloat((current - amt).toFixed(2));
         });
         updateBalanceDisplay(currentBal - amt);
-
-        // ── TRACK DAILY BETS (for Activity Award) ──
         try {
           const todayKey = new Date().toISOString().split('T')[0];
           db.ref('users/' + user.uid + '/dailyBets/' + todayKey).transaction(function(val) {
@@ -5947,33 +5471,25 @@
           });
         } catch(e) {}
 
-
         const roundKey = 'wingo' + cgTimer + 'min_round_' + cgRoundByTimer[cgTimer];
         const userBetsSnap = await db.ref('users/' + user.uid + '/roundBets/' + roundKey).once('value');
         const prevBets = userBetsSnap.val() || {};
-
-        // Check for illegal hedging
         let isHedging = false;
         const newSel = cgSelectedColor || cgSelectedBigSmall;
         const prevSelections = Object.keys(prevBets);
 
         for (const prev of prevSelections) {
-          // Red + Green hedge
           if ((newSel === 'red' && prev === 'green') || (newSel === 'green' && prev === 'red')) { isHedging = true; break; }
-          // Big + Small hedge
           if ((newSel === 'big' && prev === 'small') || (newSel === 'small' && prev === 'big')) { isHedging = true; break; }
         }
 
         if (isHedging) {
-          // Increase wager required by 1.5x of current balance
           const newBal = parseFloat((currentBal - amt).toFixed(2));
           const penalty = parseFloat((newBal * 1.5).toFixed(2));
           const wagerSnap = await db.ref('users/' + user.uid + '/wager').once('value');
           const wager = wagerSnap.val() || { required: 0, completed: 0 };
           const newRequired = parseFloat((parseFloat(wager.required || 0) + penalty).toFixed(2));
           await db.ref('users/' + user.uid + '/wager').update({ required: newRequired });
-
-          // Log the fraud attempt
           await db.ref('users/' + user.uid + '/fraudLog/' + Date.now()).set({
             type: 'hedge_bet',
             detail: 'Bet on ' + newSel + ' after ' + prevSelections.join(','),
@@ -5985,36 +5501,24 @@
 
           showToast('⚠️ Suspicious betting detected! Wager requirement increased.');
         }
-
-        // Save this bet selection to round bets
         if (newSel) {
           await db.ref('users/' + user.uid + '/roundBets/' + roundKey + '/' + newSel).set(true);
         }
-
-        // ── ADD VIP EXP FOR BET ──
         const vipExp = Math.floor(amt / 100);
         if (vipExp > 0) addVipExp(vipExp);
-
-        // Update wager progress
         const wagerSnap2 = await db.ref('users/' + user.uid + '/wager').once('value');
         const wager2 = wagerSnap2.val();
         if (wager2 && wager2.required > 0 && wager2.completed < wager2.required) {
           const newCompleted = parseFloat((wager2.completed + amt).toFixed(2));
           await db.ref('users/' + user.uid + '/wager/completed').set(newCompleted);
         }
-
-        // ── UPDATE totalBet on user profile ──
         const totalBetSnap = await db.ref('users/' + user.uid + '/totalBet').once('value');
         const newTotalBet = parseFloat(((totalBetSnap.val() || 0) + amt).toFixed(2));
         await db.ref('users/' + user.uid + '/totalBet').set(newTotalBet);
-
-        // ── CREDIT COMMISSION TO REFERRERS via referrerChain (fast, no full scan) ──
         try {
-          // Single small read — just this user's referrer chain
           const chainSnap = await db.ref('users/' + user.uid + '/referrerChain').once('value');
           const chain = chainSnap.val();
           if (chain) {
-            // Get commission rates (cached on window to avoid re-fetching every bet)
             if (!window._commRates) {
               const ratesSnap = await db.ref('settings/commissionRates').once('value');
               const rates = ratesSnap.val() || {};
@@ -6024,7 +5528,6 @@
                 3: (rates.l3 != null ? rates.l3 : 0.5) / 100,
                 4: (rates.l4 != null ? rates.l4 : 0.2) / 100,
               };
-              // Refresh cache every 10 minutes in case admin changes rates
               setTimeout(() => { window._commRates = null; }, 600000);
             }
 
@@ -6039,18 +5542,11 @@
               if (commAmt <= 0) continue;
 
               const refKey = level === 1 ? 'referrals' : 'referrals_l' + level;
-
-              // Run all updates for this referrer in parallel
               await Promise.all([
-                // Credit balance
                 db.ref('users/' + referrerUid + '/balance').transaction(bal => parseFloat(((bal || 0) + commAmt).toFixed(2))),
-                // Update totalBet in referral record
                 db.ref('users/' + referrerUid + '/' + refKey + '/' + user.uid + '/totalBet').transaction(v => parseFloat(((v || 0) + amt).toFixed(2))),
-                // Update commission in referral record
                 db.ref('users/' + referrerUid + '/' + refKey + '/' + user.uid + '/commission').transaction(v => parseFloat(((v || 0) + commAmt).toFixed(2))),
-                // Daily commission tracker
                 db.ref('users/' + referrerUid + '/dailyCommission/' + todayKey).transaction(v => parseFloat(((v || 0) + commAmt).toFixed(2))),
-                // Transaction history entry
                 db.ref('users/' + referrerUid + '/transactions/' + Date.now() + '_c' + level).set({
                   type: 'commission',
                   amount: commAmt,
@@ -6064,11 +5560,9 @@
               ]);
             }
           }
-        } catch(refErr) { console.warn('Referral commission error:', refErr); }
+        } catch(refErr) { /* suppressed */ }
       }
-    } catch(e) { console.warn('Balance deduct failed:', e); }
-
-    // Save bet summary to Firebase for smart result engine
+    } catch(e) { /* suppressed */ }
     try {
       const db = window.fbDB || fbDB;
       if (db) {
@@ -6083,34 +5577,26 @@
         summary[key] = { type: betType, value: betValue, amount: amt, timestamp: Date.now() };
         await db.ref(path).set(summary);
       }
-    } catch(e) { console.warn('Bet summary save failed:', e); }
+    } catch(e) { /* suppressed */ }
   }
 
   async function resolveRoundForTimer(timerMode, roundStartTime) {
     roundStartTime = roundStartTime || Date.now();
-    // Get all pending bets for this timer's current round
     const currentRound = cgRoundByTimer[timerMode];
     const pendingBetsForRound = (window._cgPendingBets || []).filter(b =>
       (b.timer === timerMode || !b.timer) &&
       (b.round === currentRound - 1 || b.round === currentRound)
     );
-    // Use FIRST bet's saved values BEFORE removing (important: search before removal)
     const firstBet = pendingBetsForRound[0] || null;
     const savedSelectedColor = firstBet ? firstBet.savedColor : cgSelectedColor;
     const savedSelectedNum = firstBet ? (firstBet.savedNum !== undefined ? firstBet.savedNum : null) : cgSelectedNum;
     const savedSelectedBS = firstBet ? firstBet.savedBS : cgSelectedBigSmall;
-
-    // Now remove processed bets from array
     window._cgPendingBets = (window._cgPendingBets || []).filter(b =>
       !(  (b.timer === timerMode || !b.timer) &&
           (b.round === currentRound - 1 || b.round === currentRound)  )
     );
     window._cgPendingBet = null;
-
-    // Process payout for ALL timers regardless of which is active
     const isActiveTimer = (timerMode === cgTimer);
-
-    // Fetch result from Firebase — each timer has its own path
     let winNum;
     const timerKey = 'wingo/wingo' + timerMode + 'min';
     try {
@@ -6123,8 +5609,6 @@
       }
       const db = window.fbDB || fbDB;
       if (db) {
-        // PRIORITY 1: Check history for resolvedRoundId (currentRound-1)
-        // This is EXACTLY what Results tab shows — guaranteed match
         const histSnap = await db.ref(timerKey + '/history')
           .orderByChild('round').equalTo(currentRound - 1)
           .limitToLast(3).once('value');
@@ -6135,8 +5619,6 @@
             winNum = parseInt(entries[0].num);
           }
         }
-
-        // PRIORITY 2: lastResult (if history not available yet)
         if (winNum === undefined) {
           const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
           const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
@@ -6147,8 +5629,6 @@
             winNum = parseInt(lastVal);
           }
         }
-
-        // PRIORITY 3: currentResult override
         if (winNum === undefined) {
           const snap = await db.ref(timerKey + '/currentResult').once('value');
           const val = snap.val();
@@ -6156,18 +5636,16 @@
             winNum = parseInt(val);
           }
         }
-
-        // No result found — keep pending
         if (winNum === undefined) {
-          console.warn('Result not in Firebase yet for round', currentRound - 1, '— keeping pending');
+          // console.warn('Result not in Firebase yet for round', currentRound - 1, '— keeping pending');
           return;
         }
       } else {
-        console.warn('No Firebase DB — cannot resolve');
+        // console.warn('No Firebase DB — cannot resolve');
         return;
       }
     } catch(e) {
-      console.warn('Firebase read failed — keeping bet pending:', e);
+      // console.warn('Firebase read failed — keeping bet pending:', e);
       return; // Don't resolve on error
     }
     const winColorRaw = numColors[winNum];
@@ -6178,7 +5656,6 @@
     else winColor = 'green';
 
     const bigSmall = winNum >= 5 ? 'Big' : 'Small';
-    // Use amount from pending bet object, not current UI (UI may have changed)
     const firstPendingBet = pendingBetsForRound[0];
     const betAmt = firstPendingBet ? firstPendingBet.bet : (parseInt(document.getElementById('cgBetAmt').value) || 10);
     const actualBet = firstPendingBet ? (firstPendingBet.actualBet || Math.round(betAmt * (1 - cgSettings.fee))) : (window._cgActualBet || Math.round(betAmt * (1 - cgSettings.fee)));
@@ -6191,48 +5668,34 @@
     else if (savedSelectedNum !== null && savedSelectedNum === winNum) { won=true; winAmt=actualBet*cgSettings.numPayout; }
     else if (savedSelectedBS === 'big' && winNum >= 5) { won=true; winAmt=actualBet*cgSettings.colorPayout; }
     else if (savedSelectedBS === 'small' && winNum <= 4) { won=true; winAmt=actualBet*cgSettings.colorPayout; }
-
-    // color circle for history — split for 0 and 5
     const histBg = winColor === 'violet-red'
       ? 'linear-gradient(135deg, #7c4dff 50%, #e02020 50%)'
       : winColor === 'violet-green'
       ? 'linear-gradient(135deg, #7c4dff 50%, #27ae60 50%)'
       : winColor === 'red' ? '#e02020' : '#27ae60';
     const histColorLabel = (winColor === 'violet-red' || winColor === 'violet-green') ? 'violet' : winColor;
-
-    // Add to history
     const timerRound = cgRoundByTimer[timerMode] || 20250513001;
-    // Store history per timer in memory
-    // The round that just ENDED is currentRound-1 (we resolve at start of next round)
     const resolvedRoundId = currentRound - 1;
     if (!cgHistoryByTimer[timerMode]) cgHistoryByTimer[timerMode] = [];
-    // DO NOT add to memory here - loadAllHistory real-time listener handles display
-    // This prevents duplicates from double-write (local + Firebase listener)
-
-    // Save to Firebase for persistence — use push() to avoid overwrite race conditions
     try {
       const db = window.fbDB || fbDB;
       if (db) {
         const histPath = 'wingo/wingo' + timerMode + 'min/history';
         await db.ref(histPath).push({ round: resolvedRoundId, num: winNum, color: histColorLabel, bigSmall, histBg, timestamp: Date.now() });
       }
-    } catch(e) { console.warn('History save failed:', e); }
+    } catch(e) { /* suppressed */ }
     if (cgHistory.length > 20) cgHistory.pop();
-    // Keep showing current round in header (not resolved round)
     if (cgTimer === timerMode) {
       const roundEl = document.getElementById('cgRoundNum');
       if (roundEl) roundEl.textContent = cgRoundByTimer[cgTimer];
     }
 
     renderHistRows();
-
-    // Process pending bets for ALL timers (not just active) — always credit winnings
     if (pendingBetsForRound.length > 0) {
       let totalWin = 0;
       let anyWon = false;
 
       for (const pendingBet of pendingBetsForRound) {
-          // Calculate win for this specific bet
           const betActual = pendingBet.actualBet || Math.round(pendingBet.bet * (1 - cgSettings.fee));
           let betWon = false, betWinAmt = 0;
 
@@ -6246,8 +5709,6 @@
           else if (pendingBet.savedBS === 'small' && winNum <= 4) { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
 
           if (betWon) { totalWin += betWinAmt; anyWon = true; }
-
-          // Update pending entry in My Bets instead of adding new
           const pendingIdx = cgMyBetsByTimer[timerMode].findIndex(b =>
             b.status === 'pending' && b.round === pendingBet.round && b.selection === pendingBet.selection && b.bet === pendingBet.bet
           );
@@ -6265,8 +5726,6 @@
             cgMyBetsByTimer[timerMode].unshift(betRecord);
           }
           if (cgMyBetsByTimer[timerMode].length > 50) cgMyBetsByTimer[timerMode].pop();
-
-          // Delete from Firebase pending bets
           try {
             const db3 = window.fbDB || fbDB;
             if (db3 && window.currentUser && pendingBet._firebaseKey) {
@@ -6274,7 +5733,6 @@
             }
           } catch(e) {}
           addBetToHistory('WinGo', pendingBet.bet, histColorLabel + ' / ' + winNum, betWinAmt.toFixed(0), betWon, timerRound.toString(), 0);
-          // Save to Firebase
           try {
             const db2 = window.fbDB || fbDB;
             if (db2 && window.currentUser) {
@@ -6285,14 +5743,10 @@
         }
 
         renderMyBets();
-
-        // Show result popup only for active timer
         if (isActiveTimer) {
           const resolvedRound = pendingBetsForRound[0] ? pendingBetsForRound[0].round : (currentRound - 1);
           showCGResult(anyWon, winNum, winColor, totalWin, pendingBetsForRound.reduce((s,b)=>s+b.bet,0), resolvedRound);
         }
-
-        // Credit total win to balance — atomic transaction to prevent race conditions
         if (anyWon && totalWin > 0) {
           try {
             const db = window.fbDB || fbDB;
@@ -6302,17 +5756,15 @@
                 return parseFloat(((bal || 0) + totalWin).toFixed(2));
               });
             }
-          } catch(e) { console.warn('Win credit error:', e); }
+          } catch(e) { /* suppressed */ }
         }
     }
 
     window._cgActualBet = null;
-    // Clear bet summary for this timer mode
     try {
       const db = window.fbDB || fbDB;
       if (db) await db.ref('wingo/wingo' + timerMode + 'min/betSummary').remove();
     } catch(e) {}
-    // Only reset UI selections for active timer
     if (isActiveTimer) {
       cgSelectedColor = null; cgSelectedNum = null; cgSelectedBigSmall = null;
       document.querySelectorAll('.cg-color-btn, .cg-num-btn').forEach(b => b.classList.remove('selected'));
@@ -6320,23 +5772,16 @@
   }
 
   function showCGResult(won, num, color, winAmt, betAmt, resolvedRound) {
-    // Only show if game is open
     const gameOverlay = document.getElementById('colorGameOverlay');
     if (!gameOverlay || !gameOverlay.classList.contains('open')) return;
 
     const overlay = document.getElementById('cgResultOverlay');
     const popup = document.getElementById('cgResultPopup');
     if (!overlay || !popup) return;
-
-    // Set win/lose class on popup
     overlay.classList.remove('show', 'hide');
     popup.className = 'cg-result-popup ' + (won ? 'win' : 'lose');
-
-    // Title
     const titleEl = document.getElementById('cgResTitle');
     if (titleEl) titleEl.textContent = won ? 'Congratulations' : 'Better Luck!';
-
-    // Color tag
     const colorMap = {
       'violet-red':   'linear-gradient(135deg,#7c4dff 50%,#e02020 50%)',
       'violet-green': 'linear-gradient(135deg,#7c4dff 50%,#27ae60 50%)',
@@ -6353,41 +5798,25 @@
       colorTag.textContent = colorLabel;
       colorTag.style.background = colorMap[color] || '#555';
     }
-
-    // Number badge
     const badge = document.getElementById('cgResNumBadge');
     if (badge) {
       badge.textContent = num !== undefined ? num : '';
       badge.style.background = colorMap[color] || '#555';
       badge.style.display = num !== undefined ? 'inline-flex' : 'none';
     }
-
-    // Big/Small tag
     const bsTag = document.getElementById('cgResBigSmallTag');
     if (bsTag) bsTag.textContent = (num >= 5) ? 'Big' : 'Small';
-
-    // Scroll label and amount
     const labelEl = document.getElementById('cgResLabel');
     if (labelEl) labelEl.textContent = won ? 'Bonus' : 'Loss';
 
     const amtEl = document.getElementById('cgResAmt');
     if (amtEl) amtEl.textContent = (won ? '+' : '-') + '₹' + parseFloat(won ? winAmt : betAmt).toLocaleString('en-IN', {minimumFractionDigits:2});
-
-    // Period - show the RESOLVED round not current running round
     const periodEl = document.getElementById('cgResPeriod');
     if (periodEl) periodEl.textContent = 'Period: ' + (resolvedRound || cgRoundByTimer[cgTimer] || '');
-
-    // Show overlay FIRST
     overlay.classList.add('show');
-
-    // Confetti only on win
     if (won) spawnConfetti();
-
-    // Clear any existing timer
     if (window._resultTimer) { clearTimeout(window._resultTimer); window._resultTimer = null; }
     if (window._countdownInterval) { clearInterval(window._countdownInterval); window._countdownInterval = null; }
-
-    // Start countdown ring and auto-dismiss after animation settles
     setTimeout(() => {
       startCountdownRing(3);
       window._resultTimer = setTimeout(() => closeResultPopup(), 3000);
@@ -6463,10 +5892,8 @@
     });
     document.getElementById('cgTabResults').style.display = tab === 'results' ? 'block' : 'none';
     document.getElementById('cgTabMyBets').style.display = tab === 'mybets' ? 'block' : 'none';
-    // Reset to page 1 and scroll to top on tab switch
     if (tab === 'results') { cgHistPage = 1; renderHistRows(); }
     if (tab === 'mybets') { cgMyBetsPage = 1; renderMyBets(); }
-    // Scroll game overlay to the history section
     const overlay = document.getElementById('colorGameOverlay');
     const histEl = document.querySelector('.cg-history');
     if (overlay && histEl) {
@@ -6494,7 +5921,6 @@
       const plColor = isPending ? 'var(--gold)' : b.pl > 0 ? 'var(--green)' : b.pl < 0 ? 'var(--red2)' : 'var(--muted)';
       const plText = isPending ? '⏳' : b.pl > 0 ? '+₹'+b.pl : b.pl < 0 ? '−₹'+Math.abs(b.pl) : '—';
       const rowStyle = isPending ? 'border:1px solid rgba(240,192,64,0.3);background:rgba(240,192,64,0.04);' : '';
-      // Format timestamp subtly
       const _ts = b.timestamp ? new Date(b.timestamp) : null;
       const _timeStr = _ts ? (
         String(_ts.getFullYear()).slice(2) + '/' +
@@ -6534,7 +5960,6 @@
   function renderHistRows() {
     const el = document.getElementById('cgHistRows');
     if (!el) return;
-    // Filter out current active round — only show completed rounds
     const currentRound = cgRoundByTimer[cgTimer];
     const completedHistory = cgHistory.filter(h => h.round !== currentRound);
     const total = completedHistory.length;
@@ -6542,8 +5967,6 @@
     if (cgHistPage > totalPages) cgHistPage = totalPages;
     const start = (cgHistPage - 1) * cgHistPageSize;
     const pageData = completedHistory.slice(start, start + cgHistPageSize);
-
-    // Update pagination controls
     const pageNumEl = document.getElementById('cgHistPageNum');
     const totalPagesEl = document.getElementById('cgHistTotalPages');
     const prevBtn = document.getElementById('cgHistPrev');
@@ -6569,11 +5992,7 @@
   function cgHistPrevPage() {
     if (cgHistPage > 1) { cgHistPage--; renderHistRows(); }
   }
-
-
-  // ── MOBILE BOTTOM NAV ──
   function mobileNav(page) {
-    // If not logged in, only allow home - everything else goes to login
     if (!isLoggedIn && page !== 'home') {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       const loginPage = document.getElementById('page-login');
@@ -6582,7 +6001,6 @@
       showToast('🔐 Please sign in to continue');
       return;
     }
-    // Close game overlay if open, then navigate
     const gameOverlay = document.getElementById('colorGameOverlay');
     if (gameOverlay && gameOverlay.classList.contains('open')) {
       closeColorGame();
@@ -6615,8 +6033,6 @@
     };
     if (map[page]) { const btn = document.getElementById(map[page]); if (btn) btn.classList.add('active'); }
   }
-
-  // ── BET HISTORY ──
   let betHistoryData = []; // Loaded from Firebase
 
   let currentBetFilter = 'all';
@@ -6636,22 +6052,16 @@
     container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="common.loading">Loading...</span></div>';
     try {
       let txs = [];
-
-      // 1. Only APPROVED deposits — merge bonus into single row
       try {
         const depSnap = await db.ref('adminRequests/deposits').once('value');
         if (depSnap.val()) {
-          // Get current balance to calculate running balance
           const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
           const currentBal = parseFloat(balSnap.val() || 0);
 
           const approved = Object.values(depSnap.val())
             .filter(d => d.uid === user.uid && d.status === 'approved')
             .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); // oldest first
-
-          // Calculate running balance for those missing balanceAfter
           let runningBal = currentBal;
-          // Work backwards from current balance
           for (let i = approved.length - 1; i >= 0; i--) {
             const d = approved[i];
             if (!d.balanceAfter) {
@@ -6677,9 +6087,7 @@
             });
           });
         }
-      } catch(e) { console.warn('dep err:', e); }
-
-      // 2. ALL withdrawals shown — balance already deducted on apply
+      } catch(e) { /* suppressed */ }
       try {
         const withSnap = await db.ref('adminRequests/withdrawals').once('value');
         if (withSnap.val()) {
@@ -6694,7 +6102,6 @@
                 balance: w.balanceAfter || 0,
                 timestamp: w.timestamp || 0
               });
-              // If rejected, also show refund entry
               if (w.status === 'rejected') {
                 txs.push({
                   type: 'withdrawal_refund',
@@ -6706,9 +6113,7 @@
               }
             });
         }
-      } catch(e) { console.warn('with err:', e); }
-
-      // 3. Other transactions (commission, admin credits, bonuses) — skip deposit types
+      } catch(e) { /* suppressed */ }
       try {
         const txSnap = await db.ref('users/' + user.uid + '/transactions').once('value');
         if (txSnap.val()) {
@@ -6717,9 +6122,7 @@
             txs.push(tx);
           });
         }
-      } catch(e) { console.warn('tx err:', e); }
-
-      // 4. Bet history — balance saved per entry
+      } catch(e) { /* suppressed */ }
       try {
         const betSnap = await db.ref('users/' + user.uid + '/betHistory').once('value');
         if (betSnap.val()) {
@@ -6733,9 +6136,7 @@
             });
           });
         }
-      } catch(e) { console.warn('bet err:', e); }
-
-      // Sort by timestamp desc
+      } catch(e) { /* suppressed */ }
       allTransactions = txs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
       renderTxRows(allTransactions);
     } catch(e) {
@@ -6836,8 +6237,6 @@
     else if (filter === 'dice') data = data.filter(d => d.game === 'Dice');
     else if (filter === 'win') data = data.filter(d => d.won);
     else if (filter === 'lose') data = data.filter(d => !d.won);
-
-    // Update summary stats
     const totalBets = betHistoryData.length;
     const totalWon = betHistoryData.filter(d => d.won).reduce((s,d) => s + parseFloat(d.profit||0), 0);
     const totalLost = betHistoryData.filter(d => !d.won).reduce((s,d) => s + parseFloat(d.bet||0), 0);
@@ -6852,8 +6251,6 @@
     if (acctNet) { acctNet.textContent = (netProfit >= 0 ? '+' : '') + '₹' + netProfit.toLocaleString('en-IN'); acctNet.style.color = netProfit >= 0 ? 'var(--green)' : 'var(--red2)'; }
 
     if (data.length === 0) { container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No bets yet</div>'; return; }
-
-    // Reset page if filter changed
     const totalPages = Math.max(1, Math.ceil(data.length / _betHistPageSize));
     if (_betHistPage > totalPages) _betHistPage = 1;
     const pageItems = data.slice((_betHistPage-1)*_betHistPageSize, _betHistPage*_betHistPageSize);
@@ -6887,14 +6284,10 @@
     currentBetFilter = filter;
     renderBetHistory(filter);
   }
-
-  // Add bet to history when round resolves — saves to Firebase
   async function addBetToHistory(game, bet, result, profit, won, round, balanceAfter) {
     const now = new Date();
     const time = now.toLocaleDateString('en-IN', {day:'numeric', month:'short'}) + ', ' +
                  now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-
-    // Use passed balance or get current balance
     let currentBal = balanceAfter || 0;
     if (!balanceAfter) {
       try {
@@ -6918,22 +6311,19 @@
     };
     betHistoryData.unshift(entry);
     if (currentBetFilter !== undefined) renderBetHistory(currentBetFilter);
-
-    // Save to Firebase
     try {
       const db = window.fbDB || fbDB;
       const user = window.currentUser;
       if (db && user) {
         await db.ref('users/' + user.uid + '/betHistory').push(entry);
       }
-    } catch(e) { console.warn('Bet history save failed:', e); }
+    } catch(e) { /* suppressed */ }
   }
 
   let _toastTimer = null;
   function showToast(msg) {
     const t = document.getElementById('toast');
     if (!t) return;
-    // Clear any existing timer to prevent early removal
     if (_toastTimer) { clearTimeout(_toastTimer); _toastTimer = null; }
     t.textContent = msg;
     t.classList.add('show');
@@ -6942,17 +6332,12 @@
       _toastTimer = null;
     }, 3000);
   }
-
-
-  // ── USER PROFILE ──
   async function loadUserProfile(uid) {
     try {
       const snap = await firebase.database().ref('users/' + uid).once('value');
       const profile = snap.val();
       if (!profile) return;
       window.userProfile = profile;
-
-      // Load real bet history from Firebase
       try {
         firebase.database().ref('users/' + uid + '/betHistory').on('value', histSnap => {
           if (histSnap.val()) {
@@ -6962,8 +6347,6 @@
           }
         });
       } catch(e) {}
-
-      // Load real transactions (deposits/withdrawals)
       try {
         const txSnap = await firebase.database().ref('users/' + uid + '/transactions').once('value');
         if (txSnap.val()) {
@@ -6972,27 +6355,21 @@
           renderTransactionHistory();
         }
       } catch(e) {}
-
-      // Update nav avatar
       const avatarEl = document.getElementById('userAvatar');
       if (avatarEl) avatarEl.textContent = (profile.username || profile.firstName || 'U').charAt(0).toUpperCase();
-      // Update bottom nav avatar
       const bottomAv = document.getElementById('bottomAvatar');
       if (bottomAv) {
         bottomAv.textContent = (profile.username || profile.firstName || 'U').charAt(0).toUpperCase();
         bottomAv.style.display = 'flex';
-        // Hide the SVG person icon
         const svgIcon = bottomAv.previousElementSibling;
         if (svgIcon) svgIcon.style.display = 'none';
       }
-      // Update profile page
       const initial = (profile.username || profile.firstName || 'U').charAt(0).toUpperCase();
       const profAvBig = document.getElementById('profileAvatarBig');
       if (profAvBig) profAvBig.textContent = initial;
       const profUserDisp = document.getElementById('profileUsernameDisplay');
       if (profUserDisp) profUserDisp.textContent = profile.username || profile.firstName || '—';
       const profUID = document.getElementById('profileUIDDisplay');
-      // Auto-assign numeric Member ID if user doesn't have one
       let uidVal = profile.memberId;
       if (!uidVal || uidVal.length > 10) {
         const user = window.currentUser;
@@ -7027,7 +6404,6 @@
         profUIDEl.appendChild(uidVal2);
         profUIDEl.appendChild(copyBtn);
       }
-      // Show last login
       const lastLoginEl = document.getElementById('profileLastLogin');
       if (lastLoginEl && profile.lastLogin) {
         lastLoginEl.textContent = '🕐 Last login: ' + new Date(profile.lastLogin).toLocaleString('en-IN', {
@@ -7036,16 +6412,11 @@
       }
       const profContact = document.getElementById('profileContactDisplay');
       if (profContact) profContact.textContent = profile.contact || profile.mobile || profile.email || '—';
-      // Update profile page balance + username
       const profBal = document.getElementById('profileBalance');
       if (profBal) profBal.textContent = '₹' + parseFloat(profile.balance || 0).toLocaleString('en-IN', {minimumFractionDigits:2});
       const profUser = document.getElementById('profileUsername') || document.getElementById('profileUsernameDisplay');
       if (profUser) profUser.textContent = '@' + (profile.username || '—') + ' · ' + (profile.contact || profile.mobile || profile.email || '');
-
-      // Update balance
       updateBalanceDisplay(profile.balance || 0);
-
-      // ── VIP BADGE ON PROFILE ──
       try {
         const db = window.fbDB || fbDB;
         const vipSnap = await db.ref('users/' + user.uid + '/vip/exp').once('value');
@@ -7062,15 +6433,11 @@
           badge.style.borderColor = textColors[vLevel.name] || textColors.Bronze;
         }
       } catch(e) {}
-
-      // Update profile page if open
       updateProfilePage(profile);
-
-      // Listen for balance changes
       firebase.database().ref('users/' + uid + '/balance').on('value', (snap) => {
         updateBalanceDisplay(snap.val() || 0);
       });
-    } catch(e) { console.warn('Profile load failed:', e); }
+    } catch(e) { /* suppressed */ }
   }
 
   function updateBalanceDisplay(balance) {
@@ -7084,13 +6451,10 @@
     if (walletBal) walletBal.textContent = formatted;
     const profBal = document.getElementById('profileBalance');
     if (profBal) profBal.textContent = formatted;
-    // Update mobile home balance
     const mobileHomeBal = document.getElementById('mobileHomeBalance');
     if (mobileHomeBal) mobileHomeBal.textContent = bal.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
-    // Also update mobileBalanceAmt if exists
     const mobileBalAmt = document.getElementById('mobileBalanceAmt');
     if (mobileBalAmt && !mobileHomeBal) mobileBalAmt.textContent = formatted;
-    // Update game balance display (real-time in WinGo) - compact format for large amounts
     const cgBal = document.getElementById('cgBalanceDisplay');
     if (cgBal) {
       let cgBalText;
@@ -7113,8 +6477,6 @@
       updateBalanceDisplay(snap.val() || 0);
     });
   }
-
-  // mobileHomeBalance element created dynamically if needed
   function updateMobileHomeBalance() {
     const db = window.fbDB || fbDB;
     const user = window.currentUser;
@@ -7132,16 +6494,11 @@
     if (mobileEl) mobileEl.value = profile.mobile || '';
     const emailEl = document.querySelectorAll('#page-profile input[type="text"]')[2];
     if (emailEl) emailEl.value = profile.email || '';
-    // Update referral code
     const refCodeEl = document.getElementById('myRefCode');
     if (refCodeEl && profile.referralCode) refCodeEl.textContent = profile.referralCode;
     const refLinkEl = document.getElementById('refLink');
     if (refLinkEl && profile.referralCode) refLinkEl.textContent = 'https://jjvvyt02-cmyk.github.io/royalwin?invitationCode=' + profile.referralCode;
   }
-
-
-
-  // ── AUTO LOGOUT (6 hours inactivity) ──
   let inactivityTimer;
   const SIX_HOURS = 3 * 60 * 60 * 1000; // 3hr inactivity timeout
   const INACTIVITY_LIMIT = SIX_HOURS;
@@ -7155,17 +6512,11 @@
       }
     }, SIX_HOURS);
   }
-
-  // Reset on any user activity
   ['click','touchstart','keypress','scroll','mousemove'].forEach(e => {
     document.addEventListener(e, resetInactivityTimer, { passive: true });
   });
   resetInactivityTimer(); // Start timer on load
-
-
-  // ── FIREBASE SETUP (Compat SDK) ──
   var fbDB, fbRef, fbSet, fbGet, fbOnValue;
-  // Auto-init Firebase — retry until SDK loads
   function tryInitFirebase(attempts) {
     if (typeof firebase !== 'undefined') {
       initFirebase();
@@ -7176,10 +6527,6 @@
     }
   }
   window.addEventListener('load', () => tryInitFirebase(10));
-
-  // ── FIREBASE CONFIG ──
-  // TODO: Replace these values with your own Firebase project config
-  // Get them from: https://console.firebase.google.com → Project Settings → Your Apps → SDK setup
   const FIREBASE_CONFIG = {
     apiKey: "AIzaSyBOw37okdtBnUv3rfnnUg8nE0Vb5LHyl6g",
     authDomain: "royalwin-32d97.firebaseapp.com",
@@ -7190,23 +6537,14 @@
     appId: "1:1056996003114:web:8c89f3af4a3b81fd582253",
     measurementId: "G-6Q7DX3EG1G"
   };
-
-  // Initialize Firebase immediately
   function initFirebase() {
     try {
-      // Check if already initialized
       if (firebase.apps.length === 0) {
         firebase.initializeApp(FIREBASE_CONFIG);
       }
       fbDB = firebase.database();
       window.fbDB = fbDB;
       window.fbAuth = firebase.auth();
-
-      // ── HIDE LOADER — wait for Firebase auth confirmation ──
-      // Do NOT hide loader on fixed timeout — wait for onAuthStateChanged
-      // This prevents guest page flash for already-logged-in users
-
-      // Listen for auth state changes
       firebase.auth().onAuthStateChanged((user) => {
         if (user) {
           window.currentUser = user;
@@ -7215,32 +6553,26 @@
           loadNotifications();
           loadAnnouncement();
           document.getElementById('navGuest').style.display = 'none';
-          // Hide loader now that we know user is logged in — show correct page
           const loader = document.getElementById('appLoader');
           if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 400); }
           document.getElementById('navUser').style.display = 'flex';
-          
+
           showTicker();
-          // Hide guest buttons, show welcome banner when logged in
           const heroSignIn = document.getElementById('heroSignInBtn');
           if (heroSignIn) heroSignIn.style.display = 'none';
           const heroPlay = document.getElementById('heroPlayBtn');
           if (heroPlay) heroPlay.style.display = 'none';
           const heroBanner = document.getElementById('heroWelcomeBanner');
           if (heroBanner) heroBanner.style.display = 'block';
-          // Show bottom nav for logged-in users
           const mobileNavEl = document.getElementById('mobileNav');
           if (mobileNavEl) mobileNavEl.style.display = 'grid';
-          // Mobile: show app home, hide desktop hero
           if (window.innerWidth <= 768) {
             const mah = document.getElementById('mobileAppHome');
             const dh = document.getElementById('desktopHome');
             if (mah) mah.style.display = 'block';
             if (dh) dh.style.display = 'none';
-            // Update mobile home balance
             updateMobileHomeBalance();
           }
-          // Save last login time
           try {
             const db = window.fbDB || fbDB;
             if (db) db.ref('users/' + user.uid + '/lastLogin').set(Date.now());
@@ -7249,48 +6581,32 @@
         } else {
           window.currentUser = null;
           isLoggedIn = false;
-
-          // ── GUEST STATE: reset everything ──
-          // 1. Switch nav
           const ng = document.getElementById('navGuest');
           const nu = document.getElementById('navUser');
           if (ng) ng.style.display = 'flex';
           if (nu) nu.style.display = 'none';
-
-          // 2. Show login/register buttons, hide welcome banner
           const heroPlayBtn = document.getElementById('heroPlayBtn');
           if (heroPlayBtn) heroPlayBtn.style.display = 'inline-flex';
           const heroSignInBtn = document.getElementById('heroSignInBtn');
           if (heroSignInBtn) heroSignInBtn.style.display = 'inline-flex';
           const heroWelcome = document.getElementById('heroWelcomeBanner');
           if (heroWelcome) heroWelcome.style.display = 'none';
-
-          // 3. Show desktop/guest home, hide mobile logged-in home
           const mah = document.getElementById('mobileAppHome');
           const dh = document.getElementById('desktopHome');
           if (mah) mah.style.display = 'none';
           if (dh) dh.style.display = 'block';
-
-          // 4. Hide bottom nav
           const mobileNavEl = document.getElementById('mobileNav');
           if (mobileNavEl) mobileNavEl.style.display = 'none';
-
-          // 5. Close game overlay if open
           const gameOverlay = document.getElementById('colorGameOverlay');
           if (gameOverlay) gameOverlay.classList.remove('open');
-
-          // 6. Force navigate to home page
           document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
           const homePage = document.getElementById('page-home');
           if (homePage) { homePage.classList.add('active'); homePage.scrollTop = 0; }
           window.scrollTo(0, 0);
         }
       });
-      // Test read to confirm connection
       fbDB.ref('wingo/currentResult').once('value').then(snap => {
       }).catch(e => console.error('Firebase read error:', e));
-      // Listen for scheduled results
-      // Load schedule for each timer mode
       const cgScheduleByTimer = {1: [], 3: [], 5: []};
       window.cgScheduleByTimer = cgScheduleByTimer;
       [1,3,5].forEach(mins => {
@@ -7302,12 +6618,9 @@
           }
         });
       });
-      // Listen for betting lock
       fbDB.ref('wingo/bettinglocked').on('value', (snap) => {
         if (snap.val() === true) cgBettingOpen = false;
       });
-
-      // Listen for announcement banner
       fbDB.ref('announcement').on('value', (snap) => {
         const data = snap.val();
         let bannerEl = document.getElementById('announcementBanner');
@@ -7324,8 +6637,6 @@
           bannerEl.style.display = 'none';
         }
       });
-
-      // Listen for maintenance mode
       fbDB.ref('maintenance').on('value', (snap) => {
         const data = snap.val();
         if (data && data.active) {
@@ -7344,8 +6655,6 @@
           if (overlay) overlay.style.display = 'none';
         }
       });
-
-      // Block user check
       firebase.auth().onAuthStateChanged((user) => {
         if (user) {
           fbDB.ref('users/' + user.uid + '/isBlocked').on('value', (snap) => {
@@ -7357,15 +6666,12 @@
         }
       });
     } catch(e) {
-      console.warn('Firebase error:', e.message);
+      // console.warn('Firebase error:', e.message);
     }
   }
 
 </script>
 
-<!-- ══════════════════════════════════════
-     WALLET PAGE
-══════════════════════════════════════ -->
 <div class="page" id="page-wallet">
   <div class="wallet-page">
     <div class="wallet-hero">
@@ -7381,7 +6687,7 @@
       <button class="wallet-tab" id="tab-withdraw" onclick="switchWalletTab('withdraw')">⬆️ Withdraw</button>
     </div>
 
-    <!-- DEPOSIT -->
+    
     <div class="wallet-panel active" id="panel-deposit">
       <div class="section-title" style="font-size:1.2rem;margin-bottom:0.4rem;">Select Payment Method</div>
       <div class="section-sub">Choose how you want to deposit funds</div>
@@ -7398,7 +6704,7 @@
         </div>
       </div>
 
-      <!-- Bonus Selection — shown only for first deposit -->
+      
       <div id="bonusSelectionSection" style="display:none;margin-bottom:1.5rem;">
         <div class="section-title" style="font-size:1.1rem;margin-bottom:0.8rem;">🎁 First Deposit Bonus</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;max-width:600px;">
@@ -7422,7 +6728,7 @@
         <div id="selectedBonusInfo" style="margin-top:0.8rem;padding:0.7rem 1rem;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-size:0.8rem;color:var(--muted);max-width:500px;display:none;"></div>
       </div>
 
-      <!-- Recurring deposit bonus info (2nd deposit onwards) -->
+      
       <div id="recurringBonusInfo" style="display:none;margin-bottom:1.2rem;padding:0.8rem 1rem;background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:10px;max-width:500px;">
         <div style="font-size:0.85rem;font-weight:700;color:var(--green);">🎁 5% Bonus Auto-Applied</div>
         <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;">You'll receive 5% bonus on this deposit with 1x wager requirement.</div>
@@ -7443,7 +6749,7 @@
         <label class="form-label" id="depositAmtLabel">Or enter custom amount (₹300 – ₹20,000)</label>
         <input class="form-input" type="number" id="depositAmount" placeholder="Enter amount in ₹" value="300" min="300" max="20000" oninput="updateBonusPreview()" onchange="updateBonusPreview()">
       </div>
-      <!-- USDT equivalent display -->
+      
       <div id="usdtEquivalent" style="display:none;background:rgba(38,161,123,0.08);border:1px solid rgba(38,161,123,0.25);border-radius:10px;padding:0.7rem 1rem;max-width:400px;margin-top:0.5rem;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <span style="font-size:0.82rem;color:var(--muted);">You need to send:</span>
@@ -7455,7 +6761,7 @@
         <button id="depositActionBtn" class="btn btn-gold" style="padding:0.8rem 2rem;" onclick="openGatewayDeposit()">📱 Pay Now via UPI</button>
       </div>
 
-      <!-- Deposit History -->
+      
       <div style="margin-top:2rem;">
         <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.95rem;margin-bottom:0.8rem;">📋 Deposit History</div>
         <div id="depositHistoryRows">
@@ -7464,12 +6770,12 @@
       </div>
     </div>
 
-    <!-- WITHDRAW -->
+    
     <div class="wallet-panel" id="panel-withdraw">
       <div class="section-title" style="font-size:1.2rem;margin-bottom:0.4rem;">Withdraw Funds</div>
       <div class="section-sub">Withdrawals processed within 24 hours</div>
 
-      <!-- Wager progress bar -->
+      
       <div id="wagerProgressSection" style="display:none;background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.2);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1rem;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
           <div style="font-size:0.85rem;font-weight:700;color:var(--red2);">⚠️ Wager Requirement Pending</div>
@@ -7495,12 +6801,12 @@
         <div style="font-size:0.78rem;color:var(--muted);text-align:center;">Complete wager requirement to unlock withdrawal</div>
       </div>
 
-      <!-- Wager completed -->
+      
       <div id="wagerDoneSection" style="display:none;background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:12px;padding:0.8rem 1rem;margin-bottom:1rem;">
         <div style="font-size:0.85rem;color:var(--green);font-weight:700;">✅ Wager completed! Withdrawal is unlocked.</div>
       </div>
 
-      <!-- Total Wagered info -->
+      
       <div id="totalWageredInfo" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.8rem 1rem;margin-bottom:1rem;">
         <div style="display:flex;justify-content:space-between;align-items:center;">
           <span style="font-size:0.82rem;color:var(--muted);">Total Wagered</span>
@@ -7512,7 +6818,7 @@
         </div>
       </div>
 
-      <!-- Method selection -->
+      
       <div class="deposit-methods" style="margin-bottom:1rem;">
         <div class="method-card selected" id="wm-upi" onclick="selectWithdrawMethod('upi',this)" style="flex:1;">
           <div class="method-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6C3CE1,#4B9BF5);display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;font-size:1.3rem;">📲</div>
@@ -7531,15 +6837,15 @@
         </div>
       </div>
 
-      <!-- Amount -->
+      
       <div class="form-group" style="max-width:420px;">
         <label class="form-label">Withdraw Amount (₹)</label>
         <input class="form-input" type="number" id="withdrawAmount" placeholder="Enter amount (min ₹300)">
       </div>
 
-      <!-- UPI Fields -->
+      
       <div id="withdrawFields-upi" style="max-width:420px;">
-        <!-- Saved UPI -->
+        
         <div id="savedUpiDisplay" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
           <div>
             <div style="font-size:0.72rem;color:var(--muted);">Saved UPI ID</div>
@@ -7547,7 +6853,7 @@
           </div>
           <div style="font-size:0.72rem;color:var(--green);">🔒 Saved</div>
         </div>
-        <!-- New UPI input -->
+        
         <div id="newUpiForm">
           <div class="form-group">
             <label class="form-label">UPI ID</label>
@@ -7557,9 +6863,9 @@
         </div>
       </div>
 
-      <!-- Bank Fields -->
+      
       <div id="withdrawFields-bank" style="display:none;max-width:420px;">
-        <!-- Saved Bank -->
+        
         <div id="savedBankDisplay" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.5rem;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <div style="font-size:0.72rem;color:var(--muted);">Saved Bank Details</div>
@@ -7567,7 +6873,7 @@
           </div>
           <div id="savedBankText" style="font-size:0.82rem;color:var(--text);margin-top:0.3rem;line-height:1.6;"></div>
         </div>
-        <!-- New Bank input -->
+        
         <div id="newBankForm">
           <div class="form-group">
             <label class="form-label">Account Holder Name</label>
@@ -7589,9 +6895,9 @@
         </div>
       </div>
 
-      <!-- USDT Fields -->
+      
       <div id="withdrawFields-usdt" style="display:none;max-width:420px;">
-        <!-- Saved USDT -->
+        
         <div id="savedUsdtDisplay" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
           <div>
             <div style="font-size:0.72rem;color:var(--muted);">Saved USDT Address</div>
@@ -7599,7 +6905,7 @@
           </div>
           <div style="font-size:0.72rem;color:var(--green);flex-shrink:0;margin-left:0.5rem;">🔒 Saved</div>
         </div>
-        <!-- New USDT input -->
+        
         <div id="newUsdtForm">
           <div class="form-group">
             <label class="form-label">USDT Wallet Address (TRC20)</label>
@@ -7612,14 +6918,14 @@
         </div>
       </div>
 
-      <!-- Balance info -->
+      
       <div style="background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.15);border-radius:10px;padding:0.8rem 1rem;margin:1rem 0;max-width:420px;font-size:0.85rem;color:var(--muted);">
         💰 Available: <strong style="color:var(--gold);" id="withdrawAvailBalance">₹0.00</strong> &nbsp;|&nbsp; Min: <strong style="color:var(--text);" id="withdrawMinDisplay">₹300</strong>
       </div>
 
       <button class="btn btn-gold" style="padding:0.8rem 2.5rem;max-width:420px;width:100%;" onclick="doWithdraw()">⬆️ Withdraw Now</button>
 
-      <!-- Withdrawal History -->
+      
       <div style="margin-top:2rem;">
         <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.95rem;margin-bottom:0.8rem;">📋 Withdrawal History</div>
         <div id="withdrawHistoryRows">
@@ -7629,7 +6935,7 @@
 
     </div>
 
-    <!-- HISTORY (deposit history only) -->
+    
     <div class="wallet-panel" id="panel-history">
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.95rem;margin-bottom:1rem;">📋 Deposit History</div>
       <div id="depositHistoryRows">
@@ -7643,15 +6949,13 @@
   </div>
 </div>
 
-
-<!-- 100% BONUS PAGE -->
 <div class="page" id="page-bonus100">
   <div style="max-width:500px;margin:0 auto;padding:1rem;">
 
-    <!-- Back button -->
+    
     <button onclick="history.back() || showPage('home')" class="back-btn">←</button>
 
-    <!-- Hero banner -->
+    
     <div style="background:linear-gradient(135deg,#1a0800,#3d1800);border:1px solid rgba(240,192,64,0.3);border-radius:20px;padding:1.5rem;text-align:center;margin-bottom:1.2rem;position:relative;overflow:hidden;">
       <div style="position:absolute;top:-10px;right:-10px;font-size:6rem;opacity:0.06;">🎁</div>
       <div style="font-size:0.72rem;color:var(--gold);text-transform:uppercase;letter-spacing:2px;margin-bottom:0.3rem;">First Deposit Only</div>
@@ -7660,11 +6964,11 @@
       <div style="font-size:0.78rem;color:var(--muted);margin-top:0.3rem;">10x wager requirement applies</div>
     </div>
 
-    <!-- Amount input + live preview -->
+    
     <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.2rem;margin-bottom:1rem;">
       <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.8rem;font-weight:600;">💰 Enter Deposit Amount</div>
 
-      <!-- Presets -->
+      
       <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.4rem;margin-bottom:0.8rem;">
         <button onclick="setBonus100Amt(500)" class="amount-preset">₹500</button>
         <button onclick="setBonus100Amt(1000)" class="amount-preset">₹1,000</button>
@@ -7676,7 +6980,7 @@
         oninput="calcBonus100(this.value)"
         style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.8rem;color:var(--text);font-size:1rem;margin-bottom:1rem;box-sizing:border-box;">
 
-      <!-- Live breakdown -->
+      
       <div id="bonus100Preview" style="display:none;background:var(--bg3);border-radius:12px;padding:1rem;margin-bottom:0.8rem;">
         <div style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.7rem;">Bonus Breakdown</div>
         <div style="display:flex;justify-content:space-between;padding:0.4rem 0;border-bottom:1px solid rgba(255,255,255,0.06);">
@@ -7697,7 +7001,7 @@
         </div>
       </div>
 
-      <!-- UPI ID -->
+      
       <input type="text" id="bonus100UpiId" placeholder="Enter UPI ID (yourname@upi)"
         style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.8rem;color:var(--text);font-size:0.9rem;margin-bottom:1rem;box-sizing:border-box;">
 
@@ -7706,7 +7010,7 @@
       </button>
     </div>
 
-    <!-- How it works -->
+    
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem 1.2rem;">
       <div style="font-size:0.8rem;color:var(--gold);font-weight:700;margin-bottom:0.8rem;">📋 Terms</div>
       <div style="display:flex;flex-direction:column;gap:0.6rem;">
@@ -7728,9 +7032,6 @@
   </div>
 </div>
 
-
-
-<!-- GAME STATS PAGE -->
 <div class="page" id="page-gamestats">
   <div style="max-width:600px;margin:0 auto;padding:1.2rem 0 2rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
@@ -7738,14 +7039,14 @@
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">📊 Game Stats</div>
     </div>
 
-    <!-- Period filter -->
+    
     <div style="display:flex;gap:0.5rem;margin-bottom:1.2rem;">
       <button id="gsPeriodToday" onclick="loadGameStats('today')" style="flex:1;padding:0.5rem;border-radius:8px;border:1px solid var(--gold);background:linear-gradient(135deg,#c07a10,var(--gold2));color:#000;font-weight:700;font-size:0.82rem;cursor:pointer;">Today</button>
       <button id="gsPeriodWeek" onclick="loadGameStats('week')" style="flex:1;padding:0.5rem;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:0.82rem;cursor:pointer;">This Week</button>
       <button id="gsPeriodMonth" onclick="loadGameStats('month')" style="flex:1;padding:0.5rem;border-radius:8px;border:1px solid var(--border);background:var(--bg3);color:var(--muted);font-size:0.82rem;cursor:pointer;">This Month</button>
     </div>
 
-    <!-- Stats grid -->
+    
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1.2rem;">
       <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;text-align:center;">
         <div style="font-family:'Cinzel',serif;font-size:1.5rem;font-weight:800;" id="gsTotalBets">0</div>
@@ -7765,7 +7066,7 @@
       </div>
     </div>
 
-    <!-- Win Rate -->
+    
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:0.8rem;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
         <div style="font-size:0.82rem;font-weight:700;color:var(--text);">🎯 Win Rate</div>
@@ -7776,7 +7077,7 @@
       </div>
     </div>
 
-    <!-- Total Wagered -->
+    
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:1rem;margin-bottom:0.8rem;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div style="font-size:0.82rem;color:var(--muted);">💰 Total Wagered</div>
@@ -7784,7 +7085,7 @@
       </div>
     </div>
 
-    <!-- VIP EXP -->
+    
     <div style="background:linear-gradient(160deg,#1c1408,#2a1d05);border:1px solid rgba(240,192,64,0.2);border-radius:12px;padding:1rem;">
       <div style="display:flex;justify-content:space-between;align-items:center;">
         <div>
@@ -7800,14 +7101,14 @@
 
   </div>
 </div>
-<!-- TRANSACTION HISTORY PAGE -->
+
 <div class="page" id="page-history">
   <div style="max-width:600px;margin:0 auto;padding:1.2rem 0 2rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
       <button onclick="showPage('profile')" class="back-btn">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💸 Transaction History</div>
     </div>
-    <!-- Filter tabs -->
+    
     <div class="history-filters" style="display:flex;gap:0.5rem;margin-bottom:1rem;overflow-x:auto;padding-bottom:0.3rem;scrollbar-width:none;">
       <button class="hf-btn active" onclick="filterTx(this,'all')" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--gold);background:rgba(240,192,64,0.15);color:var(--gold);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">All</button>
       <button class="hf-btn" onclick="filterTx(this,'deposit')" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">⬇️ Deposits</button>
@@ -7815,29 +7116,27 @@
       <button class="hf-btn" onclick="filterTx(this,'win')" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">🏆 Wins</button>
       <button class="hf-btn" onclick="filterTx(this,'commission')" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">💰 Commission</button>
     </div>
-    <!-- Transaction rows -->
+    
     <div id="txHistoryRows">
       <div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="common.loading">Loading...</span></div>
     </div>
   </div>
 </div>
 
-<!-- DEPOSIT HISTORY PAGE -->
 <div class="page" id="page-deposithistory">
   <div style="max-width:600px;margin:0 auto;padding:1.2rem 0 2rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
       <button onclick="showPage('profile')" class="back-btn">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬇️ Deposit History</div>
     </div>
-    <!-- Pending deposits banner -->
-    <!-- Pending deposit banner removed -->
+    
+    
     <div id="depositHistoryPageRows">
       <div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>
     </div>
   </div>
 </div>
 
-<!-- WITHDRAWAL HISTORY PAGE -->
 <div class="page" id="page-withdrawhistory">
   <div style="max-width:600px;margin:0 auto;padding:1.2rem 0 2rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;">
@@ -7850,14 +7149,10 @@
   </div>
 </div>
 
-<!-- SPINNING WHEEL OVERLAY -->
-
-
-<!-- PROFILE PAGE -->
 <div class="page" id="page-profile">
   <div class="profile-page">
 
-    <!-- Hero section with avatar + user info -->
+    
     <div style="background:linear-gradient(135deg,#1a1a35,#0d0d1a);padding:1.5rem 1rem 1rem;margin:-1rem -1rem 1rem;border-bottom:1px solid var(--border);">
       <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem;">
         <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#c07a10,var(--gold2));display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.8rem;font-weight:800;color:#000;flex-shrink:0;" id="profileAvatarBig">U</div>
@@ -7873,7 +7168,7 @@
         </div>
       </div>
 
-      <!-- Balance card -->
+      
       <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:14px;padding:1rem 1.2rem;margin-bottom:0.8rem;">
         <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Total Balance</div>
         <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.8rem;">
@@ -7903,7 +7198,7 @@
       </div>
     </div>
 
-    <!-- Quick action grid -->
+    
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:0.8rem;grid-auto-rows:1fr;">
       <div onclick="showPage('bethistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 0.8rem;cursor:pointer;display:flex;align-items:center;gap:0.7rem;">
         <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:rgba(39,174,96,0.15);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🎯</div>
@@ -7923,7 +7218,7 @@
       </div>
     </div>
 
-    <!-- Settings list -->
+    
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:0.8rem;">
       <div onclick="showPage('gifts')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎁</span><span style="font-size:0.88rem;">Gifts</span></div>
@@ -7946,8 +7241,8 @@
       </div>
     </div>
 
-    <!-- Sign out -->
-    <!-- Legal Links -->
+    
+    
     <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem;">
       <button onclick="showPage('terms')" style="background:none;border:none;color:var(--muted);font-size:0.75rem;cursor:pointer;text-decoration:underline;font-family:'Exo 2',sans-serif;">Terms & Conditions</button>
       <span style="color:var(--muted);font-size:0.75rem;">·</span>
@@ -7960,16 +7255,14 @@
   </div>
 </div>
 
-<!-- GIFTS MODAL -->
-<!-- GIFTS PAGE -->
 <div class="page" id="page-gifts">
   <div style="max-width:520px;margin:0 auto;padding:0 0 2rem;">
-    <!-- Header -->
+    
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;padding-bottom:0.8rem;border-bottom:1px solid var(--border);">
       <button onclick="showPage('profile')" class="back-btn">←</button>
       <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);">🎁 Gifts</div>
     </div>
-    <!-- Gift code input -->
+    
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
       <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.6rem;text-transform:uppercase;letter-spacing:0.5px;">Enter Gift Code</div>
       <div style="display:flex;gap:0.5rem;">
@@ -7978,7 +7271,7 @@
       </div>
       <div id="giftRedeemStatus" style="display:none;margin-top:0.7rem;font-size:0.84rem;font-weight:600;padding:0.6rem 0.9rem;background:rgba(255,255,255,0.04);border-radius:8px;line-height:1.4;"></div>
     </div>
-    <!-- Redeemed history -->
+    
     <div style="font-size:0.8rem;color:var(--muted);margin-bottom:0.5rem;text-transform:uppercase;letter-spacing:0.5px;">Redeemed Gifts</div>
     <div id="giftHistoryList" style="background:var(--card);border:1px solid var(--border);border-radius:12px;min-height:80px;overflow-y:auto;">
       <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.85rem;">No gifts redeemed yet</div>
@@ -7992,17 +7285,17 @@
       <div style="font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);"><span data-t="gift.title">🎁 Gifts</span></div>
       <button onclick="closeGiftsModal()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;">✕</button>
     </div>
-    <!-- Gift code input -->
+    
     <div style="margin-bottom:1rem;">
       <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;"><span data-t="gift.enter">Enter Gift Code</span></div>
       <div style="display:flex;gap:0.5rem;">
         <input id="giftCodeInput" type="text" placeholder="e.g. ROYAL100" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;color:var(--text);font-size:0.88rem;font-family:'Exo 2',sans-serif;outline:none;" oninput="this.value=this.value.toUpperCase();document.getElementById('giftRedeemStatus').style.display='none'">
         <button onclick="redeemGiftCode()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.7rem 1.2rem;color:#000;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Redeem</button>
       </div>
-      <!-- Status message shown inside modal -->
+      
       <div id="giftRedeemStatus" style="display:none;margin-top:0.6rem;font-size:0.82rem;font-weight:600;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border-radius:8px;line-height:1.4;"></div>
     </div>
-    <!-- Gift history -->
+    
     <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;"><span data-t="gift.redeemed">Redeemed Gifts</span></div>
     <div id="giftHistoryList" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;min-height:80px;max-height:200px;overflow-y:auto;">
       <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.8rem;"><span data-t="gift.none">No gifts redeemed yet</span></div>
@@ -8010,7 +7303,6 @@
   </div>
 </div>
 
-<!-- LANGUAGE MODAL -->
 <div id="languageModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);align-items:flex-end;justify-content:center;">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:520px;padding:1.5rem 1.2rem 2rem;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">
@@ -8043,17 +7335,16 @@
   </div>
 </div>
 
-<!-- VIP PAGE -->
 <div class="page" id="page-vip">
   <div style="max-width:520px;margin:0 auto;padding:1.2rem 0 2rem;">
 
-    <!-- Header -->
+    
     <div style="text-align:center;margin-bottom:1.5rem;">
       <div style="font-family:'Cinzel',serif;font-size:1.6rem;font-weight:900;color:var(--gold);"><span data-t="vip.club">💎 VIP Club</span></div>
       <div style="font-size:0.82rem;color:var(--muted);margin-top:0.3rem;">Earn EXP by betting and depositing to level up</div>
     </div>
 
-    <!-- Current Level Card -->
+    
     <div id="vipCurrentCard" style="background:linear-gradient(160deg,#1c1408,#2a1d05);border:1px solid rgba(240,192,64,0.3);border-radius:18px;padding:1.4rem;margin-bottom:1rem;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
         <div>
@@ -8066,7 +7357,7 @@
         </div>
       </div>
 
-      <!-- Progress bar -->
+      
       <div style="margin-bottom:0.4rem;">
         <div style="display:flex;justify-content:space-between;font-size:0.72rem;color:var(--muted);margin-bottom:0.4rem;">
           <span id="vipExpProgress">0 / 200 EXP</span>
@@ -8078,7 +7369,7 @@
         <div style="font-size:0.7rem;color:var(--muted);margin-top:0.4rem;" id="vipExpNeeded">Earn 200 more EXP to reach Silver</div>
       </div>
 
-      <!-- EXP earning info -->
+      
       <div style="display:flex;gap:0.8rem;margin-top:0.8rem;padding-top:0.8rem;border-top:1px solid rgba(240,192,64,0.1);">
         <div style="flex:1;background:rgba(0,0,0,0.2);border-radius:8px;padding:0.5rem;text-align:center;">
           <div style="font-size:0.7rem;color:var(--muted);">Bet ₹100</div>
@@ -8091,11 +7382,11 @@
       </div>
     </div>
 
-    <!-- Claim Bonuses -->
+    
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem;">
       <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);font-size:0.85rem;font-weight:700;color:var(--gold);">🎁 Your Bonuses</div>
 
-      <!-- Weekly bonus -->
+      
       <div style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);">
         <div>
           <div style="font-size:0.85rem;font-weight:700;color:var(--text);">📅 Weekly Bonus</div>
@@ -8105,7 +7396,7 @@
         <button id="vipWeeklyBtn" onclick="claimVipBonus('weekly')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.5rem 1.1rem;color:#000;font-weight:800;font-size:0.82rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Claim</button>
       </div>
 
-      <!-- Monthly bonus -->
+      
       <div style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;">
         <div>
           <div style="font-size:0.85rem;font-weight:700;color:var(--text);">🗓️ Monthly Bonus</div>
@@ -8116,11 +7407,11 @@
       </div>
     </div>
 
-    <!-- VIP Levels Slider -->
+    
     <div style="position:relative;margin:0 -1rem;">
       <div id="vipSlider" style="display:flex;gap:0.8rem;overflow-x:auto;scroll-snap-type:x mandatory;padding:0.5rem 1rem 1rem;scrollbar-width:none;-webkit-overflow-scrolling:touch;">
 
-        <!-- Bronze -->
+        
         <div id="vipCard-bronze" class="vip-slide-card" style="min-width:280px;scroll-snap-align:center;background:linear-gradient(160deg,#2a1500,#1a0e00);border:2px solid #cd7f32;border-radius:18px;padding:1.2rem;flex-shrink:0;">
           <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
             <div style="font-size:2.5rem;">🥉</div>
@@ -8146,7 +7437,7 @@
           <div style="margin-top:0.8rem;font-size:0.7rem;color:rgba(205,127,50,0.6);text-align:center;">Starting level — everyone begins here</div>
         </div>
 
-        <!-- Silver -->
+        
         <div id="vipCard-silver" class="vip-slide-card" style="min-width:280px;scroll-snap-align:center;background:linear-gradient(160deg,#1a1a1a,#0f0f0f);border:2px solid rgba(192,192,192,0.3);border-radius:18px;padding:1.2rem;flex-shrink:0;opacity:0.6;">
           <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
             <div style="font-size:2.5rem;">🥈</div>
@@ -8172,7 +7463,7 @@
           <div style="margin-top:0.8rem;font-size:0.7rem;color:rgba(192,192,192,0.5);text-align:center;">Reach 200 EXP to unlock</div>
         </div>
 
-        <!-- Gold -->
+        
         <div id="vipCard-gold" class="vip-slide-card" style="min-width:280px;scroll-snap-align:center;background:linear-gradient(160deg,#1c1408,#120e00);border:2px solid rgba(240,192,64,0.3);border-radius:18px;padding:1.2rem;flex-shrink:0;opacity:0.6;">
           <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
             <div style="font-size:2.5rem;">🥇</div>
@@ -8198,7 +7489,7 @@
           <div style="margin-top:0.8rem;font-size:0.7rem;color:rgba(240,192,64,0.5);text-align:center;">Reach 500 EXP to unlock</div>
         </div>
 
-        <!-- Diamond -->
+        
         <div id="vipCard-diamond" class="vip-slide-card" style="min-width:280px;scroll-snap-align:center;background:linear-gradient(160deg,#0d0a1a,#080514);border:2px solid rgba(168,125,255,0.3);border-radius:18px;padding:1.2rem;flex-shrink:0;opacity:0.6;">
           <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
             <div style="font-size:2.5rem;">💎</div>
@@ -8226,7 +7517,7 @@
 
       </div>
 
-      <!-- Dot indicators -->
+      
       <div style="display:flex;justify-content:center;gap:0.4rem;margin-top:0.2rem;">
         <div class="vip-dot active" id="vipDot0" onclick="scrollVipSlider(0)" style="width:20px;height:6px;border-radius:3px;background:var(--gold);cursor:pointer;transition:all 0.3s;"></div>
         <div class="vip-dot" id="vipDot1" onclick="scrollVipSlider(1)" style="width:6px;height:6px;border-radius:3px;background:var(--border);cursor:pointer;transition:all 0.3s;"></div>
@@ -8238,7 +7529,6 @@
   </div>
 </div>
 
-<!-- PROMOTIONS PAGE -->
 <div class="page" id="page-promotions">
   <div class="promo-page">
     <div class="section-title" style="margin-bottom:0.4rem;">🎁 Promotions & Bonuses</div>
@@ -8262,7 +7552,7 @@
           <div class="promo-footer"><span class="promo-expiry"><span data-t="promo.everyday">Every day</span></span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="openWheel()">Spin!</button></div>
         </div>
       </div>
-      
+
       <div class="promo-card" onclick="showPage('vip')" style="cursor:pointer;">
         <div class="promo-thumb" style="background:linear-gradient(135deg,#1a0010,#330020);">💎</div>
         <div class="promo-body">
@@ -8306,7 +7596,6 @@
   </div>
 </div>
 
-<!-- SUPPORT PAGE -->
 <div class="page" id="page-support">
   <div class="support-page">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
@@ -8340,10 +7629,9 @@
   </div>
 </div>
 
-<!-- LIVE CHAT PAGE -->
 <div class="page" id="page-livechat">
   <div style="display:flex;flex-direction:column;height:100%;">
-    <!-- Header -->
+    
     <div style="display:flex;align-items:center;gap:0.8rem;padding:0 0 0.8rem;border-bottom:1px solid var(--border);flex-shrink:0;">
       <button onclick="showPage('support')" class="back-btn">←</button>
       <div style="display:flex;align-items:center;gap:0.7rem;">
@@ -8354,12 +7642,12 @@
         </div>
       </div>
     </div>
-    <!-- Chat messages -->
+    
     <div class="chat-messages" id="chatMessages" style="flex:1;overflow-y:auto;padding:0.8rem 0;gap:0.8rem;">
       <div class="msg agent">👋 Hello! Welcome to RoyalWin Support. How can I help you today?</div>
       <div class="msg agent">You can ask me about deposits, withdrawals, bonuses, or any issue you face.</div>
     </div>
-    <!-- Input row — fixed at bottom -->
+    
     <div style="border-top:1px solid var(--border);padding:0.7rem 0 0;flex-shrink:0;">
       <input type="file" id="chatFileInput" accept="image/*,.pdf,.doc,.docx" style="display:none;" onchange="sendChatFile(this)">
       <div style="display:flex;gap:0.5rem;align-items:center;">
@@ -8371,7 +7659,6 @@
   </div>
 </div>
 
-<!-- FORGOT PASSWORD PAGE -->
 <div class="page" id="page-forgot">
   <div class="auth-wrap">
     <div class="auth-card">
@@ -8401,8 +7688,6 @@
   </div>
 </div>
 
-
-<!-- COLOR PREDICTION GAME -->
 <div class="color-game-overlay" id="colorGameOverlay">
   <div class="cg-wrap">
     <div class="cg-header">
@@ -8419,14 +7704,14 @@
       </div>
     </div>
 
-    <!-- Timer Tabs -->
+    
     <div class="cg-timer-tabs">
       <div class="cg-ttab active" id="ttab-1" onclick="setTimer(1)">⏱ 1 Min</div>
       <div class="cg-ttab" id="ttab-3" onclick="setTimer(3)">⏱ 3 Min</div>
       <div class="cg-ttab" id="ttab-5" onclick="setTimer(5)">⏱ 5 Min</div>
     </div>
 
-    <!-- Round Info + Countdown -->
+    
     <div class="cg-round-info">
       <div>
         <div class="cg-round-num">Period</div>
@@ -8439,17 +7724,17 @@
       <div class="cg-status open" id="cgStatus">Betting Open</div>
     </div>
 
-    <!-- Color Buttons -->
+    
     <div class="cg-colors">
       <button class="cg-color-btn cg-green" onclick="selectColor('green',this)">🟢<br>Green</button>
       <button class="cg-color-btn cg-violet" onclick="selectColor('violet',this)">🟣<br>Violet</button>
       <button class="cg-color-btn cg-red" onclick="selectColor('red',this)">🔴<br>Red</button>
     </div>
 
-    <!-- Number Grid -->
+    
     <div class="cg-numbers" id="cgNumbers"></div>
 
-    <!-- Big / Small -->
+    
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:0.5rem;">
       <button class="cg-color-btn" id="cgBigBtn" onclick="selectBigSmall('big',this)" style="background:linear-gradient(135deg,#b8860b,#ffd700);color:#000;font-size:1.2rem;font-weight:800;letter-spacing:1px;">
         Big
@@ -8459,7 +7744,7 @@
       </button>
     </div>
 
-    <!-- Bet Panel -->
+    
     <div class="cg-bet-panel">
       <div class="cg-bet-title">Bet Amount</div>
       <div class="cg-bet-presets">
@@ -8475,9 +7760,9 @@
         <button class="cg-x-btn" style="flex:1;" onclick="mulBet(5)">×5</button>
         <button class="cg-x-btn" style="flex:1;" onclick="mulBet(10)">×10</button>
       </div>
-      <!-- Hidden input to track amount -->
+      
       <input type="hidden" id="cgBetAmt" value="10">
-      <!-- Combined: Total Bet + Bet Button in one row -->
+      
       <div style="display:flex;align-items:stretch;gap:0.5rem;">
         <div style="background:var(--bg3);border:1px solid rgba(240,192,64,0.15);border-radius:8px;padding:0.7rem 0.8rem;display:flex;flex-direction:column;justify-content:center;flex:0 0 40%;box-sizing:border-box;">
           <span style="font-size:0.62rem;color:var(--muted);line-height:1.2;">Total Bet</span>
@@ -8487,20 +7772,20 @@
       </div>
     </div>
 
-    <!-- History Tabs -->
+    
     <div class="cg-history">
       <div style="display:flex;border-bottom:1px solid var(--border);">
         <button class="wallet-tab active" id="cght-results" onclick="switchCGTab('results')" style="font-size:0.96rem;padding:0.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:0.35rem;flex:1;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Results</button>
         <button class="wallet-tab" id="cght-mybets" onclick="switchCGTab('mybets')" style="font-size:0.96rem;padding:0.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:0.35rem;flex:1;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg> My Bets</button>
       </div>
 
-      <!-- Results Tab -->
+      
       <div id="cgTabResults">
         <div class="cg-hist-rows" style="max-height:none;">
           <div class="cg-hist-row head"><div style="text-align:left;padding-left:0.2rem;">Period</div><div style="text-align:center;">Number</div><div style="text-align:center;">Color</div><div style="text-align:center;">Big/Small</div></div>
           <div id="cgHistRows"></div>
         </div>
-        <!-- Pagination -->
+        
         <div style="display:flex;align-items:center;justify-content:center;padding:0.6rem 1rem;border-top:1px solid var(--border);gap:0.5rem;">
           <button onclick="cgHistPrevPage()" id="cgHistPrev" style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.7rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.8rem;">◀</button>
           <span style="font-size:0.78rem;color:var(--muted);padding:0 0.3rem;">Page <span id="cgHistPageNum">1</span> of <span id="cgHistTotalPages">1</span></span>
@@ -8508,7 +7793,7 @@
         </div>
       </div>
 
-      <!-- My Bets Tab -->
+      
       <div id="cgTabMyBets" style="display:none;">
         <div class="cg-hist-rows" style="max-height:none;">
           <div class="cg-hist-row head" style="grid-template-columns:1.6fr 0.6fr 0.8fr 1fr 0.7fr;">
@@ -8521,23 +7806,22 @@
   </div>
 </div>
 
-<!-- RESULT POPUP - K30 Style -->
 <div class="cg-result-overlay" id="cgResultOverlay" onclick="if(event.target===this)closeResultPopup()">
   <div class="cg-result-wrap">
-    <!-- Rocket coin icon floating above card -->
+    
     <div class="cg-result-coin" id="cgResCoin">
       <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-        <!-- Wings -->
+        
         <ellipse cx="18" cy="58" rx="16" ry="10" fill="#f5a623" opacity="0.9"/>
         <ellipse cx="82" cy="58" rx="16" ry="10" fill="#f5a623" opacity="0.9"/>
-        <!-- Coin body -->
+        
         <circle cx="50" cy="50" r="38" fill="url(#coinGrad)"/>
         <circle cx="50" cy="50" r="32" fill="none" stroke="rgba(255,255,255,0.3)" stroke-width="2"/>
-        <!-- Rocket -->
+        
         <path d="M50 22 C50 22 38 36 38 52 L50 58 L62 52 C62 36 50 22 50 22Z" fill="#fff" opacity="0.95"/>
         <circle cx="50" cy="54" r="5" fill="#f5a623"/>
         <path d="M44 58 L40 68 L50 64 L60 68 L56 58Z" fill="#fff" opacity="0.8"/>
-        <!-- Shine -->
+        
         <circle cx="38" cy="34" r="5" fill="rgba(255,255,255,0.4)"/>
         <defs>
           <radialGradient id="coinGrad" cx="40%" cy="35%">
@@ -8548,12 +7832,12 @@
         </defs>
       </svg>
     </div>
-    <!-- Main card -->
+    
     <div class="cg-result-popup" id="cgResultPopup">
       <div class="cg-confetti" id="confettiContainer"></div>
       <div style="padding:0 1rem 0;">
         <div class="cg-result-title" id="cgResTitle">Congratulations</div>
-        <!-- Lottery result row -->
+        
         <div class="cg-result-row">
           <span style="color:rgba(255,255,255,0.8);font-size:0.7rem;">Lottery results</span>
           <span class="cg-result-tag" id="cgResColorTag"></span>
@@ -8561,13 +7845,13 @@
           <span class="cg-result-tag" id="cgResBigSmallTag"></span>
         </div>
       </div>
-      <!-- White scroll/receipt -->
+      
       <div class="cg-result-scroll">
         <div class="cg-result-scroll-label" id="cgResLabel">Bonus</div>
         <div class="cg-result-amt" id="cgResAmt">₹0</div>
         <div class="cg-result-period" id="cgResPeriod"></div>
       </div>
-      <!-- Countdown -->
+      
       <div class="cg-result-countdown">
         <svg class="cg-countdown-ring" viewBox="0 0 22 22">
           <circle cx="11" cy="11" r="9"/>
@@ -8579,15 +7863,13 @@
   </div>
 </div>
 
-
-<!-- QR DEPOSIT MODAL -->
 <div class="qr-modal" id="qrModal">
   <div class="qr-card">
     <button class="qr-close" onclick="closeQR()">✕</button>
     <div class="qr-title">📱 UPI Deposit</div>
     <div class="qr-sub">Scan QR code or copy UPI ID to pay</div>
 
-    <!-- UPI selector -->
+    
     <div id="upiSelector" style="display:none;margin-bottom:0.8rem;">
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Select payment account:</div>
       <div id="upiOptions" style="display:flex;flex-direction:column;gap:0.4rem;"></div>
@@ -8627,11 +7909,9 @@
   </div>
 </div>
 
-
-<!-- MOBILE BOTTOM NAV -->
 <div class="mobile-nav" id="mobileNav">
 
-  <!-- Promotion -->
+  
   <button class="mobile-nav-item" id="mn-activity" onclick="mobileNav('referral')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
       <path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
@@ -8639,7 +7919,7 @@
     <span>Promotion</span>
   </button>
 
-  <!-- Activity (was Wallet position) -->
+  
   <button class="mobile-nav-item" id="mn-promo" onclick="mobileNav('promotions')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
       <path d="M22 12H18L15 21L9 3L6 12H2" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -8647,7 +7927,7 @@
     <span>Activity</span>
   </button>
 
-  <!-- Home (center) -->
+  
   <button class="mobile-nav-item mobile-nav-center active" id="mn-home" onclick="mobileNav('home')">
     <div class="mn-icon" style="display:flex;align-items:center;justify-content:center;">
       <svg width="26" height="26" viewBox="0 0 24 24" fill="none">
@@ -8657,7 +7937,7 @@
     <span>Home</span>
   </button>
 
-  <!-- Wallet (was Activity position) -->
+  
   <button class="mobile-nav-item" id="mn-wallet" onclick="mobileNav('wallet')">
     <svg width="22" height="22" viewBox="0 0 24 24" fill="none" class="mn-svg">
       <rect x="2" y="5" width="20" height="15" rx="2" stroke="currentColor" stroke-width="2"/>
@@ -8667,7 +7947,7 @@
     <span>Wallet</span>
   </button>
 
-  <!-- Account -->
+  
   <button class="mobile-nav-item" id="mn-account" onclick="mobileNav('profile')">
     <div style="position:relative;width:24px;height:24px;margin:0 auto;">
       <svg width="24" height="24" viewBox="0 0 24 24" fill="none" class="mn-svg" style="position:absolute;top:0;left:0;">
@@ -8681,8 +7961,6 @@
 
 </div>
 
-
-<!-- BET HISTORY PAGE -->
 <div class="page" id="page-bethistory">
   <div class="history-page">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
@@ -8690,7 +7968,7 @@
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">🎯 Bet History</div>
     </div>
 
-    <!-- Filters -->
+    
     <div class="history-filters" style="margin-bottom:1rem;">
       <div class="hf-btn active" onclick="filterBets(this,'all')">All</div>
       <div class="hf-btn" onclick="filterBets(this,'wingo')">🎯 WinGo</div>
@@ -8707,13 +7985,10 @@
   </div>
 </div>
 
-
-
 <div id="recaptcha-container"></div>
 
 </html>
 
-<!-- ═══ TERMS & CONDITIONS PAGE ═══ -->
 <div class="page" id="page-terms">
   <div style="max-width:700px;margin:0 auto;padding:5rem 1.2rem 3rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
@@ -8772,7 +8047,6 @@
   </div>
 </div>
 
-<!-- ═══ RESPONSIBLE GAMBLING PAGE ═══ -->
 <div class="page" id="page-responsible">
   <div style="max-width:700px;margin:0 auto;padding:5rem 1.2rem 3rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
@@ -8831,7 +8105,6 @@
   </div>
 </div>
 
-<!-- ═══ PRIVACY POLICY PAGE ═══ -->
 <div class="page" id="page-privacy">
   <div style="max-width:700px;margin:0 auto;padding:5rem 1.2rem 3rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
@@ -8886,18 +8159,17 @@
   </div>
 </div>
 
-<!-- USDT DEPOSIT MODAL -->
 <div id="usdtModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;padding:1rem;">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:18px;padding:1.5rem;width:100%;max-width:420px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem;">
       <div style="font-family:'Cinzel',serif;color:#26a17b;font-size:1.1rem;">💚 USDT Deposit (TRC20)</div>
       <button onclick="closeUSDTModal()" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;">✕</button>
     </div>
-    <!-- USDT amount summary -->
+    
     <div id="usdtModalAmount" style="text-align:center;font-size:0.85rem;font-weight:700;color:#26a17b;background:rgba(38,161,123,0.1);border-radius:10px;padding:0.6rem;margin-bottom:1rem;"></div>
     <div style="background:rgba(38,161,123,0.08);border:1px solid rgba(38,161,123,0.25);border-radius:12px;padding:1rem;margin-bottom:1rem;text-align:center;">
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.8rem;">Scan QR or copy address below:</div>
-      <!-- USDT QR Code -->
+      
       <div id="usdtQrCode" style="width:180px;height:180px;background:#fff;border-radius:8px;margin:0 auto 0.8rem;display:flex;align-items:center;justify-content:center;"></div>
       <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.5rem;">Or copy address:</div>
       <div id="usdtAddressDisplay" style="font-size:0.75rem;font-weight:700;color:#26a17b;word-break:break-all;margin-bottom:0.7rem;line-height:1.5;padding:0.5rem;background:rgba(0,0,0,0.2);border-radius:8px;">Loading...</div>
@@ -8948,7 +8220,6 @@ function openUSDTModal() {
   if (!modal) return;
   modal.style.display = 'flex';
   document.getElementById('usdtConfirmed').style.display = 'none';
-  // Show USDT amount
   var amt = parseFloat(document.getElementById('depositAmount').value) || 1000;
   var usdt = (amt / 100).toFixed(2);
   var amtEl = document.getElementById('usdtModalAmount');
@@ -8957,8 +8228,6 @@ function openUSDTModal() {
   var qrEl = document.getElementById('usdtQrCode');
   if (addrEl) addrEl.textContent = 'Loading...';
   if (qrEl) qrEl.innerHTML = '';
-
-  // Start 5 minute countdown
   var totalSeconds = 5 * 60;
   var timerEl = document.getElementById('usdtCountdown');
   if (!timerEl) {
@@ -8969,12 +8238,8 @@ function openUSDTModal() {
     if (confirmBtn) confirmBtn.parentNode.insertBefore(timerEl, confirmBtn);
   }
   timerEl.style.display = 'block';
-
-  // Store deposit key for cancellation
   window._usdtDepositKey = null;
   window._usdtTimerInterval = null;
-
-  // Save pending deposit first to get key
   if (window.currentUser && (window.fbDB || fbDB)) {
     var db = window.fbDB || fbDB;
     db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value').then(function(hasDepSnap) {
@@ -8998,8 +8263,6 @@ function openUSDTModal() {
       });
     });
   }
-
-  // Clear any existing timer
   if (window._usdtTimerInterval) clearInterval(window._usdtTimerInterval);
 
   window._usdtTimerInterval = setInterval(function() {
@@ -9012,7 +8275,6 @@ function openUSDTModal() {
 
     if (totalSeconds <= 0) {
       clearInterval(window._usdtTimerInterval);
-      // Auto-cancel if deposit key exists and not yet confirmed
       if (window._usdtDepositKey && !window._usdtConfirmed) {
         var db = window.fbDB || fbDB;
         if (db) db.ref('adminRequests/deposits/' + window._usdtDepositKey + '/status').set('cancelled');
@@ -9026,7 +8288,6 @@ function openUSDTModal() {
 
   getAssignedUsdtAddress().then(function(addr) {
     _activeUsdtAddress = addr;
-    // Update deposit with address
     if (window._usdtDepositKey && (window.fbDB || fbDB)) {
       var db = window.fbDB || fbDB;
       db.ref('adminRequests/deposits/' + window._usdtDepositKey + '/assignedUsdtAddress').set(addr);
@@ -9047,7 +8308,6 @@ function closeUSDTModal() {
   var modal = document.getElementById('usdtModal');
   if (modal) modal.style.display = 'none';
   if (window._usdtTimerInterval) clearInterval(window._usdtTimerInterval);
-  // Cancel deposit if user didn't confirm
   if (window._usdtDepositKey && !window._usdtConfirmed) {
     var db = window.fbDB || fbDB;
     if (db) db.ref('adminRequests/deposits/' + window._usdtDepositKey + '/status').set('cancelled');
@@ -9096,7 +8356,6 @@ async function confirmUSDTPayment() {
 }
 </script>
 
-<!-- ═══ ATTENDANCE BONUS PAGE ═══ -->
 <div class="page" id="page-attendance">
   <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 3rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
@@ -9104,7 +8363,7 @@ async function confirmUSDTPayment() {
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">📅 Attendance Bonus</div>
     </div>
 
-    <!-- Banner -->
+    
     <div style="background:linear-gradient(135deg,#e05a00,#ff8c00);border-radius:16px;padding:1.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden;">
       <div style="font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.3rem;">Attendance Bonus</div>
       <div style="font-size:0.82rem;color:rgba(255,255,255,0.85);margin-bottom:0.8rem;">Get rewards based on consecutive login days</div>
@@ -9116,7 +8375,7 @@ async function confirmUSDTPayment() {
       <div style="position:absolute;right:1rem;top:50%;transform:translateY(-50%);font-size:4rem;opacity:0.3;">📅</div>
     </div>
 
-    <!-- Day rewards grid -->
+    
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;margin-bottom:1.5rem;">
       <div id="attendCard1" class="attend-card" onclick="claimAttendance()" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;text-align:center;cursor:pointer;">
         <div style="font-size:1rem;font-weight:800;color:var(--gold);">₹5</div>
@@ -9149,7 +8408,7 @@ async function confirmUSDTPayment() {
         <div style="font-size:0.75rem;color:var(--muted);">6 Days</div>
       </div>
     </div>
-    <!-- Day 7 special -->
+    
     <div id="attendCard7" style="background:linear-gradient(135deg,#1a0800,#3d1800);border:1px solid var(--gold);border-radius:14px;padding:1.2rem;display:flex;align-items:center;gap:1rem;margin-bottom:1.5rem;">
       <div style="font-size:3rem;">🎁</div>
       <div style="flex:1;">
@@ -9159,7 +8418,7 @@ async function confirmUSDTPayment() {
       <div style="font-size:0.8rem;color:var(--muted);">7 Days</div>
     </div>
 
-    <!-- Claim button -->
+    
     <button id="attendClaimBtn" onclick="claimAttendance()" style="width:100%;background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:12px;padding:1rem;color:#000;font-weight:800;font-size:1rem;cursor:pointer;font-family:'Exo 2',sans-serif;">
       ✅ Check In Today
     </button>
@@ -9167,7 +8426,6 @@ async function confirmUSDTPayment() {
   </div>
 </div>
 
-<!-- ═══ INVITATION BONUS PAGE ═══ -->
 <div class="page" id="page-invitation-bonus">
   <div style="max-width:600px;margin:0 auto;padding:5rem 1rem 3rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
@@ -9598,9 +8856,6 @@ window.loadActivityAwardPage = function() {
 }
 
 <script>
-// ══════════════════════════════════════════════════════
-// ATTENDANCE BONUS
-// ══════════════════════════════════════════════════════
 var ATTEND_REWARDS = [5, 8, 16, 25, 45, 90, 188];
 window.loadAttendancePage = function() {
   var user = window.currentUser; var db = window.fbDB;
@@ -9641,7 +8896,6 @@ window.claimAttendance = function() {
       updates['users/'+user.uid+'/attendance/lastCheckin'] = today;
       updates['users/'+user.uid+'/attendance/totalEarned'] = newTotal;
       updates['users/'+user.uid+'/balance'] = newBal;
-      // Add 1x wager requirement
       db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
         var w = wSnap.val() || {required:0,completed:0};
         updates['users/'+user.uid+'/wager/required'] = parseFloat((parseFloat(w.required||0) + reward).toFixed(2));
@@ -9656,10 +8910,6 @@ window.claimAttendance = function() {
     });
   }).catch(function(e) { showToast('❌ '+e.message); });
 };
-
-// ══════════════════════════════════════════════════════
-// INVITATION BONUS
-// ══════════════════════════════════════════════════════
 window.claimInviteTier = function(tierNum, reward) {
   var user = window.currentUser, db = window.fbDB;
   if (!user || !db) { showToast('🔐 Please sign in first'); return; }
@@ -9682,10 +8932,6 @@ window.claimInviteTier = function(tierNum, reward) {
     });
   });
 };
-
-// ══════════════════════════════════════════════════════
-// ACTIVITY AWARD
-// ══════════════════════════════════════════════════════
 window.claimActivityTask = function(taskId, reward) {
   var user = window.currentUser, db = window.fbDB;
   if (!user || !db) { showToast('🔐 Please sign in first'); return; }
@@ -9709,10 +8955,6 @@ window.claimActivityTask = function(taskId, reward) {
     });
   });
 };
-
-// ══════════════════════════════════════════════════════
-// VIP WEEKLY & MONTHLY CLAIM
-// ══════════════════════════════════════════════════════
 var VIP_LEVELS_DATA = [
   {name:'Bronze',minExp:0,weekly:25,monthly:50},
   {name:'Silver',minExp:200,weekly:125,monthly:250},
