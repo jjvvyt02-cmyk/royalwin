@@ -6552,6 +6552,15 @@
       fbDB = firebase.database();
       window.fbDB = fbDB;
       window.fbAuth = firebase.auth();
+      // ── LOADER: Hide after max 1500ms regardless (prevents stuck on mobile) ──
+      setTimeout(() => {
+        const _l = document.getElementById('appLoader');
+        if (_l && _l.style.display !== 'none') {
+          _l.style.opacity = '0';
+          setTimeout(() => { _l.style.display = 'none'; }, 400);
+        }
+      }, 1500);
+
       firebase.auth().onAuthStateChanged((user) => {
         if (user) {
           window.currentUser = user;
