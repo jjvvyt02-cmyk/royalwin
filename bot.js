@@ -50,7 +50,14 @@ function sendTelegram(text) {
 async function main() {
   const snap = await db.ref('wingo/wingo5min/history').once('value');
   const history = snap.val();
-  console.log(JSON.stringify(history, null, 2));
+  console.log('HISTORY TYPE:', Array.isArray(history) ? 'ARRAY' : 'OBJECT');
+console.log('HISTORY KEYS:', Object.keys(history).slice(0, 10));
+
+const first = Array.isArray(history)
+  ? history[0]
+  : history[Object.keys(history)[0]];
+
+console.log('FIRST ITEM:', JSON.stringify(first));
 
   const recent = Array.isArray(history)
     ? history.slice(0, 10)
