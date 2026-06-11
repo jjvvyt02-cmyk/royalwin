@@ -1935,10 +1935,12 @@ window.dismissFraud = async function(uid, logKey) {
 };
 
 // ── EXPORT CSV ──
+function csvEsc(v) { return '"' + String(v).replace(/"/g, '""') + '"'; }
 window.exportCSV = function(type) {
   const usersData = window._allUsersData || {};
   let rows = [];
   let filename = '';
+  const NL = String.fromCharCode(10);
 
   if (type === 'users') {
     filename = 'royalwin_users_' + new Date().toISOString().split('T')[0] + '.csv';
@@ -1956,7 +1958,7 @@ window.exportCSV = function(type) {
         u.createdAt ? new Date(u.createdAt).toLocaleString('en-IN') : '',
         u.lastIp || '',
         u.blocked ? 'Blocked' : 'Active'
-      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+      ].map(csvEsc).join(','));
     });
   } else if (type === 'deposits') {
     filename = 'royalwin_deposits_' + new Date().toISOString().split('T')[0] + '.csv';
@@ -1973,10 +1975,9 @@ window.exportCSV = function(type) {
           d.method || '',
           d.status || '',
           (d.bonusAmount || 0).toFixed(2)
-        ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+        ].map(csvEsc).join(','));
       });
-      downloadCSV(rows.join('
-'), filename);
+      downloadCSV(rows.join(NL), filename);
     });
     return;
   } else if (type === 'withdrawals') {
@@ -1994,16 +1995,14 @@ window.exportCSV = function(type) {
           w.method || '',
           w.upiId || w.accountNumber || '',
           w.status || ''
-        ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+        ].map(csvEsc).join(','));
       });
-      downloadCSV(rows.join('
-'), filename);
+      downloadCSV(rows.join(NL), filename);
     });
     return;
   }
 
-  downloadCSV(rows.join('
-'), filename);
+  downloadCSV(rows.join(NL), filename);
 };
 
 function downloadCSV(content, filename) {
