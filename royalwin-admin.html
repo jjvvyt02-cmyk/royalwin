@@ -1517,6 +1517,11 @@ async function loadRevenueStats(period = 'today') {
   else if (period === 'week') { const d = new Date(today); d.setDate(d.getDate() - 7); startTime = d.getTime(); }
   else if (period === 'month') { const d = new Date(today); d.setDate(1); startTime = d.getTime(); }
 
+  // Check auth before reading
+  const currentUser = auth.currentUser;
+  if (!currentUser) { console.error('loadRevenueStats: not authenticated'); return; }
+  console.log('loadRevenueStats: auth.uid =', currentUser.uid);
+
   try {
     const [depSnap, withSnap, usersSnap] = await Promise.all([
       get(ref(db, 'adminRequests/deposits')),
@@ -1619,6 +1624,16 @@ let allUsers = [];
 function loadUsers() {
   const el = document.getElementById('usersList');
   if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;">Loading...</div>';
+
+  // Ensure auth is ready before reading users
+  const currentUser = auth.currentUser;
+  if (!currentUser) {
+    console.error('loadUsers: No authenticated user');
+    if (el) el.innerHTML = '<div style="color:var(--red2);padding:1rem;">❌ Not authenticated</div>';
+    return;
+  }
+  console.log('loadUsers: auth.uid =', currentUser.uid);
+
   // Real-time listeners for users + deposits + withdrawals
   // Store latest snapshots
   let _usersSnap = null, _depsSnap = null, _withsSnap = null;
