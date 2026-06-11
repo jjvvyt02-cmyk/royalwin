@@ -6491,7 +6491,7 @@
       const profBal = document.getElementById('profileBalance');
       if (profBal) profBal.textContent = '₹' + parseFloat(profile.balance || 0).toLocaleString('en-IN', {minimumFractionDigits:2});
       const profUser = document.getElementById('profileUsername') || document.getElementById('profileUsernameDisplay');
-      if (profUser) profUser.textContent = '@' + (profile.username || '—') + ' · ' + (profile.contact || profile.mobile || profile.email || '');
+      if (profUser) profUser.textContent = '@' + (profile.username || '—');
       updateBalanceDisplay(profile.balance || 0);
       try {
         const db = window.fbDB || fbDB;
@@ -7348,7 +7348,7 @@
       <span style="color:var(--muted);font-size:0.75rem;">·</span>
       <button onclick="showPage('responsible')" style="background:none;border:none;color:var(--muted);font-size:0.75rem;cursor:pointer;text-decoration:underline;font-family:'Exo 2',sans-serif;">Responsible Gambling</button>
     </div>
-    <button onclick="logout()" style="width:100%;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.25);border-radius:12px;padding:0.9rem;color:var(--red2);font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:1rem;">🚪 <span data-t="account.signout">🚪 Sign Out</span></button>
+    <button onclick="logout()" style="width:100%;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.25);border-radius:12px;padding:0.9rem;color:var(--red2);font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:1rem;">🚪 Sign Out</button>
 
   </div>
 </div>
