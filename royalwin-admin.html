@@ -2665,12 +2665,41 @@ window.selectAdminChat = function(uid, username) {
       msgsEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.8rem;margin-top:2rem;">No messages yet</div>';
       return;
     }
-    Object.values(messages).sort((a,b) => a.timestamp - b.timestamp).forEach(m => {
+    // Get user info for display
+    const chatInfo = {};
+    get(ref(db, 'chats/' + uid + '/info')).then(infoSnap => {
+      const info = infoSnap.val() || {};
+      chatInfo.username = info.username || 'User';
+      chatInfo.memberId = info.memberId || uid.substring(0,6);
+    });
+
+    // Sort oldest first (ascending by timestamp)
+    const sortedMessages = Object.entries(messages).sort((a,b) => (a[1].timestamp||0) - (b[1].timestamp||0));
+
+    sortedMessages.forEach(([msgKey, m]) => {
       const isAdmin = m.sender === 'admin';
+      const time = new Date(m.timestamp).toLocaleString('en-IN', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true});
+
+      // Wrapper for alignment
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = `display:flex;flex-direction:column;align-items:${isAdmin?'flex-end':'flex-start'};margin-bottom:0.6rem;`;
+
+      // Sender info (only for user messages)
+      if (!isAdmin) {
+        const senderInfo = document.createElement('div');
+        senderInfo.style.cssText = 'font-size:0.62rem;color:var(--gold);margin-bottom:2px;display:flex;gap:0.4rem;align-items:center;';
+        senderInfo.innerHTML = `<span style="font-weight:700;">${m.username || chatInfo.username || 'User'}</span><span style="color:var(--muted);">ID: ${m.memberId || chatInfo.memberId || '——'}</span>`;
+        wrapper.appendChild(senderInfo);
+      }
+
+      // Message bubble + delete row
+      const bubbleRow = document.createElement('div');
+      bubbleRow.style.cssText = `display:flex;align-items:flex-end;gap:0.4rem;flex-direction:${isAdmin?'row-reverse':'row'};`;
+
       const div = document.createElement('div');
       div.style.cssText = `max-width:75%;padding:0.6rem 0.9rem;border-radius:${isAdmin?'12px 12px 0 12px':'12px 12px 12px 0'};
         background:${isAdmin?'linear-gradient(135deg,#c07a10,var(--gold2))':'var(--bg3)'};
-        color:${isAdmin?'#000':'var(--text)'};font-size:0.83rem;align-self:${isAdmin?'flex-end':'flex-start'};`;
+        color:${isAdmin?'#000':'var(--text)'};font-size:0.83rem;`;
 
       if (m.type === 'image' && m.fileData) {
         const img = document.createElement('img');
@@ -2689,11 +2718,30 @@ window.selectAdminChat = function(uid, username) {
         div.textContent = m.text || '';
       }
 
-      const time = document.createElement('div');
-      time.style.cssText = `font-size:0.6rem;color:${isAdmin?'rgba(0,0,0,0.5)':'rgba(255,255,255,0.3)'};margin-top:3px;text-align:${isAdmin?'right':'left'};`;
-      time.textContent = new Date(m.timestamp).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'});
-      div.appendChild(time);
-      msgsEl.appendChild(div);
+      // Timestamp
+      const timeEl = document.createElement('div');
+      timeEl.style.cssText = `font-size:0.6rem;color:${isAdmin?'rgba(0,0,0,0.5)':'rgba(255,255,255,0.3)'};margin-top:3px;text-align:${isAdmin?'right':'left'};`;
+      timeEl.textContent = time;
+      div.appendChild(timeEl);
+
+      // Delete button (admin only)
+      const delBtn = document.createElement('button');
+      delBtn.innerHTML = '🗑';
+      delBtn.title = 'Delete message';
+      delBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:0.75rem;opacity:0.4;padding:2px;transition:opacity 0.2s;flex-shrink:0;';
+      delBtn.onmouseover = () => delBtn.style.opacity = '1';
+      delBtn.onmouseout = () => delBtn.style.opacity = '0.4';
+      delBtn.onclick = async () => {
+        if (!confirm('Delete this message?')) return;
+        try {
+          await set(ref(db, 'chats/' + uid + '/messages/' + msgKey), null);
+        } catch(e) { showToast('❌ Error: ' + e.message); }
+      };
+
+      bubbleRow.appendChild(div);
+      bubbleRow.appendChild(delBtn);
+      wrapper.appendChild(bubbleRow);
+      msgsEl.appendChild(wrapper);
     });
     msgsEl.scrollTop = msgsEl.scrollHeight;
   });
