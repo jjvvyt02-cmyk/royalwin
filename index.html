@@ -4727,16 +4727,22 @@
 
       if (alreadyClaimed) {
         if (msgEl) { msgEl.textContent = '✅ Claimed this week'; msgEl.style.color = 'var(--green)'; }
-        if (btn) btn.style.display = 'none';
+        if (btn) { btn.disabled = true; btn.style.background = 'rgba(255,255,255,0.08)'; btn.style.color = 'var(--muted)'; btn.textContent = '✅ Claimed'; }
       } else if (!isMonday) {
         if (msgEl) { msgEl.textContent = '📅 Available to claim on Monday'; msgEl.style.color = 'var(--muted)'; }
-        if (btn) btn.style.display = 'none';
+        if (btn) { btn.disabled = true; btn.style.background = 'rgba(255,255,255,0.08)'; btn.style.color = 'var(--muted)'; btn.textContent = 'Claim'; }
       } else if (!isEligible) {
         if (msgEl) { msgEl.textContent = lossPct < 50 ? '❌ Need 50%+ loss to qualify' : '❌ No loss this week'; msgEl.style.color = 'var(--muted)'; }
-        if (btn) btn.style.display = 'none';
+        if (btn) { btn.disabled = true; btn.style.background = 'rgba(255,255,255,0.08)'; btn.style.color = 'var(--muted)'; btn.textContent = 'Claim'; }
       } else {
-        if (msgEl) { msgEl.textContent = '🎉 You qualify! Claim now'; msgEl.style.color = '#a87dff'; }
-        if (btn) { btn.style.display = 'block'; if (btnAmt) btnAmt.textContent = rebateAmt; btn.dataset.amount = rebateAmt; }
+        if (msgEl) { msgEl.textContent = '🎉 You qualify! Claim now'; msgEl.style.color = 'var(--gold)'; }
+        if (btn) {
+          btn.disabled = false;
+          btn.style.background = 'linear-gradient(135deg,#c07a10,var(--gold2))';
+          btn.style.color = '#000';
+          btn.textContent = '💰 Claim ₹' + rebateAmt;
+          btn.dataset.amount = rebateAmt;
+        }
       }
     } catch(e) {}
   }
@@ -8235,7 +8241,7 @@
           <div id="promoRebateMsg" style="font-size:0.72rem;color:var(--muted);margin-bottom:0.6rem;"></div>
           <div class="promo-footer">
             <span class="promo-expiry">Resets every Monday</span>
-            <button id="promoRebateBtn" onclick="claimWeeklyRebatePromo()" class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;display:none;">Claim ₹<span id="promoRebateBtnAmt">0</span></button>
+            <button id="promoRebateBtn" onclick="claimWeeklyRebatePromo()" style="padding:0.4rem 1rem;font-size:0.82rem;border:none;border-radius:8px;cursor:pointer;font-family:'Exo 2',sans-serif;font-weight:700;background:rgba(255,255,255,0.1);color:var(--muted);" disabled>Claim</button>
           </div>
         </div>
       </div>
