@@ -2210,6 +2210,17 @@
     window._bonus100Locked = false;
     lockBonusCards(false);
     _showPageInternal(name);
+    // Force page visible on mobile (overrides any CSS conflicts)
+    const _activePage = document.getElementById('page-' + name);
+    if (_activePage) {
+      _activePage.style.display = 'block';
+      _activePage.style.visibility = 'visible';
+      _activePage.style.opacity = '1';
+      _activePage.style.position = 'relative';
+      _activePage.style.minHeight = '100vh';
+      _activePage.style.overflowY = 'auto';
+      _activePage.style.zIndex = '1';
+    }
     const _prevPage = window._currentPage;
     if (_prevPage === 'referral' || _prevPage === 'subdata') {
       const db = window.fbDB || fbDB;
