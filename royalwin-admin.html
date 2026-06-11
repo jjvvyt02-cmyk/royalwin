@@ -1227,6 +1227,32 @@ function loadLiveData() {
   });
 }
 
+// ── RENDER LIVE BETS ──
+function renderLiveBets(bets) {
+  const el = document.getElementById('liveBetsList');
+  if (!el) return;
+  if (!bets || bets.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;">No bets yet this round</div>';
+    return;
+  }
+  const sorted = [...bets].sort((a,b) => (b.timestamp||0) - (a.timestamp||0)).slice(0, 50);
+  el.innerHTML = sorted.map(b => {
+    const time = b.timestamp ? new Date(b.timestamp).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',second:'2-digit'}) : '—';
+    const pl = b.pl !== undefined ? (b.pl > 0 ? `<span style="color:var(--green);">+₹${b.pl}</span>` : `<span style="color:var(--red2);">-₹${Math.abs(b.pl)}</span>`) : '<span style="color:var(--muted);">Pending</span>';
+    return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.8rem;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.75rem;">
+      <div>
+        <span style="color:var(--gold);font-weight:700;">${b.username||b.uid?.substring(0,8)||'—'}</span>
+        <span style="color:var(--muted);margin-left:0.4rem;">${b.selection||'—'}</span>
+      </div>
+      <div style="display:flex;gap:0.8rem;align-items:center;">
+        <span style="color:var(--text);">₹${b.bet||b.amount||0}</span>
+        ${pl}
+        <span style="color:var(--muted);font-size:0.65rem;">${time}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
 // ── NUM GRID ──
 const numColors = ['linear-gradient(135deg,#7c4dff 50%,#e02020 50%)','linear-gradient(135deg,#1a5c1a,#27ae60)','linear-gradient(135deg,#6e1a1a,#e02020)','linear-gradient(135deg,#1a5c1a,#27ae60)','linear-gradient(135deg,#6e1a1a,#e02020)','linear-gradient(135deg,#7c4dff 50%,#27ae60 50%)','linear-gradient(135deg,#6e1a1a,#e02020)','linear-gradient(135deg,#1a5c1a,#27ae60)','linear-gradient(135deg,#6e1a1a,#e02020)','linear-gradient(135deg,#1a5c1a,#27ae60)'];
 
