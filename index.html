@@ -1736,7 +1736,10 @@
       <button class="btn btn-gold btn-full" onclick="sendOTP()">🚀 Send OTP & Continue</button>
       </div>
       <div class="otp-wrap" id="otpWrap">
-        <div style="text-align:center;margin-bottom:0.5rem;font-size:0.9rem;color:var(--muted);">Enter the 6-digit OTP sent to your mobile/email</div>
+        <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
+          <button onclick="goBackFromOTP()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--muted);font-size:1rem;cursor:pointer;flex-shrink:0;">←</button>
+          <div style="font-size:0.9rem;color:var(--muted);">Enter the 6-digit OTP sent to your mobile/email</div>
+        </div>
         <div class="otp-inputs">
           <input class="otp-input" maxlength="1" id="otp1" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,'otp2')">
           <input class="otp-input" maxlength="1" id="otp2" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,'otp3')">
@@ -4111,6 +4114,9 @@
     if (!contact) { showToast('⚠️ Enter your mobile or email'); return; }
     if (!username) { showToast('⚠️ Enter a username'); return; }
     if (!password || password.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
+    // Validate password strength BEFORE sending OTP
+    const pwErr = validatePassword(password);
+    if (pwErr) { showToast('⚠️ ' + pwErr); return; }
 
     const isEmail = contact.includes('@');
 
@@ -4244,6 +4250,23 @@
       showToast('❌ ' + msg);
     }
   }
+  function goBackFromOTP() {
+    // Hide OTP section, show registration form
+    const otpSection = document.getElementById('otpSection');
+    const formSection = document.getElementById('regFormSection');
+    if (otpSection) otpSection.style.display = 'none';
+    if (formSection) formSection.style.display = 'block';
+    // Clear OTP inputs
+    ['otp1','otp2','otp3','otp4','otp5','otp6'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.value = '';
+    });
+    // Clear timer
+    if (window.otpInterval) clearInterval(window.otpInterval);
+    window._phoneConfirmResult = null;
+    window._confirmResult = null;
+  }
+
   function toggleMobileNotif() {
     const dd = document.getElementById('mobileNotifDropdown');
     if (!dd) return;
@@ -4644,6 +4667,9 @@
     if (!contact) { showToast('⚠️ Enter your mobile or email'); return; }
     if (!username) { showToast('⚠️ Enter a username'); return; }
     if (!password || password.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
+    // Validate password strength BEFORE sending OTP
+    const pwErr = validatePassword(password);
+    if (pwErr) { showToast('⚠️ ' + pwErr); return; }
     const isEmail = contact.includes('@');
     const email = isEmail ? contact : contact.replace(/\s/g,'') + '@royalwin.app';
 
