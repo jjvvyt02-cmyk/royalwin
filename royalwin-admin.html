@@ -1812,6 +1812,82 @@ window.editSingleBet = async function(uid, key, bet) {
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
+// ── FRAUD ALERTS ──
+window.loadFraudAlerts = function() {
+  const el = document.getElementById('fraudAlertsList');
+  if (!el) return;
+  el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;">Loading...</div>';
+
+  onValue(ref(db, 'users'), (snap) => {
+    const allUsers = snap.val() || {};
+    const alerts = [];
+    for (const [uid, u] of Object.entries(allUsers)) {
+      if (u.fraudLog) {
+        for (const [logKey, log] of Object.entries(u.fraudLog)) {
+          alerts.push({
+            uid, logKey,
+            username: u.username || 'Unknown',
+            memberId: u.memberId || uid.substring(0,8),
+            balance: u.balance || 0,
+            penaltyWager: parseFloat(((u.balance||0) * 1.5).toFixed(2)),
+            ...log
+          });
+        }
+      }
+    }
+    alerts.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+
+    if (alerts.length === 0) {
+      el.innerHTML = '<div style="color:var(--green);font-size:0.8rem;">✅ No fraud detected</div>';
+      return;
+    }
+
+    el.innerHTML = alerts.map(a => {
+      const time = a.timestamp ? new Date(a.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
+      return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(224,32,32,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.4rem;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.4rem;">
+          <div>
+            <span style="font-weight:700;color:var(--red2);">${a.username}</span>
+            <span style="font-size:0.65rem;background:rgba(224,32,32,0.1);border-radius:4px;padding:0.1rem 0.4rem;color:var(--red2);margin-left:0.3rem;">ID: ${a.memberId}</span>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">🚨 ${a.detail||'Suspicious activity'}</div>
+            <div style="font-size:0.65rem;color:var(--muted);">${a.mode||''} · ${time}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-size:0.7rem;color:var(--muted);">Balance: <span style="color:var(--gold);font-weight:700;">₹${a.balance.toLocaleString('en-IN')}</span></div>
+            <div style="font-size:0.7rem;color:var(--muted);">Penalty: <span style="color:var(--red2);font-weight:700;">₹${a.penaltyWager.toLocaleString('en-IN')}</span></div>
+            <div style="display:flex;gap:0.3rem;margin-top:0.3rem;justify-content:flex-end;">
+              <button onclick="applyFraudPenalty('${a.uid}','${a.logKey}',${a.penaltyWager},${a.balance})" style="font-size:0.65rem;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:4px;padding:0.2rem 0.5rem;color:var(--red2);cursor:pointer;">⚠️ Penalty</button>
+              <button onclick="dismissFraud('${a.uid}','${a.logKey}')" style="font-size:0.65rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:0.2rem 0.5rem;color:var(--muted);cursor:pointer;">🗑 Dismiss</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  });
+};
+
+window.applyFraudPenalty = async function(uid, logKey, penaltyWager, balance) {
+  if (!confirm('Apply wager penalty of ₹' + penaltyWager.toLocaleString('en-IN') + ' to this user?')) return;
+  try {
+    const wagerSnap = await get(ref(db, 'users/' + uid + '/wager'));
+    const existing = wagerSnap.val() || { required: 0, completed: 0 };
+    const newRequired = parseFloat((parseFloat(existing.required||0) + penaltyWager).toFixed(2));
+    await Promise.all([
+      update(ref(db, 'users/' + uid + '/wager'), { required: newRequired }),
+      set(ref(db, 'users/' + uid + '/fraudLog/' + logKey), null)
+    ]);
+    showToast('⚠️ Penalty applied — wager required: ₹' + newRequired.toLocaleString('en-IN'));
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
+window.dismissFraud = async function(uid, logKey) {
+  if (!confirm('Dismiss this fraud alert?')) return;
+  try {
+    await set(ref(db, 'users/' + uid + '/fraudLog/' + logKey), null);
+    showToast('✅ Alert dismissed');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
 window.filterUsers = function(query) {
   if (!query) { renderUsers(allUsers); return; }
   const q = query.toLowerCase();
@@ -2349,8 +2425,8 @@ window.loadCXPayBalance = async function() {
       if (usableEl) usableEl.textContent = 'Connect official channel first';
     }
   } catch(e) {
-    if (balEl) balEl.textContent = 'Error connecting';
-    console.warn('CXPay balance error:', e);
+    if (balEl) { balEl.textContent = 'Error Connecting'; balEl.style.color = 'var(--red2)'; }
+    if (usableEl) usableEl.textContent = 'Gateway not configured';
   }
 };
 
