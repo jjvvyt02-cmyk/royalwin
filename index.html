@@ -4106,6 +4106,7 @@
     const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
     const username = document.getElementById('regUsername') ? document.getElementById('regUsername').value.trim() : '';
     const password = document.getElementById('regPassword') ? document.getElementById('regPassword').value : '';
+    const inviteCode = document.getElementById('inviteCodeInput') ? document.getElementById('inviteCodeInput').value.trim() : '';
     if (!inviteCode) { showToast('⚠️ Invite code is mandatory to register'); return; }
     if (!contact) { showToast('⚠️ Enter your mobile or email'); return; }
     if (!username) { showToast('⚠️ Enter a username'); return; }
