@@ -4579,6 +4579,82 @@
     }, 300);
   }
 
+  // ── PROMO REBATE CARD LOADER ──
+  async function loadPromoRebateCard() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    monday.setHours(0, 0, 0, 0);
+    const weekStart = monday.getTime();
+
+    try {
+      const depSnap = await db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).once('value');
+      const deps = depSnap.val() ? Object.values(depSnap.val()).filter(d => d.status === 'approved' && (d.timestamp||0) >= weekStart) : [];
+      const totalDeposit = deps.reduce((s,d) => s + (d.amount||0), 0);
+
+      const betSnap = await db.ref('users/' + user.uid + '/wingoMyBets').once('value');
+      const bets = betSnap.val() ? Object.values(betSnap.val()).filter(b => (b.timestamp||0) >= weekStart) : [];
+      const totalBet = bets.reduce((s,b) => s + (b.bet||0), 0);
+      const totalWon = bets.filter(b => (b.pl||0) > 0).reduce((s,b) => s + (b.pl||0), 0);
+      const netLoss = Math.max(0, totalBet - totalWon);
+      const lossPct = totalDeposit > 0 ? Math.round((netLoss / totalDeposit) * 100) : 0;
+      const rebateAmt = parseFloat((netLoss * 0.05).toFixed(2));
+
+      const lossEl = document.getElementById('promoRebateLoss');
+      const amtEl = document.getElementById('promoRebateAmt');
+      const msgEl = document.getElementById('promoRebateMsg');
+      const btn = document.getElementById('promoRebateBtn');
+      const btnAmt = document.getElementById('promoRebateBtnAmt');
+
+      if (lossEl) lossEl.textContent = '₹' + netLoss.toLocaleString('en-IN');
+      if (amtEl) amtEl.textContent = '₹' + rebateAmt.toLocaleString('en-IN');
+
+      const isMonday = now.getDay() === 1;
+      const isEligible = lossPct >= 50 && rebateAmt > 0;
+      const claimSnap = await db.ref('users/' + user.uid + '/weeklyRebateClaimed').once('value');
+      const lastClaimed = claimSnap.val() || 0;
+      const alreadyClaimed = lastClaimed >= weekStart;
+
+      if (alreadyClaimed) {
+        if (msgEl) { msgEl.textContent = '✅ Claimed this week'; msgEl.style.color = 'var(--green)'; }
+        if (btn) btn.style.display = 'none';
+      } else if (!isMonday) {
+        if (msgEl) { msgEl.textContent = '📅 Available to claim on Monday'; msgEl.style.color = 'var(--muted)'; }
+        if (btn) btn.style.display = 'none';
+      } else if (!isEligible) {
+        if (msgEl) { msgEl.textContent = lossPct < 50 ? '❌ Need 50%+ loss to qualify' : '❌ No loss this week'; msgEl.style.color = 'var(--muted)'; }
+        if (btn) btn.style.display = 'none';
+      } else {
+        if (msgEl) { msgEl.textContent = '🎉 You qualify! Claim now'; msgEl.style.color = '#a87dff'; }
+        if (btn) { btn.style.display = 'block'; if (btnAmt) btnAmt.textContent = rebateAmt; btn.dataset.amount = rebateAmt; }
+      }
+    } catch(e) {}
+  }
+
+  async function claimWeeklyRebatePromo() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    const btn = document.getElementById('promoRebateBtn');
+    const amount = parseFloat(btn.dataset.amount || 0);
+    if (!amount) return;
+    try {
+      btn.disabled = true;
+      btn.textContent = '⏳';
+      await db.ref('users/' + user.uid + '/balance').transaction(bal => (bal || 0) + amount);
+      await db.ref('users/' + user.uid + '/weeklyRebateClaimed').set(Date.now());
+      await db.ref('users/' + user.uid + '/weeklyRebateHistory').push({ amount, timestamp: Date.now() });
+      await pushNotification(user.uid, '💰', 'Weekly Rebate Credited!', '₹' + amount + ' rebate added to your wallet.');
+      showToast('🎉 ₹' + amount + ' rebate credited!');
+      loadPromoRebateCard();
+    } catch(e) { showToast('❌ Error: ' + e.message); btn.disabled = false; }
+  }
+
   function toggleMobileNotif() {
     const dd = document.getElementById('mobileNotifDropdown');
     if (!dd) return;
@@ -7600,10 +7676,11 @@
             <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--text);" id="profileUsernameDisplay">—</div>
             <div id="profileVipBadge" style="display:none;font-size:0.7rem;font-weight:800;padding:0.15rem 0.5rem;border-radius:20px;background:rgba(205,127,50,0.2);color:#cd7f32;border:1px solid rgba(205,127,50,0.4);">🥉 Bronze</div>
           </div>
-          <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;" id="profileUIDDisplay">UID: —</div>
-          <div style="font-size:0.75rem;color:var(--muted);" id="profileContactDisplay">—</div>
-          <div style="font-size:0.7rem;color:var(--muted);margin-top:0.15rem;" id="profileMemberSince"></div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:0.15rem;" id="profileLastLogin"></div>
+          <div style="display:flex;align-items:center;gap:0.5rem;margin-top:0.2rem;">
+            <div style="font-size:0.75rem;color:var(--muted);" id="profileUIDDisplay">UID: —</div>
+          </div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:0.2rem;" id="profileMemberSince"></div>
+          <div style="font-size:0.68rem;color:var(--muted);margin-top:0.1rem;" id="profileLastLogin"></div>
         </div>
       </div>
 
@@ -8020,16 +8097,30 @@
       </div>
 
       <!-- Weekly Loss Rebate Card -->
-      <div class="promo-card" onclick="showPage('weeklyrebate')" style="cursor:pointer;background:linear-gradient(135deg,#1a1035,#2d1b69);">
+      <div class="promo-card" style="background:linear-gradient(135deg,#1a1035,#2d1b69);">
         <div class="promo-header" style="background:linear-gradient(135deg,#7c4dff,#a87dff);">
           <span style="font-size:1.5rem;">💰</span>
           <div class="promo-title">Weekly Loss Rebate</div>
           <div class="promo-subtitle">Get 5% back on your weekly losses</div>
         </div>
         <div class="promo-body">
-          <div style="font-size:0.82rem;color:var(--muted);">If your net loss exceeds 50% of your deposits this week, claim 5% back every Monday.</div>
+          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.6rem;">Loss > 50% of deposits this week → get 5% back. Claim every Monday.</div>
+          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+            <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:8px;padding:0.5rem;text-align:center;">
+              <div style="font-size:0.6rem;color:var(--muted);">Net Loss</div>
+              <div style="font-size:0.85rem;font-weight:800;color:var(--red2);" id="promoRebateLoss">₹—</div>
+            </div>
+            <div style="flex:1;background:rgba(124,77,255,0.1);border-radius:8px;padding:0.5rem;text-align:center;">
+              <div style="font-size:0.6rem;color:var(--muted);">Rebate</div>
+              <div style="font-size:0.85rem;font-weight:800;color:#a87dff;" id="promoRebateAmt">₹—</div>
+            </div>
+          </div>
+          <div id="promoRebateMsg" style="font-size:0.72rem;color:var(--muted);text-align:center;margin-bottom:0.5rem;"></div>
         </div>
-        <div class="promo-footer"><span class="promo-expiry">Resets every Monday</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="event.stopPropagation();showPage('weeklyrebate')">Claim</button></div>
+        <div class="promo-footer">
+          <span class="promo-expiry">Resets every Monday</span>
+          <button id="promoRebateBtn" onclick="claimWeeklyRebatePromo()" class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;display:none;">Claim ₹<span id="promoRebateBtnAmt">0</span></button>
+        </div>
       </div>
 
       <div class="promo-card" onclick="showPage('activity-award')" style="cursor:pointer;">
@@ -9471,11 +9562,11 @@ window.claimVipMonthly = function() {
 </script>
 
 <div class="page" id="page-accountsettings">
-  <div style="max-width:520px;margin:0 auto;padding:0 0 2rem;">
+  <div style="max-width:520px;margin:0 auto;padding:1rem 1rem 2rem;">
 
     <!-- Header -->
-    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;padding:1rem 0 0.8rem;border-bottom:1px solid var(--border);">
-      <button onclick="showPage('profile')" class="back-btn">←</button>
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;padding-bottom:0.8rem;border-bottom:1px solid var(--border);">
+      <button onclick="showPage('profile')" style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--text);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">←</button>
       <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);">⚙️ Settings</div>
     </div>
 
