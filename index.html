@@ -75,9 +75,10 @@
   }
 
   /* ─── PAGES ─── */
-  .page { display:none; position:relative; z-index:1; height:calc(100vh - 64px); overflow-y:auto; overflow-x:hidden; margin-top:64px; box-sizing:border-box; }
+  .page { display:none; position:fixed; top:64px; left:0; right:0; bottom:0; z-index:1; overflow-y:auto; overflow-x:hidden; box-sizing:border-box; background:var(--bg); }
+  .page.active { display:block; }
   #page-accountsettings { display:none; }
-  #page-accountsettings.active { display:block !important; visibility:visible !important; opacity:1 !important; }
+  #page-accountsettings.active { display:block !important; }
   /* Both home sections hidden by default - JS shows correct one */
   #mobileAppHome { display: none; }
   #desktopHome { display: none; }
@@ -110,7 +111,7 @@
       z-index: 99996 !important;
       pointer-events: auto !important;
     }
-    .page { min-height: unset !important; height: auto !important; margin-top: 0 !important; overflow-y: visible !important; }
+    .page { position: relative !important; top: auto !important; min-height: unset !important; height: auto !important; margin: 0 !important; overflow-y: visible !important; }
   }
 
   /* ─── NAV ─── */
@@ -1048,6 +1049,11 @@
 
     /* ── ALL PAGES: no blank space, proper sizing ── */
     .page {
+      position: relative !important;
+      top: auto !important;
+      left: auto !important;
+      right: auto !important;
+      bottom: auto !important;
       min-height: unset !important;
       height: calc(100vh - 60px) !important;
       height: calc(100dvh - 60px) !important;
