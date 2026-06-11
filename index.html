@@ -7203,7 +7203,29 @@
           }
           try {
             const db = window.fbDB || fbDB;
-            if (db) db.ref('users/' + user.uid + '/lastLogin').set(Date.now());
+            if (db) {
+              db.ref('users/' + user.uid + '/lastLogin').set(Date.now());
+              // Track IP address for fraud detection
+              fetch('https://api.ipify.org?format=json')
+                .then(r => r.json())
+                .then(data => {
+                  const ip = data.ip;
+                  const loginRecord = { ip, timestamp: Date.now(), device: navigator.userAgent.substring(0,100) };
+                  db.ref('users/' + user.uid + '/loginHistory').push(loginRecord);
+                  db.ref('users/' + user.uid + '/lastIp').set(ip);
+                  // Check if same IP used by multiple accounts
+                  db.ref('users').orderByChild('lastIp').equalTo(ip).once('value', snap => {
+                    if (snap.val()) {
+                      const uids = Object.keys(snap.val()).filter(u => u !== user.uid);
+                      if (uids.length > 0) {
+                        db.ref('users/' + user.uid + '/ipConflict').set({
+                          ip, conflictingUids: uids, detectedAt: Date.now()
+                        });
+                      }
+                    }
+                  });
+                }).catch(() => {});
+            }
           } catch(e) {}
           resetInactivityTimer();
         } else {
