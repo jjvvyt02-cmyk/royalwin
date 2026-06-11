@@ -59,7 +59,6 @@
     color: var(--text);
     overflow: hidden;
     height: 100%;
-    position: fixed;
     width: 100%;
   }
 
@@ -76,7 +75,9 @@
   }
 
   /* ─── PAGES ─── */
-  .page { display:none; position:relative; z-index:1; height:auto; }
+  .page { display:none; position:relative; z-index:1; height:calc(100vh - 64px); overflow-y:auto; overflow-x:hidden; margin-top:64px; box-sizing:border-box; }
+  #page-accountsettings { display:none; }
+  #page-accountsettings.active { display:block !important; visibility:visible !important; opacity:1 !important; }
   /* Both home sections hidden by default - JS shows correct one */
   #mobileAppHome { display: none; }
   #desktopHome { display: none; }
@@ -109,7 +110,7 @@
       z-index: 99996 !important;
       pointer-events: auto !important;
     }
-    .page { min-height: unset !important; height: auto !important; }
+    .page { min-height: unset !important; height: auto !important; margin-top: 0 !important; overflow-y: visible !important; }
   }
 
   /* ─── NAV ─── */
@@ -2127,6 +2128,8 @@
       return;
     }
 
+    if (name === 'accountsettings') { _showPageInternal('accountsettings'); updateMobileNav('account'); setTimeout(loadSettingsPage, 100); return; }
+
     if (name === 'subdata') {
       _showPageInternal('subdata');
       const dateEl = document.getElementById('subdataDate');
@@ -2229,7 +2232,6 @@
     if (name === 'invitation-bonus') { _showPageInternal('invitation-bonus'); setTimeout(window.loadInvitationBonusPage, 200); return; }
     if (name === 'activity-award') { _showPageInternal('activity-award'); setTimeout(window.loadActivityAwardPage, 200); return; }
     if (name === 'weeklyrebate') { _showPageInternal('weeklyrebate'); setTimeout(loadWeeklyRebatePage, 200); return; }
-    if (name === 'accountsettings') { _showPageInternal('accountsettings'); updateMobileNav('account'); setTimeout(loadSettingsPage, 100); return; }
     if (name === 'wallet') {
       switchWalletTab('deposit');
       loadWagerProgress();
