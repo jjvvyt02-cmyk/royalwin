@@ -2523,6 +2523,12 @@
     if (dh) dh.style.display = 'block';
   });
   window.addEventListener('popstate', (event) => {
+    // Close settings modal if open
+    const settingsModal = document.getElementById('settingsModal');
+    if (settingsModal && settingsModal.style.display === 'block') {
+      closeSettingsModal();
+      return;
+    }
     const gameOverlay = document.getElementById('colorGameOverlay');
     if (gameOverlay && gameOverlay.classList.contains('open')) {
       closeColorGame();
@@ -4772,6 +4778,10 @@
       modal.style.display = 'block';
       modal.scrollTop = 0;
       loadSettingsPage();
+      // Push history so Android back button closes modal
+      if (window.history && window.history.pushState) {
+        window.history.pushState({ modal: 'settings' }, '', '#settings');
+      }
     }
   }
 
@@ -9921,7 +9931,7 @@ window.claimVipMonthly = function() {
 
     <!-- Header -->
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;padding-bottom:0.8rem;border-bottom:1px solid var(--border);">
-      <button onclick="closeSettingsModal()" style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--text);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">←</button>
+      <button onclick="closeSettingsModal()" class="back-btn" style="flex-shrink:0;">←</button>
       <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);">⚙️ Settings</div>
     </div>
 
