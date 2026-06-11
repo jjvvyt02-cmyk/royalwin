@@ -4267,6 +4267,49 @@
     window._confirmResult = null;
   }
 
+  async function changePassword() {
+    const oldPw = document.getElementById('settingsOldPassword').value;
+    const newPw = document.getElementById('settingsNewPassword').value;
+    const confirmPw = document.getElementById('settingsConfirmPassword').value;
+    const msgEl = document.getElementById('settingsPasswordMsg');
+
+    const showMsg = (text, success) => {
+      msgEl.style.display = 'block';
+      msgEl.textContent = text;
+      msgEl.style.background = success ? 'rgba(39,174,96,0.1)' : 'rgba(224,32,32,0.1)';
+      msgEl.style.color = success ? 'var(--green)' : 'var(--red2)';
+    };
+
+    if (!oldPw) { showMsg('⚠️ Enter your current password', false); return; }
+    if (!newPw || newPw.length < 8) { showMsg('⚠️ New password must be at least 8 characters', false); return; }
+    if (newPw !== confirmPw) { showMsg('⚠️ Passwords do not match', false); return; }
+    if (oldPw === newPw) { showMsg('⚠️ New password must be different from current', false); return; }
+
+    try {
+      const user = firebase.auth().currentUser;
+      if (!user) { showMsg('❌ Not logged in', false); return; }
+
+      // Re-authenticate with old password first
+      const email = user.email;
+      const credential = firebase.auth.EmailAuthProvider.credential(email, oldPw);
+      await user.reauthenticateWithCredential(credential);
+
+      // Update password
+      await user.updatePassword(newPw);
+
+      showMsg('✅ Password updated successfully!', true);
+      document.getElementById('settingsOldPassword').value = '';
+      document.getElementById('settingsNewPassword').value = '';
+      document.getElementById('settingsConfirmPassword').value = '';
+    } catch(e) {
+      const msg = e.code === 'auth/wrong-password' ? '❌ Current password is incorrect' :
+                  e.code === 'auth/weak-password' ? '❌ New password is too weak' :
+                  e.code === 'auth/requires-recent-login' ? '❌ Please log out and log in again first' :
+                  '❌ Error: ' + e.message;
+      showMsg(msg, false);
+    }
+  }
+
   function toggleMobileNotif() {
     const dd = document.getElementById('mobileNotifDropdown');
     if (!dd) return;
@@ -6486,8 +6529,7 @@
           day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'
         });
       }
-      const profContact = document.getElementById('profileContactDisplay');
-      if (profContact) profContact.textContent = profile.contact || profile.mobile || profile.email || '—';
+
       const profBal = document.getElementById('profileBalance');
       if (profBal) profBal.textContent = '₹' + parseFloat(profile.balance || 0).toLocaleString('en-IN', {minimumFractionDigits:2});
       const profUser = document.getElementById('profileUsername') || document.getElementById('profileUsernameDisplay');
@@ -7333,21 +7375,18 @@
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">📊</span><span style="font-size:0.88rem;"><span data-t="acc.gamestats">Game Stats</span></span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
-      <div onclick="showPage('support')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;cursor:pointer;">
+      <div onclick="showPage('support')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎧</span><span style="font-size:0.88rem;">Support</span></div>
+        <span style="color:var(--muted);font-size:0.8rem;">›</span>
+      </div>
+      <div onclick="showPage('accountsettings')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">⚙️</span><span style="font-size:0.88rem;">Settings</span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
     </div>
 
     
     
-    <div style="display:flex;gap:0.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem;">
-      <button onclick="showPage('terms')" style="background:none;border:none;color:var(--muted);font-size:0.75rem;cursor:pointer;text-decoration:underline;font-family:'Exo 2',sans-serif;">Terms & Conditions</button>
-      <span style="color:var(--muted);font-size:0.75rem;">·</span>
-      <button onclick="showPage('privacy')" style="background:none;border:none;color:var(--muted);font-size:0.75rem;cursor:pointer;text-decoration:underline;font-family:'Exo 2',sans-serif;">Privacy Policy</button>
-      <span style="color:var(--muted);font-size:0.75rem;">·</span>
-      <button onclick="showPage('responsible')" style="background:none;border:none;color:var(--muted);font-size:0.75rem;cursor:pointer;text-decoration:underline;font-family:'Exo 2',sans-serif;">Responsible Gambling</button>
-    </div>
     <button onclick="logout()" style="width:100%;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.25);border-radius:12px;padding:0.9rem;color:var(--red2);font-size:0.9rem;font-weight:700;cursor:pointer;margin-bottom:1rem;">🚪 Sign Out</button>
 
   </div>
@@ -9118,5 +9157,55 @@ window.claimVipMonthly = function() {
   });
 };
 </script>
+
+<div class="page" id="page-accountsettings">
+  <div style="max-width:520px;margin:0 auto;padding:0 0 2rem;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;padding:1rem 0 0.8rem;border-bottom:1px solid var(--border);">
+      <button onclick="showPage('profile')" class="back-btn">←</button>
+      <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);">⚙️ Settings</div>
+    </div>
+
+    <!-- Change Password -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
+      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:1rem;">🔒 Change Password</div>
+      <div style="display:flex;flex-direction:column;gap:0.7rem;">
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Current Password</div>
+          <input type="password" id="settingsOldPassword" class="form-input" placeholder="Enter current password" style="font-size:0.85rem;">
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">New Password</div>
+          <input type="password" id="settingsNewPassword" class="form-input" placeholder="Min 8 characters" style="font-size:0.85rem;">
+        </div>
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Confirm New Password</div>
+          <input type="password" id="settingsConfirmPassword" class="form-input" placeholder="Repeat new password" style="font-size:0.85rem;">
+        </div>
+        <button onclick="changePassword()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem;color:#000;font-weight:800;font-size:0.88rem;cursor:pointer;font-family:'Exo 2',sans-serif;width:100%;margin-top:0.3rem;">Update Password</button>
+        <div id="settingsPasswordMsg" style="display:none;font-size:0.8rem;text-align:center;padding:0.5rem;border-radius:8px;"></div>
+      </div>
+    </div>
+
+    <!-- Legal -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem;">
+      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);padding:0.9rem 1rem;border-bottom:1px solid var(--border);">📄 Legal</div>
+      <div onclick="showPage('terms')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">📋</span><span style="font-size:0.88rem;">Terms & Conditions</span></div>
+        <span style="color:var(--muted);font-size:0.8rem;">›</span>
+      </div>
+      <div onclick="showPage('privacy')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🔐</span><span style="font-size:0.88rem;">Privacy Policy</span></div>
+        <span style="color:var(--muted);font-size:0.8rem;">›</span>
+      </div>
+      <div onclick="showPage('responsible')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎗️</span><span style="font-size:0.88rem;">Responsible Gambling</span></div>
+        <span style="color:var(--muted);font-size:0.8rem;">›</span>
+      </div>
+    </div>
+
+  </div>
+</div>
 </body>
 </html>
