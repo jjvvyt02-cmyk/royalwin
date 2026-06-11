@@ -4773,16 +4773,7 @@
   }
 
   function openSettingsModal() {
-    const modal = document.getElementById('settingsModal');
-    if (modal) {
-      modal.style.display = 'block';
-      modal.scrollTop = 0;
-      loadSettingsPage();
-      // Push history so Android back button closes modal
-      if (window.history && window.history.pushState) {
-        window.history.pushState({ modal: 'settings' }, '', '#settings');
-      }
-    }
+    showPage('accountsettings');
   }
 
   function closeSettingsModal() {
