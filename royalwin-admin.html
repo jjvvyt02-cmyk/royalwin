@@ -503,7 +503,15 @@
             <div style="font-size:0.65rem;color:var(--muted);">requests</div>
           </div>
         </div>
-        <!-- 7-day chart -->
+        <!-- Game Mode Breakdown -->
+      <div style="margin-bottom:1.2rem;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--muted);margin-bottom:0.6rem;text-transform:uppercase;letter-spacing:0.5px;">🎮 Revenue by Game Mode</div>
+        <div id="statGameBreakdown" style="display:flex;gap:0.5rem;">
+          <div style="flex:1;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:0.7rem;text-align:center;"><div style="font-size:0.62rem;color:var(--muted);">Loading...</div></div>
+        </div>
+      </div>
+
+      <!-- 7-day chart -->
         <div style="background:var(--bg3);border-radius:10px;padding:1rem;">
           <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.8rem;">📈 Last 7 Days — Deposits vs Withdrawals</div>
           <div id="revChart" style="display:flex;align-items:flex-end;gap:0.3rem;height:80px;"></div>
@@ -611,9 +619,16 @@
         <div id="fraudAlertsList" style="font-size:0.8rem;color:var(--muted);">Loading...</div>
       </div>
 
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.8rem;">
+      <div style="margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem;">
         <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">👥 Registered Users (<span id="userCount">0</span>)</div>
-        <input class="form-input" type="text" id="userSearch" placeholder="🔍 Search by Member ID, username, phone or UID..." style="max-width:320px;font-size:0.85rem;" oninput="filterUsers(this.value)">
+        <div style="display:flex;gap:0.4rem;flex-wrap:wrap;">
+          <button onclick="exportCSV('users')" style="padding:0.3rem 0.6rem;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--muted);font-size:0.7rem;cursor:pointer;font-family:'Exo 2',sans-serif;">📥 Users</button>
+          <button onclick="exportCSV('deposits')" style="padding:0.3rem 0.6rem;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--muted);font-size:0.7rem;cursor:pointer;font-family:'Exo 2',sans-serif;">📥 Deposits</button>
+          <button onclick="exportCSV('withdrawals')" style="padding:0.3rem 0.6rem;border-radius:6px;border:1px solid var(--border);background:rgba(255,255,255,0.05);color:var(--muted);font-size:0.7rem;cursor:pointer;font-family:'Exo 2',sans-serif;">📥 Withdrawals</button>
+        </div>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <input class="form-input" type="text" id="userSearch" placeholder="🔍 Search by Member ID, username, phone or UID..." style="width:100%;font-size:0.85rem;" oninput="filterUsers(this.value)">
       </div>
       <div id="usersList" style="display:flex;flex-direction:column;gap:0.6rem;">
         <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">Loading users...</div>
@@ -1757,6 +1772,7 @@ function renderUsers(users) {
           <span style="color:#27ae60;">⬇ Dep: ₹${(u._totalDeposits||0).toLocaleString('en-IN')}</span>
           <span style="color:#e02020;">⬆ With: ₹${(u._totalWithdrawals||0).toLocaleString('en-IN')}</span>
           <span style="color:#a87dff;">🎯 Wager: ₹${(u.wager?.completed||0).toLocaleString('en-IN')} / ₹${(u.wager?.required||0).toLocaleString('en-IN')} <span style="color:var(--gold);">(₹${Math.max(0,(u.wager?.required||0)-(u.wager?.completed||0)).toLocaleString('en-IN')} left)</span></span>
+          ${u.lastIp ? `<span style="color:${u.ipConflict ? 'var(--red2)' : 'var(--muted)'};">🌐 ${u.lastIp}${u.ipConflict ? ' ⚠️ Multi-account' : ''}</span>` : ''}
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem;">
@@ -2731,16 +2747,19 @@ function loadChatUserList() {
       if (isUnread) totalUnread++;
       const time = info.lastMessageTime ? new Date(info.lastMessageTime).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) : '';
       const isSelected = uid === _adminSelectedUid;
-      return `<div onclick="selectAdminChat('${uid}','${info.username||'User'}')"
-        style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;background:${isSelected?'rgba(240,192,64,0.08)':'transparent'};transition:background 0.2s;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-size:0.85rem;font-weight:${isUnread?'800':'600'};color:${isUnread?'var(--gold)':'var(--text)'};">${info.username||'User'}</div>
-          <div style="font-size:0.65rem;color:var(--muted);">${time}</div>
+      return `<div style="border-bottom:1px solid var(--border);background:${isSelected?'rgba(240,192,64,0.08)':'transparent'};transition:background 0.2s;position:relative;">
+        <div onclick="selectAdminChat('${uid}','${info.username||'User'}')" style="padding:0.8rem 1rem;cursor:pointer;padding-right:2.5rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:0.85rem;font-weight:${isUnread?'800':'600'};color:${isUnread?'var(--gold)':'var(--text)'};">${info.username||'User'}</div>
+            <div style="font-size:0.65rem;color:var(--muted);">${time}</div>
+          </div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+            ${isUnread?'🔵 ':''}${info.lastMessage||'No messages yet'}
+          </div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-top:1px;">ID: ${info.memberId||uid.substring(0,8)}</div>
         </div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-          ${isUnread?'🔵 ':''}${info.lastMessage||'No messages yet'}
-        </div>
-        <div style="font-size:0.62rem;color:var(--muted);margin-top:1px;">ID: ${info.memberId||uid.substring(0,8)}</div>
+        <button onclick="deleteConversation('${uid}','${info.username||'User'}')" title="Delete conversation"
+          style="position:absolute;top:50%;right:0.5rem;transform:translateY(-50%);background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.2);border-radius:6px;width:26px;height:26px;color:var(--red2);cursor:pointer;font-size:0.75rem;display:flex;align-items:center;justify-content:center;">✕</button>
       </div>`;
     }).join('');
 
@@ -2751,6 +2770,22 @@ function loadChatUserList() {
     if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--red2);font-size:0.8rem;">❌ Permission denied. Check Firebase rules.</div>';
   });
 }
+
+window.deleteConversation = async function(uid, username) {
+  if (!confirm('Delete entire conversation with ' + username + '? This cannot be undone.')) return;
+  try {
+    await set(ref(db, 'chats/' + uid), null);
+    // If this was the selected chat, clear the chat panel
+    if (_adminSelectedUid === uid) {
+      _adminSelectedUid = null;
+      const msgsEl = document.getElementById('adminChatMessages');
+      if (msgsEl) msgsEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;font-size:0.85rem;">Select a conversation</div>';
+      document.getElementById('adminChatName').textContent = 'Select a conversation';
+      document.getElementById('adminChatStatus').style.display = 'none';
+    }
+    showToast('✅ Conversation deleted');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
 
 window.selectAdminChat = function(uid, username) {
   _adminSelectedUid = uid;
