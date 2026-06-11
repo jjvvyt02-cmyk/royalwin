@@ -8097,29 +8097,27 @@
       </div>
 
       <!-- Weekly Loss Rebate Card -->
-      <div class="promo-card" style="background:linear-gradient(135deg,#1a1035,#2d1b69);">
-        <div class="promo-header" style="background:linear-gradient(135deg,#7c4dff,#a87dff);">
-          <span style="font-size:1.5rem;">💰</span>
-          <div class="promo-title">Weekly Loss Rebate</div>
-          <div class="promo-subtitle">Get 5% back on your weekly losses</div>
-        </div>
+      <div class="promo-card">
+        <div class="promo-thumb" style="background:linear-gradient(135deg,#1a1035,#2d1b69);">💰</div>
         <div class="promo-body">
-          <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.6rem;">Loss > 50% of deposits this week → get 5% back. Claim every Monday.</div>
-          <div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem;">
+          <div class="promo-tag">Weekly Bonus</div>
+          <div class="promo-name">Loss Rebate</div>
+          <div class="promo-desc">Get 5% back if your net loss exceeds 50% of deposits. Claim every Monday.</div>
+          <div style="display:flex;gap:0.5rem;margin-bottom:0.8rem;">
             <div style="flex:1;background:rgba(255,255,255,0.05);border-radius:8px;padding:0.5rem;text-align:center;">
               <div style="font-size:0.6rem;color:var(--muted);">Net Loss</div>
-              <div style="font-size:0.85rem;font-weight:800;color:var(--red2);" id="promoRebateLoss">₹—</div>
+              <div style="font-size:0.85rem;font-weight:800;color:var(--red2);" id="promoRebateLoss">—</div>
             </div>
             <div style="flex:1;background:rgba(124,77,255,0.1);border-radius:8px;padding:0.5rem;text-align:center;">
-              <div style="font-size:0.6rem;color:var(--muted);">Rebate</div>
-              <div style="font-size:0.85rem;font-weight:800;color:#a87dff;" id="promoRebateAmt">₹—</div>
+              <div style="font-size:0.6rem;color:var(--muted);">Rebate (5%)</div>
+              <div style="font-size:0.85rem;font-weight:800;color:#a87dff;" id="promoRebateAmt">—</div>
             </div>
           </div>
-          <div id="promoRebateMsg" style="font-size:0.72rem;color:var(--muted);text-align:center;margin-bottom:0.5rem;"></div>
-        </div>
-        <div class="promo-footer">
-          <span class="promo-expiry">Resets every Monday</span>
-          <button id="promoRebateBtn" onclick="claimWeeklyRebatePromo()" class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;display:none;">Claim ₹<span id="promoRebateBtnAmt">0</span></button>
+          <div id="promoRebateMsg" style="font-size:0.72rem;color:var(--muted);margin-bottom:0.6rem;"></div>
+          <div class="promo-footer">
+            <span class="promo-expiry">Resets every Monday</span>
+            <button id="promoRebateBtn" onclick="claimWeeklyRebatePromo()" class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;display:none;">Claim ₹<span id="promoRebateBtnAmt">0</span></button>
+          </div>
         </div>
       </div>
 
@@ -9562,7 +9560,7 @@ window.claimVipMonthly = function() {
 </script>
 
 <div class="page" id="page-accountsettings">
-  <div style="max-width:520px;margin:0 auto;padding:1rem 1rem 2rem;">
+  <div class="profile-page">
 
     <!-- Header -->
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;padding-bottom:0.8rem;border-bottom:1px solid var(--border);">
