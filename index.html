@@ -7912,7 +7912,7 @@
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎧</span><span style="font-size:0.88rem;">Support</span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
-      <div onclick="openSettingsModal()" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;cursor:pointer;">
+      <div onclick="showPage('accountsettings')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;cursor:pointer;">
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">⚙️</span><span style="font-size:0.88rem;">Settings</span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
@@ -9959,25 +9959,73 @@ window.claimVipMonthly = function() {
       </div>
     </div>
 
-    <!-- Save UPI -->
+    <!-- Saved Payment Details -->
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
       <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:0.3rem;">💳 Payment Details</div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:1rem;">Save UPI ID for faster withdrawals</div>
-      <div id="settingsSavedUpi" style="display:none;background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.7rem;display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <div style="font-size:0.65rem;color:var(--muted);">Saved UPI</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:1rem;">Save your payment details for faster withdrawals</div>
+
+      <!-- UPI -->
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text);margin-bottom:0.5rem;">📱 UPI</div>
+        <div id="settingsSavedUpi" style="display:none;background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">
+          <div style="font-size:0.62rem;color:var(--muted);">Saved UPI ID</div>
           <div style="font-size:0.82rem;font-weight:700;color:var(--gold);" id="settingsSavedUpiText">—</div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-top:0.3rem;">🔒 To change, contact support</div>
         </div>
-        <button onclick="clearSavedUpi()" style="background:none;border:none;color:var(--muted);font-size:0.7rem;cursor:pointer;">✕ Remove</button>
+        <div id="settingsUpiInputArea" style="display:flex;gap:0.5rem;">
+          <input type="text" id="settingsUpiInput" class="form-input" placeholder="e.g. name@upi" style="font-size:0.85rem;flex:1;">
+          <button onclick="saveUpiDetails()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem 1rem;color:#000;font-weight:800;font-size:0.82rem;cursor:pointer;">Save</button>
+        </div>
+        <div id="settingsUpiMsg" style="display:none;font-size:0.78rem;margin-top:0.4rem;padding:0.4rem;border-radius:6px;"></div>
       </div>
-      <div style="display:flex;gap:0.5rem;">
-        <input type="text" id="settingsUpiInput" class="form-input" placeholder="e.g. name@upi" style="font-size:0.85rem;flex:1;">
-        <button onclick="saveUpiDetails()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem 1rem;color:#000;font-weight:800;cursor:pointer;">Save</button>
+
+      <div style="height:1px;background:var(--border);margin-bottom:1rem;"></div>
+
+      <!-- Bank Transfer -->
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text);margin-bottom:0.5rem;">🏦 Bank Transfer</div>
+        <div id="settingsSavedBank" style="display:none;background:rgba(39,174,96,0.05);border:1px solid rgba(39,174,96,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">
+          <div style="display:flex;flex-direction:column;gap:0.2rem;">
+            <div style="font-size:0.62rem;color:var(--muted);">Account Holder</div>
+            <div style="font-size:0.8rem;font-weight:700;color:var(--text);" id="settingsSavedBankName">—</div>
+            <div style="font-size:0.62rem;color:var(--muted);margin-top:0.2rem;">Account Number</div>
+            <div style="font-size:0.8rem;font-weight:700;color:var(--text);" id="settingsSavedBankAcc">—</div>
+            <div style="font-size:0.62rem;color:var(--muted);margin-top:0.2rem;">IFSC · Bank</div>
+            <div style="font-size:0.78rem;color:var(--muted);" id="settingsSavedBankIfsc">—</div>
+            <div style="font-size:0.62rem;color:var(--muted);margin-top:0.3rem;">🔒 To change, contact support</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+          <input type="text" id="settingsBankName" class="form-input" placeholder="Account holder name" style="font-size:0.85rem;">
+          <input type="text" id="settingsBankAcc" class="form-input" placeholder="Account number" style="font-size:0.85rem;" inputmode="numeric">
+          <input type="text" id="settingsBankIfsc" class="form-input" placeholder="IFSC code" style="font-size:0.85rem;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
+          <input type="text" id="settingsBankBankName" class="form-input" placeholder="Bank name (e.g. SBI, HDFC)" style="font-size:0.85rem;">
+          <button onclick="saveBankDetails()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem;color:#000;font-weight:800;font-size:0.85rem;cursor:pointer;width:100%;">Save Bank Details</button>
+        </div>
+        <div id="settingsBankMsg" style="display:none;font-size:0.78rem;margin-top:0.4rem;padding:0.4rem;border-radius:6px;"></div>
       </div>
-      <div id="settingsUpiMsg" style="display:none;font-size:0.78rem;margin-top:0.5rem;padding:0.4rem;border-radius:6px;"></div>
+
+      <div style="height:1px;background:var(--border);margin-bottom:1rem;"></div>
+
+      <!-- USDT TRC20 -->
+      <div>
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text);margin-bottom:0.3rem;">💚 USDT (TRC20)</div>
+        <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.5rem;">TRC20 network only</div>
+        <div id="settingsSavedUsdt" style="display:none;background:rgba(39,174,96,0.05);border:1px solid rgba(39,174,96,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">
+          <div style="font-size:0.62rem;color:var(--muted);">Saved Wallet (TRC20)</div>
+          <div style="font-size:0.75rem;font-weight:700;color:var(--green);word-break:break-all;" id="settingsSavedUsdtText">—</div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-top:0.3rem;">🔒 To change, contact support</div>
+        </div>
+        <div style="display:flex;gap:0.5rem;">
+          <input type="text" id="settingsUsdtInput" class="form-input" placeholder="TRC20 wallet address" style="font-size:0.82rem;flex:1;">
+          <button onclick="saveUsdtDetails()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem 1rem;color:#000;font-weight:800;font-size:0.82rem;cursor:pointer;">Save</button>
+        </div>
+        <div id="settingsUsdtMsg" style="display:none;font-size:0.78rem;margin-top:0.4rem;padding:0.4rem;border-radius:6px;"></div>
+      </div>
+
     </div>
 
-    <!-- Security -->
+        <!-- Security -->
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
       <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:1rem;">🔐 Security</div>
       <button onclick="logoutAllDevices()" style="width:100%;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.25);border-radius:10px;padding:0.75rem;color:var(--red2);font-size:0.88rem;font-weight:700;cursor:pointer;">🚪 Logout All Devices</button>
