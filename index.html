@@ -75,10 +75,8 @@
   }
 
   /* ─── PAGES ─── */
-  .page { display:none; position:fixed; top:64px; left:0; right:0; bottom:0; z-index:1; overflow-y:auto; overflow-x:hidden; box-sizing:border-box; background:var(--bg); }
+  .page { display:none; position:relative; z-index:1; height:auto; }
   .page.active { display:block; }
-  #page-accountsettings { display:none; }
-  #page-accountsettings.active { display:block !important; }
   /* Both home sections hidden by default - JS shows correct one */
   #mobileAppHome { display: none; }
   #desktopHome { display: none; }
@@ -111,7 +109,7 @@
       z-index: 99996 !important;
       pointer-events: auto !important;
     }
-    .page { position: fixed !important; top: 0 !important; bottom: 60px !important; left: 0 !important; right: 0 !important; height: auto !important; margin: 0 !important; overflow-y: auto !important; }
+    .page { min-height: unset !important; height: auto !important; }
   }
 
   /* ─── NAV ─── */
@@ -1049,6 +1047,18 @@
 
     /* ── ALL PAGES: no blank space, proper sizing ── */
     .page {
+      min-height: unset !important;
+      height: calc(100vh - 60px) !important;
+      height: calc(100dvh - 60px) !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      padding: 0.85rem 0.75rem 0 !important;
+      margin: 0 !important;
+      -webkit-overflow-scrolling: touch !important;
+      box-sizing: border-box !important;
+    }
+    #page-accountsettings.active {
+      display: block !important;
       position: fixed !important;
       top: 0 !important;
       left: 0 !important;
@@ -1056,12 +1066,8 @@
       bottom: 60px !important;
       height: auto !important;
       overflow-y: auto !important;
-      overflow-x: hidden !important;
-      padding: 0.85rem 0.75rem 0 !important;
-      margin: 0 !important;
-      -webkit-overflow-scrolling: touch !important;
-      box-sizing: border-box !important;
       background: var(--bg) !important;
+      z-index: 2 !important;
     }
 
     /* ── EXCEPTIONS: pages that manage their own layout ── */
@@ -2133,7 +2139,23 @@
       return;
     }
 
-    if (name === 'accountsettings') { _showPageInternal('accountsettings'); updateMobileNav('account'); setTimeout(loadSettingsPage, 100); return; }
+    if (name === 'accountsettings') {
+      _showPageInternal('accountsettings');
+      updateMobileNav('account');
+      const _sp = document.getElementById('page-accountsettings');
+      if (_sp) {
+        _sp.style.display = 'block';
+        _sp.style.visibility = 'visible';
+        _sp.style.opacity = '1';
+        _sp.style.zIndex = '10';
+        _sp.style.position = 'relative';
+        _sp.style.minHeight = '100vh';
+        _sp.style.overflowY = 'auto';
+        _sp.style.background = 'var(--bg)';
+      }
+      setTimeout(loadSettingsPage, 100);
+      return;
+    }
 
     if (name === 'subdata') {
       _showPageInternal('subdata');
@@ -9714,7 +9736,7 @@ window.claimVipMonthly = function() {
 </script>
 
 <div class="page" id="page-accountsettings">
-  <div class="support-page">
+  <div class="support-page" style="padding:1rem 1rem 5rem;max-width:600px;margin:0 auto;min-height:100%;">
 
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
       <button onclick="showPage('profile')" class="back-btn" style="flex-shrink:0;">←</button>
