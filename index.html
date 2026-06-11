@@ -4429,16 +4429,112 @@
     showToast('✅ UPI ID removed');
   }
 
+  // ── SAVE BANK DETAILS ──
+  async function saveBankDetails() {
+    const name = document.getElementById('settingsBankName').value.trim();
+    const acc = document.getElementById('settingsBankAcc').value.trim();
+    const ifsc = document.getElementById('settingsBankIfsc').value.trim();
+    const bankName = document.getElementById('settingsBankBankName').value.trim();
+    const msgEl = document.getElementById('settingsBankMsg');
+    const showMsg = (t, ok) => { msgEl.style.display='block'; msgEl.textContent=t; msgEl.style.color=ok?'var(--green)':'var(--red2)'; };
+    if (!name) { showMsg('⚠️ Enter account holder name', false); return; }
+    if (!acc) { showMsg('⚠️ Enter account number', false); return; }
+    if (!ifsc) { showMsg('⚠️ Enter IFSC code', false); return; }
+    if (!bankName) { showMsg('⚠️ Enter bank name', false); return; }
+    const user = window.currentUser; const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    try {
+      await db.ref('users/' + user.uid + '/savedBank').set({ name, acc, ifsc, bankName, savedAt: Date.now() });
+      document.getElementById('settingsSavedBankName').textContent = name;
+      document.getElementById('settingsSavedBankAcc').textContent = acc;
+      document.getElementById('settingsSavedBankIfsc').textContent = ifsc + ' · ' + bankName;
+      document.getElementById('settingsSavedBank').style.display = 'block';
+      document.getElementById('settingsBankName').value = '';
+      document.getElementById('settingsBankAcc').value = '';
+      document.getElementById('settingsBankIfsc').value = '';
+      document.getElementById('settingsBankBankName').value = '';
+      // Hide input fields after saving
+      ['settingsBankName','settingsBankAcc','settingsBankIfsc','settingsBankBankName'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.parentElement.style.display = 'none';
+      });
+      document.querySelector('[onclick="saveBankDetails()"]').style.display = 'none';
+      showMsg('✅ Bank details saved!', true);
+      setTimeout(() => { msgEl.style.display='none'; }, 2000);
+    } catch(e) { showMsg('❌ Error: ' + e.message, false); }
+  }
+
+  async function clearSavedBank() {
+    const user = window.currentUser; const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    if (!confirm('Remove saved bank details?')) return;
+    await db.ref('users/' + user.uid + '/savedBank').remove();
+    document.getElementById('settingsSavedBank').style.display = 'none';
+    showToast('✅ Bank details removed');
+  }
+
+  // ── SAVE USDT DETAILS ──
+  async function saveUsdtDetails() {
+    const wallet = document.getElementById('settingsUsdtInput').value.trim();
+    const msgEl = document.getElementById('settingsUsdtMsg');
+    const showMsg = (t, ok) => { msgEl.style.display='block'; msgEl.textContent=t; msgEl.style.color=ok?'var(--green)':'var(--red2)'; };
+    if (!wallet) { showMsg('⚠️ Enter USDT wallet address', false); return; }
+    if (wallet.length < 30) { showMsg('⚠️ Invalid TRC20 wallet address', false); return; }
+    const user = window.currentUser; const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    try {
+      await db.ref('users/' + user.uid + '/savedUsdt').set({ wallet, network: 'TRC20', savedAt: Date.now() });
+      document.getElementById('settingsSavedUsdtText').textContent = wallet;
+      document.getElementById('settingsSavedUsdt').style.display = 'block';
+      document.getElementById('settingsUsdtInput').value = '';
+      const usdtArea = document.getElementById('settingsUsdtInput').parentElement;
+      if (usdtArea) usdtArea.style.display = 'none';
+      const usdtSaveBtn = document.querySelector('[onclick="saveUsdtDetails()"]');
+      if (usdtSaveBtn) usdtSaveBtn.parentElement.style.display = 'none';
+      showMsg('✅ USDT wallet saved!', true);
+      setTimeout(() => { msgEl.style.display='none'; }, 2000);
+    } catch(e) { showMsg('❌ Error: ' + e.message, false); }
+  }
+
+  async function clearSavedUsdt() {
+    const user = window.currentUser; const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    if (!confirm('Remove saved USDT wallet?')) return;
+    await db.ref('users/' + user.uid + '/savedUsdt').remove();
+    document.getElementById('settingsSavedUsdt').style.display = 'none';
+    showToast('✅ USDT wallet removed');
+  }
+
   // Load saved UPI in settings
   async function loadSettingsPage() {
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
     if (!user || !db) return;
     try {
-      const snap = await db.ref('users/' + user.uid + '/savedUpi').once('value');
-      if (snap.val() && snap.val().upiId) {
-        document.getElementById('settingsSavedUpiText').textContent = snap.val().upiId;
-        document.getElementById('settingsSavedUpi').style.display = 'flex';
+      // Load UPI
+      const upiSnap = await db.ref('users/' + user.uid + '/savedUpi').once('value');
+      if (upiSnap.val() && upiSnap.val().upiId) {
+        document.getElementById('settingsSavedUpiText').textContent = upiSnap.val().upiId;
+        document.getElementById('settingsSavedUpi').style.display = 'block';
+        const upiArea = document.getElementById('settingsUpiInputArea');
+        if (upiArea) upiArea.style.display = 'none';
+      }
+      // Load Bank
+      const bankSnap = await db.ref('users/' + user.uid + '/savedBank').once('value');
+      if (bankSnap.val()) {
+        const b = bankSnap.val();
+        document.getElementById('settingsSavedBankName').textContent = b.name || '—';
+        document.getElementById('settingsSavedBankAcc').textContent = b.acc || '—';
+        document.getElementById('settingsSavedBankIfsc').textContent = (b.ifsc || '—') + ' · ' + (b.bankName || '—');
+        document.getElementById('settingsSavedBank').style.display = 'block';
+      }
+      // Load USDT
+      const usdtSnap = await db.ref('users/' + user.uid + '/savedUsdt').once('value');
+      if (usdtSnap.val() && usdtSnap.val().wallet) {
+        document.getElementById('settingsSavedUsdtText').textContent = usdtSnap.val().wallet;
+        document.getElementById('settingsSavedUsdt').style.display = 'block';
+        const usdtInputRow = document.getElementById('settingsUsdtInput');
+        if (usdtInputRow) usdtInputRow.parentElement.style.display = 'none';
       }
       // Check username cooldown
       const cdSnap = await db.ref('users/' + user.uid + '/usernameChangedAt').once('value');
@@ -9629,19 +9725,67 @@ window.claimVipMonthly = function() {
     <!-- Saved Payment Details -->
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
       <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:0.3rem;">💳 Payment Details</div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:1rem;">Save your UPI ID for faster withdrawals</div>
-      <div id="settingsSavedUpi" style="display:none;background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.7rem;display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <div style="font-size:0.65rem;color:var(--muted);">Saved UPI</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:1rem;">Save your payment details for faster withdrawals</div>
+
+      <!-- UPI -->
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text);margin-bottom:0.5rem;">📱 UPI</div>
+        <div id="settingsSavedUpi" style="display:none;background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">
+          <div style="font-size:0.62rem;color:var(--muted);">Saved UPI ID</div>
           <div style="font-size:0.82rem;font-weight:700;color:var(--gold);" id="settingsSavedUpiText">—</div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-top:0.3rem;">🔒 To change, contact support</div>
         </div>
-        <button onclick="clearSavedUpi()" style="background:none;border:none;color:var(--muted);font-size:0.7rem;cursor:pointer;">✕ Remove</button>
+        <div id="settingsUpiInputArea" style="display:flex;gap:0.5rem;">
+          <input type="text" id="settingsUpiInput" class="form-input" placeholder="e.g. name@upi" style="font-size:0.85rem;flex:1;">
+          <button onclick="saveUpiDetails()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem 1rem;color:#000;font-weight:800;font-size:0.82rem;cursor:pointer;">Save</button>
+        </div>
+        <div id="settingsUpiMsg" style="display:none;font-size:0.78rem;margin-top:0.4rem;padding:0.4rem;border-radius:6px;"></div>
       </div>
-      <div style="display:flex;gap:0.5rem;">
-        <input type="text" id="settingsUpiInput" class="form-input" placeholder="Enter UPI ID (e.g. name@upi)" style="font-size:0.85rem;flex:1;">
-        <button onclick="saveUpiDetails()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem 1rem;color:#000;font-weight:800;font-size:0.82rem;cursor:pointer;">Save</button>
+
+      <div style="height:1px;background:var(--border);margin-bottom:1rem;"></div>
+
+      <!-- Bank Transfer -->
+      <div style="margin-bottom:1rem;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text);margin-bottom:0.5rem;">🏦 Bank Transfer</div>
+        <div id="settingsSavedBank" style="display:none;background:rgba(39,174,96,0.05);border:1px solid rgba(39,174,96,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">
+          <div style="display:flex;flex-direction:column;gap:0.2rem;">
+            <div style="font-size:0.62rem;color:var(--muted);">Account Holder</div>
+            <div style="font-size:0.8rem;font-weight:700;color:var(--text);" id="settingsSavedBankName">—</div>
+            <div style="font-size:0.62rem;color:var(--muted);margin-top:0.2rem;">Account Number</div>
+            <div style="font-size:0.8rem;font-weight:700;color:var(--text);" id="settingsSavedBankAcc">—</div>
+            <div style="font-size:0.62rem;color:var(--muted);margin-top:0.2rem;">IFSC · Bank</div>
+            <div style="font-size:0.78rem;color:var(--muted);" id="settingsSavedBankIfsc">—</div>
+            <div style="font-size:0.62rem;color:var(--muted);margin-top:0.3rem;">🔒 To change, contact support</div>
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.5rem;">
+          <input type="text" id="settingsBankName" class="form-input" placeholder="Account holder name" style="font-size:0.85rem;">
+          <input type="text" id="settingsBankAcc" class="form-input" placeholder="Account number" style="font-size:0.85rem;" inputmode="numeric">
+          <input type="text" id="settingsBankIfsc" class="form-input" placeholder="IFSC code" style="font-size:0.85rem;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
+          <input type="text" id="settingsBankBankName" class="form-input" placeholder="Bank name (e.g. SBI, HDFC)" style="font-size:0.85rem;">
+          <button onclick="saveBankDetails()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem;color:#000;font-weight:800;font-size:0.85rem;cursor:pointer;width:100%;">Save Bank Details</button>
+        </div>
+        <div id="settingsBankMsg" style="display:none;font-size:0.78rem;margin-top:0.4rem;padding:0.4rem;border-radius:6px;"></div>
       </div>
-      <div id="settingsUpiMsg" style="display:none;font-size:0.78rem;margin-top:0.5rem;padding:0.4rem 0.6rem;border-radius:6px;"></div>
+
+      <div style="height:1px;background:var(--border);margin-bottom:1rem;"></div>
+
+      <!-- USDT TRC20 -->
+      <div>
+        <div style="font-size:0.75rem;font-weight:700;color:var(--text);margin-bottom:0.3rem;">💚 USDT (TRC20)</div>
+        <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.5rem;">TRC20 network only</div>
+        <div id="settingsSavedUsdt" style="display:none;background:rgba(39,174,96,0.05);border:1px solid rgba(39,174,96,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">
+          <div style="font-size:0.62rem;color:var(--muted);">Saved Wallet (TRC20)</div>
+          <div style="font-size:0.75rem;font-weight:700;color:var(--green);word-break:break-all;" id="settingsSavedUsdtText">—</div>
+          <div style="font-size:0.62rem;color:var(--muted);margin-top:0.3rem;">🔒 To change, contact support</div>
+        </div>
+        <div style="display:flex;gap:0.5rem;">
+          <input type="text" id="settingsUsdtInput" class="form-input" placeholder="TRC20 wallet address" style="font-size:0.82rem;flex:1;">
+          <button onclick="saveUsdtDetails()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem 1rem;color:#000;font-weight:800;font-size:0.82rem;cursor:pointer;">Save</button>
+        </div>
+        <div id="settingsUsdtMsg" style="display:none;font-size:0.78rem;margin-top:0.4rem;padding:0.4rem;border-radius:6px;"></div>
+      </div>
+
     </div>
 
     <!-- Logout All Devices -->
