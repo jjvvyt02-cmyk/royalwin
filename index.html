@@ -2228,6 +2228,8 @@
     if (name === 'attendance') { _showPageInternal('attendance'); setTimeout(window.loadAttendancePage, 200); return; }
     if (name === 'invitation-bonus') { _showPageInternal('invitation-bonus'); setTimeout(window.loadInvitationBonusPage, 200); return; }
     if (name === 'activity-award') { _showPageInternal('activity-award'); setTimeout(window.loadActivityAwardPage, 200); return; }
+    if (name === 'weeklyrebate') { _showPageInternal('weeklyrebate'); setTimeout(loadWeeklyRebatePage, 200); return; }
+    if (name === 'accountsettings') { _showPageInternal('accountsettings'); setTimeout(loadSettingsPage, 200); return; }
     if (name === 'wallet') {
       switchWalletTab('deposit');
       loadWagerProgress();
@@ -2244,15 +2246,40 @@
     const isEmail = contact.includes('@');
     const email = isEmail ? contact : contact.replace(/\s/g,'') + '@royalwin.app';
 
+    // Check if account is locked
+    const lockKey = 'login_lock_' + email;
+    const lockData = JSON.parse(localStorage.getItem(lockKey) || '{}');
+    if (lockData.lockedUntil && Date.now() < lockData.lockedUntil) {
+      const remaining = Math.ceil((lockData.lockedUntil - Date.now()) / 3600000);
+      showToast('🔒 Account locked. Try again in ' + remaining + ' hour(s)');
+      return;
+    }
+
     try {
       showToast('⏳ Signing in...');
       await firebase.auth().signInWithEmailAndPassword(email, password);
+      // Clear failed attempts on success
+      localStorage.removeItem(lockKey);
       showToast('✅ Welcome back!');
       showPage('home');
     } catch(e) {
       const msg = e.code === 'auth/user-not-found' ? 'Account not found. Please register.' :
-                  e.code === 'auth/wrong-password' ? 'Wrong password. Please try again.' :
-                  e.code === 'auth/invalid-credential' ? 'Invalid credentials. Please try again.' : e.message;
+                  e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential' ? 'Wrong password. Please try again.' : e.message;
+
+      // Track failed attempts
+      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+        const attempts = (lockData.attempts || 0) + 1;
+        if (attempts >= 5) {
+          const lockedUntil = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
+          localStorage.setItem(lockKey, JSON.stringify({ attempts, lockedUntil }));
+          showToast('🔒 Too many failed attempts. Account locked for 24 hours.');
+          return;
+        } else {
+          localStorage.setItem(lockKey, JSON.stringify({ attempts, lockedUntil: null }));
+          showToast('❌ ' + msg + ' (' + (5 - attempts) + ' attempts remaining)');
+          return;
+        }
+      }
       showToast('❌ ' + msg);
     }
   }
@@ -4308,6 +4335,248 @@
                   '❌ Error: ' + e.message;
       showMsg(msg, false);
     }
+  }
+
+  // ── CHANGE USERNAME ──
+  async function changeUsername() {
+    const newUsername = document.getElementById('settingsNewUsername').value.trim();
+    const msgEl = document.getElementById('settingsUsernameMsg');
+    const cooldownEl = document.getElementById('settingsUsernameCooldown');
+    const showMsg = (text, success) => {
+      msgEl.style.display = 'block';
+      msgEl.textContent = text;
+      msgEl.style.background = success ? 'rgba(39,174,96,0.1)' : 'rgba(224,32,32,0.1)';
+      msgEl.style.color = success ? 'var(--green)' : 'var(--red2)';
+    };
+    if (!newUsername) { showMsg('⚠️ Enter a new username', false); return; }
+    if (newUsername.length < 3) { showMsg('⚠️ Username must be at least 3 characters', false); return; }
+    if (!/^[a-zA-Z0-9_]+$/.test(newUsername)) { showMsg('⚠️ Only letters, numbers and underscore allowed', false); return; }
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) { showMsg('❌ Not logged in', false); return; }
+    try {
+      // Check cooldown
+      const snap = await db.ref('users/' + user.uid + '/usernameChangedAt').once('value');
+      const lastChanged = snap.val() || 0;
+      const daysSince = (Date.now() - lastChanged) / (1000 * 60 * 60 * 24);
+      if (daysSince < 7) {
+        const daysLeft = Math.ceil(7 - daysSince);
+        showMsg('⏳ You can change username in ' + daysLeft + ' day(s)', false);
+        return;
+      }
+      // Check if username taken
+      const usersSnap = await db.ref('users').orderByChild('username').equalTo(newUsername).once('value');
+      if (usersSnap.val()) { showMsg('❌ Username already taken', false); return; }
+      // Update username
+      await db.ref('users/' + user.uid).update({ username: newUsername, usernameChangedAt: Date.now() });
+      showMsg('✅ Username updated to ' + newUsername, true);
+      document.getElementById('settingsNewUsername').value = '';
+      // Update display
+      const profUser = document.getElementById('profileUsernameHeader');
+      if (profUser) profUser.textContent = '@' + newUsername;
+    } catch(e) { showMsg('❌ Error: ' + e.message, false); }
+  }
+
+  // ── LOGOUT ALL DEVICES ──
+  async function logoutAllDevices() {
+    if (!confirm('This will log you out from all devices. Continue?')) return;
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    try {
+      // Update a session token — other devices will detect change and logout
+      await db.ref('users/' + user.uid + '/sessionToken').set(Date.now().toString());
+      await firebase.auth().signOut();
+      showToast('✅ Logged out from all devices');
+      showPage('home');
+    } catch(e) { showToast('❌ Error: ' + e.message); }
+  }
+
+  // ── SAVE UPI DETAILS ──
+  async function saveUpiDetails() {
+    const upi = document.getElementById('settingsUpiInput').value.trim();
+    const msgEl = document.getElementById('settingsUpiMsg');
+    if (!upi) { msgEl.style.display='block'; msgEl.textContent='⚠️ Enter UPI ID'; msgEl.style.color='var(--red2)'; return; }
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    try {
+      await db.ref('users/' + user.uid + '/savedUpi').set({ upiId: upi, savedAt: Date.now() });
+      msgEl.style.display='block'; msgEl.textContent='✅ UPI ID saved!'; msgEl.style.color='var(--green)';
+      document.getElementById('settingsUpiInput').value = '';
+      document.getElementById('settingsSavedUpiText').textContent = upi;
+      document.getElementById('settingsSavedUpi').style.display = 'flex';
+      setTimeout(() => { msgEl.style.display='none'; }, 2000);
+    } catch(e) { msgEl.style.display='block'; msgEl.textContent='❌ Error: '+e.message; msgEl.style.color='var(--red2)'; }
+  }
+
+  async function clearSavedUpi() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    if (!confirm('Remove saved UPI ID?')) return;
+    await db.ref('users/' + user.uid + '/savedUpi').remove();
+    document.getElementById('settingsSavedUpi').style.display = 'none';
+    showToast('✅ UPI ID removed');
+  }
+
+  // Load saved UPI in settings
+  async function loadSettingsPage() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    try {
+      const snap = await db.ref('users/' + user.uid + '/savedUpi').once('value');
+      if (snap.val() && snap.val().upiId) {
+        document.getElementById('settingsSavedUpiText').textContent = snap.val().upiId;
+        document.getElementById('settingsSavedUpi').style.display = 'flex';
+      }
+      // Check username cooldown
+      const cdSnap = await db.ref('users/' + user.uid + '/usernameChangedAt').once('value');
+      const lastChanged = cdSnap.val() || 0;
+      const daysSince = (Date.now() - lastChanged) / (1000 * 60 * 60 * 24);
+      if (lastChanged && daysSince < 7) {
+        const daysLeft = Math.ceil(7 - daysSince);
+        const cdEl = document.getElementById('settingsUsernameCooldown');
+        if (cdEl) { cdEl.style.display='block'; cdEl.textContent='⏳ Next change available in ' + daysLeft + ' day(s)'; }
+      }
+    } catch(e) {}
+  }
+
+  // ── WEEKLY LOSS REBATE ──
+  async function loadWeeklyRebatePage() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+
+    // Get Monday of current week
+    const now = new Date();
+    const dayOfWeek = now.getDay();
+    const monday = new Date(now);
+    monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+    monday.setHours(0, 0, 0, 0);
+    const weekStart = monday.getTime();
+
+    try {
+      // Get deposits this week
+      const depSnap = await db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).once('value');
+      const deps = depSnap.val() ? Object.values(depSnap.val()).filter(d => d.status === 'approved' && (d.timestamp||0) >= weekStart) : [];
+      const totalDeposit = deps.reduce((s,d) => s + (d.amount||0), 0);
+
+      // Get bet history this week
+      const betSnap = await db.ref('users/' + user.uid + '/wingoMyBets').once('value');
+      const bets = betSnap.val() ? Object.values(betSnap.val()).filter(b => (b.timestamp||0) >= weekStart) : [];
+      const totalBet = bets.reduce((s,b) => s + (b.bet||0), 0);
+      const totalWon = bets.filter(b => (b.pl||0) > 0).reduce((s,b) => s + (b.pl||0), 0);
+      const netLoss = Math.max(0, totalBet - totalWon);
+      const lossPct = totalDeposit > 0 ? Math.round((netLoss / totalDeposit) * 100) : 0;
+      const rebateAmt = parseFloat((netLoss * 0.05).toFixed(2));
+
+      // Update UI
+      document.getElementById('rebateWeekDeposit').textContent = '₹' + totalDeposit.toLocaleString('en-IN');
+      document.getElementById('rebateWeekLoss').textContent = '₹' + netLoss.toLocaleString('en-IN');
+      document.getElementById('rebateLossPct').textContent = lossPct + '%';
+      document.getElementById('rebateLossPct').style.color = lossPct >= 50 ? 'var(--red2)' : 'var(--green)';
+      document.getElementById('rebateAmount').textContent = '₹' + rebateAmt.toLocaleString('en-IN');
+
+      // Check if Monday and eligible
+      const isMonday = now.getDay() === 1;
+      const isEligible = lossPct >= 50 && rebateAmt > 0;
+
+      // Check if already claimed this week
+      const claimSnap = await db.ref('users/' + user.uid + '/weeklyRebateClaimed').once('value');
+      const lastClaimed = claimSnap.val() || 0;
+      const alreadyClaimed = lastClaimed >= weekStart;
+
+      const statusEl = document.getElementById('rebateStatusMsg');
+      const claimBtn = document.getElementById('rebateClaimBtn');
+
+      if (alreadyClaimed) {
+        statusEl.textContent = '✅ Already claimed this week';
+        statusEl.style.color = 'var(--green)';
+        claimBtn.style.display = 'none';
+      } else if (!isMonday) {
+        statusEl.textContent = '📅 Rebate can only be claimed on Monday';
+        statusEl.style.color = 'var(--muted)';
+        claimBtn.style.display = 'none';
+      } else if (!isEligible) {
+        statusEl.textContent = lossPct < 50 ? '❌ Loss must exceed 50% of deposits to qualify' : '❌ No eligible losses this week';
+        statusEl.style.color = 'var(--muted)';
+        claimBtn.style.display = 'none';
+      } else {
+        statusEl.textContent = '🎉 You qualify for ₹' + rebateAmt + ' rebate!';
+        statusEl.style.color = '#a87dff';
+        claimBtn.style.display = 'block';
+        claimBtn.dataset.amount = rebateAmt;
+      }
+
+      // Load claim history
+      const histSnap = await db.ref('users/' + user.uid + '/weeklyRebateHistory').once('value');
+      const histEl = document.getElementById('rebateHistory');
+      if (histSnap.val()) {
+        const hist = Object.values(histSnap.val()).sort((a,b) => b.timestamp - a.timestamp);
+        histEl.innerHTML = hist.map(h => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.7rem 1rem;border-bottom:1px solid rgba(255,255,255,0.04);">
+            <div>
+              <div style="font-size:0.8rem;font-weight:700;color:#a87dff;">+₹${h.amount}</div>
+              <div style="font-size:0.65rem;color:var(--muted);">${new Date(h.timestamp).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div>
+            </div>
+            <div style="font-size:0.7rem;color:var(--green);">✅ Credited</div>
+          </div>`).join('');
+      } else {
+        histEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1.5rem;font-size:0.82rem;">No claims yet</div>';
+      }
+    } catch(e) { console.error('Rebate load error:', e); }
+  }
+
+  async function claimWeeklyRebate() {
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) return;
+    const btn = document.getElementById('rebateClaimBtn');
+    const amount = parseFloat(btn.dataset.amount || 0);
+    if (!amount) return;
+    try {
+      btn.disabled = true;
+      btn.textContent = '⏳ Claiming...';
+      await db.ref('users/' + user.uid + '/balance').transaction(bal => (bal || 0) + amount);
+      await db.ref('users/' + user.uid + '/weeklyRebateClaimed').set(Date.now());
+      await db.ref('users/' + user.uid + '/weeklyRebateHistory').push({ amount, timestamp: Date.now() });
+      await pushNotification(user.uid, '💰', 'Weekly Rebate Credited!', '₹' + amount + ' has been added to your wallet.');
+      showToast('🎉 ₹' + amount + ' rebate credited!');
+      loadWeeklyRebatePage();
+    } catch(e) { showToast('❌ Error: ' + e.message); btn.disabled = false; btn.textContent = '💰 Claim Rebate'; }
+  }
+
+  // ── WELCOME BONUS POPUP ──
+  function showWelcomeBonus(amount) {
+    const popup = document.getElementById('welcomeBonusPopup');
+    if (!popup) return;
+    popup.style.display = 'flex';
+    let count = 3;
+    const countEl = document.getElementById('welcomeCountdown');
+    const timer = setInterval(() => {
+      count--;
+      if (countEl) countEl.textContent = count;
+      if (count <= 0) {
+        clearInterval(timer);
+        closeWelcomeBonus();
+      }
+    }, 1000);
+    popup._timer = timer;
+  }
+
+  function closeWelcomeBonus() {
+    const popup = document.getElementById('welcomeBonusPopup');
+    if (!popup) return;
+    if (popup._timer) clearInterval(popup._timer);
+    popup.style.opacity = '0';
+    popup.style.transition = 'opacity 0.3s ease';
+    setTimeout(() => {
+      popup.style.display = 'none';
+      popup.style.opacity = '';
+      popup.style.transition = '';
+    }, 300);
   }
 
   function toggleMobileNotif() {
@@ -6457,6 +6726,36 @@
       const profile = snap.val();
       if (!profile) return;
       window.userProfile = profile;
+
+      // ── WELCOME BONUS: Give ₹38 on first login ──
+      if (!profile.welcomeBonusGiven) {
+        const WELCOME_AMOUNT = 38;
+        const WELCOME_WAGER = 76; // 2x wager requirement
+        try {
+          const db = window.fbDB || fbDB;
+          if (db) {
+            // Credit balance
+            await db.ref('users/' + uid + '/balance').transaction(bal => (bal || 0) + WELCOME_AMOUNT);
+            // Add wager requirement
+            await db.ref('users/' + uid + '/wager').transaction(w => {
+              const existing = w || { required: 0, completed: 0 };
+              return { ...existing, required: (existing.required || 0) + WELCOME_WAGER };
+            });
+            // Mark as given
+            await db.ref('users/' + uid + '/welcomeBonusGiven').set(true);
+            // Send notification
+            await db.ref('users/' + uid + '/notifications').push({
+              icon: '🎁',
+              title: 'Welcome Bonus Credited!',
+              body: '₹38 has been added to your wallet. Wager ₹76 to unlock withdrawal.',
+              read: false,
+              timestamp: Date.now()
+            });
+            // Show welcome popup
+            setTimeout(() => showWelcomeBonus(WELCOME_AMOUNT), 1500);
+          }
+        } catch(e) { /* suppressed */ }
+      }
       try {
         firebase.database().ref('users/' + uid + '/betHistory').on('value', histSnap => {
           if (histSnap.val()) {
@@ -7718,6 +8017,19 @@
           <div class="promo-desc">Invite friends to register and deposit. Both parties receive rewards!</div>
           <div class="promo-footer"><span class="promo-expiry">Up to ₹15,55,555</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="event.stopPropagation();showPage('invitation-bonus')">Invite Now</button></div>
         </div>
+      </div>
+
+      <!-- Weekly Loss Rebate Card -->
+      <div class="promo-card" onclick="showPage('weeklyrebate')" style="cursor:pointer;background:linear-gradient(135deg,#1a1035,#2d1b69);">
+        <div class="promo-header" style="background:linear-gradient(135deg,#7c4dff,#a87dff);">
+          <span style="font-size:1.5rem;">💰</span>
+          <div class="promo-title">Weekly Loss Rebate</div>
+          <div class="promo-subtitle">Get 5% back on your weekly losses</div>
+        </div>
+        <div class="promo-body">
+          <div style="font-size:0.82rem;color:var(--muted);">If your net loss exceeds 50% of your deposits this week, claim 5% back every Monday.</div>
+        </div>
+        <div class="promo-footer"><span class="promo-expiry">Resets every Monday</span><button class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="event.stopPropagation();showPage('weeklyrebate')">Claim</button></div>
       </div>
 
       <div class="promo-card" onclick="showPage('activity-award')" style="cursor:pointer;">
@@ -9167,6 +9479,21 @@ window.claimVipMonthly = function() {
       <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);">⚙️ Settings</div>
     </div>
 
+    <!-- Change Username -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
+      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:0.3rem;">👤 Change Username</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:1rem;">Can be changed once every 7 days</div>
+      <div style="display:flex;flex-direction:column;gap:0.7rem;">
+        <div>
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">New Username</div>
+          <input type="text" id="settingsNewUsername" class="form-input" placeholder="Enter new username" style="font-size:0.85rem;" maxlength="20">
+        </div>
+        <div id="settingsUsernameMsg" style="display:none;font-size:0.8rem;text-align:center;padding:0.5rem;border-radius:8px;"></div>
+        <div id="settingsUsernameCooldown" style="display:none;font-size:0.75rem;color:var(--muted);text-align:center;"></div>
+        <button onclick="changeUsername()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem;color:#000;font-weight:800;font-size:0.88rem;cursor:pointer;font-family:'Exo 2',sans-serif;width:100%;">Update Username</button>
+      </div>
+    </div>
+
     <!-- Change Password -->
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
       <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:1rem;">🔒 Change Password</div>
@@ -9188,6 +9515,31 @@ window.claimVipMonthly = function() {
       </div>
     </div>
 
+    <!-- Saved Payment Details -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
+      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:0.3rem;">💳 Payment Details</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:1rem;">Save your UPI ID for faster withdrawals</div>
+      <div id="settingsSavedUpi" style="display:none;background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.7rem;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:0.65rem;color:var(--muted);">Saved UPI</div>
+          <div style="font-size:0.82rem;font-weight:700;color:var(--gold);" id="settingsSavedUpiText">—</div>
+        </div>
+        <button onclick="clearSavedUpi()" style="background:none;border:none;color:var(--muted);font-size:0.7rem;cursor:pointer;">✕ Remove</button>
+      </div>
+      <div style="display:flex;gap:0.5rem;">
+        <input type="text" id="settingsUpiInput" class="form-input" placeholder="Enter UPI ID (e.g. name@upi)" style="font-size:0.85rem;flex:1;">
+        <button onclick="saveUpiDetails()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem 1rem;color:#000;font-weight:800;font-size:0.82rem;cursor:pointer;">Save</button>
+      </div>
+      <div id="settingsUpiMsg" style="display:none;font-size:0.78rem;margin-top:0.5rem;padding:0.4rem 0.6rem;border-radius:6px;"></div>
+    </div>
+
+    <!-- Logout All Devices -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
+      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:0.3rem;">🔐 Security</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:1rem;">Logout from all devices for security</div>
+      <button onclick="logoutAllDevices()" style="width:100%;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.25);border-radius:10px;padding:0.75rem;color:var(--red2);font-size:0.88rem;font-weight:700;cursor:pointer;">🚪 Logout All Devices</button>
+    </div>
+
     <!-- Legal -->
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem;">
       <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);padding:0.9rem 1rem;border-bottom:1px solid var(--border);">📄 Legal</div>
@@ -9205,6 +9557,78 @@ window.claimVipMonthly = function() {
       </div>
     </div>
 
+  </div>
+</div>
+
+<div class="page" id="page-weeklyrebate">
+  <div style="max-width:520px;margin:0 auto;padding:0 0 2rem;">
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;padding:1rem 0 0.8rem;border-bottom:1px solid var(--border);">
+      <button onclick="showPage('promotions')" class="back-btn">←</button>
+      <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);">💰 Weekly Loss Rebate</div>
+    </div>
+
+    <!-- Info Card -->
+    <div style="background:linear-gradient(135deg,rgba(124,77,255,0.15),rgba(168,125,255,0.08));border:1px solid rgba(124,77,255,0.3);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
+      <div style="font-size:0.82rem;color:var(--text);line-height:1.6;">
+        <div style="font-weight:700;color:#a87dff;margin-bottom:0.5rem;">How it works:</div>
+        <div>• Calculated every <strong style="color:var(--gold);">Monday</strong> for the previous week</div>
+        <div>• If your net loss > <strong style="color:var(--gold);">50%</strong> of your total deposits this week</div>
+        <div>• You receive <strong style="color:var(--gold);">5%</strong> of your net loss back</div>
+        <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--muted);">Example: Deposited ₹1,000 · Lost ₹600 (60%) → Get ₹30 back</div>
+      </div>
+    </div>
+
+    <!-- Stats Card -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
+      <div style="font-family:'Cinzel',serif;font-size:0.82rem;color:var(--gold);margin-bottom:1rem;">📊 This Week Stats</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1rem;">
+        <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.3rem;">Total Deposited</div>
+          <div style="font-size:1rem;font-weight:800;color:var(--green);" id="rebateWeekDeposit">₹0</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.3rem;">Net Loss</div>
+          <div style="font-size:1rem;font-weight:800;color:var(--red2);" id="rebateWeekLoss">₹0</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
+          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.3rem;">Loss %</div>
+          <div style="font-size:1rem;font-weight:800;color:var(--text);" id="rebateLossPct">0%</div>
+        </div>
+        <div style="background:rgba(124,77,255,0.1);border:1px solid rgba(124,77,255,0.2);border-radius:10px;padding:0.8rem;text-align:center;">
+          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.3rem;">Rebate Amount</div>
+          <div style="font-size:1rem;font-weight:800;color:#a87dff;" id="rebateAmount">₹0</div>
+        </div>
+      </div>
+      <div id="rebateStatusMsg" style="font-size:0.78rem;color:var(--muted);text-align:center;margin-bottom:0.8rem;"></div>
+      <button id="rebateClaimBtn" onclick="claimWeeklyRebate()" style="width:100%;background:linear-gradient(135deg,#7c4dff,#a87dff);border:none;border-radius:10px;padding:0.85rem;color:#fff;font-weight:800;font-size:0.9rem;cursor:pointer;font-family:'Exo 2',sans-serif;display:none;">💰 Claim Rebate</button>
+    </div>
+
+    <!-- History -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div style="font-family:'Cinzel',serif;font-size:0.82rem;color:var(--gold);padding:0.9rem 1rem;border-bottom:1px solid var(--border);">📋 Claim History</div>
+      <div id="rebateHistory" style="min-height:60px;">
+        <div style="text-align:center;color:var(--muted);padding:1.5rem;font-size:0.82rem;">No claims yet</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Welcome Bonus Popup -->
+<div id="welcomeBonusPopup" style="display:none;position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+  <div style="background:linear-gradient(135deg,#1a1035,#2d1b69);border:2px solid rgba(124,77,255,0.5);border-radius:24px;padding:2rem 1.5rem;max-width:320px;width:90%;text-align:center;position:relative;animation:popIn 0.4s ease;">
+    <div style="font-size:3rem;margin-bottom:0.5rem;">🎁</div>
+    <div style="font-family:'Cinzel',serif;font-size:1.3rem;font-weight:900;color:var(--gold);margin-bottom:0.3rem;">Welcome Bonus!</div>
+    <div style="font-size:0.85rem;color:var(--muted);margin-bottom:1.2rem;">Welcome to RoyalWin!</div>
+    <div style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:14px;padding:1rem;margin-bottom:1rem;">
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Bonus Credited</div>
+      <div style="font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:#a87dff;">₹38</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;">2x wager (₹76) required for withdrawal</div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:0.5rem;margin-bottom:1rem;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      <span style="font-size:0.75rem;color:var(--muted);">Auto closing in <span id="welcomeCountdown">3</span>s</span>
+    </div>
+    <button onclick="closeWelcomeBonus()" style="background:linear-gradient(135deg,#7c4dff,#a87dff);border:none;border-radius:12px;padding:0.75rem 2rem;color:#fff;font-weight:800;font-size:0.9rem;cursor:pointer;font-family:'Exo 2',sans-serif;width:100%;">🎮 Start Playing</button>
   </div>
 </div>
 </body>
