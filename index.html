@@ -4664,6 +4664,20 @@
     } catch(e) { showToast('❌ Error: ' + e.message); btn.disabled = false; }
   }
 
+  function openSettingsModal() {
+    const modal = document.getElementById('settingsModal');
+    if (modal) {
+      modal.style.display = 'block';
+      modal.scrollTop = 0;
+      loadSettingsPage();
+    }
+  }
+
+  function closeSettingsModal() {
+    const modal = document.getElementById('settingsModal');
+    if (modal) modal.style.display = 'none';
+  }
+
   function toggleMobileNotif() {
     const dd = document.getElementById('mobileNotifDropdown');
     if (!dd) return;
@@ -7764,7 +7778,7 @@
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎧</span><span style="font-size:0.88rem;">Support</span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
-      <div onclick="showPage('accountsettings')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;cursor:pointer;">
+      <div onclick="openSettingsModal()" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;cursor:pointer;">
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">⚙️</span><span style="font-size:0.88rem;">Settings</span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
@@ -9569,12 +9583,11 @@ window.claimVipMonthly = function() {
 </script>
 
 <div class="page" id="page-accountsettings">
-  <div style="padding-bottom:5rem;">
+  <div class="support-page">
 
-    <!-- Header -->
-    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;padding-bottom:0.8rem;border-bottom:1px solid var(--border);">
-      <button onclick="showPage('profile')" style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--text);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">←</button>
-      <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);">⚙️ Settings</div>
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
+      <button onclick="showPage('profile')" class="back-btn" style="flex-shrink:0;">←</button>
+      <div class="section-title" style="margin-bottom:0;">⚙️ Settings</div>
     </div>
 
     <!-- Change Username -->
@@ -9727,6 +9740,84 @@ window.claimVipMonthly = function() {
       <span style="font-size:0.75rem;color:var(--muted);">Auto closing in <span id="welcomeCountdown">3</span>s</span>
     </div>
     <button onclick="closeWelcomeBonus()" style="background:linear-gradient(135deg,#7c4dff,#a87dff);border:none;border-radius:12px;padding:0.75rem 2rem;color:#fff;font-weight:800;font-size:0.9rem;cursor:pointer;font-family:'Exo 2',sans-serif;width:100%;">🎮 Start Playing</button>
+  </div>
+</div>
+
+<!-- Settings Modal -->
+<div id="settingsModal" style="display:none;position:fixed;inset:0;z-index:99990;background:var(--bg);overflow-y:auto;">
+  <div style="max-width:520px;margin:0 auto;padding:0.85rem 0.75rem 5rem;">
+
+    <!-- Header -->
+    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;padding-bottom:0.8rem;border-bottom:1px solid var(--border);">
+      <button onclick="closeSettingsModal()" style="width:40px;height:40px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--text);font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">←</button>
+      <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);">⚙️ Settings</div>
+    </div>
+
+    <!-- Change Username -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
+      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:0.3rem;">👤 Change Username</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:1rem;">Can be changed once every 7 days</div>
+      <div style="display:flex;flex-direction:column;gap:0.7rem;">
+        <input type="text" id="settingsNewUsername" class="form-input" placeholder="Enter new username" style="font-size:0.85rem;" maxlength="20">
+        <div id="settingsUsernameMsg" style="display:none;font-size:0.8rem;text-align:center;padding:0.5rem;border-radius:8px;"></div>
+        <div id="settingsUsernameCooldown" style="display:none;font-size:0.75rem;color:var(--muted);text-align:center;"></div>
+        <button onclick="changeUsername()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem;color:#000;font-weight:800;font-size:0.88rem;cursor:pointer;width:100%;">Update Username</button>
+      </div>
+    </div>
+
+    <!-- Change Password -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
+      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:1rem;">🔒 Change Password</div>
+      <div style="display:flex;flex-direction:column;gap:0.7rem;">
+        <input type="password" id="settingsOldPassword" class="form-input" placeholder="Current password" style="font-size:0.85rem;">
+        <input type="password" id="settingsNewPassword" class="form-input" placeholder="New password (min 8 chars)" style="font-size:0.85rem;">
+        <input type="password" id="settingsConfirmPassword" class="form-input" placeholder="Confirm new password" style="font-size:0.85rem;">
+        <button onclick="changePassword()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem;color:#000;font-weight:800;font-size:0.88rem;cursor:pointer;width:100%;">Update Password</button>
+        <div id="settingsPasswordMsg" style="display:none;font-size:0.8rem;text-align:center;padding:0.5rem;border-radius:8px;"></div>
+      </div>
+    </div>
+
+    <!-- Save UPI -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
+      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:0.3rem;">💳 Payment Details</div>
+      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:1rem;">Save UPI ID for faster withdrawals</div>
+      <div id="settingsSavedUpi" style="display:none;background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.7rem;display:flex;justify-content:space-between;align-items:center;">
+        <div>
+          <div style="font-size:0.65rem;color:var(--muted);">Saved UPI</div>
+          <div style="font-size:0.82rem;font-weight:700;color:var(--gold);" id="settingsSavedUpiText">—</div>
+        </div>
+        <button onclick="clearSavedUpi()" style="background:none;border:none;color:var(--muted);font-size:0.7rem;cursor:pointer;">✕ Remove</button>
+      </div>
+      <div style="display:flex;gap:0.5rem;">
+        <input type="text" id="settingsUpiInput" class="form-input" placeholder="e.g. name@upi" style="font-size:0.85rem;flex:1;">
+        <button onclick="saveUpiDetails()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem 1rem;color:#000;font-weight:800;cursor:pointer;">Save</button>
+      </div>
+      <div id="settingsUpiMsg" style="display:none;font-size:0.78rem;margin-top:0.5rem;padding:0.4rem;border-radius:6px;"></div>
+    </div>
+
+    <!-- Security -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
+      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:1rem;">🔐 Security</div>
+      <button onclick="logoutAllDevices()" style="width:100%;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.25);border-radius:10px;padding:0.75rem;color:var(--red2);font-size:0.88rem;font-weight:700;cursor:pointer;">🚪 Logout All Devices</button>
+    </div>
+
+    <!-- Legal -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem;">
+      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);padding:0.9rem 1rem;border-bottom:1px solid var(--border);">📄 Legal</div>
+      <div onclick="closeSettingsModal();showPage('terms');" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;"><span>📋</span><span style="font-size:0.88rem;">Terms & Conditions</span></div>
+        <span style="color:var(--muted);">›</span>
+      </div>
+      <div onclick="closeSettingsModal();showPage('privacy');" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;"><span>🔐</span><span style="font-size:0.88rem;">Privacy Policy</span></div>
+        <span style="color:var(--muted);">›</span>
+      </div>
+      <div onclick="closeSettingsModal();showPage('responsible');" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;cursor:pointer;">
+        <div style="display:flex;align-items:center;gap:0.8rem;"><span>🎗️</span><span style="font-size:0.88rem;">Responsible Gambling</span></div>
+        <span style="color:var(--muted);">›</span>
+      </div>
+    </div>
+
   </div>
 </div>
 </body>
