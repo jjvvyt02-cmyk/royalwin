@@ -2229,7 +2229,16 @@
     if (name === 'invitation-bonus') { _showPageInternal('invitation-bonus'); setTimeout(window.loadInvitationBonusPage, 200); return; }
     if (name === 'activity-award') { _showPageInternal('activity-award'); setTimeout(window.loadActivityAwardPage, 200); return; }
     if (name === 'weeklyrebate') { _showPageInternal('weeklyrebate'); setTimeout(loadWeeklyRebatePage, 200); return; }
-    if (name === 'accountsettings') { _showPageInternal('accountsettings'); setTimeout(loadSettingsPage, 200); return; }
+    if (name === 'accountsettings') {
+      // Force show - bypass debounce for sub-pages
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const settingsEl = document.getElementById('page-accountsettings');
+      if (settingsEl) { settingsEl.classList.add('active'); settingsEl.scrollTop = 0; }
+      window.scrollTo(0,0);
+      if (window.history && window.history.pushState) window.history.pushState({page:'accountsettings'},'','#accountsettings');
+      setTimeout(loadSettingsPage, 100);
+      return;
+    }
     if (name === 'wallet') {
       switchWalletTab('deposit');
       loadWagerProgress();
