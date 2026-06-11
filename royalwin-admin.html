@@ -1597,6 +1597,36 @@ async function loadRevenueStats(period = 'today') {
       labelsEl.innerHTML = dayData.map(d => `<div style="flex:1;text-align:center;font-size:0.58rem;color:var(--muted);">${d.label}</div>`).join('');
     }
 
+    // ── REVENUE BY GAME MODE ──
+    const gameBreakdownEl = document.getElementById('statGameBreakdown');
+    if (gameBreakdownEl) {
+      const modes = ['1', '3', '5'];
+      const modeData = { '1': { bets: 0, wagered: 0, won: 0 }, '3': { bets: 0, wagered: 0, won: 0 }, '5': { bets: 0, wagered: 0, won: 0 } };
+      const usersData = usersSnap.val() || {};
+      Object.values(usersData).forEach(u => {
+        if (u.wingoMyBets) {
+          Object.values(u.wingoMyBets).forEach(b => {
+            if (startTime === 0 || (b.timestamp||0) >= startTime) {
+              const mode = String(b.timer || b.mode || '1');
+              if (modeData[mode]) {
+                modeData[mode].bets++;
+                modeData[mode].wagered += (b.bet || 0);
+                if ((b.pl || 0) > 0) modeData[mode].won += b.pl;
+              }
+            }
+          });
+        }
+      });
+      gameBreakdownEl.innerHTML = modes.map(m => `
+        <div style="flex:1;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:0.7rem;text-align:center;">
+          <div style="font-size:0.7rem;font-weight:700;color:var(--gold);margin-bottom:0.4rem;">${m} Min</div>
+          <div style="font-size:0.78rem;font-weight:800;color:var(--text);">₹${modeData[m].wagered.toLocaleString('en-IN')}</div>
+          <div style="font-size:0.62rem;color:var(--muted);">${modeData[m].bets} bets</div>
+          <div style="font-size:0.62rem;color:var(--red2);">Won: ₹${modeData[m].won.toLocaleString('en-IN')}</div>
+          <div style="font-size:0.62rem;color:var(--green);">Net: ₹${(modeData[m].wagered - modeData[m].won).toLocaleString('en-IN')}</div>
+        </div>`).join('');
+    }
+
   } catch(e) { console.error('Revenue stats error:', e); }
 }
 
@@ -1641,6 +1671,7 @@ function loadUsers() {
   function rebuildUsers() {
     if (!_usersSnap) return;
     const data = _usersSnap;
+    window._allUsersData = data; // Store for CSV export
     const countEl = document.getElementById('userCount');
     if (!data) {
       if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);">No users yet</div>';
@@ -1902,6 +1933,87 @@ window.dismissFraud = async function(uid, logKey) {
     showToast('✅ Alert dismissed');
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
+
+// ── EXPORT CSV ──
+window.exportCSV = function(type) {
+  const usersData = window._allUsersData || {};
+  let rows = [];
+  let filename = '';
+
+  if (type === 'users') {
+    filename = 'royalwin_users_' + new Date().toISOString().split('T')[0] + '.csv';
+    rows.push(['Member ID', 'Username', 'Phone/Email', 'Balance', 'Total Deposited', 'Total Withdrawn', 'Wager Required', 'Wager Completed', 'Joined At', 'Last IP', 'Status'].join(','));
+    Object.values(usersData).forEach(u => {
+      rows.push([
+        u.memberId || '',
+        u.username || '',
+        u.contact || u.email || '',
+        (u.balance || 0).toFixed(2),
+        (u.totalDeposited || 0).toFixed(2),
+        (u.totalWithdrawn || 0).toFixed(2),
+        (u.wager?.required || 0).toFixed(2),
+        (u.wager?.completed || 0).toFixed(2),
+        u.createdAt ? new Date(u.createdAt).toLocaleString('en-IN') : '',
+        u.lastIp || '',
+        u.blocked ? 'Blocked' : 'Active'
+      ].map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','));
+    });
+  } else if (type === 'deposits') {
+    filename = 'royalwin_deposits_' + new Date().toISOString().split('T')[0] + '.csv';
+    rows.push(['Date', 'Member ID', 'Username', 'Amount', 'Method', 'Status', 'Bonus'].join(','));
+    get(ref(db, 'adminRequests/deposits')).then(snap => {
+      const deps = snap.val() ? Object.values(snap.val()) : [];
+      deps.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+      deps.forEach(d => {
+        rows.push([
+          d.timestamp ? new Date(d.timestamp).toLocaleString('en-IN') : '',
+          d.memberId || '',
+          d.username || '',
+          (d.amount || 0).toFixed(2),
+          d.method || '',
+          d.status || '',
+          (d.bonusAmount || 0).toFixed(2)
+        ].map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','));
+      });
+      downloadCSV(rows.join('
+'), filename);
+    });
+    return;
+  } else if (type === 'withdrawals') {
+    filename = 'royalwin_withdrawals_' + new Date().toISOString().split('T')[0] + '.csv';
+    rows.push(['Date', 'Member ID', 'Username', 'Amount', 'Method', 'UPI/Account', 'Status'].join(','));
+    get(ref(db, 'adminRequests/withdrawals')).then(snap => {
+      const withs = snap.val() ? Object.values(snap.val()) : [];
+      withs.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
+      withs.forEach(w => {
+        rows.push([
+          w.timestamp ? new Date(w.timestamp).toLocaleString('en-IN') : '',
+          w.memberId || '',
+          w.username || '',
+          (w.amount || 0).toFixed(2),
+          w.method || '',
+          w.upiId || w.accountNumber || '',
+          w.status || ''
+        ].map(v => '"' + String(v).replace(/"/g, '""') + '"').join(','));
+      });
+      downloadCSV(rows.join('
+'), filename);
+    });
+    return;
+  }
+
+  downloadCSV(rows.join('
+'), filename);
+};
+
+function downloadCSV(content, filename) {
+  const blob = new Blob(['﻿' + content], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+  showToast('✅ Downloaded: ' + filename);
+}
 
 window.filterUsers = function(query) {
   if (!query) { renderUsers(allUsers); return; }
