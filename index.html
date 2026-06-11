@@ -4499,8 +4499,25 @@
 
   // Load saved UPI in settings
   async function loadSettingsPage() {
-    const user = window.currentUser;
+    let user = window.currentUser;
     const db = window.fbDB || fbDB;
+    // Wait up to 3 seconds for Firebase auth to be ready
+    if (!user) {
+      await new Promise(resolve => {
+        let attempts = 0;
+        const check = setInterval(() => {
+          attempts++;
+          if (window.currentUser) {
+            user = window.currentUser;
+            clearInterval(check);
+            resolve();
+          } else if (attempts > 30) {
+            clearInterval(check);
+            resolve();
+          }
+        }, 100);
+      });
+    }
     if (!user || !db) return;
     try {
       // Load UPI
