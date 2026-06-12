@@ -5868,40 +5868,19 @@
           try {
             const db2 = window.fbDB || fbDB;
             if (db2) {
-              // Check schedule first — fastest, no query needed
-              const schedSnap = await db2.ref('wingo/wingo' + mins + 'min/schedule').once('value');
-              const schedVal = schedSnap.val();
-              if (schedVal) {
-                const schedArr = Array.isArray(schedVal) ? schedVal : Object.values(schedVal);
-                const hasScheduled = schedArr.some(v => v !== null && v !== undefined && parseInt(v) >= 0 && parseInt(v) <= 9);
-                if (hasScheduled) {
-                  resolveRoundForTimer(mins, roundStartTime);
-                  return;
-                }
-              }
-              // Check currentResult (manual override)
-              const crSnap = await db2.ref('wingo/wingo' + mins + 'min/currentResult').once('value');
-              const crVal = crSnap.val();
-              if (crVal !== null && parseInt(crVal) >= 0 && parseInt(crVal) <= 9) {
-                resolveRoundForTimer(mins, roundStartTime);
-                return;
-              }
-              // Check history for previous round
-              const hSnap = await db2.ref('wingo/wingo' + mins + 'min/history')
-                .orderByChild('round').equalTo(cgRoundByTimer[mins] - 1)
-                .limitToLast(1).once('value');
-              if (hSnap.val()) {
-                resolveRoundForTimer(mins, roundStartTime);
-                return;
-              }
-              const tSnap = await db2.ref('wingo/wingo' + mins + 'min/lastResultTime').once('value');
-              if ((tSnap.val() || 0) > roundStartTime - 3000) {
+              // Wait for server to push lastResult
+              const lastSnap = await db2.ref('wingo/wingo' + mins + 'min/lastResult').once('value');
+              const lastTimeSnap = await db2.ref('wingo/wingo' + mins + 'min/lastResultTime').once('value');
+              const lastVal = lastSnap.val();
+              const lastTime = lastTimeSnap.val() || 0;
+              if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9
+                  && lastTime > roundStartTime - 3000) {
                 resolveRoundForTimer(mins, roundStartTime);
                 return;
               }
             }
           } catch(e) {}
-          if (pollAttempts < 50) setTimeout(pollForResult, 100);
+          if (pollAttempts < 60) setTimeout(pollForResult, 100);
           else resolveRoundForTimer(mins, roundStartTime);
         };
         setTimeout(pollForResult, 100);
@@ -6243,38 +6222,20 @@
       }
       const db = window.fbDB || fbDB;
       if (db) {
-        const histSnap = await db.ref(timerKey + '/history')
-          .orderByChild('round').equalTo(currentRound - 1)
-          .limitToLast(3).once('value');
-        if (histSnap.val()) {
-          const entries = Object.values(histSnap.val())
-            .filter(e => e.round === currentRound - 1);
-          if (entries.length > 0 && entries[0].num !== undefined) {
-            winNum = parseInt(entries[0].num);
-          }
-        }
-        // ── CHECK SCHEDULE FIRST (before currentResult) ──
+        // Check history for previous round (written by server)
         if (winNum === undefined) {
-          const schedSnap = await db.ref(timerKey + '/schedule').once('value');
-          const schedVal = schedSnap.val();
-          if (schedVal) {
-            const schedArr = Array.isArray(schedVal) ? schedVal : Object.values(schedVal);
-            // Find first non-null slot
-            const firstIdx = schedArr.findIndex(v => v !== null && v !== undefined && parseInt(v) >= 0 && parseInt(v) <= 9);
-            if (firstIdx !== -1) {
-              winNum = parseInt(schedArr[firstIdx]);
-              // Remove used slot (set to null) and save back to Firebase
-              schedArr[firstIdx] = null;
-              // If all slots are null, clear the schedule entirely
-              const hasRemaining = schedArr.some(v => v !== null && v !== undefined);
-              if (hasRemaining) {
-                await db.ref(timerKey + '/schedule').set(schedArr);
-              } else {
-                await db.ref(timerKey + '/schedule').set(Array(5).fill(null));
-              }
+          const histSnap = await db.ref(timerKey + '/history')
+            .orderByChild('round').equalTo(currentRound - 1)
+            .limitToLast(3).once('value');
+          if (histSnap.val()) {
+            const entries = Object.values(histSnap.val())
+              .filter(e => e.round === currentRound - 1);
+            if (entries.length > 0 && entries[0].num !== undefined) {
+              winNum = parseInt(entries[0].num);
             }
           }
         }
+        // Check lastResult (written by server)
         if (winNum === undefined) {
           const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
           const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
@@ -6286,15 +6247,7 @@
           }
         }
         if (winNum === undefined) {
-          const snap = await db.ref(timerKey + '/currentResult').once('value');
-          const val = snap.val();
-          if (val !== null && parseInt(val) >= 0 && parseInt(val) <= 9) {
-            winNum = parseInt(val);
-          }
-        }
-        if (winNum === undefined) {
-          // console.warn('Result not in Firebase yet for round', currentRound - 1, '— keeping pending');
-          return;
+          return; // Wait for server to push result
         }
       } else {
         // console.warn('No Firebase DB — cannot resolve');
@@ -6333,13 +6286,7 @@
     const timerRound = cgRoundByTimer[timerMode] || 20250513001;
     const resolvedRoundId = currentRound - 1;
     if (!cgHistoryByTimer[timerMode]) cgHistoryByTimer[timerMode] = [];
-    try {
-      const db = window.fbDB || fbDB;
-      if (db) {
-        const histPath = 'wingo/wingo' + timerMode + 'min/history';
-        await db.ref(histPath).push({ round: resolvedRoundId, num: winNum, color: histColorLabel, bigSmall, histBg, timestamp: Date.now() });
-      }
-    } catch(e) { /* suppressed */ }
+    // Server handles history push — client only reads
     if (cgHistory.length > 20) cgHistory.pop();
     if (cgTimer === timerMode) {
       const roundEl = document.getElementById('cgRoundNum');
