@@ -2125,7 +2125,6 @@
       setTimeout(() => { _lastNavPage = null; }, 500);
       document.querySelectorAll('.page').forEach(p => {
         p.classList.remove('active');
-        // Clear any inline styles set by JS force-show
         p.style.display = '';
         p.style.visibility = '';
         p.style.opacity = '';
@@ -2151,6 +2150,37 @@
       if (window.history && window.history.pushState) {
         window.history.pushState({ page: pageName }, '', '#' + pageName);
       }
+      // Auto-reload fresh data for each page on every visit
+      setTimeout(() => {
+        const u = window.currentUser;
+        const db = window.fbDB || fbDB;
+        if (!u || !db) return;
+        try {
+          if (pageName === 'profile') {
+            if (typeof loadProfileStats === 'function') loadProfileStats();
+            if (typeof renderBetHistory === 'function') renderBetHistory(window.currentBetFilter || 'all');
+          } else if (pageName === 'wallet') {
+            if (typeof loadWagerProgress === 'function') loadWagerProgress();
+            if (typeof loadSavedWithdrawDetails === 'function') loadSavedWithdrawDetails();
+            if (typeof loadDepositHistory === 'function') loadDepositHistory();
+          } else if (pageName === 'vip') {
+            if (typeof loadVipPage === 'function') loadVipPage();
+          } else if (pageName === 'referral') {
+            if (typeof loadReferralData === 'function') loadReferralData();
+          } else if (pageName === 'promotions') {
+            if (typeof loadPromoRebateCard === 'function') loadPromoRebateCard();
+          } else if (pageName === 'history') {
+            if (typeof loadTransactionHistory === 'function') loadTransactionHistory();
+          } else if (pageName === 'home') {
+            if (typeof loadUserProfile === 'function') loadUserProfile(u.uid);
+            if (typeof loadAnnouncement === 'function') loadAnnouncement();
+          } else if (pageName === 'weeklyrebate') {
+            if (typeof loadWeeklyRebatePage === 'function') loadWeeklyRebatePage();
+          } else if (pageName === 'attendance') {
+            if (typeof window.loadAttendancePage === 'function') window.loadAttendancePage();
+          }
+        } catch(e) { console.log('Page reload error:', e); }
+      }, 50);
     }
 
     if (name === 'rebateratio') {
@@ -2552,32 +2582,26 @@
     if (dh) dh.style.display = 'block';
   });
   window.addEventListener('popstate', (event) => {
-
+    // Close overlays first if open
     const gameOverlay = document.getElementById('colorGameOverlay');
     if (gameOverlay && gameOverlay.classList.contains('open')) {
       closeColorGame();
+      window.history.pushState({ page: 'home' }, '', '#home');
       return;
     }
     const resultOverlay = document.getElementById('cgResultOverlay');
     if (resultOverlay && resultOverlay.classList.contains('show')) {
       closeResultPopup();
+      window.history.pushState({ page: 'home' }, '', '#home');
       return;
     }
-    if (event.state && event.state.page) {
-      const prevPage = event.state.page;
-      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-      const pageEl = document.getElementById('page-' + prevPage);
-      if (pageEl) { pageEl.classList.add('active'); pageEl.scrollTop = 0; }
-      updateMobileNav(prevPage);
+    // Always navigate to a FRESH home page on back
+    if (isLoggedIn) {
+      showPage('home');
+      window.history.pushState({ page: 'home' }, '', '#home');
     } else {
-      if (isLoggedIn) {
-        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-        const homePage = document.getElementById('page-home');
-        if (homePage) { homePage.classList.add('active'); homePage.scrollTop = 0; }
-        updateMobileNav('home');
-      } else {
-        window.history.pushState(null, '', window.location.href);
-      }
+      showPage('login');
+      window.history.pushState({ page: 'login' }, '', '#login');
     }
   });
   window.addEventListener('load', () => {
@@ -7656,7 +7680,7 @@
   <div style="max-width:500px;margin:0 auto;padding:1rem;">
 
     
-    <button onclick="history.back() || showPage('home')" class="back-btn">←</button>
+    <button onclick="showPage('home')" class="back-btn">←</button>
 
     
     <div style="background:linear-gradient(135deg,#1a0800,#3d1800);border:1px solid rgba(240,192,64,0.3);border-radius:20px;padding:1.5rem;text-align:center;margin-bottom:1.2rem;position:relative;overflow:hidden;">
@@ -8715,7 +8739,7 @@
 <div class="page" id="page-terms">
   <div style="max-width:700px;margin:0 auto;padding:5rem 1.2rem 3rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
-      <button onclick="history.back()||showPage('home')" class="back-btn">←</button>
+      <button onclick="showPage('home')" class="back-btn">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">📋 Terms & Conditions</div>
     </div>
     <div style="color:var(--muted);font-size:0.75rem;margin-bottom:1.5rem;">Last updated: May 2026</div>
@@ -8773,7 +8797,7 @@
 <div class="page" id="page-responsible">
   <div style="max-width:700px;margin:0 auto;padding:5rem 1.2rem 3rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
-      <button onclick="history.back()||showPage('home')" class="back-btn">←</button>
+      <button onclick="showPage('home')" class="back-btn">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">🛡️ Responsible Gambling</div>
     </div>
 
@@ -8831,7 +8855,7 @@
 <div class="page" id="page-privacy">
   <div style="max-width:700px;margin:0 auto;padding:5rem 1.2rem 3rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
-      <button onclick="history.back()||showPage('home')" class="back-btn">←</button>
+      <button onclick="showPage('home')" class="back-btn">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">🔒 Privacy Policy</div>
     </div>
     <div style="color:var(--muted);font-size:0.75rem;margin-bottom:1.5rem;">Last updated: May 2026</div>
