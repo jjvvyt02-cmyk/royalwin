@@ -2253,15 +2253,56 @@ window.approveDeposit = async function(key, uid, amount) {
           memberId: userData.memberId || '—',
           joinedAt: userData.createdAt || Date.now(),
           firstDepositAmt: amount,
-          hasDeposited: amount >= 500, // Mark as qualified if deposit >= ₹500
+          hasDeposited: amount >= 500,
           totalDeposited: amount,
           creditedAt: Date.now()
         });
+
+        // ── ₹50 + 5% REFERRAL FIRST DEPOSIT BONUS ──
+        if (amount >= 500) {
+          const referralFixedBonus = 50;
+          const referralPctBonus = parseFloat((amount * 0.05).toFixed(2));
+          const totalReferralBonus = parseFloat((referralFixedBonus + referralPctBonus).toFixed(2));
+
+          // Check if this is truly first deposit (not already credited)
+          const alreadyCreditedSnap = await get(ref(db, 'users/' + referrerUid + '/referralBonusCredited/' + uid));
+          if (!alreadyCreditedSnap.val()) {
+            // Credit referrer balance
+            const referrerBalSnap = await get(ref(db, 'users/' + referrerUid + '/balance'));
+            const referrerNewBal = parseFloat(((referrerBalSnap.val() || 0) + totalReferralBonus).toFixed(2));
+            await update(ref(db, 'users/' + referrerUid), { balance: referrerNewBal });
+
+            // Mark as credited to prevent duplicate
+            await set(ref(db, 'users/' + referrerUid + '/referralBonusCredited/' + uid), Date.now());
+
+            // Transaction record for referrer
+            await set(ref(db, 'users/' + referrerUid + '/transactions/' + (Date.now() + 10)), {
+              type: 'referral_deposit_bonus',
+              amount: totalReferralBonus,
+              details: '🎉 Referral bonus: ₹50 + 5% of ₹' + amount.toLocaleString('en-IN') + ' deposit by ' + (userData.username || 'friend'),
+              balance: referrerNewBal,
+              timestamp: Date.now()
+            });
+
+            // Notification for referrer
+            await set(ref(db, 'users/' + referrerUid + '/notifications/' + (Date.now() + 11)), {
+              icon: '🎉',
+              title: 'Referral Bonus Credited!',
+              body: '₹' + totalReferralBonus.toLocaleString('en-IN') + ' credited! Your referral ' + (userData.username || 'friend') + ' made their first deposit of ₹' + amount.toLocaleString('en-IN') + '.',
+              read: false,
+              timestamp: Date.now()
+            });
+
+            showToast('✅ Deposit approved + ₹' + totalReferralBonus + ' referral bonus credited to referrer!');
+          } else {
+            showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
+          }
+        } else {
+          showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
+        }
+      } else {
+        showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
       }
-      showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
-    } else {
-      showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
-    }
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
