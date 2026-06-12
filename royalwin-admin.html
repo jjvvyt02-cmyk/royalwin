@@ -2303,6 +2303,7 @@ window.approveDeposit = async function(key, uid, amount) {
       } else {
         showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
       }
+    }
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
