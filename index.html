@@ -2586,22 +2586,18 @@
     const gameOverlay = document.getElementById('colorGameOverlay');
     if (gameOverlay && gameOverlay.classList.contains('open')) {
       closeColorGame();
-      window.history.pushState({ page: 'home' }, '', '#home');
       return;
     }
     const resultOverlay = document.getElementById('cgResultOverlay');
     if (resultOverlay && resultOverlay.classList.contains('show')) {
       closeResultPopup();
-      window.history.pushState({ page: 'home' }, '', '#home');
       return;
     }
-    // Always navigate to a FRESH home page on back
-    if (isLoggedIn) {
-      showPage('home');
-      window.history.pushState({ page: 'home' }, '', '#home');
+    // Go to previous page but load it FRESH
+    if (event.state && event.state.page) {
+      showPage(event.state.page);
     } else {
-      showPage('login');
-      window.history.pushState({ page: 'login' }, '', '#login');
+      showPage(isLoggedIn ? 'home' : 'login');
     }
   });
   window.addEventListener('load', () => {
@@ -5621,7 +5617,18 @@
 
   function openColorGame() {
     if (!isLoggedIn) { showPage('login'); showToast('🔐 Please sign in to play'); return; }
+    const overlay = document.getElementById('colorGameOverlay');
+    // Reset scroll BEFORE opening so it always starts at top
+    if (overlay) {
+      overlay.scrollTop = 0;
+      overlay.scrollLeft = 0;
+    }
     document.getElementById('colorGameOverlay').classList.add('open');
+    // Force scroll to top again after render
+    setTimeout(() => {
+      if (overlay) { overlay.scrollTop = 0; }
+      window.scrollTo(0, 0);
+    }, 50);
     const db = window.fbDB || fbDB;
     const user = window.currentUser;
     if (db && user) {
@@ -5635,8 +5642,6 @@
       startAllTimers();
       window._cgTimersStarted = true;
     }
-    const overlay = document.getElementById('colorGameOverlay');
-    if (overlay) overlay.scrollTop = 0;
     switchCGTab('results');
     cgHistPage = 1;
     cgMyBetsPage = 1;
