@@ -6518,7 +6518,15 @@
     });
     document.getElementById('cgTabResults').style.display = tab === 'results' ? 'block' : 'none';
     document.getElementById('cgTabMyBets').style.display = tab === 'mybets' ? 'block' : 'none';
-    if (tab === 'results') { cgHistPage = 1; renderHistRows(); }
+    if (tab === 'results') {
+      cgHistPage = 1;
+      // If history already loaded render immediately, otherwise loadAllHistory will render when data arrives
+      if (cgHistory && cgHistory.length > 0) {
+        renderHistRows();
+      } else {
+        loadAllHistory();
+      }
+    }
     if (tab === 'mybets') { cgMyBetsPage = 1; renderMyBets(); }
     // Only scroll to history if user manually clicked a tab, not on game open
     if (window._cgGameAlreadyOpen) {
