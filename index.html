@@ -5588,20 +5588,7 @@
 
   function openColorGame() {
     if (!isLoggedIn) { showPage('login'); showToast('🔐 Please sign in to play'); return; }
-    const overlay = document.getElementById('colorGameOverlay');
-    // Reset scroll BEFORE opening so it always starts at top
-    window._cgGameAlreadyOpen = false;
-    if (overlay) {
-      overlay.scrollTop = 0;
-      overlay.scrollLeft = 0;
-    }
     document.getElementById('colorGameOverlay').classList.add('open');
-    // Force scroll to top after render
-    setTimeout(() => {
-      if (overlay) { overlay.scrollTop = 0; }
-      window.scrollTo(0, 0);
-      window._cgGameAlreadyOpen = true; // now allow tab clicks to scroll
-    }, 300);
     const db = window.fbDB || fbDB;
     const user = window.currentUser;
     if (db && user) {
@@ -5615,6 +5602,8 @@
       startAllTimers();
       window._cgTimersStarted = true;
     }
+    const overlay = document.getElementById('colorGameOverlay');
+    if (overlay) overlay.scrollTop = 0;
     switchCGTab('results');
     cgHistPage = 1;
     cgMyBetsPage = 1;
@@ -6518,23 +6507,12 @@
     });
     document.getElementById('cgTabResults').style.display = tab === 'results' ? 'block' : 'none';
     document.getElementById('cgTabMyBets').style.display = tab === 'mybets' ? 'block' : 'none';
-    if (tab === 'results') {
-      cgHistPage = 1;
-      // If history already loaded render immediately, otherwise loadAllHistory will render when data arrives
-      if (cgHistory && cgHistory.length > 0) {
-        renderHistRows();
-      } else {
-        loadAllHistory();
-      }
-    }
+    if (tab === 'results') { cgHistPage = 1; renderHistRows(); }
     if (tab === 'mybets') { cgMyBetsPage = 1; renderMyBets(); }
-    // Only scroll to history if user manually clicked a tab, not on game open
-    if (window._cgGameAlreadyOpen) {
-      const overlay = document.getElementById('colorGameOverlay');
-      const histEl = document.querySelector('.cg-history');
-      if (overlay && histEl) {
-        setTimeout(() => overlay.scrollTop = histEl.offsetTop - 10, 50);
-      }
+    const overlay = document.getElementById('colorGameOverlay');
+    const histEl = document.querySelector('.cg-history');
+    if (overlay && histEl) {
+      setTimeout(() => overlay.scrollTop = histEl.offsetTop - 10, 50);
     }
   }
 
