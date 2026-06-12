@@ -5868,6 +5868,25 @@
           try {
             const db2 = window.fbDB || fbDB;
             if (db2) {
+              // Check schedule first — fastest, no query needed
+              const schedSnap = await db2.ref('wingo/wingo' + mins + 'min/schedule').once('value');
+              const schedVal = schedSnap.val();
+              if (schedVal) {
+                const schedArr = Array.isArray(schedVal) ? schedVal : Object.values(schedVal);
+                const hasScheduled = schedArr.some(v => v !== null && v !== undefined && parseInt(v) >= 0 && parseInt(v) <= 9);
+                if (hasScheduled) {
+                  resolveRoundForTimer(mins, roundStartTime);
+                  return;
+                }
+              }
+              // Check currentResult (manual override)
+              const crSnap = await db2.ref('wingo/wingo' + mins + 'min/currentResult').once('value');
+              const crVal = crSnap.val();
+              if (crVal !== null && parseInt(crVal) >= 0 && parseInt(crVal) <= 9) {
+                resolveRoundForTimer(mins, roundStartTime);
+                return;
+              }
+              // Check history for previous round
               const hSnap = await db2.ref('wingo/wingo' + mins + 'min/history')
                 .orderByChild('round').equalTo(cgRoundByTimer[mins] - 1)
                 .limitToLast(1).once('value');
@@ -5882,10 +5901,10 @@
               }
             }
           } catch(e) {}
-          if (pollAttempts < 30) setTimeout(pollForResult, 300);
+          if (pollAttempts < 50) setTimeout(pollForResult, 100);
           else resolveRoundForTimer(mins, roundStartTime);
         };
-        setTimeout(pollForResult, 300);
+        setTimeout(pollForResult, 100);
       }
     }
 
@@ -6232,6 +6251,28 @@
             .filter(e => e.round === currentRound - 1);
           if (entries.length > 0 && entries[0].num !== undefined) {
             winNum = parseInt(entries[0].num);
+          }
+        }
+        // ── CHECK SCHEDULE FIRST (before currentResult) ──
+        if (winNum === undefined) {
+          const schedSnap = await db.ref(timerKey + '/schedule').once('value');
+          const schedVal = schedSnap.val();
+          if (schedVal) {
+            const schedArr = Array.isArray(schedVal) ? schedVal : Object.values(schedVal);
+            // Find first non-null slot
+            const firstIdx = schedArr.findIndex(v => v !== null && v !== undefined && parseInt(v) >= 0 && parseInt(v) <= 9);
+            if (firstIdx !== -1) {
+              winNum = parseInt(schedArr[firstIdx]);
+              // Remove used slot (set to null) and save back to Firebase
+              schedArr[firstIdx] = null;
+              // If all slots are null, clear the schedule entirely
+              const hasRemaining = schedArr.some(v => v !== null && v !== undefined);
+              if (hasRemaining) {
+                await db.ref(timerKey + '/schedule').set(schedArr);
+              } else {
+                await db.ref(timerKey + '/schedule').set(Array(5).fill(null));
+              }
+            }
           }
         }
         if (winNum === undefined) {
