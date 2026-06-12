@@ -5868,22 +5868,20 @@
           try {
             const db2 = window.fbDB || fbDB;
             if (db2) {
-              // Wait for server to push lastResult
-              const lastSnap = await db2.ref('wingo/wingo' + mins + 'min/lastResult').once('value');
+              // Check lastResultTime — server updates this every round
               const lastTimeSnap = await db2.ref('wingo/wingo' + mins + 'min/lastResultTime').once('value');
-              const lastVal = lastSnap.val();
               const lastTime = lastTimeSnap.val() || 0;
-              if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9
-                  && lastTime > roundStartTime - 3000) {
+              // Accept result if server wrote it within the last 2 minutes
+              if (lastTime > roundStartTime - (mins * 60 * 1000 * 2)) {
                 resolveRoundForTimer(mins, roundStartTime);
                 return;
               }
             }
           } catch(e) {}
-          if (pollAttempts < 60) setTimeout(pollForResult, 100);
+          if (pollAttempts < 60) setTimeout(pollForResult, 500);
           else resolveRoundForTimer(mins, roundStartTime);
         };
-        setTimeout(pollForResult, 100);
+        setTimeout(pollForResult, 500);
       }
     }
 
@@ -6222,27 +6220,23 @@
       }
       const db = window.fbDB || fbDB;
       if (db) {
-        // Check history for previous round (written by server)
+        // Check history for previous round (server writes as array)
         if (winNum === undefined) {
-          const histSnap = await db.ref(timerKey + '/history')
-            .orderByChild('round').equalTo(currentRound - 1)
-            .limitToLast(3).once('value');
+          const histSnap = await db.ref(timerKey + '/history').once('value');
           if (histSnap.val()) {
-            const entries = Object.values(histSnap.val())
-              .filter(e => e.round === currentRound - 1);
-            if (entries.length > 0 && entries[0].num !== undefined) {
-              winNum = parseInt(entries[0].num);
+            const histVal = histSnap.val();
+            const entries = Array.isArray(histVal) ? histVal : Object.values(histVal);
+            const match = entries.find(e => e && e.round === currentRound - 1);
+            if (match && match.num !== undefined) {
+              winNum = parseInt(match.num);
             }
           }
         }
-        // Check lastResult (written by server)
+        // Check lastResult (server writes this every round)
         if (winNum === undefined) {
           const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
-          const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
           const lastVal = lastSnap.val();
-          const lastTime = lastTimeSnap.val() || 0;
-          if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9
-              && lastTime > roundStartTime - 5000) {
+          if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9) {
             winNum = parseInt(lastVal);
           }
         }
