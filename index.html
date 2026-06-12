@@ -5813,9 +5813,8 @@
       const IST_OFFSET = 5.5 * 60 * 60 * 1000;
       const istNow = now + IST_OFFSET;
       const istDate = new Date(istNow);
-      const istMidnight = istNow - (istNow % (24 * 60 * 60 * 1000));
-      const msSinceMidnightIST = istNow - istMidnight;
-      const elapsed = msSinceMidnightIST % periodMs;
+      const periodMs = mins * 60 * 1000;
+      const elapsed = now % periodMs; // Match server: use raw UTC timestamp
       const remaining = Math.ceil((periodMs - elapsed) / 1000);
       const totalSecs = mins * 60;
       const dateStr = `${istDate.getUTCFullYear()}${String(istDate.getUTCMonth()+1).padStart(2,'0')}${String(istDate.getUTCDate()).padStart(2,'0')}`;
@@ -5868,13 +5867,16 @@
           try {
             const db2 = window.fbDB || fbDB;
             if (db2) {
-              // Check lastResultTime — server updates this every round
-              const lastTimeSnap = await db2.ref('wingo/wingo' + mins + 'min/lastResultTime').once('value');
-              const lastTime = lastTimeSnap.val() || 0;
-              // Accept result if server wrote it within the last 2 minutes
-              if (lastTime > roundStartTime - (mins * 60 * 1000 * 2)) {
-                resolveRoundForTimer(mins, roundStartTime);
-                return;
+              // Check if server pushed result for the round that just ended
+              const histSnap = await db2.ref('wingo/wingo' + mins + 'min/history').once('value');
+              if (histSnap.val()) {
+                const histVal = histSnap.val();
+                const entries = Array.isArray(histVal) ? histVal : Object.values(histVal);
+                const match = entries.find(e => e && e.round === cgRoundByTimer[mins] - 1);
+                if (match && match.num !== undefined) {
+                  resolveRoundForTimer(mins, roundStartTime);
+                  return;
+                }
               }
             }
           } catch(e) {}
@@ -6220,28 +6222,21 @@
       }
       const db = window.fbDB || fbDB;
       if (db) {
-        // Check history for previous round (server writes as array)
+        // Check history for the specific round that just ended
         if (winNum === undefined) {
           const histSnap = await db.ref(timerKey + '/history').once('value');
           if (histSnap.val()) {
             const histVal = histSnap.val();
             const entries = Array.isArray(histVal) ? histVal : Object.values(histVal);
+            // Look for the exact round that just ended
             const match = entries.find(e => e && e.round === currentRound - 1);
             if (match && match.num !== undefined) {
               winNum = parseInt(match.num);
             }
           }
         }
-        // Check lastResult (server writes this every round)
         if (winNum === undefined) {
-          const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
-          const lastVal = lastSnap.val();
-          if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9) {
-            winNum = parseInt(lastVal);
-          }
-        }
-        if (winNum === undefined) {
-          return; // Wait for server to push result
+          return; // Wait for server to push result for this specific round
         }
       } else {
         // console.warn('No Firebase DB — cannot resolve');
@@ -6329,7 +6324,7 @@
               db3.ref('users/' + window.currentUser.uid + '/wingoPendingBets/' + pendingBet._firebaseKey).remove();
             }
           } catch(e) {}
-          addBetToHistory('WinGo', pendingBet.bet, histColorLabel + ' / ' + winNum, betWinAmt.toFixed(0), betWon, timerRound.toString(), 0);
+          addBetToHistory('WinGo', pendingBet.bet, histColorLabel + ' / ' + winNum, betWinAmt.toFixed(0), betWon, pendingBet.round.toString(), 0);
           try {
             const db2 = window.fbDB || fbDB;
             if (db2 && window.currentUser) {
