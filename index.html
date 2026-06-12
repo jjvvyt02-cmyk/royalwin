@@ -2648,25 +2648,6 @@
       });
     }
   })();
-  (function handlePageRoute() {
-    const params = new URLSearchParams(window.location.search);
-    const page = params.get('page');
-    if (!page) return;
-
-    const guestPages = ['login', 'register', 'forgot'];
-    if (guestPages.includes(page)) {
-      setTimeout(() => showPage(page), 300);
-    } else {
-      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
-        unsubscribe();
-        if (user) {
-          setTimeout(() => showPage(page), 100);
-        } else {
-          setTimeout(() => showPage('login'), 100);
-        }
-      });
-    }
-  })();
   (function handleReferralLink() {
     const params = new URLSearchParams(window.location.search);
     const code = params.get('invitationCode') || params.get('ref') || params.get('r_code') || params.get('invite');
@@ -3489,13 +3470,6 @@
         <button onclick="loadDepositHistoryPage(${_depHistPage+1})" ${_depHistPage>=totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_depHistPage>=totalPages?'opacity:0.4;':''}">▶</button>
       </div>`;
     }
-  }
-
-  function loadDepositHistory() {
-    _depHistData = []; _depHistPage = 1;
-    const el = document.getElementById('depositHistoryRows');
-    if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
-    loadDepositHistoryPage();
   }
 
   var _withHistPage = 1;
@@ -5421,9 +5395,6 @@
   }
 
   function openQR() {
-    showToast('⚠️ Please use Pay Now button to deposit.');
-  }
-  async function confirmQRPayment() {
     showToast('⚠️ Please use Pay Now button to deposit.');
   }
 
@@ -9989,9 +9960,5 @@ window.claimVipMonthly = function() {
   </div>
 </div>
 
-
-</div>
-</body>
-</html>
 </body>
 </html>
