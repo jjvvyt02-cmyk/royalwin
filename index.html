@@ -5861,29 +5861,30 @@
           }
         }
         const roundStartTime = Date.now();
-        let pollAttempts = 0;
-        const pollForResult = async () => {
-          pollAttempts++;
-          try {
-            const db2 = window.fbDB || fbDB;
-            if (db2) {
-              // Check if server pushed result for the round that just ended
-              const histSnap = await db2.ref('wingo/wingo' + mins + 'min/history').once('value');
-              if (histSnap.val()) {
-                const histVal = histSnap.val();
-                const entries = Array.isArray(histVal) ? histVal : Object.values(histVal);
-                const match = entries.find(e => e && e.round === cgRoundByTimer[mins] - 1);
-                if (match && match.num !== undefined) {
-                  resolveRoundForTimer(mins, roundStartTime);
-                  return;
-                }
-              }
-            }
-          } catch(e) {}
-          if (pollAttempts < 60) setTimeout(pollForResult, 500);
-          else resolveRoundForTimer(mins, roundStartTime);
+        const roundToResolve = cgRoundByTimer[mins] - 1;
+        let resolved = false;
+
+        // Use realtime listener — fires instantly when server pushes result
+        const resultRef = (window.fbDB || fbDB).ref('wingo/wingo' + mins + 'min/lastProcessedPeriod');
+        const onResult = (snap) => {
+          if (resolved) return;
+          const lastProcessed = snap.val();
+          if (lastProcessed && parseInt(lastProcessed) >= roundToResolve) {
+            resolved = true;
+            resultRef.off('value', onResult);
+            resolveRoundForTimer(mins, roundStartTime);
+          }
         };
-        setTimeout(pollForResult, 500);
+        resultRef.on('value', onResult);
+
+        // Fallback: if listener doesn't fire within 90 seconds, resolve anyway
+        setTimeout(() => {
+          if (!resolved) {
+            resolved = true;
+            resultRef.off('value', onResult);
+            resolveRoundForTimer(mins, roundStartTime);
+          }
+        }, 90000);
       }
     }
 
@@ -6222,13 +6223,20 @@
       }
       const db = window.fbDB || fbDB;
       if (db) {
-        // Check history for the specific round that just ended
+        // Read lastResult — server always writes this after processing
+        if (winNum === undefined) {
+          const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
+          const lastVal = lastSnap.val();
+          if (lastVal !== null && lastVal !== undefined && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9) {
+            winNum = parseInt(lastVal);
+          }
+        }
+        // Fallback: check history array for the specific round
         if (winNum === undefined) {
           const histSnap = await db.ref(timerKey + '/history').once('value');
           if (histSnap.val()) {
             const histVal = histSnap.val();
             const entries = Array.isArray(histVal) ? histVal : Object.values(histVal);
-            // Look for the exact round that just ended
             const match = entries.find(e => e && e.round === currentRound - 1);
             if (match && match.num !== undefined) {
               winNum = parseInt(match.num);
@@ -6236,7 +6244,7 @@
           }
         }
         if (winNum === undefined) {
-          return; // Wait for server to push result for this specific round
+          return;
         }
       } else {
         // console.warn('No Firebase DB — cannot resolve');
