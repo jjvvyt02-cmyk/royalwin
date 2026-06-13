@@ -6288,7 +6288,6 @@
       : winColor === 'red' ? '#e02020' : '#27ae60';
     const histColorLabel = (winColor === 'violet-red' || winColor === 'violet-green') ? 'violet' : winColor;
     const timerRound = cgRoundByTimer[timerMode] || 20250513001;
-    const resolvedRoundId = currentRound - 1;
     if (!cgHistoryByTimer[timerMode]) cgHistoryByTimer[timerMode] = [];
     // Server handles history push — client only reads
     if (cgHistory.length > 20) cgHistory.pop();
