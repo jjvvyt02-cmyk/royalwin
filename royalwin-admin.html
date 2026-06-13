@@ -1145,9 +1145,12 @@ function updateNextResultBadges() {
     });
     // Listen for last results per mode
     onValue(ref(db, 'wingo/wingo' + mins + 'min/history'), (snap) => {
-      const history = snap.val() ? Object.values(snap.val())
-        .filter(h => h && h.round)
-        .sort((a, b) => (b.round || 0) - (a.round || 0)) : [];
+      const raw = snap.val() ? Object.values(snap.val()).filter(h => h && h.round) : [];
+      // Deduplicate by round — keep only the latest entry per round
+      const seen = new Set();
+      const history = raw
+        .sort((a, b) => (b.round || 0) - (a.round || 0))
+        .filter(h => { if (seen.has(h.round)) return false; seen.add(h.round); return true; });
       renderLastResults(mins, history);
     });
     // Listen for bet summary per mode
