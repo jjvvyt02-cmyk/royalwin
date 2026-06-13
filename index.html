@@ -2125,6 +2125,7 @@
       setTimeout(() => { _lastNavPage = null; }, 500);
       document.querySelectorAll('.page').forEach(p => {
         p.classList.remove('active');
+        // Clear any inline styles set by JS force-show
         p.style.display = '';
         p.style.visibility = '';
         p.style.opacity = '';
@@ -2150,37 +2151,6 @@
       if (window.history && window.history.pushState) {
         window.history.pushState({ page: pageName }, '', '#' + pageName);
       }
-      // Auto-reload fresh data for each page on every visit
-      setTimeout(() => {
-        const u = window.currentUser;
-        const db = window.fbDB || fbDB;
-        if (!u || !db) return;
-        try {
-          if (pageName === 'profile') {
-            if (typeof loadProfileStats === 'function') loadProfileStats();
-            if (typeof renderBetHistory === 'function') renderBetHistory(window.currentBetFilter || 'all');
-          } else if (pageName === 'wallet') {
-            if (typeof loadWagerProgress === 'function') loadWagerProgress();
-            if (typeof loadSavedWithdrawDetails === 'function') loadSavedWithdrawDetails();
-            if (typeof loadDepositHistory === 'function') loadDepositHistory();
-          } else if (pageName === 'vip') {
-            if (typeof loadVipPage === 'function') loadVipPage();
-          } else if (pageName === 'referral') {
-            if (typeof loadReferralData === 'function') loadReferralData();
-          } else if (pageName === 'promotions') {
-            if (typeof loadPromoRebateCard === 'function') loadPromoRebateCard();
-          } else if (pageName === 'history') {
-            if (typeof loadTransactionHistory === 'function') loadTransactionHistory();
-          } else if (pageName === 'home') {
-            if (typeof loadUserProfile === 'function') loadUserProfile(u.uid);
-            if (typeof loadAnnouncement === 'function') loadAnnouncement();
-          } else if (pageName === 'weeklyrebate') {
-            if (typeof loadWeeklyRebatePage === 'function') loadWeeklyRebatePage();
-          } else if (pageName === 'attendance') {
-            if (typeof window.loadAttendancePage === 'function') window.loadAttendancePage();
-          }
-        } catch(e) { console.log('Page reload error:', e); }
-      }, 50);
     }
 
     if (name === 'rebateratio') {
@@ -2582,7 +2552,6 @@
     if (dh) dh.style.display = 'block';
   });
   window.addEventListener('popstate', (event) => {
-    // Close overlays first if open
     const gameOverlay = document.getElementById('colorGameOverlay');
     if (gameOverlay && gameOverlay.classList.contains('open')) {
       closeColorGame();
@@ -2593,7 +2562,6 @@
       closeResultPopup();
       return;
     }
-    // Go to previous page but load it FRESH
     if (event.state && event.state.page) {
       showPage(event.state.page);
     } else {
@@ -2628,6 +2596,25 @@
     window.addEventListener('offline', showOfflineBanner);
     window.addEventListener('online', hideOfflineBanner);
     if (!navigator.onLine) showOfflineBanner();
+  })();
+  (function handlePageRoute() {
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page');
+    if (!page) return;
+
+    const guestPages = ['login', 'register', 'forgot'];
+    if (guestPages.includes(page)) {
+      setTimeout(() => showPage(page), 300);
+    } else {
+      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+        unsubscribe();
+        if (user) {
+          setTimeout(() => showPage(page), 100);
+        } else {
+          setTimeout(() => showPage('login'), 100);
+        }
+      });
+    }
   })();
   (function handlePageRoute() {
     const params = new URLSearchParams(window.location.search);
@@ -3470,6 +3457,13 @@
         <button onclick="loadDepositHistoryPage(${_depHistPage+1})" ${_depHistPage>=totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_depHistPage>=totalPages?'opacity:0.4;':''}">▶</button>
       </div>`;
     }
+  }
+
+  function loadDepositHistory() {
+    _depHistData = []; _depHistPage = 1;
+    const el = document.getElementById('depositHistoryRows');
+    if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
+    loadDepositHistoryPage();
   }
 
   var _withHistPage = 1;
@@ -5397,6 +5391,9 @@
   function openQR() {
     showToast('⚠️ Please use Pay Now button to deposit.');
   }
+  async function confirmQRPayment() {
+    showToast('⚠️ Please use Pay Now button to deposit.');
+  }
 
   function closeQR() {
     document.getElementById('qrModal').classList.remove('open');
@@ -5813,8 +5810,9 @@
       const IST_OFFSET = 5.5 * 60 * 60 * 1000;
       const istNow = now + IST_OFFSET;
       const istDate = new Date(istNow);
-      const periodMs = mins * 60 * 1000;
-      const elapsed = now % periodMs; // Match server: use raw UTC timestamp
+      const istMidnight = istNow - (istNow % (24 * 60 * 60 * 1000));
+      const msSinceMidnightIST = istNow - istMidnight;
+      const elapsed = msSinceMidnightIST % periodMs;
       const remaining = Math.ceil((periodMs - elapsed) / 1000);
       const totalSecs = mins * 60;
       const dateStr = `${istDate.getUTCFullYear()}${String(istDate.getUTCMonth()+1).padStart(2,'0')}${String(istDate.getUTCDate()).padStart(2,'0')}`;
@@ -5861,35 +5859,30 @@
           }
         }
         const roundStartTime = Date.now();
-        const roundToResolve = cgRoundByTimer[mins] - 1;
-        let resolved = false;
         let pollAttempts = 0;
-
-        function pollForResult() {
-          if (resolved) return;
+        const pollForResult = async () => {
           pollAttempts++;
-          const db2 = window.fbDB || fbDB;
-          if (!db2) {
-            if (pollAttempts < 120) setTimeout(pollForResult, 500);
-            return;
-          }
-          db2.ref('wingo/wingo' + mins + 'min/lastProcessedPeriod').once('value').then(function(snap) {
-            if (resolved) return;
-            const lastProcessed = snap.val();
-            if (lastProcessed && parseInt(lastProcessed) >= roundToResolve) {
-              resolved = true;
-              resolveRoundForTimer(mins, roundStartTime, roundToResolve);
-            } else if (pollAttempts < 120) {
-              setTimeout(pollForResult, 500);
-            } else {
-              resolved = true;
-              resolveRoundForTimer(mins, roundStartTime, roundToResolve);
+          try {
+            const db2 = window.fbDB || fbDB;
+            if (db2) {
+              const hSnap = await db2.ref('wingo/wingo' + mins + 'min/history')
+                .orderByChild('round').equalTo(cgRoundByTimer[mins] - 1)
+                .limitToLast(1).once('value');
+              if (hSnap.val()) {
+                resolveRoundForTimer(mins, roundStartTime);
+                return;
+              }
+              const tSnap = await db2.ref('wingo/wingo' + mins + 'min/lastResultTime').once('value');
+              if ((tSnap.val() || 0) > roundStartTime - 3000) {
+                resolveRoundForTimer(mins, roundStartTime);
+                return;
+              }
             }
-          }).catch(function() {
-            if (pollAttempts < 120) setTimeout(pollForResult, 500);
-          });
-        }
-        setTimeout(pollForResult, 500);
+          } catch(e) {}
+          if (pollAttempts < 30) setTimeout(pollForResult, 300);
+          else resolveRoundForTimer(mins, roundStartTime);
+        };
+        setTimeout(pollForResult, 300);
       }
     }
 
@@ -6199,14 +6192,12 @@
     } catch(e) { /* suppressed */ }
   }
 
-  async function resolveRoundForTimer(timerMode, roundStartTime, roundToResolve) {
+  async function resolveRoundForTimer(timerMode, roundStartTime) {
     roundStartTime = roundStartTime || Date.now();
     const currentRound = cgRoundByTimer[timerMode];
-    // Use passed roundToResolve if available, otherwise fall back to currentRound - 1
-    const resolvedRoundId = roundToResolve || (currentRound - 1);
     const pendingBetsForRound = (window._cgPendingBets || []).filter(b =>
       (b.timer === timerMode || !b.timer) &&
-      (b.round === resolvedRoundId || b.round === resolvedRoundId - 1 || b.round === resolvedRoundId + 1)
+      (b.round === currentRound - 1 || b.round === currentRound)
     );
     const firstBet = pendingBetsForRound[0] || null;
     const savedSelectedColor = firstBet ? firstBet.savedColor : cgSelectedColor;
@@ -6230,36 +6221,44 @@
       }
       const db = window.fbDB || fbDB;
       if (db) {
-        // Check history for the EXACT round — most reliable source
-        if (winNum === undefined) {
-          const histSnap = await db.ref(timerKey + '/history').once('value');
-          if (histSnap.val()) {
-            const histVal = histSnap.val();
-            const entries = Array.isArray(histVal) ? histVal : Object.values(histVal);
-            const match = entries.find(e => e && parseInt(e.round) === resolvedRoundId);
-            if (match && match.num !== undefined) {
-              winNum = parseInt(match.num);
-            }
+        const histSnap = await db.ref(timerKey + '/history')
+          .orderByChild('round').equalTo(currentRound - 1)
+          .limitToLast(3).once('value');
+        if (histSnap.val()) {
+          const entries = Object.values(histSnap.val())
+            .filter(e => e.round === currentRound - 1);
+          if (entries.length > 0 && entries[0].num !== undefined) {
+            winNum = parseInt(entries[0].num);
           }
         }
-        // Fallback: lastResult
         if (winNum === undefined) {
           const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
+          const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
           const lastVal = lastSnap.val();
-          if (lastVal !== null && lastVal !== undefined && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9) {
+          const lastTime = lastTimeSnap.val() || 0;
+          if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9
+              && lastTime > roundStartTime - 5000) {
             winNum = parseInt(lastVal);
           }
         }
-        // Final fallback: random so period never gets stuck
         if (winNum === undefined) {
-          winNum = Math.floor(Math.random() * 10);
+          const snap = await db.ref(timerKey + '/currentResult').once('value');
+          const val = snap.val();
+          if (val !== null && parseInt(val) >= 0 && parseInt(val) <= 9) {
+            winNum = parseInt(val);
+          }
+        }
+        if (winNum === undefined) {
+          // console.warn('Result not in Firebase yet for round', currentRound - 1, '— keeping pending');
+          return;
         }
       } else {
+        // console.warn('No Firebase DB — cannot resolve');
         return;
       }
     } catch(e) {
-      // Don't resolve on error
-      return;
+      // console.warn('Firebase read failed — keeping bet pending:', e);
+      return; // Don't resolve on error
     }
     const winColorRaw = numColors[winNum];
     let winColor;
@@ -6288,8 +6287,15 @@
       : winColor === 'red' ? '#e02020' : '#27ae60';
     const histColorLabel = (winColor === 'violet-red' || winColor === 'violet-green') ? 'violet' : winColor;
     const timerRound = cgRoundByTimer[timerMode] || 20250513001;
+    const resolvedRoundId = currentRound - 1;
     if (!cgHistoryByTimer[timerMode]) cgHistoryByTimer[timerMode] = [];
-    // Server handles history push — client only reads
+    try {
+      const db = window.fbDB || fbDB;
+      if (db) {
+        const histPath = 'wingo/wingo' + timerMode + 'min/history';
+        await db.ref(histPath).push({ round: resolvedRoundId, num: winNum, color: histColorLabel, bigSmall, histBg, timestamp: Date.now() });
+      }
+    } catch(e) { /* suppressed */ }
     if (cgHistory.length > 20) cgHistory.pop();
     if (cgTimer === timerMode) {
       const roundEl = document.getElementById('cgRoundNum');
@@ -6350,7 +6356,7 @@
 
         renderMyBets();
         if (isActiveTimer) {
-          const resolvedRound = pendingBetsForRound[0] ? pendingBetsForRound[0].round : resolvedRoundId;
+          const resolvedRound = pendingBetsForRound[0] ? pendingBetsForRound[0].round : (currentRound - 1);
           showCGResult(anyWon, winNum, winColor, totalWin, pendingBetsForRound.reduce((s,b)=>s+b.bet,0), resolvedRound);
         }
         if (anyWon && totalWin > 0) {
@@ -7638,7 +7644,7 @@
   <div style="max-width:500px;margin:0 auto;padding:1rem;">
 
     
-    <button onclick="showPage('home')" class="back-btn">←</button>
+    <button onclick="history.back() || showPage('home')" class="back-btn">←</button>
 
     
     <div style="background:linear-gradient(135deg,#1a0800,#3d1800);border:1px solid rgba(240,192,64,0.3);border-radius:20px;padding:1.5rem;text-align:center;margin-bottom:1.2rem;position:relative;overflow:hidden;">
@@ -8697,7 +8703,7 @@
 <div class="page" id="page-terms">
   <div style="max-width:700px;margin:0 auto;padding:5rem 1.2rem 3rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
-      <button onclick="showPage('home')" class="back-btn">←</button>
+      <button onclick="history.back()||showPage('home')" class="back-btn">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">📋 Terms & Conditions</div>
     </div>
     <div style="color:var(--muted);font-size:0.75rem;margin-bottom:1.5rem;">Last updated: May 2026</div>
@@ -8755,7 +8761,7 @@
 <div class="page" id="page-responsible">
   <div style="max-width:700px;margin:0 auto;padding:5rem 1.2rem 3rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
-      <button onclick="showPage('home')" class="back-btn">←</button>
+      <button onclick="history.back()||showPage('home')" class="back-btn">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">🛡️ Responsible Gambling</div>
     </div>
 
@@ -8813,7 +8819,7 @@
 <div class="page" id="page-privacy">
   <div style="max-width:700px;margin:0 auto;padding:5rem 1.2rem 3rem;">
     <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.5rem;">
-      <button onclick="showPage('home')" class="back-btn">←</button>
+      <button onclick="history.back()||showPage('home')" class="back-btn">←</button>
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">🔒 Privacy Policy</div>
     </div>
     <div style="color:var(--muted);font-size:0.75rem;margin-bottom:1.5rem;">Last updated: May 2026</div>
@@ -9937,5 +9943,9 @@ window.claimVipMonthly = function() {
   </div>
 </div>
 
+
+</div>
+</body>
+</html>
 </body>
 </html>
