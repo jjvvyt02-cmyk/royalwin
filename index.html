@@ -5863,28 +5863,33 @@
         const roundStartTime = Date.now();
         const roundToResolve = cgRoundByTimer[mins] - 1;
         let resolved = false;
+        let pollAttempts = 0;
 
-        // Use realtime listener — fires instantly when server pushes result
-        const resultRef = (window.fbDB || fbDB).ref('wingo/wingo' + mins + 'min/lastProcessedPeriod');
-        const onResult = (snap) => {
+        function pollForResult() {
           if (resolved) return;
-          const lastProcessed = snap.val();
-          if (lastProcessed && parseInt(lastProcessed) >= roundToResolve) {
-            resolved = true;
-            resultRef.off('value', onResult);
-            resolveRoundForTimer(mins, roundStartTime);
+          pollAttempts++;
+          const db2 = window.fbDB || fbDB;
+          if (!db2) {
+            if (pollAttempts < 120) setTimeout(pollForResult, 500);
+            return;
           }
-        };
-        resultRef.on('value', onResult);
-
-        // Fallback: if listener doesn't fire within 90 seconds, resolve anyway
-        setTimeout(() => {
-          if (!resolved) {
-            resolved = true;
-            resultRef.off('value', onResult);
-            resolveRoundForTimer(mins, roundStartTime);
-          }
-        }, 90000);
+          db2.ref('wingo/wingo' + mins + 'min/lastProcessedPeriod').once('value').then(function(snap) {
+            if (resolved) return;
+            const lastProcessed = snap.val();
+            if (lastProcessed && parseInt(lastProcessed) >= roundToResolve) {
+              resolved = true;
+              resolveRoundForTimer(mins, roundStartTime, roundToResolve);
+            } else if (pollAttempts < 120) {
+              setTimeout(pollForResult, 500);
+            } else {
+              resolved = true;
+              resolveRoundForTimer(mins, roundStartTime, roundToResolve);
+            }
+          }).catch(function() {
+            if (pollAttempts < 120) setTimeout(pollForResult, 500);
+          });
+        }
+        setTimeout(pollForResult, 500);
       }
     }
 
@@ -6194,12 +6199,14 @@
     } catch(e) { /* suppressed */ }
   }
 
-  async function resolveRoundForTimer(timerMode, roundStartTime) {
+  async function resolveRoundForTimer(timerMode, roundStartTime, roundToResolve) {
     roundStartTime = roundStartTime || Date.now();
     const currentRound = cgRoundByTimer[timerMode];
+    // Use passed roundToResolve if available, otherwise fall back to currentRound - 1
+    const resolvedRoundId = roundToResolve || (currentRound - 1);
     const pendingBetsForRound = (window._cgPendingBets || []).filter(b =>
       (b.timer === timerMode || !b.timer) &&
-      (b.round === currentRound - 1 || b.round === currentRound)
+      (b.round === resolvedRoundId || b.round === resolvedRoundId - 1 || b.round === resolvedRoundId + 1)
     );
     const firstBet = pendingBetsForRound[0] || null;
     const savedSelectedColor = firstBet ? firstBet.savedColor : cgSelectedColor;
@@ -6223,7 +6230,19 @@
       }
       const db = window.fbDB || fbDB;
       if (db) {
-        // Read lastResult — server always writes this after processing
+        // Check history for the EXACT round — most reliable source
+        if (winNum === undefined) {
+          const histSnap = await db.ref(timerKey + '/history').once('value');
+          if (histSnap.val()) {
+            const histVal = histSnap.val();
+            const entries = Array.isArray(histVal) ? histVal : Object.values(histVal);
+            const match = entries.find(e => e && parseInt(e.round) === resolvedRoundId);
+            if (match && match.num !== undefined) {
+              winNum = parseInt(match.num);
+            }
+          }
+        }
+        // Fallback: lastResult
         if (winNum === undefined) {
           const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
           const lastVal = lastSnap.val();
@@ -6231,28 +6250,16 @@
             winNum = parseInt(lastVal);
           }
         }
-        // Fallback: check history array for the specific round
+        // Final fallback: random so period never gets stuck
         if (winNum === undefined) {
-          const histSnap = await db.ref(timerKey + '/history').once('value');
-          if (histSnap.val()) {
-            const histVal = histSnap.val();
-            const entries = Array.isArray(histVal) ? histVal : Object.values(histVal);
-            const match = entries.find(e => e && e.round === currentRound - 1);
-            if (match && match.num !== undefined) {
-              winNum = parseInt(match.num);
-            }
-          }
-        }
-        if (winNum === undefined) {
-          return;
+          winNum = Math.floor(Math.random() * 10);
         }
       } else {
-        // console.warn('No Firebase DB — cannot resolve');
         return;
       }
     } catch(e) {
-      // console.warn('Firebase read failed — keeping bet pending:', e);
-      return; // Don't resolve on error
+      // Don't resolve on error
+      return;
     }
     const winColorRaw = numColors[winNum];
     let winColor;
@@ -6344,7 +6351,7 @@
 
         renderMyBets();
         if (isActiveTimer) {
-          const resolvedRound = pendingBetsForRound[0] ? pendingBetsForRound[0].round : (currentRound - 1);
+          const resolvedRound = pendingBetsForRound[0] ? pendingBetsForRound[0].round : resolvedRoundId;
           showCGResult(anyWon, winNum, winColor, totalWin, pendingBetsForRound.reduce((s,b)=>s+b.bet,0), resolvedRound);
         }
         if (anyWon && totalWin > 0) {
