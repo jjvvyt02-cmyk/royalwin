@@ -3849,6 +3849,24 @@
     if (minEl) minEl.textContent = '₹' + min;
     const amtInput = document.getElementById('withdrawAmount');
     if (amtInput) amtInput.placeholder = 'Enter amount (min ₹' + min.toLocaleString('en-IN') + ')';
+    // Show/hide USDT equivalent display
+    _onWithdrawAmtChange();
+  }
+
+  function _onWithdrawAmtChange() {
+    const equiv = document.getElementById('usdtWithdrawEquiv');
+    const amtEl = document.getElementById('withdrawAmount');
+    const usdtAmt = document.getElementById('usdtWithdrawAmt');
+    if (!equiv) return;
+    const isUsdt = currentWithdrawMethod === 'usdt';
+    const amt = parseFloat(amtEl?.value || 0);
+    if (isUsdt && amt > 0) {
+      const usdt = (amt / 100).toFixed(2);
+      if (usdtAmt) usdtAmt.textContent = usdt + ' USDT';
+      equiv.style.display = 'block';
+    } else {
+      equiv.style.display = 'none';
+    }
   }
 
   var _walDepPage = 1, _walDepData = [];
@@ -4031,7 +4049,8 @@
 
   function _updateUsdtEquivalent() {
     const amt = parseFloat(document.getElementById('depositAmount').value) || 0;
-    const usdt = (amt / 100).toFixed(2);
+    // Deposit rate: ₹95 per USDT
+    const usdt = (amt / 95).toFixed(2);
     const el = document.getElementById('usdtAmountDisplay');
     if (el) el.textContent = usdt + ' USDT';
   }
@@ -4101,7 +4120,8 @@
   function updateBonusPreview() {
     const amt = parseFloat(document.getElementById('depositAmount')?.value || 0);
     if (window._currentDepositMethod === 'usdt') {
-      const usdt = amt > 0 ? (amt / 100).toFixed(2) : '0';
+      // Deposit rate: ₹95 per USDT
+      const usdt = amt > 0 ? (amt / 95).toFixed(2) : '0';
       const el = document.getElementById('usdtAmountDisplay');
       if (el) el.textContent = usdt + ' USDT';
     }
@@ -4205,6 +4225,12 @@
       const balSnap = await db.ref('users/' + window.currentUser.uid + '/balance').once('value');
       const bal = parseFloat(balSnap.val() || 0);
       if (amt > bal) { showToast('❌ Insufficient balance! Your balance: ₹' + bal.toLocaleString('en-IN')); return; }
+      // ── 5% WITHDRAWAL FEE (hidden from user) ──
+      // Full amt is deducted from user wallet
+      // Only 95% is actually sent to user — 5% stays as platform revenue
+      const feeRate = 0.05;
+      const fee = parseFloat((amt * feeRate).toFixed(2));
+      const amountToSend = parseFloat((amt - fee).toFixed(2));
       const newBal = parseFloat((bal - amt).toFixed(2));
       await db.ref('users/' + window.currentUser.uid + '/balance').transaction(() => newBal);
       updateBalanceDisplay(newBal);
@@ -4229,7 +4255,8 @@
       else upiId = `USDT TRC20: ${saved.addr}`;
 
       await db.ref('adminRequests/withdrawals').push({
-        amount: amt, status: 'pending', uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
+        amount: amt, amountToSend: amountToSend, status: 'pending',
+        uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
         username: window.userProfile ? window.userProfile.username : 'Unknown',
         contact: window.userProfile ? (window.userProfile.contact || '') : '',
         upiId, method: currentWithdrawMethod.toUpperCase(),
@@ -5684,8 +5711,14 @@
       window._cgTimersStarted = true;
     }
     const overlay = document.getElementById('colorGameOverlay');
-    if (overlay) overlay.scrollTop = 0;
-    switchCGTab('results');
+    // Always open from the very top — never auto-scroll to results
+    if (overlay) {
+      overlay.scrollTop = 0;
+      // Force scroll to top again after content loads
+      setTimeout(() => { overlay.scrollTop = 0; }, 100);
+      setTimeout(() => { overlay.scrollTop = 0; }, 400);
+    }
+    switchCGTab('results'); // isManual not passed = false, no auto-scroll
     cgHistPage = 1;
     cgMyBetsPage = 1;
     loadAllHistory();
@@ -6598,7 +6631,7 @@
   const cgMyBetsByTimer = {1: [], 3: [], 5: []};
   let cgMyBets = cgMyBetsByTimer[cgTimer];
 
-  function switchCGTab(tab) {
+  function switchCGTab(tab, isManual) {
     ['results','mybets'].forEach(t => {
       document.getElementById('cght-' + t).classList.toggle('active', t === tab);
     });
@@ -6607,10 +6640,14 @@
       if (tab === 'results') { cgHistPage = 1; renderHistRows(); }
       if (tab === 'mybets') { cgMyBetsPage = 1; renderMyBets(); }
       cgHideSpinner(tab);
-      const overlay = document.getElementById('colorGameOverlay');
-      const histEl = document.querySelector('.cg-history');
-      if (overlay && histEl) {
-        setTimeout(() => overlay.scrollTop = histEl.offsetTop - 10, 50);
+      // Only auto-scroll to history when user manually switches tabs
+      // Never scroll when opening the game for the first time
+      if (isManual) {
+        const overlay = document.getElementById('colorGameOverlay');
+        const histEl = document.querySelector('.cg-history');
+        if (overlay && histEl) {
+          setTimeout(() => overlay.scrollTop = histEl.offsetTop - 10, 50);
+        }
       }
     }, 350);
   }
@@ -7600,7 +7637,11 @@
       
       <div class="form-group" style="max-width:420px;">
         <label class="form-label">Withdraw Amount (₹)</label>
-        <input class="form-input" type="number" id="withdrawAmount" placeholder="Enter amount (min ₹300)">
+        <input class="form-input" type="number" id="withdrawAmount" placeholder="Enter amount (min ₹300)" oninput="_onWithdrawAmtChange()">
+        <div id="usdtWithdrawEquiv" style="display:none;margin-top:0.5rem;background:rgba(38,161,123,0.08);border:1px solid rgba(38,161,123,0.2);border-radius:8px;padding:0.6rem 0.9rem;font-size:0.82rem;color:var(--muted);">
+          💱 You will receive approximately <strong style="color:#1d9e75;" id="usdtWithdrawAmt">0.00 USDT</strong>
+          <span style="font-size:0.72rem;display:block;margin-top:0.2rem;opacity:0.7;">Rate: ₹100 = 1 USDT (TRC20)</span>
+        </div>
       </div>
 
       
@@ -8558,8 +8599,8 @@
     
     <div class="cg-history">
       <div style="display:flex;border-bottom:1px solid var(--border);">
-        <button class="wallet-tab active" id="cght-results" onclick="switchCGTab('results')" style="font-size:0.96rem;padding:0.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:0.35rem;flex:1;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Results</button>
-        <button class="wallet-tab" id="cght-mybets" onclick="switchCGTab('mybets')" style="font-size:0.96rem;padding:0.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:0.35rem;flex:1;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg> My Bets</button>
+        <button class="wallet-tab active" id="cght-results" onclick="switchCGTab('results', true)" style="font-size:0.96rem;padding:0.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:0.35rem;flex:1;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> Results</button>
+        <button class="wallet-tab" id="cght-mybets" onclick="switchCGTab('mybets', true)" style="font-size:0.96rem;padding:0.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;gap:0.35rem;flex:1;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg> My Bets</button>
       </div>
       <div id="cgTabSpinner"><div class="rw-spinner"></div></div>
       </div>
@@ -9003,7 +9044,8 @@ function openUSDTModal() {
   modal.style.display = 'flex';
   document.getElementById('usdtConfirmed').style.display = 'none';
   var amt = parseFloat(document.getElementById('depositAmount').value) || 1000;
-  var usdt = (amt / 100).toFixed(2);
+  // Deposit rate: ₹95 per USDT
+  var usdt = (amt / 95).toFixed(2);
   var amtEl = document.getElementById('usdtModalAmount');
   if (amtEl) amtEl.textContent = 'Send exactly ' + usdt + ' USDT for ₹' + amt.toLocaleString('en-IN') + ' deposit';
   var addrEl = document.getElementById('usdtAddressDisplay');
