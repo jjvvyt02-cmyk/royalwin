@@ -19,8 +19,9 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="RoyalWin">
 <title>RoyalWin — Premium Gaming Platform</title>
-<link rel="icon" href="favicon.svg" type="image/svg+xml">
-<link rel="shortcut icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" type="image/x-icon" href="favicon.ico">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="shortcut icon" href="favicon.ico">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -2738,8 +2739,8 @@
   }
   document.addEventListener('DOMContentLoaded', () => {
     if (window._currentLang === 'hi') applyTranslations('hi');
-    const dh = document.getElementById('desktopHome');
-    if (dh) dh.style.display = 'block';
+    // Don't show desktopHome by default — let onAuthStateChanged decide
+    // This prevents the guest hero flashing on page load for logged-in users
   });
   window.addEventListener('popstate', (event) => {
 
@@ -7493,13 +7494,12 @@
           if (heroBanner) heroBanner.style.display = 'block';
           const mobileNavEl = document.getElementById('mobileNav');
           if (mobileNavEl) mobileNavEl.style.display = 'grid';
-          if (window.innerWidth <= 768) {
-            const mah = document.getElementById('mobileAppHome');
-            const dh = document.getElementById('desktopHome');
-            if (mah) mah.style.display = 'block';
-            if (dh) dh.style.display = 'none';
-            updateMobileHomeBalance();
-          }
+          // Always show mobile app home — works on both mobile and desktop
+          const mah = document.getElementById('mobileAppHome');
+          const dh = document.getElementById('desktopHome');
+          if (mah) mah.style.display = 'block';
+          if (dh) dh.style.display = 'none';
+          updateMobileHomeBalance();
           try {
             const db = window.fbDB || fbDB;
             if (db) {
