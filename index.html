@@ -3749,40 +3749,25 @@
     try {
       db.ref('users/' + user.uid + '/wager').off();
       db.ref('users/' + user.uid + '/wager').on('value', async (snap) => {
-      const wager = snap.val();
-      const progressSection = document.getElementById('wagerProgressSection');
-      const doneSection = document.getElementById('wagerDoneSection');
-      const totalWageredInfo = document.getElementById('totalWageredInfo');
-      const totalWageredAmt = document.getElementById('totalWageredAmt');
-
-      if (!wager || !wager.required || wager.required <= 0) {
-        if (progressSection) progressSection.style.display = 'none';
-        if (doneSection) doneSection.style.display = 'none';
-        if (totalWageredInfo) totalWageredInfo.style.display = 'block';
-        if (totalWageredAmt) totalWageredAmt.textContent = '₹0 — No wager requirement';
-        return;
-      }
-      const completed = parseFloat(wager.completed || 0);
-      const required = parseFloat(wager.required);
-      const pct = Math.min(100, Math.round(completed / required * 100));
-      const remaining = Math.max(0, parseFloat((required - completed).toFixed(2)));
-      if (totalWageredInfo) totalWageredInfo.style.display = 'block';
-      if (totalWageredAmt) totalWageredAmt.textContent = '₹' + completed.toLocaleString('en-IN');
-      const totalWagerRequired = document.getElementById('totalWagerRequired');
-      if (totalWagerRequired) totalWagerRequired.textContent = '₹' + required.toLocaleString('en-IN');
-
-      if (completed >= required) {
-        if (progressSection) progressSection.style.display = 'none';
-        if (doneSection) doneSection.style.display = 'block';
-      } else {
-        if (doneSection) doneSection.style.display = 'none';
-        if (progressSection) progressSection.style.display = 'block';
-        document.getElementById('wagerProgressBar').style.width = pct + '%';
-        document.getElementById('wagerPctText').textContent = pct + '% completed';
-        document.getElementById('wagerCompleted').textContent = '₹' + completed.toLocaleString('en-IN');
-        document.getElementById('wagerRequired').textContent = '₹' + required.toLocaleString('en-IN');
-        document.getElementById('wagerRemaining').textContent = '₹' + remaining.toLocaleString('en-IN');
-      }
+        const wager = snap.val();
+        const bar = document.getElementById('wagerProgressBar');
+        const pctText = document.getElementById('wagerPctText');
+        const statusMsg = document.getElementById('wagerStatusMsg');
+        const required = wager ? parseFloat(wager.required || 0) : 0;
+        const completed = wager ? parseFloat(wager.completed || 0) : 0;
+        if (required <= 0 || completed >= required) {
+          // No active wager or wager complete — show 100% clean state
+          if (bar) { bar.style.width = '100%'; bar.style.background = 'linear-gradient(90deg,#27ae60,#1d9e75)'; }
+          if (pctText) { pctText.textContent = '100%'; pctText.style.color = 'var(--green)'; }
+          if (statusMsg) { statusMsg.textContent = 'Bet ₹0 more to unlock withdrawal ✅'; statusMsg.style.color = 'var(--green)'; }
+        } else {
+          // Active wager pending
+          const remaining = parseFloat((required - completed).toFixed(2));
+          const pct = Math.min(99, Math.round(completed / required * 100));
+          if (bar) { bar.style.width = pct + '%'; bar.style.background = 'linear-gradient(90deg,#c07a10,var(--gold))'; }
+          if (pctText) { pctText.textContent = pct + '%'; pctText.style.color = 'var(--gold)'; }
+          if (statusMsg) { statusMsg.textContent = 'Bet ₹' + remaining.toLocaleString('en-IN') + ' more to unlock withdrawal'; statusMsg.style.color = 'var(--muted)'; }
+        }
       }); // end of .on listener
     } catch(e) { /* suppressed */ }
   }
@@ -6227,8 +6212,17 @@
         const wagerSnap2 = await db.ref('users/' + user.uid + '/wager').once('value');
         const wager2 = wagerSnap2.val();
         if (wager2 && wager2.required > 0 && wager2.completed < wager2.required) {
-          const newCompleted = parseFloat((wager2.completed + amt).toFixed(2));
-          await db.ref('users/' + user.uid + '/wager/completed').set(newCompleted);
+          // Only count bets placed AFTER the wager startedAt timestamp
+          const betTime = Date.now();
+          const startedAt = wager2.startedAt || 0;
+          if (betTime >= startedAt) {
+            const newCompleted = parseFloat((parseFloat(wager2.completed || 0) + amt).toFixed(2));
+            await db.ref('users/' + user.uid + '/wager/completed').set(newCompleted);
+            // If wager now complete, reset everything cleanly
+            if (newCompleted >= wager2.required) {
+              await db.ref('users/' + user.uid + '/wager').set({ required: 0, completed: 0, startedAt: 0 });
+            }
+          }
         }
         const totalBetSnap = await db.ref('users/' + user.uid + '/totalBet').once('value');
         const newTotalBet = parseFloat(((totalBetSnap.val() || 0) + amt).toFixed(2));
@@ -7076,8 +7070,13 @@
             await db.ref('users/' + uid + '/balance').transaction(bal => (bal || 0) + WELCOME_AMOUNT);
             // Add wager requirement
             await db.ref('users/' + uid + '/wager').transaction(w => {
-              const existing = w || { required: 0, completed: 0 };
-              return { ...existing, required: (existing.required || 0) + WELCOME_WAGER };
+              const existing = w || { required: 0, completed: 0, startedAt: 0 };
+              const isNew = !existing.startedAt || existing.startedAt === 0;
+              return {
+                required: parseFloat((parseFloat(existing.required || 0) + WELCOME_WAGER).toFixed(2)),
+                completed: parseFloat(existing.completed || 0),
+                startedAt: isNew ? Date.now() : existing.startedAt
+              };
             });
             // Mark as given
             await db.ref('users/' + uid + '/welcomeBonusGiven').set(true);
@@ -7568,46 +7567,15 @@
       <div class="section-sub">Withdrawals processed within 24 hours</div>
 
       
-      <div id="wagerProgressSection" style="display:none;background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.2);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1rem;">
+      <div id="wagerSection" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1rem;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
-          <div style="font-size:0.85rem;font-weight:700;color:var(--red2);">⚠️ Wager Requirement Pending</div>
-          <div style="font-size:0.78rem;color:var(--gold);font-weight:700;" id="wagerPctText">0%</div>
+          <div style="font-size:0.85rem;font-weight:700;color:var(--gold);">🎯 Wager Progress</div>
+          <div style="font-size:0.78rem;color:var(--gold);font-weight:700;" id="wagerPctText">100%</div>
         </div>
         <div style="height:10px;background:rgba(255,255,255,0.08);border-radius:5px;overflow:hidden;margin-bottom:0.7rem;">
-          <div id="wagerProgressBar" style="height:100%;background:linear-gradient(90deg,var(--red2),var(--gold));border-radius:5px;transition:width 0.5s;width:0%;"></div>
+          <div id="wagerProgressBar" style="height:100%;background:linear-gradient(90deg,#c07a10,var(--gold));border-radius:5px;transition:width 0.5s;width:100%;box-shadow:0 0 6px rgba(240,192,64,0.4);"></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;text-align:center;margin-bottom:0.6rem;">
-          <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:0.5rem;">
-            <div style="font-size:0.65rem;color:var(--muted);">Wagered</div>
-            <div style="font-size:0.88rem;font-weight:700;color:#fff;" id="wagerCompleted">₹0</div>
-          </div>
-          <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:0.5rem;">
-            <div style="font-size:0.65rem;color:var(--muted);">Required</div>
-            <div style="font-size:0.88rem;font-weight:700;color:#fff;" id="wagerRequired">₹0</div>
-          </div>
-          <div style="background:rgba(255,255,255,0.04);border-radius:8px;padding:0.5rem;">
-            <div style="font-size:0.65rem;color:var(--muted);">Remaining</div>
-            <div style="font-size:0.88rem;font-weight:700;color:var(--red2);" id="wagerRemaining">₹0</div>
-          </div>
-        </div>
-        <div style="font-size:0.78rem;color:var(--muted);text-align:center;">Complete wager requirement to unlock withdrawal</div>
-      </div>
-
-      
-      <div id="wagerDoneSection" style="display:none;background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:12px;padding:0.8rem 1rem;margin-bottom:1rem;">
-        <div style="font-size:0.85rem;color:var(--green);font-weight:700;">✅ Wager completed! Withdrawal is unlocked.</div>
-      </div>
-
-      
-      <div id="totalWageredInfo" style="display:none;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.8rem 1rem;margin-bottom:1rem;">
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <span style="font-size:0.82rem;color:var(--muted);">Total Wagered</span>
-          <span style="font-weight:700;color:var(--gold);" id="totalWageredAmt">₹0</span>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:0.3rem;">
-          <span style="font-size:0.78rem;color:var(--muted);">Wager Required</span>
-          <span style="font-size:0.82rem;font-weight:700;color:var(--text);" id="totalWagerRequired">₹0</span>
-        </div>
+        <div id="wagerStatusMsg" style="font-size:0.82rem;color:var(--green);font-weight:700;text-align:center;">Bet ₹0 more to unlock withdrawal ✅</div>
       </div>
 
       
@@ -9711,9 +9679,11 @@ window.claimAttendance = function() {
       updates['users/'+user.uid+'/attendance/totalEarned'] = newTotal;
       updates['users/'+user.uid+'/balance'] = newBal;
       db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
-        var w = wSnap.val() || {required:0,completed:0};
+        var w = wSnap.val() || {required:0,completed:0,startedAt:0};
+        var isNew = !w.startedAt || w.startedAt === 0;
         updates['users/'+user.uid+'/wager/required'] = parseFloat((parseFloat(w.required||0) + reward).toFixed(2));
         updates['users/'+user.uid+'/wager/completed'] = parseFloat(w.completed||0);
+        updates['users/'+user.uid+'/wager/startedAt'] = isNew ? Date.now() : w.startedAt;
         db.ref().update(updates).then(function() {
           db.ref('users/'+user.uid+'/transactions').push({type:'attendance',amount:reward,details:'Day '+newStreak+' attendance bonus (1x wager)',balance:newBal,timestamp:Date.now()});
           if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
@@ -9733,9 +9703,11 @@ window.claimInviteTier = function(tierNum, reward) {
       var newBal = parseFloat(((balSnap.val()||0)+reward).toFixed(2));
       var updates = {}; updates['users/'+user.uid+'/claimedInviteTiers/tier'+tierNum]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
       db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
-        var w = wSnap.val()||{required:0,completed:0};
+        var w = wSnap.val()||{required:0,completed:0,startedAt:0};
+        var isNew = !w.startedAt || w.startedAt === 0;
         updates['users/'+user.uid+'/wager/required'] = parseFloat((parseFloat(w.required||0)+reward).toFixed(2));
         updates['users/'+user.uid+'/wager/completed'] = parseFloat(w.completed||0);
+        updates['users/'+user.uid+'/wager/startedAt'] = isNew ? Date.now() : w.startedAt;
         db.ref().update(updates).then(function() {
           db.ref('users/'+user.uid+'/transactions').push({type:'invitation_bonus',amount:reward,details:'Invitation Bonus Tier '+tierNum+' (1x wager)',balance:newBal,timestamp:Date.now()});
           if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
@@ -9756,9 +9728,11 @@ window.claimActivityTask = function(taskId, reward) {
       var newBal = parseFloat(((balSnap.val()||0)+reward).toFixed(2));
       var updates = {}; updates['users/'+user.uid+'/claimedActivityTasks/'+todayKey+'/task'+taskId]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
       db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
-        var w = wSnap.val()||{required:0,completed:0};
+        var w = wSnap.val()||{required:0,completed:0,startedAt:0};
+        var isNew = !w.startedAt || w.startedAt === 0;
         updates['users/'+user.uid+'/wager/required'] = parseFloat((parseFloat(w.required||0)+reward).toFixed(2));
         updates['users/'+user.uid+'/wager/completed'] = parseFloat(w.completed||0);
+        updates['users/'+user.uid+'/wager/startedAt'] = isNew ? Date.now() : w.startedAt;
         db.ref().update(updates).then(function() {
           db.ref('users/'+user.uid+'/transactions').push({type:'activity_award',amount:reward,details:'Activity Award Task '+taskId+' (1x wager)',balance:newBal,timestamp:Date.now()});
           if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
