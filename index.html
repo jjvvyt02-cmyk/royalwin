@@ -1027,6 +1027,28 @@
     nav { display: none !important; }
   }
 
+  /* ── DESKTOP: Center mobile app with dark background on sides ── */
+  @media (min-width: 769px) {
+    html {
+      background: #030305 !important;
+    }
+    body {
+      max-width: 430px !important;
+      margin: 0 auto !important;
+      position: relative !important;
+      box-shadow: 0 0 60px rgba(0,0,0,0.8) !important;
+      min-height: 100vh !important;
+      overflow-x: hidden !important;
+    }
+    nav { display: none !important; }
+    .bg-stars { max-width: 430px; left: 50%; transform: translateX(-50%); }
+    .colorGameOverlay { max-width: 430px !important; left: 50% !important; transform: translateX(-50%) !important; }
+    .toast { max-width: 380px !important; left: 50% !important; transform: translateX(-50%) !important; }
+    #appLoader { max-width: 430px !important; left: 50% !important; transform: translateX(-50%) !important; }
+    #rwProgressBar { max-width: 430px !important; left: 50% !important; transform: translateX(-50%) !important; }
+    #announcementBanner { max-width: 430px !important; left: 50% !important; transform: translateX(-50%) !important; }
+  }
+
   @media (max-width: 768px) {
 
     /* ── BASE ── */
