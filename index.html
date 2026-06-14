@@ -1027,23 +1027,46 @@
     nav { display: none !important; }
   }
 
-  /* ── DESKTOP: Center mobile app with dark background on sides ── */
+  /* ── DESKTOP: Identical mobile experience centered in 430px column ── */
   @media (min-width: 769px) {
     html {
       background: #030305 !important;
+      height: 100% !important;
     }
     body {
       max-width: 430px !important;
       margin: 0 auto !important;
       position: relative !important;
-      box-shadow: 0 0 60px rgba(0,0,0,0.8) !important;
+      box-shadow: 0 0 80px rgba(0,0,0,0.9), 0 0 0 1px rgba(240,192,64,0.05) !important;
       min-height: 100vh !important;
-      overflow-x: hidden !important;
+      overflow: hidden !important;
+      background: #0a0a0f !important;
+      font-size: 14px !important;
     }
+    /* Hide desktop nav — mobile nav is used instead */
     nav { display: none !important; }
-    /* Hide mobile nav on desktop completely */
-    .mobile-nav { display: none !important; }
-    /* Constrain fixed elements to app width */
+    /* All pages same as mobile */
+    .page {
+      min-height: unset !important;
+      height: calc(100vh - 60px) !important;
+      overflow-y: auto !important;
+      overflow-x: hidden !important;
+      padding: 0.85rem 0.75rem 0 !important;
+      margin: 0 !important;
+      box-sizing: border-box !important;
+    }
+    #page-home { padding: 0 !important; }
+    #mobileAppHome { padding: 0.85rem 0.75rem 0 !important; box-sizing: border-box !important; }
+    #page-login, #page-register, #page-forgot { padding: 0 !important; }
+    /* Mobile nav — constrained to app width */
+    .mobile-nav {
+      max-width: 430px !important;
+      width: 430px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      right: auto !important;
+    }
+    /* Fixed overlays — constrained to app width */
     .bg-stars { max-width: 430px; left: 50%; transform: translateX(-50%); }
     .colorGameOverlay {
       max-width: 430px !important;
@@ -1051,6 +1074,7 @@
       left: 50% !important;
       transform: translateX(-50%) !important;
       right: auto !important;
+      bottom: 60px !important;
     }
     .toast {
       max-width: 390px !important;
@@ -1077,9 +1101,32 @@
       transform: translateX(-50%) !important;
       right: auto !important;
       position: fixed !important;
+      top: 0 !important;
     }
-    /* Add padding at bottom since mobile nav is hidden */
-    .page.active { padding-bottom: 20px !important; }
+    /* Account settings page */
+    #page-accountsettings.active {
+      display: block !important;
+      position: fixed !important;
+      top: 0 !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      width: 430px !important;
+      right: auto !important;
+      bottom: 60px !important;
+      height: auto !important;
+      overflow-y: auto !important;
+      background: var(--bg) !important;
+      z-index: 2 !important;
+    }
+    /* Inner page wrappers */
+    .wallet-page, .profile-page, .vip-page, .promo-page,
+    .ref-page, .support-page, .history-page {
+      padding-left: 0 !important;
+      padding-right: 0 !important;
+      box-sizing: border-box !important;
+      max-width: 100% !important;
+    }
+    input, select, textarea { font-size: 16px !important; }
   }
 
   @media (max-width: 768px) {
