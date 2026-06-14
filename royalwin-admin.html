@@ -909,17 +909,7 @@ onValue(ref(db, '.info/connected'), (snap) => {
 
 // ── AUTH ──
 onAuthStateChanged(auth, (user) => {
-  const ALLOWED_ADMINS = ['admin@royalwin.com']; // Add your admin email here
   if (user) {
-    if (!ALLOWED_ADMINS.includes(user.email)) {
-      // Not an admin - sign them out immediately
-      signOut(auth);
-      document.getElementById('loginWrap').style.display = 'flex';
-      document.getElementById('adminWrap').style.display = 'none';
-      const errEl = document.getElementById('loginError');
-      if (errEl) { errEl.style.display = 'block'; errEl.textContent = '❌ Access denied. Not an admin account.'; }
-      return;
-    }
     document.getElementById('loginWrap').style.display = 'none';
     document.getElementById('adminWrap').style.display = 'block';
     document.getElementById('fbAuthStatus').textContent = user.email;
@@ -1145,12 +1135,7 @@ function updateNextResultBadges() {
     });
     // Listen for last results per mode
     onValue(ref(db, 'wingo/wingo' + mins + 'min/history'), (snap) => {
-      const raw = snap.val() ? Object.values(snap.val()).filter(h => h && h.round) : [];
-      // Deduplicate by round — keep only the latest entry per round
-      const seen = new Set();
-      const history = raw
-        .sort((a, b) => (b.round || 0) - (a.round || 0))
-        .filter(h => { if (seen.has(h.round)) return false; seen.add(h.round); return true; });
+      const history = snap.val() ? Object.values(snap.val()) : [];
       renderLastResults(mins, history);
     });
     // Listen for bet summary per mode
@@ -2182,19 +2167,22 @@ window.approveDeposit = async function(key, uid, amount) {
     let finalBal = newBal;
     if (reqData && reqData.bonusAmt && reqData.bonusAmt > 0) {
       const bonusAmt = parseFloat(reqData.bonusAmt);
-      const wagerReq = reqData.wagerReq || 1;
+      const wagerReq = parseFloat(reqData.wagerReq || 1);
       finalBal = parseFloat((newBal + bonusAmt).toFixed(2));
       await update(ref(db, 'users/' + uid), { balance: finalBal });
-      // Save wager requirement
+      // Deposit bonuses: wager is calculated on DEPOSIT AMOUNT, not bonus amount
+      // e.g. 100% bonus on ₹1,000 deposit = ₹1,000 × 10x = ₹10,000 wager required
+      // e.g. 15% bonus on ₹1,000 deposit = ₹1,000 × 2.5x = ₹2,500 wager required
+      // e.g. 8% bonus on ₹1,000 deposit = ₹1,000 × 1x = ₹1,000 wager required
+      // startedAt set only once when first active wager starts — never reset on stack
       const wagerRequired = parseFloat((amount * wagerReq).toFixed(2));
       const existingWagerSnap = await get(ref(db, 'users/' + uid + '/wager'));
-      const existingWager = existingWagerSnap.val();
-      const existingCompleted = existingWager ? parseFloat(existingWager.completed || 0) : 0;
+      const existingWager = existingWagerSnap.val() || { required: 0, completed: 0, startedAt: 0 };
+      const isNew = !existingWager.startedAt || existingWager.startedAt === 0;
       await set(ref(db, 'users/' + uid + '/wager'), {
-        required: (existingWager ? parseFloat(existingWager.required || 0) : 0) + wagerRequired,
-        completed: existingCompleted,
-        bonusAmt, bonusPct: reqData.bonusPct || 0,
-        updatedAt: Date.now()
+        required: parseFloat((parseFloat(existingWager.required || 0) + wagerRequired).toFixed(2)),
+        completed: parseFloat(existingWager.completed || 0),
+        startedAt: isNew ? Date.now() : existingWager.startedAt
       });
       showToast('✅ ₹' + amount.toLocaleString('en-IN') + ' approved + ₹' + bonusAmt + ' (' + reqData.bonusPct + '%) bonus credited!');
     } else {
@@ -2256,56 +2244,14 @@ window.approveDeposit = async function(key, uid, amount) {
           memberId: userData.memberId || '—',
           joinedAt: userData.createdAt || Date.now(),
           firstDepositAmt: amount,
-          hasDeposited: amount >= 500,
+          hasDeposited: amount >= 500, // Mark as qualified if deposit >= ₹500
           totalDeposited: amount,
           creditedAt: Date.now()
         });
-
-        // ── ₹50 + 5% REFERRAL FIRST DEPOSIT BONUS ──
-        if (amount >= 500) {
-          const referralFixedBonus = 50;
-          const referralPctBonus = parseFloat((amount * 0.05).toFixed(2));
-          const totalReferralBonus = parseFloat((referralFixedBonus + referralPctBonus).toFixed(2));
-
-          // Check if this is truly first deposit (not already credited)
-          const alreadyCreditedSnap = await get(ref(db, 'users/' + referrerUid + '/referralBonusCredited/' + uid));
-          if (!alreadyCreditedSnap.val()) {
-            // Credit referrer balance
-            const referrerBalSnap = await get(ref(db, 'users/' + referrerUid + '/balance'));
-            const referrerNewBal = parseFloat(((referrerBalSnap.val() || 0) + totalReferralBonus).toFixed(2));
-            await update(ref(db, 'users/' + referrerUid), { balance: referrerNewBal });
-
-            // Mark as credited to prevent duplicate
-            await set(ref(db, 'users/' + referrerUid + '/referralBonusCredited/' + uid), Date.now());
-
-            // Transaction record for referrer
-            await set(ref(db, 'users/' + referrerUid + '/transactions/' + (Date.now() + 10)), {
-              type: 'referral_deposit_bonus',
-              amount: totalReferralBonus,
-              details: '🎉 Referral bonus: ₹50 + 5% of ₹' + amount.toLocaleString('en-IN') + ' deposit by ' + (userData.username || 'friend'),
-              balance: referrerNewBal,
-              timestamp: Date.now()
-            });
-
-            // Notification for referrer
-            await set(ref(db, 'users/' + referrerUid + '/notifications/' + (Date.now() + 11)), {
-              icon: '🎉',
-              title: 'Referral Bonus Credited!',
-              body: '₹' + totalReferralBonus.toLocaleString('en-IN') + ' credited! Your referral ' + (userData.username || 'friend') + ' made their first deposit of ₹' + amount.toLocaleString('en-IN') + '.',
-              read: false,
-              timestamp: Date.now()
-            });
-
-            showToast('✅ Deposit approved + ₹' + totalReferralBonus + ' referral bonus credited to referrer!');
-          } else {
-            showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
-          }
-        } else {
-          showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
-        }
-      } else {
-        showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
       }
+      showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
+    } else {
+      showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
     }
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
