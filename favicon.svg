@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <!-- Dark background -->
+  <rect width="64" height="64" rx="12" fill="#0a0a0f"/>
+  <!-- Gold crown -->
+  <polygon points="8,44 14,24 24,36 32,18 40,36 50,24 56,44" fill="#f0c040" stroke="#c07a10" stroke-width="1.5" stroke-linejoin="round"/>
+  <!-- Crown base bar -->
+  <rect x="8" y="44" width="48" height="7" rx="3" fill="#f0c040"/>
+  <!-- Three gems on crown -->
+  <circle cx="32" cy="22" r="3" fill="#e02020"/>
+  <circle cx="18" cy="32" r="2.5" fill="#e02020"/>
+  <circle cx="46" cy="32" r="2.5" fill="#e02020"/>
+</svg>
