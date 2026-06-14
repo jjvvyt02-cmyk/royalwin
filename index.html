@@ -3861,7 +3861,9 @@
     const isUsdt = currentWithdrawMethod === 'usdt';
     const amt = parseFloat(amtEl?.value || 0);
     if (isUsdt && amt > 0) {
-      const usdt = (amt / 100).toFixed(2);
+      // Deduct 5% fee first, then convert at ₹100 per USDT (withdrawal rate)
+      const afterFee = parseFloat((amt * 0.95).toFixed(2));
+      const usdt = (afterFee / 100).toFixed(2);
       if (usdtAmt) usdtAmt.textContent = usdt + ' USDT';
       equiv.style.display = 'block';
     } else {
@@ -7583,7 +7585,6 @@
           <span style="font-size:0.82rem;color:var(--muted);">You need to send:</span>
           <span style="font-size:1rem;font-weight:800;color:#26a17b;" id="usdtAmountDisplay">0 USDT</span>
         </div>
-        <div style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;">Rate: ₹100 = 1 USDT (TRC20)</div>
       </div>
       <div style="display:flex;gap:1rem;flex-wrap:wrap;">
         <button id="depositActionBtn" class="btn btn-gold" style="padding:0.8rem 2rem;" onclick="openGatewayDeposit()">📱 Pay Now via UPI</button>
@@ -7639,8 +7640,7 @@
         <label class="form-label">Withdraw Amount (₹)</label>
         <input class="form-input" type="number" id="withdrawAmount" placeholder="Enter amount (min ₹300)" oninput="_onWithdrawAmtChange()">
         <div id="usdtWithdrawEquiv" style="display:none;margin-top:0.5rem;background:rgba(38,161,123,0.08);border:1px solid rgba(38,161,123,0.2);border-radius:8px;padding:0.6rem 0.9rem;font-size:0.82rem;color:var(--muted);">
-          💱 You will receive approximately <strong style="color:#1d9e75;" id="usdtWithdrawAmt">0.00 USDT</strong>
-          <span style="font-size:0.72rem;display:block;margin-top:0.2rem;opacity:0.7;">Rate: ₹100 = 1 USDT (TRC20)</span>
+          💱 You will receive <strong style="color:#1d9e75;" id="usdtWithdrawAmt">0.00 USDT</strong>
         </div>
       </div>
 
@@ -9003,7 +9003,6 @@
       <div style="font-size:0.72rem;color:var(--muted);line-height:1.7;">
         • Only send <strong style="color:#26a17b;">USDT TRC20</strong> to this address<br>
         • Minimum: ₹1,000 equivalent in USDT<br>
-        • Rate: <strong style="color:#26a17b;">₹100 = 1 USDT</strong><br>
         • After sending, click "I've Sent" below<br>
         • Balance credited after blockchain verification
       </div>
