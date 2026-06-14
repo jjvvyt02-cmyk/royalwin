@@ -1041,12 +1041,45 @@
       overflow-x: hidden !important;
     }
     nav { display: none !important; }
+    /* Hide mobile nav on desktop completely */
+    .mobile-nav { display: none !important; }
+    /* Constrain fixed elements to app width */
     .bg-stars { max-width: 430px; left: 50%; transform: translateX(-50%); }
-    .colorGameOverlay { max-width: 430px !important; left: 50% !important; transform: translateX(-50%) !important; }
-    .toast { max-width: 380px !important; left: 50% !important; transform: translateX(-50%) !important; }
-    #appLoader { max-width: 430px !important; left: 50% !important; transform: translateX(-50%) !important; }
-    #rwProgressBar { max-width: 430px !important; left: 50% !important; transform: translateX(-50%) !important; }
-    #announcementBanner { max-width: 430px !important; left: 50% !important; transform: translateX(-50%) !important; }
+    .colorGameOverlay {
+      max-width: 430px !important;
+      width: 430px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      right: auto !important;
+    }
+    .toast {
+      max-width: 390px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      right: auto !important;
+    }
+    #appLoader {
+      max-width: 430px !important;
+      width: 430px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      right: auto !important;
+    }
+    #rwProgressBar {
+      max-width: 430px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      right: auto !important;
+    }
+    #announcementBanner {
+      max-width: 430px !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      right: auto !important;
+      position: fixed !important;
+    }
+    /* Add padding at bottom since mobile nav is hidden */
+    .page.active { padding-bottom: 20px !important; }
   }
 
   @media (max-width: 768px) {
@@ -2968,6 +3001,15 @@
           type: 'vip_weekly', amount: amt, details: level.name + ' VIP Weekly Bonus',
           balance: newBal, timestamp: Date.now()
         });
+        // Add wager requirement — 1x of bonus amount
+        const wagerSnap = await db.ref('users/' + user.uid + '/wager').once('value');
+        const w = wagerSnap.val() || { required: 0, completed: 0, startedAt: 0 };
+        const isNew = !w.startedAt || w.startedAt === 0;
+        await db.ref('users/' + user.uid + '/wager').set({
+          required: parseFloat((parseFloat(w.required || 0) + amt).toFixed(2)),
+          completed: parseFloat(w.completed || 0),
+          startedAt: isNew ? Date.now() : w.startedAt
+        });
         updateBalanceDisplay(newBal);
         const btn = document.getElementById('vipWeeklyBtn');
         btn.textContent = '✅ Claimed'; btn.disabled = true; btn.style.background = 'var(--bg3)'; btn.style.color = 'var(--muted)';
@@ -2983,6 +3025,15 @@
         await db.ref('users/' + user.uid + '/transactions/' + Date.now()).set({
           type: 'vip_monthly', amount: amt, details: level.name + ' VIP Monthly Bonus',
           balance: newBal, timestamp: Date.now()
+        });
+        // Add wager requirement — 1x of bonus amount
+        const wagerSnap2 = await db.ref('users/' + user.uid + '/wager').once('value');
+        const w2 = wagerSnap2.val() || { required: 0, completed: 0, startedAt: 0 };
+        const isNew2 = !w2.startedAt || w2.startedAt === 0;
+        await db.ref('users/' + user.uid + '/wager').set({
+          required: parseFloat((parseFloat(w2.required || 0) + amt).toFixed(2)),
+          completed: parseFloat(w2.completed || 0),
+          startedAt: isNew2 ? Date.now() : w2.startedAt
         });
         updateBalanceDisplay(newBal);
         const btn = document.getElementById('vipMonthlyBtn');
@@ -3016,6 +3067,15 @@
             type: 'vip_levelup', amount: newLevel.levelupBonus,
             details: '🎉 Level up! ' + oldLevel.name + ' → ' + newLevel.name,
             balance: newBal, timestamp: Date.now()
+          });
+          // Add wager requirement — 1x of level up bonus amount
+          const wagerSnap = await db.ref('users/' + user.uid + '/wager').once('value');
+          const wv = wagerSnap.val() || { required: 0, completed: 0, startedAt: 0 };
+          const isNewW = !wv.startedAt || wv.startedAt === 0;
+          await db.ref('users/' + user.uid + '/wager').set({
+            required: parseFloat((parseFloat(wv.required || 0) + newLevel.levelupBonus).toFixed(2)),
+            completed: parseFloat(wv.completed || 0),
+            startedAt: isNewW ? Date.now() : wv.startedAt
           });
           await pushNotification(user.uid, newLevel.icon, 'VIP Level Up! ' + newLevel.name, '₹' + newLevel.levelupBonus + ' bonus credited to your wallet!');
           updateBalanceDisplay(newBal);
