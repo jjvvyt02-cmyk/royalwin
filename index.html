@@ -3885,20 +3885,26 @@
         const bar = document.getElementById('wagerProgressBar');
         const pctText = document.getElementById('wagerPctText');
         const statusMsg = document.getElementById('wagerStatusMsg');
+        const withdrawBtn = document.getElementById('withdrawNowBtn');
         const required = wager ? parseFloat(wager.required || 0) : 0;
         const completed = wager ? parseFloat(wager.completed || 0) : 0;
-        if (required <= 0 || completed >= required) {
-          // No active wager or wager complete — show 100% clean state
+        const wagerPending = required > 0 && completed < required;
+        if (!wagerPending) {
+          // No active wager or wager complete — withdrawal unlocked
           if (bar) { bar.style.width = '100%'; bar.style.background = 'linear-gradient(90deg,#27ae60,#1d9e75)'; }
           if (pctText) { pctText.textContent = '100%'; pctText.style.color = 'var(--green)'; }
           if (statusMsg) { statusMsg.textContent = 'Bet ₹0 more to unlock withdrawal ✅'; statusMsg.style.color = 'var(--green)'; }
+          // Enable withdraw button
+          if (withdrawBtn) { withdrawBtn.disabled = false; withdrawBtn.style.opacity = '1'; withdrawBtn.style.cursor = 'pointer'; }
         } else {
-          // Active wager pending
+          // Active wager pending — block withdrawal
           const remaining = parseFloat((required - completed).toFixed(2));
           const pct = Math.min(99, Math.round(completed / required * 100));
           if (bar) { bar.style.width = pct + '%'; bar.style.background = 'linear-gradient(90deg,#c07a10,var(--gold))'; }
           if (pctText) { pctText.textContent = pct + '%'; pctText.style.color = 'var(--gold)'; }
           if (statusMsg) { statusMsg.textContent = 'Bet ₹' + remaining.toLocaleString('en-IN') + ' more to unlock withdrawal'; statusMsg.style.color = 'var(--muted)'; }
+          // Disable withdraw button silently
+          if (withdrawBtn) { withdrawBtn.disabled = true; withdrawBtn.style.opacity = '0.35'; withdrawBtn.style.cursor = 'not-allowed'; }
         }
       }); // end of .on listener
     } catch(e) { /* suppressed */ }
@@ -4332,8 +4338,7 @@
       const wagerSnap = await db.ref('users/' + window.currentUser.uid + '/wager').once('value');
       const wager = wagerSnap.val();
       if (wager && wager.required > 0 && wager.completed < wager.required) {
-        const remaining = parseFloat((wager.required - wager.completed).toFixed(2));
-        showToast('❌ Wager incomplete! ₹' + remaining.toLocaleString('en-IN') + ' more to wager before withdrawing.');
+        // Wager pending — block silently (button is already visually disabled)
         return;
       }
       const allWithSnap = await db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(window.currentUser.uid).once('value');
@@ -7864,7 +7869,7 @@
         💰 Available: <strong style="color:var(--gold);" id="withdrawAvailBalance">₹0.00</strong> &nbsp;|&nbsp; Min: <strong style="color:var(--text);" id="withdrawMinDisplay">₹300</strong>
       </div>
 
-      <button class="btn btn-gold" style="padding:0.8rem 2.5rem;max-width:420px;width:100%;" onclick="doWithdraw()">⬆️ Withdraw Now</button>
+      <button id="withdrawNowBtn" class="btn btn-gold" style="padding:0.8rem 2.5rem;max-width:420px;width:100%;" onclick="doWithdraw()">⬆️ Withdraw Now</button>
 
       
       <div style="margin-top:2rem;">
@@ -9862,14 +9867,18 @@ window.claimAttendance = function() {
       db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
         var w = wSnap.val() || {required:0,completed:0,startedAt:0};
         var isNew = !w.startedAt || w.startedAt === 0;
-        updates['users/'+user.uid+'/wager/required'] = parseFloat((parseFloat(w.required||0) + reward).toFixed(2));
-        updates['users/'+user.uid+'/wager/completed'] = parseFloat(w.completed||0);
-        updates['users/'+user.uid+'/wager/startedAt'] = isNew ? Date.now() : w.startedAt;
-        db.ref().update(updates).then(function() {
-          db.ref('users/'+user.uid+'/transactions').push({type:'attendance',amount:reward,details:'Day '+newStreak+' attendance bonus (1x wager)',balance:newBal,timestamp:Date.now()});
-          if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-          showToast('🎁 Day '+newStreak+' check-in! +₹'+reward+' credited! (1x wager required)');
-          _attendRenderUI(newStreak, true, newTotal);
+        var newWager = {
+          required: parseFloat((parseFloat(w.required||0) + reward).toFixed(2)),
+          completed: parseFloat(w.completed||0),
+          startedAt: isNew ? Date.now() : w.startedAt
+        };
+        db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
+          db.ref().update(updates).then(function() {
+            db.ref('users/'+user.uid+'/transactions').push({type:'attendance',amount:reward,details:'Day '+newStreak+' attendance bonus (1x wager)',balance:newBal,timestamp:Date.now()});
+            if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+            showToast('🎁 Day '+newStreak+' check-in! +₹'+reward+' credited! (1x wager required)');
+            _attendRenderUI(newStreak, true, newTotal);
+          }).catch(function(e) { showToast('❌ '+e.message); });
         }).catch(function(e) { showToast('❌ '+e.message); });
       });
     });
@@ -9886,14 +9895,18 @@ window.claimInviteTier = function(tierNum, reward) {
       db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
         var w = wSnap.val()||{required:0,completed:0,startedAt:0};
         var isNew = !w.startedAt || w.startedAt === 0;
-        updates['users/'+user.uid+'/wager/required'] = parseFloat((parseFloat(w.required||0)+reward).toFixed(2));
-        updates['users/'+user.uid+'/wager/completed'] = parseFloat(w.completed||0);
-        updates['users/'+user.uid+'/wager/startedAt'] = isNew ? Date.now() : w.startedAt;
-        db.ref().update(updates).then(function() {
-          db.ref('users/'+user.uid+'/transactions').push({type:'invitation_bonus',amount:reward,details:'Invitation Bonus Tier '+tierNum+' (1x wager)',balance:newBal,timestamp:Date.now()});
-          if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-          showToast('🎉 Tier '+tierNum+' bonus! +₹'+reward.toLocaleString('en-IN')+' credited! (1x wager required)');
-          if (typeof window.loadInvitationBonusPage==='function') window.loadInvitationBonusPage();
+        var newWager = {
+          required: parseFloat((parseFloat(w.required||0)+reward).toFixed(2)),
+          completed: parseFloat(w.completed||0),
+          startedAt: isNew ? Date.now() : w.startedAt
+        };
+        db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
+          db.ref().update(updates).then(function() {
+            db.ref('users/'+user.uid+'/transactions').push({type:'invitation_bonus',amount:reward,details:'Invitation Bonus Tier '+tierNum+' (1x wager)',balance:newBal,timestamp:Date.now()});
+            if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+            showToast('🎉 Tier '+tierNum+' bonus! +₹'+reward.toLocaleString('en-IN')+' credited! (1x wager required)');
+            if (typeof window.loadInvitationBonusPage==='function') window.loadInvitationBonusPage();
+          }).catch(function(e) { showToast('❌ '+e.message); });
         }).catch(function(e) { showToast('❌ '+e.message); });
       });
     });
@@ -9911,14 +9924,18 @@ window.claimActivityTask = function(taskId, reward) {
       db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
         var w = wSnap.val()||{required:0,completed:0,startedAt:0};
         var isNew = !w.startedAt || w.startedAt === 0;
-        updates['users/'+user.uid+'/wager/required'] = parseFloat((parseFloat(w.required||0)+reward).toFixed(2));
-        updates['users/'+user.uid+'/wager/completed'] = parseFloat(w.completed||0);
-        updates['users/'+user.uid+'/wager/startedAt'] = isNew ? Date.now() : w.startedAt;
-        db.ref().update(updates).then(function() {
-          db.ref('users/'+user.uid+'/transactions').push({type:'activity_award',amount:reward,details:'Activity Award Task '+taskId+' (1x wager)',balance:newBal,timestamp:Date.now()});
-          if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-          showToast('🎯 Task '+taskId+' reward! +₹'+reward+' credited! (1x wager required)');
-          if (typeof window.loadActivityAwardPage==='function') window.loadActivityAwardPage();
+        var newWager = {
+          required: parseFloat((parseFloat(w.required||0)+reward).toFixed(2)),
+          completed: parseFloat(w.completed||0),
+          startedAt: isNew ? Date.now() : w.startedAt
+        };
+        db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
+          db.ref().update(updates).then(function() {
+            db.ref('users/'+user.uid+'/transactions').push({type:'activity_award',amount:reward,details:'Activity Award Task '+taskId+' (1x wager)',balance:newBal,timestamp:Date.now()});
+            if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+            showToast('🎯 Task '+taskId+' reward! +₹'+reward+' credited! (1x wager required)');
+            if (typeof window.loadActivityAwardPage==='function') window.loadActivityAwardPage();
+          }).catch(function(e) { showToast('❌ '+e.message); });
         }).catch(function(e) { showToast('❌ '+e.message); });
       });
     });
