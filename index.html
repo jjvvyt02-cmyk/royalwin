@@ -5432,6 +5432,15 @@
               type: 'spin', amount: winAmt, details: '🎡 Daily spin win — ₹' + winAmt,
               balance: newBal, timestamp: Date.now()
             });
+            // Add wager requirement — 1x of spin win amount
+            const spinWagerSnap = await db.ref('users/' + user.uid + '/wager').once('value');
+            const spinW = spinWagerSnap.val() || { required: 0, completed: 0, startedAt: 0 };
+            const spinIsNew = !spinW.startedAt || spinW.startedAt === 0;
+            await db.ref('users/' + user.uid + '/wager').set({
+              required: parseFloat((parseFloat(spinW.required || 0) + winAmt).toFixed(2)),
+              completed: parseFloat(spinW.completed || 0),
+              startedAt: spinIsNew ? Date.now() : spinW.startedAt
+            });
             await pushNotification(user.uid, '🎡', 'Daily Spin Win!', 'You won ₹' + winAmt + ' from the daily spin!');
             showToast('💰 ₹' + winAmt + ' added to your wallet!');
             setTimeout(() => closeWheel(), 5000);
