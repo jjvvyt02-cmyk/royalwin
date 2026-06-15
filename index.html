@@ -9963,16 +9963,22 @@ window.claimVipWeekly = function() {
       var level=_getVipLevelData(parseFloat(expSnap.val()||0)), reward=level.weekly;
       db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
         var newBal=parseFloat(((balSnap.val()||0)+reward).toFixed(2));
+        var updates={}; updates['users/'+user.uid+'/vip/claimedWeekly/'+weekKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
         db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
-          var w=wSnap.val()||{required:0,completed:0};
-          var updates={}; updates['users/'+user.uid+'/vip/claimedWeekly/'+weekKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
-          updates['users/'+user.uid+'/wager/required']=parseFloat((parseFloat(w.required||0)+reward).toFixed(2));
-          updates['users/'+user.uid+'/wager/completed']=parseFloat(w.completed||0);
-          db.ref().update(updates).then(function() {
-            db.ref('users/'+user.uid+'/transactions').push({type:'vip_weekly',amount:reward,details:level.name+' VIP Weekly Bonus (1x wager)',balance:newBal,timestamp:Date.now()});
-            if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-            showToast('👑 Weekly VIP bonus! +₹'+reward+' credited! (1x wager required)');
-            if (typeof loadVipPage==='function') loadVipPage();
+          var w=wSnap.val()||{required:0,completed:0,startedAt:0};
+          var isNew=!w.startedAt||w.startedAt===0;
+          var newWager={
+            required:parseFloat((parseFloat(w.required||0)+reward).toFixed(2)),
+            completed:parseFloat(w.completed||0),
+            startedAt:isNew?Date.now():w.startedAt
+          };
+          db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
+            db.ref().update(updates).then(function() {
+              db.ref('users/'+user.uid+'/transactions').push({type:'vip_weekly',amount:reward,details:level.name+' VIP Weekly Bonus (1x wager)',balance:newBal,timestamp:Date.now()});
+              if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+              showToast('👑 Weekly VIP bonus! +₹'+reward+' credited! (1x wager required)');
+              if (typeof loadVipPage==='function') loadVipPage();
+            });
           });
         });
       });
@@ -9989,16 +9995,22 @@ window.claimVipMonthly = function() {
       var level=_getVipLevelData(parseFloat(expSnap.val()||0)), reward=level.monthly;
       db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
         var newBal=parseFloat(((balSnap.val()||0)+reward).toFixed(2));
+        var updates={}; updates['users/'+user.uid+'/vip/claimedMonthly/'+monthKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
         db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
-          var w=wSnap.val()||{required:0,completed:0};
-          var updates={}; updates['users/'+user.uid+'/vip/claimedMonthly/'+monthKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
-          updates['users/'+user.uid+'/wager/required']=parseFloat((parseFloat(w.required||0)+reward).toFixed(2));
-          updates['users/'+user.uid+'/wager/completed']=parseFloat(w.completed||0);
-          db.ref().update(updates).then(function() {
-            db.ref('users/'+user.uid+'/transactions').push({type:'vip_monthly',amount:reward,details:level.name+' VIP Monthly Bonus (1x wager)',balance:newBal,timestamp:Date.now()});
-            if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-            showToast('👑 Monthly VIP bonus! +₹'+reward+' credited! (1x wager required)');
-            if (typeof loadVipPage==='function') loadVipPage();
+          var w=wSnap.val()||{required:0,completed:0,startedAt:0};
+          var isNew=!w.startedAt||w.startedAt===0;
+          var newWager={
+            required:parseFloat((parseFloat(w.required||0)+reward).toFixed(2)),
+            completed:parseFloat(w.completed||0),
+            startedAt:isNew?Date.now():w.startedAt
+          };
+          db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
+            db.ref().update(updates).then(function() {
+              db.ref('users/'+user.uid+'/transactions').push({type:'vip_monthly',amount:reward,details:level.name+' VIP Monthly Bonus (1x wager)',balance:newBal,timestamp:Date.now()});
+              if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+              showToast('👑 Monthly VIP bonus! +₹'+reward+' credited! (1x wager required)');
+              if (typeof loadVipPage==='function') loadVipPage();
+            });
           });
         });
       });
