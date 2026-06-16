@@ -12,16 +12,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="manifest" href="/royalwin/manifest.json">
-  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>♠</text></svg>">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="favicon.svg">
   <meta name="theme-color" content="#f0c040">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="RoyalWin">
 <title>RoyalWin — Premium Gaming Platform</title>
-<link rel="icon" type="image/x-icon" href="data:image/x-icon;base64,AAABAAEAICAAAAEAIACAAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAgAAAAIAgCAAAA/BjtowAAAEdJREFUeNpj4OLipyliGLWAWhZ8OOCAhoagBQ8UFOBosFqAJxDwW4BHIwkWEC87asGoBaMWjCQLyEajFgxiC0bbRaMWDE4LAOBT32+BrYIEAAAAAElFTkSuQmCC">
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="shortcut icon" type="image/x-icon" href="data:image/x-icon;base64,AAABAAEAICAAAAEAIACAAAAAFgAAAIlQTkcNChoKAAAADUlIRFIAAAAgAAAAIAgCAAAA/BjtowAAAEdJREFUeNpj4OLipyliGLWAWhZ8OOCAhoagBQ8UFOBosFqAJxDwW4BHIwkWEC87asGoBaMWjCQLyEajFgxiC0bbRaMWDE4LAOBT32+BrYIEAAAAAElFTkSuQmCC">
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
@@ -4513,6 +4511,11 @@
   }
 
   async function verifyOTP() {
+    if (window._otpVerifyInProgress) return; // Prevent double-submit
+    window._otpVerifyInProgress = true;
+    const verifyBtn = document.querySelector('#page-register .btn-full');
+    if (verifyBtn) { verifyBtn.disabled = true; verifyBtn.style.opacity = '0.6'; verifyBtn.textContent = '⏳ Verifying...'; }
+    try {
     const otp = ['otp1','otp2','otp3','otp4','otp5','otp6'].map(id => document.getElementById(id).value).join('');
     if (otp.length < 6) { showToast('⚠️ Please enter the full 6-digit OTP'); return; }
     const pwField = document.getElementById('regPassword');
@@ -4551,6 +4554,11 @@
                   e.code === 'auth/code-expired' ? 'OTP expired. Please request a new one.' :
                   e.message;
       showToast('❌ ' + msg);
+    }
+    } finally {
+      window._otpVerifyInProgress = false;
+      const btn = document.querySelector('#page-register .btn-full');
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '✅ Verify & Create Account'; }
     }
   }
   function goBackFromOTP() {
@@ -5457,6 +5465,8 @@
   }
 
   async function doRegister() {
+    if (window._registerInProgress) return; // Second-layer guard against double account creation
+    window._registerInProgress = true;
     const firstName = document.getElementById('regFirstName') ? document.getElementById('regFirstName').value.trim() : '';
     const lastName = document.getElementById('regLastName') ? document.getElementById('regLastName').value.trim() : '';
     const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
@@ -5561,8 +5571,7 @@
       const user = window.currentUser || firebase.auth().currentUser;
       if (db && user) {
         const snap = await db.ref('users/' + user.uid + '/lastSpinDate').once('value');
-} else {
-}
+      }
     }, 1200);
     } catch(e) {
       console.error('Register error:', e);
@@ -5570,6 +5579,8 @@
                   e.code === 'auth/weak-password' ? 'Password is too weak.' :
                   e.code === 'auth/invalid-email' ? 'Invalid email address.' : e.message;
       showToast('❌ ' + msg);
+    } finally {
+      window._registerInProgress = false;
     }
   }
   const tickerWinners = [
