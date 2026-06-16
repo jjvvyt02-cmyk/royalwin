@@ -2312,6 +2312,13 @@ window.rejectRequest = async function(type, key) {
   try {
     const snap = await get(ref(db, 'adminRequests/' + type + '/' + key));
     const reqData = snap.val();
+
+    // Prevent double-refund: skip if withdrawal already auto-failed/rejected/approved
+    if (type === 'withdrawals' && reqData && reqData.status !== 'pending' && reqData.status !== 'processing') {
+      showToast('⚠️ This withdrawal is already ' + reqData.status + ' — no action taken');
+      return;
+    }
+
     await update(ref(db, 'adminRequests/' + type + '/' + key), { status: 'rejected' });
 
     // Auto-refund withdrawal balance
