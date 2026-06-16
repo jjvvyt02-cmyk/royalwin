@@ -4371,11 +4371,22 @@
       const newBal = parseFloat((bal - amt).toFixed(2));
       await db.ref('users/' + window.currentUser.uid + '/balance').transaction(() => newBal);
       updateBalanceDisplay(newBal);
-      if (currentWithdrawMethod === 'usdt' && !window._userHasUsdtDeposit) {
-        await db.ref('users/' + window.currentUser.uid + '/balance').transaction(() => bal);
-        updateBalanceDisplay(bal);
-        showToast('❌ USDT withdrawal only available if you deposited via USDT');
-        return;
+      if (currentWithdrawMethod === 'usdt') {
+        const depSnap = await db.ref('adminRequests/deposits').orderByChild('uid').equalTo(window.currentUser.uid).once('value');
+        const depData = depSnap.val() || {};
+        let totalInrDeposited = 0, totalUsdtDeposited = 0;
+        Object.values(depData).forEach(d => {
+          if (d.status !== 'approved') return;
+          const m = (d.method || '').toUpperCase();
+          if (m.includes('USDT')) totalUsdtDeposited += parseFloat(d.amount || 0);
+          else totalInrDeposited += parseFloat(d.amount || 0);
+        });
+        if (totalUsdtDeposited <= totalInrDeposited) {
+          await db.ref('users/' + window.currentUser.uid + '/balance').transaction(() => bal);
+          updateBalanceDisplay(bal);
+          showToast('❌ Try using Bank or UPI');
+          return;
+        }
       }
       const savedSnap = await db.ref('users/' + window.currentUser.uid + '/withdrawDetails/' + currentWithdrawMethod).once('value');
       const saved = savedSnap.val();
@@ -4401,7 +4412,7 @@
         timestamp: Date.now()
       });
 
-      showToast('⬆️ Withdrawal of ₹' + amt.toLocaleString('en-IN') + ' submitted! Admin will process shortly.');
+      showToast('✅ Withdrawal submitted successfully');
       loadWithdrawHistory();
     } catch(e) { showToast('❌ Withdrawal failed: ' + e.message); }
   }
