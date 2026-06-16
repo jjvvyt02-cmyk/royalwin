@@ -2124,17 +2124,22 @@ function loadFinance() {
 
     function renderWithRow([key, r]) {
       const amtToSend = r.amountToSend || parseFloat((r.amount * 0.95).toFixed(2));
-      const isUsdt = (r.method || '').toUpperCase() === 'USDT';
+      const method = (r.method || 'UPI').toUpperCase();
+      const isUsdt = method === 'USDT';
       // For USDT: convert amountToSend from ₹ to USDT at ₹100 per USDT (withdrawal rate)
       const sendLabel = isUsdt
         ? `→ Send ${(amtToSend / 100).toFixed(2)} USDT`
         : `→ Send ₹${amtToSend.toLocaleString('en-IN')}`;
+      const methodColors = { UPI: '#00b4d8', BANK: '#52b788', USDT: '#f0c040' };
+      const methodColor = methodColors[method] || '#888';
+      const methodBadge = `<span style="font-size:0.62rem;font-weight:800;color:${methodColor};border:1px solid ${methodColor};border-radius:4px;padding:0.1rem 0.4rem;white-space:nowrap;">${method}</span>`;
       return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
         <div style="display:flex;align-items:center;gap:0.6rem;flex:1;min-width:0;">
           <div style="white-space:nowrap;">
             <div style="font-weight:800;color:var(--red2);font-size:0.92rem;">₹${r.amount?.toLocaleString('en-IN')}</div>
             <div style="font-size:0.65rem;color:var(--gold);font-weight:700;">${sendLabel}</div>
           </div>
+          ${methodBadge}
           <div style="font-size:0.75rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.username || 'Unknown'}</div>
           <div style="font-size:0.68rem;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;" title="${r.upiId || ''}">${r.upiId || '—'}</div>
           <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})}</div>
