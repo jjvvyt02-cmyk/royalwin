@@ -7029,15 +7029,6 @@
                 balance: w.balanceAfter || 0,
                 timestamp: w.timestamp || 0
               });
-              if (w.status === 'rejected') {
-                txs.push({
-                  type: 'withdrawal_refund',
-                  amount: w.amount || 0,
-                  details: 'Withdrawal failed — amount refunded',
-                  balance: 0,
-                  timestamp: (w.timestamp || 0) + 2
-                });
-              }
             });
         }
       } catch(e) { /* suppressed */ }
