@@ -2798,6 +2798,25 @@
     window.addEventListener('online', hideOfflineBanner);
     if (!navigator.onLine) showOfflineBanner();
   })();
+  // Waits until Firebase has actually been initialized (window._firebaseReady set inside initFirebase())
+  // before resolving. Needed because handlePageRoute() and handleReferralLink() below run immediately
+  // at script-parse-time, which can be BEFORE the page 'load' event fires initFirebase() - calling
+  // firebase.auth() before initializeApp() crashes the entire script with an uncaught error,
+  // which silently stops every later script block from running (including the loader-hiding logic).
+  function waitForFirebase(callback) {
+    if (window._firebaseReady && typeof firebase !== 'undefined') { callback(); return; }
+    let attempts = 0;
+    const check = setInterval(() => {
+      attempts++;
+      if (window._firebaseReady && typeof firebase !== 'undefined') {
+        clearInterval(check);
+        callback();
+      } else if (attempts > 50) { // ~10 seconds max wait
+        clearInterval(check);
+        console.error('Firebase never became ready - skipping deferred init logic');
+      }
+    }, 200);
+  }
   (function handlePageRoute() {
     const params = new URLSearchParams(window.location.search);
     const page = params.get('page');
@@ -2807,32 +2826,15 @@
     if (guestPages.includes(page)) {
       setTimeout(() => showPage(page), 300);
     } else {
-      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
-        unsubscribe();
-        if (user) {
-          setTimeout(() => showPage(page), 100);
-        } else {
-          setTimeout(() => showPage('login'), 100);
-        }
-      });
-    }
-  })();
-  (function handlePageRoute() {
-    const params = new URLSearchParams(window.location.search);
-    const page = params.get('page');
-    if (!page) return;
-
-    const guestPages = ['login', 'register', 'forgot'];
-    if (guestPages.includes(page)) {
-      setTimeout(() => showPage(page), 300);
-    } else {
-      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
-        unsubscribe();
-        if (user) {
-          setTimeout(() => showPage(page), 100);
-        } else {
-          setTimeout(() => showPage('login'), 100);
-        }
+      waitForFirebase(() => {
+        const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+          unsubscribe();
+          if (user) {
+            setTimeout(() => showPage(page), 100);
+          } else {
+            setTimeout(() => showPage('login'), 100);
+          }
+        });
       });
     }
   })();
@@ -2841,22 +2843,24 @@
     const code = params.get('invitationCode') || params.get('ref') || params.get('r_code') || params.get('invite');
     if (!code) return;
     window._referralCode = code;
-    const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
-      unsubscribe(); // only need it once
+    waitForFirebase(() => {
+      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
+        unsubscribe(); // only need it once
 
-      if (user) {
-        showPage('home');
-      } else {
-        setTimeout(() => {
-          const codeInput = document.getElementById('inviteCodeInput');
-          const codeDisplay = document.getElementById('inviteCodeDisplay');
-          const invitePill = document.getElementById('invitePill');
-          if (codeInput) codeInput.value = code;
-          if (codeDisplay) codeDisplay.textContent = code;
-          if (invitePill) invitePill.style.display = 'flex';
-          showPage('register');
-        }, 100);
-      }
+        if (user) {
+          showPage('home');
+        } else {
+          setTimeout(() => {
+            const codeInput = document.getElementById('inviteCodeInput');
+            const codeDisplay = document.getElementById('inviteCodeDisplay');
+            const invitePill = document.getElementById('invitePill');
+            if (codeInput) codeInput.value = code;
+            if (codeDisplay) codeDisplay.textContent = code;
+            if (invitePill) invitePill.style.display = 'flex';
+            showPage('register');
+          }, 100);
+        }
+      });
     });
   })();
 
@@ -7545,6 +7549,7 @@
       if (firebase.apps.length === 0) {
         firebase.initializeApp(FIREBASE_CONFIG);
       }
+      window._firebaseReady = true;
       fbDB = firebase.database();
       window.fbDB = fbDB;
       window.fbAuth = firebase.auth();
