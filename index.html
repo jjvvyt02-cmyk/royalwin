@@ -1875,7 +1875,10 @@
       </div>
       <div class="form-group">
         <label class="form-label">Password</label>
-        <input class="form-input" type="password" id="regPassword" placeholder="Min 8 characters" oninput="checkStrength(this.value)">
+        <div style="position:relative;">
+          <input class="form-input" type="password" id="regPassword" placeholder="Min 8 characters" oninput="checkStrength(this.value)" style="padding-right:2.6rem;">
+          <button type="button" onclick="togglePasswordVisibility('regPassword', this)" style="position:absolute;right:0.7rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0.2rem;">👁️</button>
+        </div>
         <div class="strength-bar" style="margin-top:6px;"><div class="strength-fill" id="strengthFill"></div></div>
         <div class="strength-label" id="strengthLabel"></div>
       </div>
@@ -1893,6 +1896,13 @@
         <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
           <button onclick="goBackFromOTP()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--muted);font-size:1rem;cursor:pointer;flex-shrink:0;">←</button>
           <div style="font-size:0.9rem;color:var(--muted);">Enter the 6-digit OTP sent to your mobile/email</div>
+        </div>
+        <div id="otpDisplayBox" style="display:none;background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.35);border-radius:10px;padding:0.7rem 1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Your OTP (testing mode)</div>
+            <div id="otpDisplayValue" style="font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);font-weight:700;letter-spacing:2px;">------</div>
+          </div>
+          <button onclick="copyOtpToClipboard()" style="background:rgba(240,192,64,0.2);border:1px solid rgba(240,192,64,0.3);border-radius:6px;padding:0.4rem 0.7rem;color:var(--gold);font-size:0.75rem;cursor:pointer;font-family:'Exo 2',sans-serif;">📋 Copy</button>
         </div>
         <div class="otp-inputs">
           <input class="otp-input" maxlength="1" id="otp1" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,'otp2')">
@@ -1922,7 +1932,10 @@
       </div>
       <div class="form-group">
         <label class="form-label">Password</label>
-        <input class="form-input" type="password" id="loginPassword" placeholder="Your password">
+        <div style="position:relative;">
+          <input class="form-input" type="password" id="loginPassword" placeholder="Your password" style="padding-right:2.6rem;">
+          <button type="button" onclick="togglePasswordVisibility('loginPassword', this)" style="position:absolute;right:0.7rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0.2rem;">👁️</button>
+        </div>
       </div>
       <div style="text-align:right;margin-bottom:1.2rem;"><a style="color:var(--gold);font-size:0.82rem;cursor:pointer;" onclick="showPage('forgot')">Forgot password?</a></div>
       <button class="btn btn-gold btn-full" onclick="doLogin()">Sign In</button>
@@ -4458,11 +4471,13 @@
       window._regOTP = otp;
       window._regOTPExpiry = Date.now() + 300000;
       window._regIsEmail = isEmail;
-      if (isEmail) {
-        showToast('📧 OTP: ' + otp + ' (copy this)');
-      } else {
-        showToast('📱 OTP: ' + otp + ' (copy this) — SMS delivery coming soon');
+      const otpBox = document.getElementById('otpDisplayBox');
+      const otpVal = document.getElementById('otpDisplayValue');
+      if (otpBox && otpVal) {
+        otpVal.textContent = otp;
+        otpBox.style.display = 'flex';
       }
+      showToast(isEmail ? '📧 OTP generated — see box above' : '📱 OTP generated — SMS delivery coming soon, see box above');
       const fields = document.getElementById('registerFormFields');
       if (fields) fields.style.display = 'none';
       document.getElementById('otpWrap').style.display = 'block';
@@ -4497,29 +4512,46 @@
     }, 1000);
   }
 
-  function resendOTP() {
-    const emailOrPhone = window._otpEmail || '';
-    if (!emailOrPhone) { showToast('⚠️ Session expired. Please start again.'); showPage('register'); return; }
+  async function resendOTP() {
+    const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
+    if (!contact) { showToast('⚠️ Session expired. Please start again.'); showPage('register'); return; }
+    const isEmail = contact.includes('@');
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    window._expectedOTP = otp;
-    if (window.emailjs) {
-      emailjs.send('service_royalwin', 'template_otp', {
-        to_email: emailOrPhone,
-        otp_code: otp,
-        user_name: emailOrPhone
-      }).then(() => {
-        showToast('📱 OTP resent to ' + emailOrPhone);
-      }).catch(() => {
-        showToast('📱 OTP resent!');
-      });
-    } else {
-      showToast('📱 New OTP sent!');
+    const db = window.fbDB || fbDB;
+    const otpKey = contact.replace(/[.#$\[\]]/g, '_');
+    try {
+      if (db) {
+        await db.ref('otpVerification/' + otpKey).set({ otp, expires: Date.now() + 300000 });
+      }
+      window._regOTP = otp;
+      window._regOTPExpiry = Date.now() + 300000;
+      const otpBox = document.getElementById('otpDisplayBox');
+      const otpVal = document.getElementById('otpDisplayValue');
+      if (otpBox && otpVal) {
+        otpVal.textContent = otp;
+        otpBox.style.display = 'flex';
+      }
+      showToast(isEmail ? '📧 New OTP generated — see box above' : '📱 New OTP generated — see box above');
+      startOTPTimer();
+    } catch(e) {
+      showToast('❌ Failed to resend OTP: ' + e.message);
     }
-    startOTPTimer();
   }
 
   function otpMove(el, nextId) {
     if (el.value && nextId) document.getElementById(nextId).focus();
+  }
+
+  function togglePasswordVisibility(inputId, btnEl) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.type === 'password') {
+      input.type = 'text';
+      btnEl.textContent = '🙈';
+    } else {
+      input.type = 'password';
+      btnEl.textContent = '👁️';
+    }
   }
 
   function validatePassword(pass) {
@@ -4584,6 +4616,18 @@
     if (window.otpInterval) clearInterval(window.otpInterval);
     window._phoneConfirmResult = null;
     window._confirmResult = null;
+    const otpBox = document.getElementById('otpDisplayBox');
+    if (otpBox) otpBox.style.display = 'none';
+  }
+
+  function copyOtpToClipboard() {
+    const otp = window._regOTP || '';
+    if (!otp) return;
+    navigator.clipboard.writeText(otp).then(() => {
+      showToast('✅ OTP copied!');
+    }).catch(() => {
+      showToast('⚠️ Could not copy — please select manually');
+    });
   }
 
   async function changePassword() {
