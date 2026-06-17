@@ -3969,9 +3969,13 @@
     } catch(e) { /* suppressed */ }
   }
 
-  let currentWithdrawMethod = 'upi';
+  let currentWithdrawMethod = 'bank';
 
   function selectWithdrawMethod(method, el) {
+    if (method === 'upi') {
+      showToast('⏳ UPI withdrawal is temporarily unavailable. Please use Bank Transfer.');
+      return;
+    }
     currentWithdrawMethod = method;
     document.querySelectorAll('#panel-withdraw .method-card').forEach(c => c.classList.remove('selected'));
     el.classList.add('selected');
@@ -4327,6 +4331,7 @@
   }
 
   async function doWithdraw() {
+    if (currentWithdrawMethod === 'upi') { showToast('⏳ UPI withdrawal is temporarily unavailable. Please use Bank Transfer.'); return; }
     const minAmt = currentWithdrawMethod === 'upi' ? 300 : currentWithdrawMethod === 'bank' ? 500 : 3000;
     const amt = parseFloat(document.getElementById('withdrawAmount').value);
     if (!amt || amt < minAmt) { showToast('⚠️ Minimum withdrawal for ' + currentWithdrawMethod.toUpperCase() + ' is ₹' + minAmt); return; }
@@ -7776,12 +7781,13 @@
 
       
       <div class="deposit-methods" style="margin-bottom:1rem;">
-        <div class="method-card selected" id="wm-upi" onclick="selectWithdrawMethod('upi',this)" style="flex:1;">
+        <div class="method-card" id="wm-upi" onclick="selectWithdrawMethod('upi',this)" style="flex:1;opacity:0.45;position:relative;">
+          <div style="position:absolute;top:-6px;right:-6px;background:var(--red2);color:#fff;font-size:0.55rem;font-weight:800;padding:0.15rem 0.4rem;border-radius:6px;z-index:1;">SOON</div>
           <div class="method-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6C3CE1,#4B9BF5);display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;font-size:1.3rem;">📲</div>
           <div class="method-name">UPI</div>
-          <div class="method-limit">Min ₹300</div>
+          <div class="method-limit" style="color:var(--red2);">Unavailable</div>
         </div>
-        <div class="method-card" id="wm-bank" onclick="selectWithdrawMethod('bank',this)" style="flex:1;">
+        <div class="method-card selected" id="wm-bank" onclick="selectWithdrawMethod('bank',this)" style="flex:1;">
           <div class="method-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1a3a6e,#2563eb);display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;font-size:1.3rem;">🏛️</div>
           <div class="method-name">Bank</div>
           <div class="method-limit">Min ₹500</div>
@@ -7796,14 +7802,14 @@
       
       <div class="form-group" style="max-width:420px;">
         <label class="form-label">Withdraw Amount (₹)</label>
-        <input class="form-input" type="number" id="withdrawAmount" placeholder="Enter amount (min ₹300)" oninput="_onWithdrawAmtChange()">
+        <input class="form-input" type="number" id="withdrawAmount" placeholder="Enter amount (min ₹500)" oninput="_onWithdrawAmtChange()">
         <div id="usdtWithdrawEquiv" style="display:none;margin-top:0.5rem;background:rgba(38,161,123,0.08);border:1px solid rgba(38,161,123,0.2);border-radius:8px;padding:0.6rem 0.9rem;font-size:0.82rem;color:var(--muted);">
           💱 You will receive <strong style="color:#1d9e75;" id="usdtWithdrawAmt">0.00 USDT</strong>
         </div>
       </div>
 
       
-      <div id="withdrawFields-upi" style="max-width:420px;">
+      <div id="withdrawFields-upi" style="display:none;max-width:420px;">
         
         <div id="savedUpiDisplay" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
           <div>
@@ -7823,7 +7829,7 @@
       </div>
 
       
-      <div id="withdrawFields-bank" style="display:none;max-width:420px;">
+      <div id="withdrawFields-bank" style="max-width:420px;">
         
         <div id="savedBankDisplay" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;margin-bottom:0.5rem;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
@@ -7879,7 +7885,7 @@
 
       
       <div style="background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.15);border-radius:10px;padding:0.8rem 1rem;margin:1rem 0;max-width:420px;font-size:0.85rem;color:var(--muted);">
-        💰 Available: <strong style="color:var(--gold);" id="withdrawAvailBalance">₹0.00</strong> &nbsp;|&nbsp; Min: <strong style="color:var(--text);" id="withdrawMinDisplay">₹300</strong>
+        💰 Available: <strong style="color:var(--gold);" id="withdrawAvailBalance">₹0.00</strong> &nbsp;|&nbsp; Min: <strong style="color:var(--text);" id="withdrawMinDisplay">₹500</strong>
       </div>
 
       <button id="withdrawNowBtn" class="btn btn-gold" style="padding:0.8rem 2.5rem;max-width:420px;width:100%;" onclick="doWithdraw()">⬆️ Withdraw Now</button>
