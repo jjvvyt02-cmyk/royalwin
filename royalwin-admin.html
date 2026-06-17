@@ -460,23 +460,73 @@
           </div>
         </div>
 
-        <!-- CXPay Balance Card -->
-        <div style="background:linear-gradient(135deg,#001233,#003388);border:1px solid rgba(64,128,255,0.3);border-radius:12px;padding:0.9rem 1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;">
-          <div>
-            <div style="font-size:0.7rem;color:rgba(255,255,255,0.6);margin-bottom:0.2rem;">💳 CXPay Gateway Balance</div>
-            <div style="font-family:'Cinzel',serif;font-size:1.2rem;color:#60a0ff;font-weight:700;" id="cxpayBalance">—</div>
-            <div style="font-size:0.65rem;color:rgba(255,255,255,0.5);" id="cxpayBalanceUsable">Usable: —</div>
+        <!-- Side-by-side Gateway Dashboards: CXPay (left) vs WGPay (right) -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1rem;">
+
+          <!-- CXPay Column -->
+          <div style="background:rgba(64,128,255,0.06);border:1px solid rgba(64,128,255,0.25);border-radius:12px;padding:0.8rem;">
+            <div style="background:linear-gradient(135deg,#001233,#003388);border:1px solid rgba(64,128,255,0.3);border-radius:10px;padding:0.7rem 0.8rem;margin-bottom:0.7rem;display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="font-size:0.62rem;color:rgba(255,255,255,0.6);margin-bottom:0.15rem;">💳 CXPay Balance</div>
+                <div style="font-family:'Cinzel',serif;font-size:1rem;color:#60a0ff;font-weight:700;" id="cxpayBalance">—</div>
+                <div style="font-size:0.58rem;color:rgba(255,255,255,0.5);" id="cxpayBalanceUsable">Usable: —</div>
+              </div>
+              <button onclick="loadCXPayBalance()" style="background:rgba(64,128,255,0.2);border:1px solid rgba(64,128,255,0.3);border-radius:6px;padding:0.3rem 0.5rem;color:#60a0ff;font-size:0.65rem;cursor:pointer;font-family:'Exo 2',sans-serif;">🔄</button>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+              <div style="background:var(--bg3);border-radius:8px;padding:0.55rem;text-align:center;">
+                <div style="font-size:0.58rem;color:var(--muted);text-transform:uppercase;">Deposits</div>
+                <div style="font-family:'Cinzel',serif;font-size:0.92rem;color:var(--green);font-weight:700;" id="cxStatDeposits">₹0</div>
+                <div style="font-size:0.58rem;color:var(--muted);" id="cxStatDepCount">0</div>
+              </div>
+              <div style="background:var(--bg3);border-radius:8px;padding:0.55rem;text-align:center;">
+                <div style="font-size:0.58rem;color:var(--muted);text-transform:uppercase;">Withdrawals</div>
+                <div style="font-family:'Cinzel',serif;font-size:0.92rem;color:var(--red2);font-weight:700;" id="cxStatWithdrawals">₹0</div>
+                <div style="font-size:0.58rem;color:var(--muted);" id="cxStatWithCount">0</div>
+              </div>
+              <div style="background:var(--bg3);border-radius:8px;padding:0.55rem;text-align:center;grid-column:span 2;">
+                <div style="font-size:0.58rem;color:var(--muted);text-transform:uppercase;">Net Revenue</div>
+                <div style="font-family:'Cinzel',serif;font-size:0.92rem;font-weight:700;" id="cxStatNet">₹0</div>
+              </div>
+            </div>
           </div>
-          <button onclick="loadCXPayBalance()" style="background:rgba(64,128,255,0.2);border:1px solid rgba(64,128,255,0.3);border-radius:8px;padding:0.4rem 0.8rem;color:#60a0ff;font-size:0.75rem;cursor:pointer;font-family:'Exo 2',sans-serif;">🔄 Refresh</button>
+
+          <!-- WGPay Column -->
+          <div style="background:rgba(108,60,225,0.06);border:1px solid rgba(108,60,225,0.25);border-radius:12px;padding:0.8rem;">
+            <div style="background:linear-gradient(135deg,#1a0033,#3d0088);border:1px solid rgba(108,60,225,0.3);border-radius:10px;padding:0.7rem 0.8rem;margin-bottom:0.7rem;display:flex;align-items:center;justify-content:space-between;">
+              <div>
+                <div style="font-size:0.62rem;color:rgba(255,255,255,0.6);margin-bottom:0.15rem;">⚡ WGPay Balance</div>
+                <div style="font-family:'Cinzel',serif;font-size:1rem;color:#a060ff;font-weight:700;" id="wgpayBalance">Check merchant panel</div>
+                <div style="font-size:0.58rem;color:rgba(255,255,255,0.5);">No balance API available</div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
+              <div style="background:var(--bg3);border-radius:8px;padding:0.55rem;text-align:center;">
+                <div style="font-size:0.58rem;color:var(--muted);text-transform:uppercase;">Deposits</div>
+                <div style="font-family:'Cinzel',serif;font-size:0.92rem;color:var(--green);font-weight:700;" id="wgStatDeposits">₹0</div>
+                <div style="font-size:0.58rem;color:var(--muted);" id="wgStatDepCount">0</div>
+              </div>
+              <div style="background:var(--bg3);border-radius:8px;padding:0.55rem;text-align:center;">
+                <div style="font-size:0.58rem;color:var(--muted);text-transform:uppercase;">Withdrawals</div>
+                <div style="font-family:'Cinzel',serif;font-size:0.92rem;color:var(--red2);font-weight:700;" id="wgStatWithdrawals">₹0</div>
+                <div style="font-size:0.58rem;color:var(--muted);" id="wgStatWithCount">0</div>
+              </div>
+              <div style="background:var(--bg3);border-radius:8px;padding:0.55rem;text-align:center;grid-column:span 2;">
+                <div style="font-size:0.58rem;color:var(--muted);text-transform:uppercase;">Net Revenue</div>
+                <div style="font-family:'Cinzel',serif;font-size:0.92rem;font-weight:700;" id="wgStatNet">₹0</div>
+              </div>
+            </div>
+          </div>
+
         </div>
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-bottom:1rem;">
           <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
-            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Deposits</div>
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Total Deposits</div>
             <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--green);font-weight:700;" id="statTotalDeposits">₹0</div>
             <div style="font-size:0.65rem;color:var(--muted);" id="statDepCount">0 approved</div>
           </div>
           <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
-            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Withdrawals</div>
+            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;">Total Withdrawals</div>
             <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--red2);font-weight:700;" id="statTotalWithdrawals">₹0</div>
             <div style="font-size:0.65rem;color:var(--muted);" id="statWithCount">0 approved</div>
           </div>
@@ -1542,6 +1592,19 @@ async function loadRevenueStats(period = 'today') {
     const totalWith = filteredWiths.reduce((s,w) => s + (w.amount||0), 0);
     const netRev = totalDep - totalWith;
 
+    // Per-gateway split: deposits identified by 'method' containing 'WGPay'; withdrawals by 'gateway' field === 'wgpay'
+    const wgDeps = filteredDeps.filter(d => (d.method || '').includes('WGPay'));
+    const cxDeps = filteredDeps.filter(d => !(d.method || '').includes('WGPay'));
+    const wgWiths = filteredWiths.filter(w => w.gateway === 'wgpay');
+    const cxWiths = filteredWiths.filter(w => w.gateway !== 'wgpay');
+
+    const wgDepTotal = wgDeps.reduce((s,d) => s + (d.amount||0), 0);
+    const cxDepTotal = cxDeps.reduce((s,d) => s + (d.amount||0), 0);
+    const wgWithTotal = wgWiths.reduce((s,w) => s + (w.amount||0), 0);
+    const cxWithTotal = cxWiths.reduce((s,w) => s + (w.amount||0), 0);
+    const wgNet = wgDepTotal - wgWithTotal;
+    const cxNet = cxDepTotal - cxWithTotal;
+
     // Pending requests
     const pendingDeps = deps.filter(d => d.status === 'pending').length;
     const pendingWiths = withs.filter(w => w.status === 'pending').length;
@@ -1564,6 +1627,23 @@ async function loadRevenueStats(period = 'today') {
     setText('statWithCount', filteredWiths.length + ' approved');
     const netEl = document.getElementById('statNetRevenue');
     if (netEl) { netEl.textContent = '₹' + Math.abs(netRev).toLocaleString('en-IN'); netEl.style.color = netRev >= 0 ? 'var(--green)' : 'var(--red2)'; }
+
+    // CXPay column
+    setText('cxStatDeposits', '₹' + cxDepTotal.toLocaleString('en-IN'));
+    setText('cxStatDepCount', cxDeps.length + ' approved');
+    setText('cxStatWithdrawals', '₹' + cxWithTotal.toLocaleString('en-IN'));
+    setText('cxStatWithCount', cxWiths.length + ' approved');
+    const cxNetEl = document.getElementById('cxStatNet');
+    if (cxNetEl) { cxNetEl.textContent = '₹' + Math.abs(cxNet).toLocaleString('en-IN'); cxNetEl.style.color = cxNet >= 0 ? 'var(--green)' : 'var(--red2)'; }
+
+    // WGPay column
+    setText('wgStatDeposits', '₹' + wgDepTotal.toLocaleString('en-IN'));
+    setText('wgStatDepCount', wgDeps.length + ' approved');
+    setText('wgStatWithdrawals', '₹' + wgWithTotal.toLocaleString('en-IN'));
+    setText('wgStatWithCount', wgWiths.length + ' approved');
+    const wgNetEl = document.getElementById('wgStatNet');
+    if (wgNetEl) { wgNetEl.textContent = '₹' + Math.abs(wgNet).toLocaleString('en-IN'); wgNetEl.style.color = wgNet >= 0 ? 'var(--green)' : 'var(--red2)'; }
+
     setText('statTotalUsers', users.length);
     setText('statNewUsers', newUsers.length + ' new');
     setText('statTotalBets', totalBets.toLocaleString('en-IN'));
@@ -2143,6 +2223,7 @@ function loadFinance() {
           <div style="font-size:0.75rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.username || 'Unknown'}</div>
           <div style="font-size:0.68rem;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;" title="${r.upiId || ''}">${r.upiId || '—'}</div>
           <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})}</div>
+          ${(r.wgpayTranFlow || r.payoutOrderId) ? `<div style="font-size:0.62rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;" title="${r.wgpayTranFlow || r.payoutOrderId}">#${r.wgpayTranFlow || r.payoutOrderId}</div>` : ''}
         </div>
         <div style="display:flex;gap:0.3rem;flex-shrink:0;">
           ${r.status === 'pending' ? `
