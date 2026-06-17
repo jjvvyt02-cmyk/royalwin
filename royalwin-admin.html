@@ -1160,9 +1160,12 @@ function renderLastResults(mins, history) {
     return;
   }
   const colorMap = { 'violet': '#7c4dff', 'red': '#e02020', 'green': '#27ae60' };
+  // Sort by timestamp (or round number as fallback) descending so we get the most RECENT 5 results,
+  // not just the first 5 in whatever order Firebase returned them (history grows unbounded over time)
+  const sorted = [...history].sort((a, b) => (b.timestamp || b.round || 0) - (a.timestamp || a.round || 0));
   // Compact horizontal chips
   el.innerHTML = '<div style="display:flex;gap:0.3rem;flex-wrap:wrap;">' +
-    history.slice(0, 5).map(h => {
+    sorted.slice(0, 5).map(h => {
       const bg = colorMap[h.color] || '#7c4dff';
       const bs = h.bigSmall === 'Big' ? 'B' : 'S';
       const bsColor = h.bigSmall === 'Big' ? 'var(--gold)' : '#60a5fa';
