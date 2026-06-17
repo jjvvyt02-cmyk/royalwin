@@ -4442,28 +4442,22 @@
     const isEmail = contact.includes('@');
 
     try {
+      // Unified fake-OTP flow for BOTH email and phone (real Firebase Phone Auth requires
+      // the Blaze billing plan, which is not yet upgraded - this lets registration work
+      // for all users right now; switch phone back to real SMS OTP once Blaze is active)
+      const otp = Math.floor(100000 + Math.random() * 900000).toString();
+      const db = window.fbDB || fbDB;
+      const otpKey = contact.replace(/[.#$\[\]]/g, '_');
+      if (db) {
+        await db.ref('otpVerification/' + otpKey).set({ otp, expires: Date.now() + 300000 });
+      }
+      window._regOTP = otp;
+      window._regOTPExpiry = Date.now() + 300000;
+      window._regIsEmail = isEmail;
       if (isEmail) {
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
-        window._regOTP = otp;
-        window._regOTPExpiry = Date.now() + 300000;
-        window._regIsEmail = true;
         showToast('📧 OTP: ' + otp + ' (copy this)');
-
       } else {
-        showToast('⏳ Sending OTP to ' + contact + '...');
-        let phone = contact.replace(/\s/g, '');
-        if (!phone.startsWith('+')) phone = '+91' + phone;
-        if (!window.recaptchaVerifier) {
-          window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptcha-container', {
-            size: 'invisible',
-            callback: () => {}
-          });
-        }
-
-        const confirmResult = await firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier);
-        window._confirmResult = confirmResult;
-        window._regIsEmail = false;
-        showToast('📱 OTP sent to ' + phone + '!');
+        showToast('📱 OTP: ' + otp + ' (copy this) — SMS delivery coming soon');
       }
       const fields = document.getElementById('registerFormFields');
       if (fields) fields.style.display = 'none';
@@ -4545,30 +4539,20 @@
     }
 
     const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
-    const isEmail = contact.includes('@');
 
     try {
-      if (isEmail) {
-        const db = window.fbDB || fbDB;
-        if (db) {
-          const snap = await db.ref('otpVerification/' + contact.replace(/[.#$\[\]]/g, '_')).once('value');
-          const data = snap.val();
-          if (!data) { showToast('❌ OTP expired. Please request a new one.'); return; }
-          if (Date.now() > data.expires) { showToast('❌ OTP expired. Please request a new one.'); return; }
-          if (data.otp !== otp) { showToast('❌ Wrong OTP. Please try again.'); return; }
-          await db.ref('otpVerification/' + contact.replace(/[.#$\[\]]/g, '_')).remove();
-        }
-        showToast('✅ Email verified!');
-        await doRegister();
-
-      } else {
-        if (!window._phoneConfirmResult && !window._confirmResult) { showToast('❌ Please request OTP again.'); return; }
-        showToast('⏳ Verifying OTP...');
-        const confirmResult = window._phoneConfirmResult || window._confirmResult;
-        await confirmResult.confirm(otp);
-        showToast('✅ Phone verified!');
-        await doRegister();
+      const db = window.fbDB || fbDB;
+      const otpKey = contact.replace(/[.#$\[\]]/g, '_');
+      if (db) {
+        const snap = await db.ref('otpVerification/' + otpKey).once('value');
+        const data = snap.val();
+        if (!data) { showToast('❌ OTP expired. Please request a new one.'); return; }
+        if (Date.now() > data.expires) { showToast('❌ OTP expired. Please request a new one.'); return; }
+        if (data.otp !== otp) { showToast('❌ Wrong OTP. Please try again.'); return; }
+        await db.ref('otpVerification/' + otpKey).remove();
       }
+      showToast('✅ Verified!');
+      await doRegister();
     } catch(e) {
       const msg = e.code === 'auth/invalid-verification-code' ? 'Wrong OTP. Please try again.' :
                   e.code === 'auth/code-expired' ? 'OTP expired. Please request a new one.' :
@@ -7533,6 +7517,19 @@
     }
   }
   window.addEventListener('load', () => tryInitFirebase(10));
+  // ── TRUE SAFETY NET: hides the loader even if the Firebase SDK itself never loads
+  // (network issue, ad-blocker, blocked CDN). The safety net inside initFirebase() only
+  // fires if Firebase loaded successfully - this one fires regardless, after 8 seconds. ──
+  setTimeout(() => {
+    const loader = document.getElementById('appLoader');
+    if (loader && loader.style.display !== 'none') {
+      if (typeof firebase === 'undefined') {
+        showToast('⚠️ Connection issue. Please check your internet and refresh.');
+      }
+      loader.style.opacity = '0';
+      setTimeout(() => { loader.style.display = 'none'; }, 400);
+    }
+  }, 8000);
   const FIREBASE_CONFIG = {
     apiKey: "AIzaSyBOw37okdtBnUv3rfnnUg8nE0Vb5LHyl6g",
     authDomain: "royalwin-32d97.firebaseapp.com",
