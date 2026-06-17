@@ -5769,7 +5769,8 @@
         if (hasDepSnap.val()) { bonusPct=5; bonusAmt=Math.round(amt*0.05); wagerReq=1; }
       }
       const depositRef = await db.ref('adminRequests/deposits').push({
-        orderId, amount: amt, status: 'pending', method: 'Gateway - UPI',
+        orderId, amount: amt, status: 'pending', method: selectedDepositGateway === 'wgpay' ? 'WGPay - UPI' : 'Gateway - UPI',
+        gateway: selectedDepositGateway,
         uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
         username: window.userProfile?.username || 'Unknown',
         contact: window.userProfile?.contact || '',
@@ -5791,7 +5792,7 @@
       if (selectedDepositGateway === 'wgpay') {
         response = await fetch(VERCEL_API_URL + '/api/wgpay-create-order', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ amount: amt, uid: window.currentUser.uid,
+          body: JSON.stringify({ amount: amt, uid: window.currentUser.uid, orderId, depositKey,
             username: window.userProfile?.username || 'User',
             email: window.userProfile?.email || (window.currentUser.uid + '@royalwin.app'),
             phone: window.userProfile?.contact || '9999999999' })
