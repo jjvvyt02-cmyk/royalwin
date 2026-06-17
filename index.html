@@ -4043,10 +4043,12 @@
         default:           statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
       }
       const bonusText = r.bonusPct ? `<span style="font-size:0.7rem;color:var(--gold);margin-left:0.3rem;">+${r.bonusPct}%</span>` : '';
+      const orderId = r.orderId || '';
       return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
         <div>
           <div style="font-weight:700;color:var(--green);">+₹${(r.amount||0).toLocaleString('en-IN')}${bonusText}</div>
           <div style="font-size:0.7rem;color:var(--muted);">${r.method||'UPI'} · ${time}</div>
+          ${orderId ? `<div style="font-size:0.65rem;color:var(--muted);opacity:0.75;">#${orderId}</div>` : ''}
         </div>
         <div style="font-size:0.75rem;font-weight:700;color:${statusColor};">${statusIcon} ${statusText}</div>
       </div>`;
@@ -4091,10 +4093,12 @@
         case 'processing':  statusColor='var(--gold)';  statusIcon='⚙️'; statusText='Processing'; break;
         default:            statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
       }
+      const orderId = r.wgpayTranFlow || r.payoutOrderId || '';
       return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
         <div>
           <div style="font-weight:700;color:var(--red2);">-₹${(r.amount||0).toLocaleString('en-IN')}</div>
           <div style="font-size:0.7rem;color:var(--muted);">${r.method||'UPI'} · ${time}</div>
+          ${orderId ? `<div style="font-size:0.65rem;color:var(--muted);opacity:0.75;">#${orderId}</div>` : ''}
           ${r.status==='processing'?'<div style="font-size:0.67rem;color:var(--gold);">Expected within 24 hours</div>':''}
           ${r.status==='failed'||r.status==='rejected'?'<div style="font-size:0.67rem;color:var(--red2);">Amount refunded</div>':''}
         </div>
@@ -5733,6 +5737,22 @@
 
     const VERCEL_API_URL = 'https://royalwin-api.vercel.app';
 
+  let selectedDepositGateway = 'wgpay';
+  function selectDepositGateway(gateway, el) {
+    if (selectedDepositGateway === gateway) return;
+    selectedDepositGateway = gateway;
+    document.querySelectorAll('#panel-deposit .method-card').forEach(c => c.classList.remove('selected'));
+    el.classList.add('selected');
+    const loader = document.getElementById('gatewaySwitchLoader');
+    const btn = document.getElementById('depositActionBtn');
+    if (loader) loader.style.display = 'flex';
+    if (btn) btn.style.opacity = '0.5';
+    setTimeout(() => {
+      if (loader) loader.style.display = 'none';
+      if (btn) btn.style.opacity = '1';
+    }, 600);
+  }
+
   async function openGatewayDeposit() {
     if (!isLoggedIn) { showToast('🔐 Please sign in first!'); showPage('login'); return; }
     const amt = parseFloat(document.getElementById('depositAmount').value || 500);
@@ -5766,20 +5786,40 @@
           }
         } catch(e) {}
       }, 5 * 60 * 1000);
-      const response = await fetch(VERCEL_API_URL + '/api/create-order', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: amt, uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
-          username: window.userProfile?.username || 'User',
-          contact: window.userProfile?.contact || '',
-          orderId, callbackUrl: window.location.href })
-      });
-      const data = await response.json();
-      if (data.success && data.url) {
-        window.open(data.url, '_blank');
-        showToast('✅ Payment page opened!');
+
+      let response, data;
+      if (selectedDepositGateway === 'wgpay') {
+        response = await fetch(VERCEL_API_URL + '/api/wgpay-create-order', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: amt, uid: window.currentUser.uid,
+            username: window.userProfile?.username || 'User',
+            email: window.userProfile?.email || (window.currentUser.uid + '@royalwin.app'),
+            phone: window.userProfile?.contact || '9999999999' })
+        });
+        data = await response.json();
+        if (data.success && data.paymentUrl) {
+          window.open(data.paymentUrl, '_blank');
+          showToast('✅ Payment page opened!');
+        } else {
+          db.ref('adminRequests/deposits/' + depositKey + '/status').set('cancelled');
+          showToast('❌ ' + (data.msg || 'Payment gateway error. Please try again.'));
+        }
       } else {
-        db.ref('adminRequests/deposits/' + depositKey + '/status').set('cancelled');
-        showToast('❌ ' + (data.msg || 'Payment gateway error. Please try again.'));
+        response = await fetch(VERCEL_API_URL + '/api/create-order', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ amount: amt, uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,6),
+            username: window.userProfile?.username || 'User',
+            contact: window.userProfile?.contact || '',
+            orderId, callbackUrl: window.location.href })
+        });
+        data = await response.json();
+        if (data.success && data.url) {
+          window.open(data.url, '_blank');
+          showToast('✅ Payment page opened!');
+        } else {
+          db.ref('adminRequests/deposits/' + depositKey + '/status').set('cancelled');
+          showToast('❌ ' + (data.msg || 'Payment gateway error. Please try again.'));
+        }
       }
     } catch(e) {
       try { if (depositKey) db.ref('adminRequests/deposits/' + depositKey + '/status').set('cancelled'); } catch(err) {}
@@ -6990,8 +7030,9 @@
           const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
           const currentBal = parseFloat(balSnap.val() || 0);
 
-          const approved = Object.values(depSnap.val())
-            .filter(d => d.uid === user.uid && d.status === 'approved')
+          const allDeps = Object.values(depSnap.val()).filter(d => d.uid === user.uid);
+          const approved = allDeps
+            .filter(d => d.status === 'approved')
             .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); // oldest first
           let runningBal = currentBal;
           for (let i = approved.length - 1; i >= 0; i--) {
@@ -7007,14 +7048,21 @@
 
           approved.forEach(d => {
             const totalAmt = (d.amount || 0) + (d.bonusAmt || 0);
-            const details = d.bonusAmt > 0
-              ? 'Deposit + ' + d.bonusPct + '% bonus (₹' + d.bonusAmt + ')'
-              : 'Deposit approved';
             txs.push({
               type: 'deposit',
               amount: totalAmt,
-              details: details,
+              details: 'Success',
               balance: d._computedBal || d.balanceAfter || 0,
+              timestamp: d.timestamp || 0
+            });
+          });
+
+          allDeps.filter(d => d.status === 'rejected' || d.status === 'failed').forEach(d => {
+            txs.push({
+              type: 'deposit',
+              amount: d.amount || 0,
+              details: 'Failed',
+              balance: d.balanceAfter || 0,
               timestamp: d.timestamp || 0
             });
           });
@@ -7026,11 +7074,11 @@
           Object.values(withSnap.val())
             .filter(w => w.uid === user.uid)
             .forEach(w => {
-              const statusLabel = w.status === 'approved' ? '✅ Paid' : w.status === 'rejected' ? '❌ Failed' : '⏳ Processing';
+              const statusLabel = w.status === 'approved' ? 'Success' : (w.status === 'rejected' || w.status === 'failed') ? 'Failed' : 'Pending';
               txs.push({
                 type: 'withdrawal',
                 amount: w.amount || 0,
-                details: statusLabel + ' · ' + (w.method || 'UPI'),
+                details: statusLabel,
                 balance: w.balanceAfter || 0,
                 timestamp: w.timestamp || 0
               });
@@ -7748,6 +7796,23 @@
           <span style="font-size:0.82rem;color:var(--muted);">You need to send:</span>
           <span style="font-size:1rem;font-weight:800;color:#26a17b;" id="usdtAmountDisplay">0 USDT</span>
         </div>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <div class="section-title" style="font-size:0.95rem;margin-bottom:0.6rem;">Select Gateway</div>
+        <div style="display:flex;gap:0.7rem;max-width:400px;">
+          <div class="method-card selected" id="gw-wgpay" onclick="selectDepositGateway('wgpay',this)" style="flex:1;cursor:pointer;">
+            <div style="font-weight:700;font-size:0.85rem;">⚡ WGPay</div>
+            <div style="font-size:0.65rem;color:var(--muted);margin-top:0.15rem;">Fast UPI</div>
+          </div>
+          <div class="method-card" id="gw-cxpay" onclick="selectDepositGateway('cxpay',this)" style="flex:1;cursor:pointer;">
+            <div style="font-weight:700;font-size:0.85rem;">💳 CXPay</div>
+            <div style="font-size:0.65rem;color:var(--muted);margin-top:0.15rem;">UPI</div>
+          </div>
+        </div>
+      </div>
+      <div id="gatewaySwitchLoader" style="display:none;align-items:center;gap:0.6rem;margin-bottom:1rem;color:var(--muted);font-size:0.82rem;">
+        <div style="width:18px;height:18px;border:2.5px solid rgba(240,192,64,0.25);border-top-color:var(--gold);border-radius:50%;animation:spin 0.7s linear infinite;"></div>
+        Loading gateway...
       </div>
       <div style="display:flex;gap:1rem;flex-wrap:wrap;">
         <button id="depositActionBtn" class="btn btn-gold" style="padding:0.8rem 2rem;" onclick="openGatewayDeposit()">📱 Pay Now via UPI</button>
