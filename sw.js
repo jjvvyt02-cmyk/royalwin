@@ -1,29 +1,25 @@
-// RoyalWin Service Worker
-// Provides offline support and makes the app installable as a PWA.
-// Strategy: cache-first for static assets, network-first for API calls.
+// RoyalWin Service Worker v2
+// Network-first for index.html so updates deploy immediately to all users.
+// Cache-first for static assets (fonts, icons) that rarely change.
 
-const CACHE_NAME = 'royalwin-v1';
+const CACHE_NAME = 'royalwin-v2';
 const STATIC_ASSETS = [
-  '/royalwin/',
-  '/royalwin/index.html',
   '/royalwin/manifest.json',
   '/royalwin/favicon.svg',
   '/royalwin/favicon.ico'
 ];
 
-// Install: pre-cache core assets
+// Install: pre-cache static assets only (NOT index.html)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(STATIC_ASSETS).catch(() => {
-        // Silently ignore individual asset failures (e.g. favicon.ico missing)
-      });
+      return cache.addAll(STATIC_ASSETS).catch(() => {});
     })
   );
   self.skipWaiting();
 });
 
-// Activate: clean up old caches
+// Activate: delete old caches so stale content is never served
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) =>
@@ -33,11 +29,10 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch: network-first for API/Firebase calls, cache-first for static assets
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // Always go to network for API calls, Firebase, and external CDNs
+  // Always network-only for API calls, Firebase, CDNs
   if (
     url.hostname.includes('vercel.app') ||
     url.hostname.includes('firebase') ||
@@ -46,10 +41,33 @@ self.addEventListener('fetch', (event) => {
     url.hostname.includes('cdnjs') ||
     url.hostname.includes('fonts.g')
   ) {
-    return; // let browser handle normally
+    return;
   }
 
-  // Cache-first for same-origin static assets
+  // Network-first for index.html and navigation requests
+  // This ensures users always get the latest version after each deploy
+  if (event.request.mode === 'navigate' ||
+      url.pathname === '/royalwin/' ||
+      url.pathname === '/royalwin/index.html') {
+    event.respondWith(
+      fetch(event.request)
+        .then((response) => {
+          // Cache the fresh response for offline fallback
+          if (response && response.status === 200) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return response;
+        })
+        .catch(() => {
+          // Only fall back to cache if completely offline
+          return caches.match(event.request) || caches.match('/royalwin/index.html');
+        })
+    );
+    return;
+  }
+
+  // Cache-first for other static assets (icons, manifest)
   event.respondWith(
     caches.match(event.request).then((cached) => {
       if (cached) return cached;
@@ -59,11 +77,6 @@ self.addEventListener('fetch', (event) => {
           caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
         }
         return response;
-      }).catch(() => {
-        // If both cache and network fail, return the cached index for navigation
-        if (event.request.mode === 'navigate') {
-          return caches.match('/royalwin/index.html');
-        }
       });
     })
   );
