@@ -496,9 +496,10 @@
             <div style="background:linear-gradient(135deg,#1a0033,#3d0088);border:1px solid rgba(108,60,225,0.3);border-radius:10px;padding:0.7rem 0.8rem;margin-bottom:0.7rem;display:flex;align-items:center;justify-content:space-between;">
               <div>
                 <div style="font-size:0.62rem;color:rgba(255,255,255,0.6);margin-bottom:0.15rem;">⚡ WGPay Balance</div>
-                <div style="font-family:'Cinzel',serif;font-size:1rem;color:#a060ff;font-weight:700;" id="wgpayBalance">Check merchant panel</div>
-                <div style="font-size:0.58rem;color:rgba(255,255,255,0.5);">No balance API available</div>
+                <div style="font-family:'Cinzel',serif;font-size:1rem;color:#a060ff;font-weight:700;" id="wgpayBalance">—</div>
+                <div style="font-size:0.58rem;color:rgba(255,255,255,0.5);" id="wgpayBalanceFrozen">Frozen: —</div>
               </div>
+              <button onclick="loadWGPayBalance()" style="background:rgba(108,60,225,0.2);border:1px solid rgba(108,60,225,0.3);border-radius:6px;padding:0.3rem 0.5rem;color:#a060ff;font-size:0.65rem;cursor:pointer;font-family:'Exo 2',sans-serif;">🔄</button>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;">
               <div style="background:var(--bg3);border-radius:8px;padding:0.55rem;text-align:center;">
@@ -1007,6 +1008,8 @@ function initAdmin() {
   updateNextResultBadges();
   loadFinance();
   loadRevenueStats();
+  loadCXPayBalance();
+  loadWGPayBalance();
   // Pre-load settings data
   setTimeout(() => { loadGiftCodes(); loadCommissionRates(); loadLimits(); }, 1000);
 }
@@ -2592,6 +2595,29 @@ window.loadCXPayBalance = async function() {
   }
 };
 
+// ── WGPAY BALANCE ──
+window.loadWGPayBalance = async function() {
+  const balEl = document.getElementById('wgpayBalance');
+  const frozenEl = document.getElementById('wgpayBalanceFrozen');
+  if (balEl) balEl.textContent = '⏳ Loading...';
+  try {
+    const response = await fetch('https://royalwin-api.vercel.app/api/wgpay-balance');
+    const data = await response.json();
+    if (data.code === '0') {
+      const amount = parseFloat(data.amount || 0);
+      const frozen = parseFloat(data.frozen_amount || 0);
+      if (balEl) { balEl.textContent = '₹' + amount.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2}); balEl.style.color = '#a060ff'; }
+      if (frozenEl) frozenEl.textContent = 'Frozen: ₹' + frozen.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2});
+    } else {
+      if (balEl) { balEl.textContent = 'Unavailable'; balEl.style.color = 'var(--red2)'; }
+      if (frozenEl) frozenEl.textContent = data.msg || 'Query failed';
+    }
+  } catch(e) {
+    if (balEl) { balEl.textContent = 'Error Connecting'; balEl.style.color = 'var(--red2)'; }
+    if (frozenEl) frozenEl.textContent = 'API not reachable';
+  }
+};
+
 // ── USER STATISTICS ──
 window.loadUserStats = async function() {
   try {
@@ -2930,7 +2956,7 @@ window.switchTab = function(tab) {
       t.classList.add('active');
     }
   });
-  if (tab === 'finance') { loadRevenueStats('today'); loadCXPayBalance(); loadUserStats(); }
+  if (tab === 'finance') { loadRevenueStats('today'); loadCXPayBalance(); loadWGPayBalance(); loadUserStats(); }
   if (tab === 'users') { loadUsers(); loadFraudAlerts(); }
   if (tab === 'chat') {
     const user = auth.currentUser;
