@@ -3742,21 +3742,60 @@
       // ── TODAY filter for direct/team cards ──
       const todayStart = new Date(); todayStart.setHours(0,0,0,0);
       const todayTs = todayStart.getTime();
-      const dirToday = level1.filter(r => (r.joinedAt||0) >= todayTs);
-      const dirDepsToday = dirToday.filter(r => r.firstDepositAmt > 0);
-      document.getElementById('dirRegCount').textContent = dirToday.length;
-      document.getElementById('dirDepCount').textContent = dirDepsToday.length;
-      document.getElementById('dirDepAmt').textContent = dirDepsToday.reduce((s,r) => s + (r.firstDepositAmt||0), 0).toLocaleString('en-IN', {minimumFractionDigits:2});
-      document.getElementById('dirFirstDep').textContent = dirDepsToday.length;
 
+      // Registrations: users who joined today
+      const dirToday = level1.filter(r => (r.joinedAt||0) >= todayTs);
       const teamAll = [...level2, ...level3, ...level4];
-      const teamDeps = teamAll.filter(r => r.firstDepositAmt > 0);
       const teamToday = teamAll.filter(r => (r.joinedAt||0) >= todayTs);
-      const teamDepsToday = teamToday.filter(r => r.firstDepositAmt > 0);
+      document.getElementById('dirRegCount').textContent = dirToday.length;
       document.getElementById('teamRegCount').textContent = teamToday.length;
-      document.getElementById('teamDepCount').textContent = teamDepsToday.length;
-      document.getElementById('teamDepAmt').textContent = teamDepsToday.reduce((s,r) => s + (r.firstDepositAmt||0), 0).toLocaleString('en-IN', {minimumFractionDigits:2});
-      document.getElementById('teamFirstDep').textContent = teamDepsToday.length;
+
+      // For deposits/amount/first deposit — read from actual approved deposits today
+      try {
+        const depSnap = await db.ref('adminRequests/deposits').once('value');
+        const allDeposits = depSnap.val() ? Object.values(depSnap.val()) : [];
+
+        // Build sets of referral UIDs for quick lookup
+        const dirUids = new Set(level1.map(r => r.uid).filter(Boolean));
+        const teamUids = new Set(teamAll.map(r => r.uid).filter(Boolean));
+        // Track which UIDs have ever deposited before today (for first deposit detection)
+        const dirFirstDepUids = new Set(level1.filter(r => r.firstDepositAmt > 0 && (r.firstDepositTs||0) < todayTs).map(r => r.uid));
+        const teamFirstDepUids = new Set(teamAll.filter(r => r.firstDepositAmt > 0 && (r.firstDepositTs||0) < todayTs).map(r => r.uid));
+
+        // Filter to approved deposits made today
+        const todayDeps = allDeposits.filter(d =>
+          d.status === 'approved' && (d.timestamp||0) >= todayTs
+        );
+
+        // Direct subordinate deposit stats
+        const dirTodayDeps = todayDeps.filter(d => dirUids.has(d.uid));
+        const dirDepUidsToday = new Set(dirTodayDeps.map(d => d.uid));
+        const dirTotalAmt = dirTodayDeps.reduce((s, d) => s + parseFloat(d.amount||0), 0);
+        // First deposit = deposited today AND had no prior deposits
+        const dirFirstToday = [...dirDepUidsToday].filter(uid => !dirFirstDepUids.has(uid)).length;
+        document.getElementById('dirDepCount').textContent = dirDepUidsToday.size;
+        document.getElementById('dirDepAmt').textContent = dirTotalAmt.toLocaleString('en-IN', {minimumFractionDigits:2});
+        document.getElementById('dirFirstDep').textContent = dirFirstToday;
+
+        // Team subordinate deposit stats
+        const teamTodayDeps = todayDeps.filter(d => teamUids.has(d.uid));
+        const teamDepUidsToday = new Set(teamTodayDeps.map(d => d.uid));
+        const teamTotalAmt = teamTodayDeps.reduce((s, d) => s + parseFloat(d.amount||0), 0);
+        const teamFirstToday = [...teamDepUidsToday].filter(uid => !teamFirstDepUids.has(uid)).length;
+        document.getElementById('teamDepCount').textContent = teamDepUidsToday.size;
+        document.getElementById('teamDepAmt').textContent = teamTotalAmt.toLocaleString('en-IN', {minimumFractionDigits:2});
+        document.getElementById('teamFirstDep').textContent = teamFirstToday;
+      } catch(e) {
+        // Fallback to referral node data if deposits can't be read
+        const dirDepsToday = dirToday.filter(r => r.firstDepositAmt > 0);
+        document.getElementById('dirDepCount').textContent = dirDepsToday.length;
+        document.getElementById('dirDepAmt').textContent = dirDepsToday.reduce((s,r) => s+(r.firstDepositAmt||0),0).toLocaleString('en-IN',{minimumFractionDigits:2});
+        document.getElementById('dirFirstDep').textContent = dirDepsToday.length;
+        const teamDepsToday = teamToday.filter(r => r.firstDepositAmt > 0);
+        document.getElementById('teamDepCount').textContent = teamDepsToday.length;
+        document.getElementById('teamDepAmt').textContent = teamDepsToday.reduce((s,r) => s+(r.firstDepositAmt||0),0).toLocaleString('en-IN',{minimumFractionDigits:2});
+        document.getElementById('teamFirstDep').textContent = teamDepsToday.length;
+      }
 
       // ── PROMOTION DATA CARD — all-time totals + this week commission ──
       const totalCommAll = allRefs.reduce((s, r) => s + (r.bonus||0) + (r.commission||0), 0);
