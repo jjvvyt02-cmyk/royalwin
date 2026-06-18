@@ -327,8 +327,9 @@
   }
   .sub-card-title { display:flex; align-items:center; gap:0.4rem; font-size:0.75rem; font-weight:700; color:var(--gold); margin-bottom:0.8rem; }
   .sub-card-title svg { opacity:0.7; }
-  .sub-stat-row { display:grid; grid-template-columns:1fr 1fr; gap:0.8rem 0; }
-  .sub-stat { }
+  .sub-stat-row { display:grid; grid-template-columns:1fr 1fr; gap:0 0; }
+  .sub-stat { padding:0.5rem 0; }
+  .sub-stat:nth-child(3), .sub-stat:nth-child(4) { padding-top:0.9rem; border-top:1px solid rgba(255,255,255,0.06); margin-top:0.4rem; }
   .sub-stat-val { font-family:'Cinzel',serif; font-size:1.1rem; font-weight:800; color:var(--text); }
   .sub-stat-lbl { font-size:0.62rem; color:var(--muted); margin-top:1px; }
 
@@ -2207,15 +2208,15 @@
     <div style="margin:0.8rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem;">
       <input id="commdetailsDate" type="date" onchange="loadCommDetails()" style="width:100%;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.6rem 1rem;color:var(--text);font-size:0.85rem;font-family:'Exo 2',sans-serif;outline:none;color-scheme:dark;margin-bottom:0.8rem;box-sizing:border-box;">
       <div style="display:flex;align-items:center;justify-content:space-between;">
-        <span style="font-size:0.85rem;font-weight:700;color:var(--text);"><span data-t="ref.totalcomm2">Total commission</span></span>
+        <span style="font-size:0.85rem;font-weight:700;color:var(--text);">Commission earned this day</span>
         <span style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--green);" id="commdetailsTotal">0.00</span>
       </div>
     </div>
 
     
     <div style="margin:0 1rem;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
-      <div style="display:grid;grid-template-columns:0.4fr 1fr 1fr 0.9fr;gap:0.2rem;padding:0.6rem 0.9rem;background:rgba(255,255,255,0.03);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;">
-        <div>Lv</div><div>Member ID</div><div>Total Dep</div><div>Bet Comm</div>
+      <div style="display:grid;grid-template-columns:0.5fr 0.4fr 1.2fr 1fr;gap:0.2rem;padding:0.6rem 0.9rem;background:rgba(255,255,255,0.03);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;">
+        <div>#</div><div>Lv</div><div>Member ID</div><div style="text-align:right;">Commission</div>
       </div>
       <div id="commdetailsRows">
         <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;"><span data-t="ref.nodata">No data</span></div>
@@ -3476,65 +3477,86 @@
       </div>`;
     }
   }
-  function loadCommDetails() {
-    const allRefs = window._refAllData || [];
-    const dateVal = document.getElementById('commdetailsDate')?.value || '';
+  async function loadCommDetails() {
+    const dateVal = document.getElementById('commdetailsDate')?.value || new Date().toISOString().split('T')[0];
     const rowsEl = document.getElementById('commdetailsRows');
     const totalEl = document.getElementById('commdetailsTotal');
-
-    // One row per referred user: Level, Member ID, Total Deposit, Bet Commission only
-    // Reg bonus excluded — this page shows bet-based commission earnings only
-    let commRows = [];
-    allRefs.forEach(r => {
-      if (!r.commission || r.commission <= 0) return;
-      const joinedAt = r.joinedAt || r.creditedAt || 0;
-      if (dateVal) {
-        const dayStart = new Date(dateVal).setHours(0,0,0,0);
-        const dayEnd = dayStart + 86400000;
-        if (joinedAt < dayStart || joinedAt >= dayEnd) return;
-      }
-      commRows.push({
-        lv: r.level || 1,
-        memberId: r.memberId || '—',
-        totalDep: r.firstDepositAmt || 0,
-        betComm: r.commission || 0
-      });
-    });
-
-    commRows.sort((a, b) => b.betComm - a.betComm);
-    const total = commRows.reduce((s, c) => s + c.betComm, 0);
-    if (totalEl) totalEl.textContent = total.toLocaleString('en-IN', {minimumFractionDigits:2});
-
     if (!rowsEl) return;
-    if (commRows.length === 0) {
-      rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;"><span data-t="ref.nodata">No data</span></div>';
+
+    rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">Loading...</div>';
+    if (totalEl) totalEl.textContent = '0.00';
+
+    const user = window.currentUser;
+    const db = window.fbDB || fbDB;
+    if (!user || !db) {
+      rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">Please log in</div>';
       return;
     }
 
-    const CD_PER_PAGE = 10;
-    if (!window._cdPage) window._cdPage = 1;
-    const cdTotalPages = Math.max(1, Math.ceil(commRows.length / CD_PER_PAGE));
-    if (window._cdPage > cdTotalPages) window._cdPage = 1;
-    const cdItems = commRows.slice((window._cdPage - 1) * CD_PER_PAGE, window._cdPage * CD_PER_PAGE);
-    window._cdAllRows = commRows;
+    try {
+      // Read all commission transactions from the transactions node
+      // Each has: type='commission', amount, fromMemberId, level, timestamp
+      const txSnap = await db.ref('users/' + user.uid + '/transactions').once('value');
+      const txData = txSnap.val() || {};
 
-    rowsEl.innerHTML = cdItems.map(c => {
-      const depDisplay = c.totalDep > 0 ? '\u20b9' + c.totalDep.toLocaleString('en-IN') : '—';
-      const commDisplay = '\u20b9' + c.betComm.toLocaleString('en-IN', {minimumFractionDigits:2});
-      return `<div style="display:grid;grid-template-columns:0.4fr 1fr 1fr 0.9fr;gap:0.2rem;padding:0.6rem 0.9rem;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.72rem;align-items:center;">
-        <div><span class="ref-level-badge lv${c.lv}" style="font-size:0.6rem;padding:0.1rem 0.3rem;">L${c.lv}</span></div>
-        <div style="font-size:0.7rem;font-weight:700;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.memberId}</div>
-        <div style="font-size:0.7rem;color:${c.totalDep>0?'var(--green)':'var(--muted)'};">${depDisplay}</div>
-        <div style="font-size:0.72rem;font-weight:700;color:var(--green);">+${commDisplay}</div>
-      </div>`;
-    }).join('');
+      // Filter to commission type and to the selected date only
+      const dayStart = new Date(dateVal).setHours(0,0,0,0);
+      const dayEnd = dayStart + 86400000;
 
-    if (cdTotalPages > 1) {
-      rowsEl.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.5rem;padding:0.8rem;border-top:1px solid var(--border);">
-        <button onclick="window._cdPage=Math.max(1,window._cdPage-1);loadCommDetails();" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;color:var(--muted);font-size:0.82rem;cursor:pointer;">&#60; Prev</button>
-        <span style="color:var(--muted);font-size:0.78rem;">Page ${window._cdPage} / ${cdTotalPages}</span>
-        <button onclick="window._cdPage=Math.min(${cdTotalPages},window._cdPage+1);loadCommDetails();" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;color:var(--muted);font-size:0.82rem;cursor:pointer;">Next &#62;</button>
-      </div>`;
+      // Group by fromMemberId — sum all commission earned from each user on this date
+      const byMember = {};
+      Object.values(txData).forEach(tx => {
+        if (tx.type !== 'commission') return;
+        const ts = tx.timestamp || 0;
+        if (ts < dayStart || ts >= dayEnd) return;
+        const mid = tx.fromMemberId || tx.from || '—';
+        if (!byMember[mid]) {
+          byMember[mid] = { memberId: mid, lv: tx.level || 1, totalComm: 0 };
+        }
+        byMember[mid].totalComm = parseFloat((byMember[mid].totalComm + (tx.amount || 0)).toFixed(2));
+        // keep lowest level (direct > team)
+        if (tx.level < byMember[mid].lv) byMember[mid].lv = tx.level;
+      });
+
+      let commRows = Object.values(byMember);
+      commRows.sort((a, b) => b.totalComm - a.totalComm); // highest earner first
+
+      const total = commRows.reduce((s, c) => s + c.totalComm, 0);
+      if (totalEl) totalEl.textContent = total.toLocaleString('en-IN', {minimumFractionDigits:2});
+
+      if (commRows.length === 0) {
+        rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">No commission earned on this date</div>';
+        return;
+      }
+
+      const CD_PER_PAGE = 10;
+      if (!window._cdPage) window._cdPage = 1;
+      const cdTotalPages = Math.max(1, Math.ceil(commRows.length / CD_PER_PAGE));
+      if (window._cdPage > cdTotalPages) window._cdPage = 1;
+      const cdItems = commRows.slice((window._cdPage - 1) * CD_PER_PAGE, window._cdPage * CD_PER_PAGE);
+      window._cdAllRows = commRows;
+
+      rowsEl.innerHTML = cdItems.map((c, i) => {
+        const rank = (window._cdPage - 1) * CD_PER_PAGE + i + 1;
+        const commDisplay = '₹' + c.totalComm.toLocaleString('en-IN', {minimumFractionDigits:2});
+        const rankColor = rank === 1 ? 'var(--gold)' : rank === 2 ? '#c0c0c0' : rank === 3 ? '#cd7f32' : 'var(--muted)';
+        return `<div style="display:grid;grid-template-columns:0.5fr 0.4fr 1.2fr 1fr;gap:0.2rem;padding:0.6rem 0.9rem;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.72rem;align-items:center;">
+          <div style="font-size:0.72rem;font-weight:800;color:${rankColor};">#${rank}</div>
+          <div><span class="ref-level-badge lv${c.lv}" style="font-size:0.6rem;padding:0.1rem 0.3rem;">L${c.lv}</span></div>
+          <div style="font-size:0.7rem;font-weight:700;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.memberId}</div>
+          <div style="font-size:0.72rem;font-weight:700;color:var(--green);text-align:right;">+${commDisplay}</div>
+        </div>`;
+      }).join('');
+
+      if (cdTotalPages > 1) {
+        rowsEl.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.5rem;padding:0.8rem;border-top:1px solid var(--border);">
+          <button onclick="window._cdPage=Math.max(1,window._cdPage-1);loadCommDetails();" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;color:var(--muted);font-size:0.82rem;cursor:pointer;">&#60; Prev</button>
+          <span style="color:var(--muted);font-size:0.78rem;">Page ${window._cdPage} / ${cdTotalPages}</span>
+          <button onclick="window._cdPage=Math.min(${cdTotalPages},window._cdPage+1);loadCommDetails();" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;color:var(--muted);font-size:0.82rem;cursor:pointer;">Next &#62;</button>
+        </div>`;
+      }
+    } catch(e) {
+      rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">Failed to load commission data</div>';
     }
   }
   window._refAllData = [];  // all referral rows
