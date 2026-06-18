@@ -2446,15 +2446,35 @@
         if (heroBanner) heroBanner.style.display = 'none';
       }
     }
-    if (name === 'register' && window._referralCode) {
-      setTimeout(() => {
-        const codeInput = document.getElementById('inviteCodeInput');
-        const codeDisplay = document.getElementById('inviteCodeDisplay');
-        const invitePill = document.getElementById('invitePill');
-        if (codeInput) codeInput.value = window._referralCode;
-        if (codeDisplay) codeDisplay.textContent = window._referralCode;
-        if (invitePill) invitePill.style.display = 'flex';
-      }, 50);
+    if (name === 'register') {
+      // Always reset to the form view first - prevents landing on a stale OTP screen
+      // left over from a previous registration attempt (e.g. after logout, or clicking
+      // "Register Now" again), since showPage only manages page-level visibility and
+      // never touched this internal sub-section state before.
+      const otpWrapEl = document.getElementById('otpWrap');
+      const formFieldsEl = document.getElementById('registerFormFields');
+      if (otpWrapEl) otpWrapEl.style.display = 'none';
+      if (formFieldsEl) formFieldsEl.style.display = 'block';
+      const otpBoxEl = document.getElementById('otpDisplayBox');
+      if (otpBoxEl) otpBoxEl.style.display = 'none';
+      if (window.otpInterval) clearInterval(window.otpInterval);
+
+      if (!window._referralCode) {
+        try {
+          const savedCode = localStorage.getItem('royalwin_referralCode');
+          if (savedCode) window._referralCode = savedCode;
+        } catch(e) {}
+      }
+      if (window._referralCode) {
+        setTimeout(() => {
+          const codeInput = document.getElementById('inviteCodeInput');
+          const codeDisplay = document.getElementById('inviteCodeDisplay');
+          const invitePill = document.getElementById('invitePill');
+          if (codeInput) codeInput.value = window._referralCode;
+          if (codeDisplay) codeDisplay.textContent = window._referralCode;
+          if (invitePill) invitePill.style.display = 'flex';
+        }, 50);
+      }
     }
 
     if (name === 'bethistory') renderBetHistory(currentBetFilter);
@@ -2856,6 +2876,7 @@
     const code = params.get('invitationCode') || params.get('ref') || params.get('r_code') || params.get('invite');
     if (!code) return;
     window._referralCode = code;
+    try { localStorage.setItem('royalwin_referralCode', code); } catch(e) {}
     waitForFirebase(() => {
       const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
         unsubscribe(); // only need it once
@@ -4603,8 +4624,8 @@
   }
   function goBackFromOTP() {
     // Hide OTP section, show registration form
-    const otpSection = document.getElementById('otpSection');
-    const formSection = document.getElementById('regFormSection');
+    const otpSection = document.getElementById('otpWrap');
+    const formSection = document.getElementById('registerFormFields');
     if (otpSection) otpSection.style.display = 'none';
     if (formSection) formSection.style.display = 'block';
     // Clear OTP inputs
@@ -5539,6 +5560,7 @@
       showToast('⏳ Creating your account...');
       const userCred = await firebase.auth().createUserWithEmailAndPassword(email, password);
       const user = userCred.user;
+      window._registrationInProgress = true; // Prevents welcome bonus from firing during Firebase's automatic post-signup login
       const _rc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       const myRefCode = 'ROY-' + Array.from({length:6}, () => _rc[Math.floor(Math.random() * _rc.length)]).join('');
       let memberId;
@@ -5612,8 +5634,11 @@
 
       // Sign out and redirect to login — user must login consciously
       await firebase.auth().signOut();
+      window._registrationInProgress = false;
       isLoggedIn = false;
       window.currentUser = null;
+      window._referralCode = null;
+      try { localStorage.removeItem('royalwin_referralCode'); } catch(e) {}
       showToast('🎉 Registration successful! Please login to continue');
       setTimeout(() => {
         showPage('login');
@@ -5627,6 +5652,7 @@
     }, 1200);
     } catch(e) {
       console.error('Register error:', e);
+      window._registrationInProgress = false;
       const msg = e.code === 'auth/email-already-in-use' ? 'This account already exists. Please sign in.' :
                   e.code === 'auth/weak-password' ? 'Password is too weak.' :
                   e.code === 'auth/invalid-email' ? 'Invalid email address.' : e.message;
@@ -7344,7 +7370,10 @@
       window.userProfile = profile;
 
       // ── WELCOME BONUS: Give ₹38 on first login ──
-      if (!profile.welcomeBonusGiven) {
+      // Skip entirely if this is the brief auto-login Firebase performs right after account
+      // creation (before our code explicitly signs the user back out) - that is NOT a real,
+      // conscious login, so the bonus must wait until the user actually logs in themselves.
+      if (!profile.welcomeBonusGiven && !window._registrationInProgress) {
         const WELCOME_AMOUNT = 38;
         const WELCOME_WAGER = 76; // 2x wager requirement
         try {
