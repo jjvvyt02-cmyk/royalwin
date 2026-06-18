@@ -328,8 +328,8 @@
   .sub-card-title { display:flex; align-items:center; gap:0.4rem; font-size:0.75rem; font-weight:700; color:var(--gold); margin-bottom:0.8rem; }
   .sub-card-title svg { opacity:0.7; }
   .sub-stat-row { display:grid; grid-template-columns:1fr 1fr; gap:0 0; }
-  .sub-stat { padding:0.5rem 0; }
-  .sub-stat:nth-child(3), .sub-stat:nth-child(4) { padding-top:0.9rem; border-top:1px solid rgba(255,255,255,0.06); margin-top:0.4rem; }
+  .sub-stat { padding:0.4rem 0; }
+  .sub-stat-bottom { padding-top:0.8rem; margin-top:0.4rem; border-top:1px solid rgba(255,255,255,0.07); }
   .sub-stat-val { font-family:'Cinzel',serif; font-size:1.1rem; font-weight:800; color:var(--text); }
   .sub-stat-lbl { font-size:0.62rem; color:var(--muted); margin-top:1px; }
 
@@ -1985,7 +1985,7 @@
       <div class="sub-card">
         <div class="sub-card-title">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-          Direct Subordinates <span style="font-size:0.6rem;color:var(--muted);font-weight:400;margin-left:0.3rem;">Today</span>
+          Direct Subordinates
         </div>
         <div class="sub-stat-row">
           <div class="sub-stat">
@@ -1996,11 +1996,11 @@
             <div class="sub-stat-val" id="dirDepCount">0</div>
             <div class="sub-stat-lbl">Deposits</div>
           </div>
-          <div class="sub-stat">
+          <div class="sub-stat sub-stat-bottom">
             <div class="sub-stat-val" style="color:var(--gold);font-size:0.95rem;" id="dirDepAmt">0.00</div>
             <div class="sub-stat-lbl"><span data-t="ref.depamt">Deposit amount</span></div>
           </div>
-          <div class="sub-stat">
+          <div class="sub-stat sub-stat-bottom">
             <div class="sub-stat-val" id="dirFirstDep">0</div>
             <div class="sub-stat-lbl"><span data-t="ref.firstdeps">First deposits</span></div>
           </div>
@@ -2011,7 +2011,7 @@
       <div class="sub-card">
         <div class="sub-card-title">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><path d="M2 20c0-3 3-5 7-5M14 20c0-3 3-5 7-5"/></svg>
-          Team Subordinates <span style="font-size:0.6rem;color:var(--muted);font-weight:400;margin-left:0.3rem;">Today</span>
+          Team Subordinates
         </div>
         <div class="sub-stat-row">
           <div class="sub-stat">
@@ -2022,11 +2022,11 @@
             <div class="sub-stat-val" id="teamDepCount">0</div>
             <div class="sub-stat-lbl">Deposits</div>
           </div>
-          <div class="sub-stat">
+          <div class="sub-stat sub-stat-bottom">
             <div class="sub-stat-val" style="color:var(--gold);font-size:0.95rem;" id="teamDepAmt">0.00</div>
             <div class="sub-stat-lbl"><span data-t="ref.depamt">Deposit amount</span></div>
           </div>
-          <div class="sub-stat">
+          <div class="sub-stat sub-stat-bottom">
             <div class="sub-stat-val" id="teamFirstDep">0</div>
             <div class="sub-stat-lbl"><span data-t="ref.firstdeps">First deposits</span></div>
           </div>
@@ -2036,7 +2036,6 @@
 
     
     <div class="ref-actions">
-      <button class="ref-action-btn" onclick="downloadRefQR()">⬇️ Download QR Code</button>
       <div class="ref-invite-row" onclick="copyCode()">
         <span class="ref-invite-label">Copy invite code</span>
         <span class="ref-invite-code">
@@ -2092,7 +2091,7 @@
     <div style="margin:0 1rem 1.5rem;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
       <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
         <div style="font-size:0.8rem;font-weight:700;color:var(--gold);">📊 Promotion Data</div>
-        <div style="font-size:0.62rem;color:var(--muted);">Overall</div>
+        <div style="width:1px;"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
         <div style="padding:0.9rem 1rem;border-right:1px solid var(--border);border-bottom:1px solid var(--border);">
@@ -2115,7 +2114,6 @@
     </div>
 
     
-    <canvas id="refQrCanvas" width="200" height="200" style="display:none;"></canvas>
   </div>
 </div>
 
