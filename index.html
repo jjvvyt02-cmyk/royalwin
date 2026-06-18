@@ -327,7 +327,7 @@
   }
   .sub-card-title { display:flex; align-items:center; gap:0.4rem; font-size:0.75rem; font-weight:700; color:var(--gold); margin-bottom:0.8rem; }
   .sub-card-title svg { opacity:0.7; }
-  .sub-stat-row { display:grid; grid-template-columns:1fr 1fr; gap:0.4rem 0; }
+  .sub-stat-row { display:grid; grid-template-columns:1fr 1fr; gap:0.8rem 0; }
   .sub-stat { }
   .sub-stat-val { font-family:'Cinzel',serif; font-size:1.1rem; font-weight:800; color:var(--text); }
   .sub-stat-lbl { font-size:0.62rem; color:var(--muted); margin-top:1px; }
@@ -2106,7 +2106,7 @@
       
       <div style="flex:1;display:flex;align-items:center;gap:0.4rem;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.8rem;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input id="refSearchInput" type="text" placeholder="Search UID..." oninput="filterSubData()" style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:0.78rem;font-family:'Exo 2',sans-serif;">
+        <input id="refSearchInput" type="text" placeholder="Search Member ID..." oninput="filterSubData()" style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:0.78rem;font-family:'Exo 2',sans-serif;">
         <span id="refSearchCount" style="font-size:0.68rem;color:var(--muted);white-space:nowrap;"></span>
         <button id="refSearchClear" onclick="document.getElementById('refSearchInput').value='';filterSubData();" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;padding:0;display:none;">✕</button>
       </div>
@@ -2158,8 +2158,8 @@
 
     
     <div style="margin:0 1rem;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
-      <div style="display:grid;grid-template-columns:0.4fr 1.2fr 0.9fr 0.8fr 0.8fr;gap:0.2rem;padding:0.6rem 0.9rem;background:rgba(255,255,255,0.03);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;">
-        <div>Lv</div><div>UID</div><div>Joined</div><div>Deposit</div><div>Bet</div>
+      <div style="display:grid;grid-template-columns:0.4fr 1.2fr 1.1fr 0.8fr 0.8fr;gap:0.2rem;padding:0.6rem 0.9rem;background:rgba(255,255,255,0.03);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;">
+        <div>Lv</div><div>Member ID</div><div>Joined</div><div>Deposit</div><div>Bonus</div>
       </div>
       <div id="subdataRows">
         <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;"><span data-t="ref.nodata">No data</span></div>
@@ -2188,8 +2188,8 @@
 
     
     <div style="margin:0 1rem;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
-      <div style="display:grid;grid-template-columns:0.4fr 1.2fr 1fr 0.8fr;gap:0.2rem;padding:0.6rem 0.9rem;background:rgba(255,255,255,0.03);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;">
-        <div>Lv</div><div>UID</div><div>Type</div><div>Amount</div>
+      <div style="display:grid;grid-template-columns:0.4fr 1fr 1fr 0.9fr;gap:0.2rem;padding:0.6rem 0.9rem;background:rgba(255,255,255,0.03);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;">
+        <div>Lv</div><div>Member ID</div><div>Total Dep</div><div>Bet Comm</div>
       </div>
       <div id="commdetailsRows">
         <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;"><span data-t="ref.nodata">No data</span></div>
@@ -3403,7 +3403,7 @@
       const dayEnd = dayStart + 86400000;
       filtered = filtered.filter(r => (r.joinedAt || 0) >= dayStart && (r.joinedAt || 0) < dayEnd);
     }
-    if (searchVal) filtered = filtered.filter(r => (r.uid||'').toLowerCase().includes(searchVal) || (r.memberId||'').toLowerCase().includes(searchVal));
+    if (searchVal) filtered = filtered.filter(r => (r.memberId||'').toLowerCase().includes(searchVal));
     const deps = filtered.filter(r => r.firstDepositAmt > 0);
     const bettors = filtered.filter(r => r.totalBet > 0);
     document.getElementById('sd-deposits').textContent = deps.length;
@@ -3425,19 +3425,21 @@
 
     rowsEl.innerHTML = sdItems.map(r => {
       const lv = String(r.level||1);
-      const joined = r.joinedAt ? new Date(r.joinedAt).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) : '—';
+      const joined = r.joinedAt ? new Date(r.joinedAt).toLocaleString('en-IN', {
+        day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:true
+      }) : '—';
       const dep = r.firstDepositAmt ? '₹'+Number(r.firstDepositAmt).toLocaleString('en-IN') : '—';
-      const bet = r.totalBet ? '₹'+Number(r.totalBet).toLocaleString('en-IN') : '—';
-      const shortUid = (r.uid||'').substring(0,10) + ((r.uid||'').length > 10 ? '…' : '');
-      return `<div style="display:grid;grid-template-columns:0.4fr 1.2fr 0.9fr 0.8fr 0.8fr;gap:0.2rem;padding:0.6rem 0.9rem;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.72rem;align-items:center;">
+      const totalBonus = (r.bonus||0) + (r.commission||0);
+      const bonusDisplay = totalBonus > 0 ? '₹'+totalBonus.toLocaleString('en-IN', {minimumFractionDigits:2}) : '—';
+      const memberIdDisplay = r.memberId || '—';
+      return `<div style="display:grid;grid-template-columns:0.4fr 1.2fr 1.1fr 0.8fr 0.8fr;gap:0.2rem;padding:0.6rem 0.9rem;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.72rem;align-items:center;">
         <div><span class="ref-level-badge lv${lv}" style="font-size:0.6rem;padding:0.1rem 0.3rem;">L${lv}</span></div>
         <div style="overflow:hidden;">
-          <div style="font-size:0.68rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.uid||''}">${shortUid||'—'}</div>
-          <div style="font-size:0.6rem;color:var(--muted);">${r.memberId?'ID:'+r.memberId:''}</div>
+          <div style="font-size:0.7rem;font-weight:700;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${memberIdDisplay}</div>
         </div>
-        <div style="color:var(--muted);font-size:0.68rem;">${joined}</div>
+        <div style="color:var(--muted);font-size:0.62rem;line-height:1.3;">${joined}</div>
         <div style="font-size:0.7rem;color:${r.firstDepositAmt?'var(--green)':'var(--muted)'};">${dep}</div>
-        <div style="font-size:0.7rem;color:${r.totalBet?'var(--gold)':'var(--muted)'};">${bet}</div>
+        <div style="font-size:0.7rem;color:${totalBonus>0?'var(--gold)':'var(--muted)'};">${bonusDisplay}</div>
       </div>`;
     }).join('');
     if (sdTotalPages > 1) {
@@ -3454,47 +3456,58 @@
     const rowsEl = document.getElementById('commdetailsRows');
     const totalEl = document.getElementById('commdetailsTotal');
 
+    // One row per referred user: Level, Member ID, Total Deposit, Bet Commission only
+    // Reg bonus excluded — this page shows bet-based commission earnings only
     let commRows = [];
     allRefs.forEach(r => {
-      if (r.bonus && r.bonus > 0) commRows.push({lv: r.level||1, uid: r.uid||'', memberId: r.memberId||'', date: r.creditedAt||r.joinedAt, amount: r.bonus, type: 'Reg Bonus'});
-      if (r.commission && r.commission > 0) commRows.push({lv: r.level||1, uid: r.uid||'', memberId: r.memberId||'', date: r.creditedAt||r.joinedAt, amount: r.commission, type: 'Commission'});
+      if (!r.commission || r.commission <= 0) return;
+      const joinedAt = r.joinedAt || r.creditedAt || 0;
+      if (dateVal) {
+        const dayStart = new Date(dateVal).setHours(0,0,0,0);
+        const dayEnd = dayStart + 86400000;
+        if (joinedAt < dayStart || joinedAt >= dayEnd) return;
+      }
+      commRows.push({
+        lv: r.level || 1,
+        memberId: r.memberId || '—',
+        totalDep: r.firstDepositAmt || 0,
+        betComm: r.commission || 0
+      });
     });
-    if (dateVal) {
-      const dayStart = new Date(dateVal).setHours(0,0,0,0);
-      const dayEnd = dayStart + 86400000;
-      commRows = commRows.filter(c => (c.date||0) >= dayStart && (c.date||0) < dayEnd);
-    }
 
-    commRows.sort((a,b) => (b.date||0) - (a.date||0));
-    commRows = commRows.slice(0, 50);
-
-    const total = commRows.reduce((s,c) => s + (c.amount||0), 0);
+    commRows.sort((a, b) => b.betComm - a.betComm);
+    const total = commRows.reduce((s, c) => s + c.betComm, 0);
     if (totalEl) totalEl.textContent = total.toLocaleString('en-IN', {minimumFractionDigits:2});
 
     if (!rowsEl) return;
-    if (commRows.length === 0) { rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;"><span data-t="ref.nodata">No data</span></div>'; return; }
+    if (commRows.length === 0) {
+      rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;"><span data-t="ref.nodata">No data</span></div>';
+      return;
+    }
+
     const CD_PER_PAGE = 10;
     if (!window._cdPage) window._cdPage = 1;
-    const cdTotalPages = Math.min(5, Math.max(1, Math.ceil(commRows.length / CD_PER_PAGE)));
+    const cdTotalPages = Math.max(1, Math.ceil(commRows.length / CD_PER_PAGE));
     if (window._cdPage > cdTotalPages) window._cdPage = 1;
-    const cdItems = commRows.slice((window._cdPage-1)*CD_PER_PAGE, window._cdPage*CD_PER_PAGE);
+    const cdItems = commRows.slice((window._cdPage - 1) * CD_PER_PAGE, window._cdPage * CD_PER_PAGE);
     window._cdAllRows = commRows;
 
     rowsEl.innerHTML = cdItems.map(c => {
-      const shortUid = (c.uid||'').substring(0,10) + ((c.uid||'').length > 10 ? '…' : '');
-      const d = c.date ? new Date(c.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'}) : '—';
-      return `<div style="display:grid;grid-template-columns:0.4fr 1.2fr 1fr 0.8fr;gap:0.2rem;padding:0.6rem 0.9rem;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.72rem;align-items:center;">
+      const depDisplay = c.totalDep > 0 ? '\u20b9' + c.totalDep.toLocaleString('en-IN') : '—';
+      const commDisplay = '\u20b9' + c.betComm.toLocaleString('en-IN', {minimumFractionDigits:2});
+      return `<div style="display:grid;grid-template-columns:0.4fr 1fr 1fr 0.9fr;gap:0.2rem;padding:0.6rem 0.9rem;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.72rem;align-items:center;">
         <div><span class="ref-level-badge lv${c.lv}" style="font-size:0.6rem;padding:0.1rem 0.3rem;">L${c.lv}</span></div>
-        <div style="font-size:0.68rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${c.uid}">${shortUid||'—'}</div>
-        <div style="font-size:0.68rem;color:var(--muted);">${d} · ${c.type}</div>
-        <div style="font-size:0.72rem;font-weight:700;color:var(--green);">+₹${Number(c.amount).toLocaleString('en-IN')}</div>
+        <div style="font-size:0.7rem;font-weight:700;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.memberId}</div>
+        <div style="font-size:0.7rem;color:${c.totalDep>0?'var(--green)':'var(--muted)'};">${depDisplay}</div>
+        <div style="font-size:0.72rem;font-weight:700;color:var(--green);">+${commDisplay}</div>
       </div>`;
     }).join('');
+
     if (cdTotalPages > 1) {
       rowsEl.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.5rem;padding:0.8rem;border-top:1px solid var(--border);">
-        <button onclick="window._cdPage=Math.max(1,window._cdPage-1);document.getElementById('commdetailsRows').innerHTML='';loadCommDetails();" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;color:var(--muted);font-size:0.82rem;cursor:pointer;${window._cdPage<=1?'opacity:0.4;':''}">&lt; Prev</button>
+        <button onclick="window._cdPage=Math.max(1,window._cdPage-1);loadCommDetails();" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;color:var(--muted);font-size:0.82rem;cursor:pointer;">&#60; Prev</button>
         <span style="color:var(--muted);font-size:0.78rem;">Page ${window._cdPage} / ${cdTotalPages}</span>
-        <button onclick="window._cdPage=Math.min(${cdTotalPages},window._cdPage+1);document.getElementById('commdetailsRows').innerHTML='';loadCommDetails();" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;color:var(--muted);font-size:0.82rem;cursor:pointer;${window._cdPage>=cdTotalPages?'opacity:0.4;':''}">Next &gt;</button>
+        <button onclick="window._cdPage=Math.min(${cdTotalPages},window._cdPage+1);loadCommDetails();" style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.5rem 1rem;color:var(--muted);font-size:0.82rem;cursor:pointer;">Next &#62;</button>
       </div>`;
     }
   }
