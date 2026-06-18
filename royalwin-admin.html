@@ -347,10 +347,6 @@
           <div style="font-size:0.68rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.4rem;">📊 Last 5</div>
           <div id="lastResults3min"></div>
         </div>
-        <div style="width:100%;border-top:1px solid #e02020;padding-top:0.5rem;margin-bottom:0.5rem;background:rgba(224,32,32,0.08);border-radius:6px;padding:0.5rem;">
-          <div style="font-size:0.62rem;color:#e02020;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:0.3rem;">🐛 DEBUG: Raw Firebase history (temporary)</div>
-          <pre id="debugHistory3min" style="font-size:0.6rem;color:var(--muted);white-space:pre-wrap;word-break:break-all;max-height:200px;overflow-y:auto;margin:0;">Loading...</pre>
-        </div>
         <div style="width:100%;border-top:1px solid var(--border);padding-top:0.7rem;">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.5rem;">
             <span style="font-size:0.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">📅 Next 5 Schedule</span>
@@ -1198,21 +1194,8 @@ function updateNextResultBadges() {
     });
     // Listen for last results per mode
     onValue(ref(db, 'wingo/wingo' + mins + 'min/history'), (snap) => {
-      const rawData = snap.val();
-      const history = rawData ? Object.values(rawData) : [];
+      const history = snap.val() ? Object.values(snap.val()) : [];
       renderLastResults(mins, history);
-      if (mins === 3) {
-        const debugEl = document.getElementById('debugHistory3min');
-        if (debugEl) {
-          if (!rawData) {
-            debugEl.textContent = 'NO DATA at all for wingo3min/history';
-          } else {
-            const keys = Object.keys(rawData);
-            debugEl.textContent = `Total entries: ${keys.length}\n\n` +
-              keys.map(k => `KEY: ${k}\n  → ${JSON.stringify(rawData[k])}`).join('\n\n');
-          }
-        }
-      }
     });
     // Listen for bet summary per mode
     onValue(ref(db, 'wingo/wingo' + mins + 'min/betSummary'), (snap) => {
