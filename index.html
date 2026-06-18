@@ -1984,7 +1984,7 @@
       <div class="sub-card">
         <div class="sub-card-title">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-          Direct Subordinates
+          Direct Subordinates <span style="font-size:0.6rem;color:var(--muted);font-weight:400;margin-left:0.3rem;">Today</span>
         </div>
         <div class="sub-stat-row">
           <div class="sub-stat">
@@ -1995,11 +1995,11 @@
             <div class="sub-stat-val" id="dirDepCount">0</div>
             <div class="sub-stat-lbl">Deposits</div>
           </div>
-          <div class="sub-stat" style="margin-top:0.6rem;">
+          <div class="sub-stat">
             <div class="sub-stat-val" style="color:var(--gold);font-size:0.95rem;" id="dirDepAmt">0.00</div>
             <div class="sub-stat-lbl"><span data-t="ref.depamt">Deposit amount</span></div>
           </div>
-          <div class="sub-stat" style="margin-top:0.6rem;">
+          <div class="sub-stat">
             <div class="sub-stat-val" id="dirFirstDep">0</div>
             <div class="sub-stat-lbl"><span data-t="ref.firstdeps">First deposits</span></div>
           </div>
@@ -2010,7 +2010,7 @@
       <div class="sub-card">
         <div class="sub-card-title">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="7" r="3"/><path d="M2 20c0-3 3-5 7-5M14 20c0-3 3-5 7-5"/></svg>
-          Team Subordinates
+          Team Subordinates <span style="font-size:0.6rem;color:var(--muted);font-weight:400;margin-left:0.3rem;">Today</span>
         </div>
         <div class="sub-stat-row">
           <div class="sub-stat">
@@ -2021,11 +2021,11 @@
             <div class="sub-stat-val" id="teamDepCount">0</div>
             <div class="sub-stat-lbl">Deposits</div>
           </div>
-          <div class="sub-stat" style="margin-top:0.6rem;">
+          <div class="sub-stat">
             <div class="sub-stat-val" style="color:var(--gold);font-size:0.95rem;" id="teamDepAmt">0.00</div>
             <div class="sub-stat-lbl"><span data-t="ref.depamt">Deposit amount</span></div>
           </div>
-          <div class="sub-stat" style="margin-top:0.6rem;">
+          <div class="sub-stat">
             <div class="sub-stat-val" id="teamFirstDep">0</div>
             <div class="sub-stat-lbl"><span data-t="ref.firstdeps">First deposits</span></div>
           </div>
@@ -2084,6 +2084,32 @@
           </div>
         </div>
         <div class="ref-nav-arrow">›</div>
+      </div>
+    </div>
+
+    <!-- Promotion Data Card — overall all-time stats -->
+    <div style="margin:0 1rem 1.5rem;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
+      <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:0.8rem;font-weight:700;color:var(--gold);">📊 Promotion Data</div>
+        <div style="font-size:0.62rem;color:var(--muted);">Overall</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
+        <div style="padding:0.9rem 1rem;border-right:1px solid var(--border);border-bottom:1px solid var(--border);">
+          <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem;">This Week Commission</div>
+          <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:800;color:var(--green);" id="promoWeekComm">₹0.00</div>
+        </div>
+        <div style="padding:0.9rem 1rem;border-bottom:1px solid var(--border);">
+          <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem;">Total Commission</div>
+          <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:800;color:var(--green);" id="promoTotalComm">₹0.00</div>
+        </div>
+        <div style="padding:0.9rem 1rem;border-right:1px solid var(--border);">
+          <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem;">Direct Subordinates</div>
+          <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:800;color:var(--gold);" id="promoDirectCount">0</div>
+        </div>
+        <div style="padding:0.9rem 1rem;">
+          <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem;">Team Subordinates</div>
+          <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:800;color:var(--gold);" id="promoTeamCount">0</div>
+        </div>
       </div>
     </div>
 
@@ -3600,17 +3626,17 @@
       const lv = String(r.level || 1);
       const joined = r.joinedAt ? new Date(r.joinedAt).toLocaleDateString('en-IN', {day:'numeric', month:'short'}) : '—';
       const depAmt = r.firstDepositAmt ? '₹' + Number(r.firstDepositAmt).toLocaleString('en-IN') : '—';
-      const betAmt = r.totalBet ? '₹' + Number(r.totalBet).toLocaleString('en-IN') : '—';
-      const shortUid = (r.uid || '').substring(0, 10) + (r.uid && r.uid.length > 10 ? '…' : '');
+      const totalBonus = (r.bonus||0) + (r.commission||0);
+      const bonusAmt = totalBonus > 0 ? '₹' + totalBonus.toLocaleString('en-IN', {minimumFractionDigits:2}) : '—';
+      const memberIdDisplay = r.memberId || '—';
       return `<div class="sub-hist-row">
         <div><span class="ref-level-badge lv${lv}" style="font-size:0.62rem;padding:0.1rem 0.35rem;">L${lv}</span></div>
         <div style="overflow:hidden;">
-          <div style="font-size:0.68rem;font-weight:600;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${r.uid||''}">${shortUid || '—'}</div>
-          <div style="font-size:0.6rem;color:var(--muted);">${r.memberId ? 'ID:' + r.memberId : ''}</div>
+          <div style="font-size:0.7rem;font-weight:700;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${memberIdDisplay}</div>
         </div>
         <div style="color:var(--muted);font-size:0.68rem;">${joined}</div>
         <div style="font-size:0.72rem;color:${r.firstDepositAmt ? 'var(--green)' : 'var(--muted)'};">${depAmt}</div>
-        <div style="font-size:0.72rem;color:${r.totalBet ? 'var(--gold)' : 'var(--muted)'};">${betAmt}</div>
+        <div style="font-size:0.72rem;color:${totalBonus > 0 ? 'var(--gold)' : 'var(--muted)'};">${bonusAmt}</div>
       </div>`;
     }).join('');
   }
@@ -3690,16 +3716,49 @@
       const el_yest = document.getElementById('agencyYesterdayComm');
       if (el_yest) el_yest.textContent = Number(yestComm).toFixed(2);
       const dirDeps = level1.filter(r => r.firstDepositAmt > 0);
-      document.getElementById('dirRegCount').textContent = level1.length;
-      document.getElementById('dirDepCount').textContent = dirDeps.length;
-      document.getElementById('dirDepAmt').textContent = dirDeps.reduce((s,r) => s + (r.firstDepositAmt||0), 0).toLocaleString('en-IN', {minimumFractionDigits:2});
-      document.getElementById('dirFirstDep').textContent = dirDeps.length;
+
+      // ── TODAY filter for direct/team cards ──
+      const todayStart = new Date(); todayStart.setHours(0,0,0,0);
+      const todayTs = todayStart.getTime();
+      const dirToday = level1.filter(r => (r.joinedAt||0) >= todayTs);
+      const dirDepsToday = dirToday.filter(r => r.firstDepositAmt > 0);
+      document.getElementById('dirRegCount').textContent = dirToday.length;
+      document.getElementById('dirDepCount').textContent = dirDepsToday.length;
+      document.getElementById('dirDepAmt').textContent = dirDepsToday.reduce((s,r) => s + (r.firstDepositAmt||0), 0).toLocaleString('en-IN', {minimumFractionDigits:2});
+      document.getElementById('dirFirstDep').textContent = dirDepsToday.length;
+
       const teamAll = [...level2, ...level3, ...level4];
       const teamDeps = teamAll.filter(r => r.firstDepositAmt > 0);
-      document.getElementById('teamRegCount').textContent = teamAll.length;
-      document.getElementById('teamDepCount').textContent = teamDeps.length;
-      document.getElementById('teamDepAmt').textContent = teamDeps.reduce((s,r) => s + (r.firstDepositAmt||0), 0).toLocaleString('en-IN', {minimumFractionDigits:2});
-      document.getElementById('teamFirstDep').textContent = teamDeps.length;
+      const teamToday = teamAll.filter(r => (r.joinedAt||0) >= todayTs);
+      const teamDepsToday = teamToday.filter(r => r.firstDepositAmt > 0);
+      document.getElementById('teamRegCount').textContent = teamToday.length;
+      document.getElementById('teamDepCount').textContent = teamDepsToday.length;
+      document.getElementById('teamDepAmt').textContent = teamDepsToday.reduce((s,r) => s + (r.firstDepositAmt||0), 0).toLocaleString('en-IN', {minimumFractionDigits:2});
+      document.getElementById('teamFirstDep').textContent = teamDepsToday.length;
+
+      // ── PROMOTION DATA CARD — all-time totals + this week commission ──
+      const totalCommAll = allRefs.reduce((s, r) => s + (r.bonus||0) + (r.commission||0), 0);
+      const weekStart = new Date(); weekStart.setHours(0,0,0,0);
+      weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // start of this week (Sunday)
+      const weekTs = weekStart.getTime();
+      // Week commission from dailyCommission node
+      const weekKeys = [];
+      for (let d = new Date(weekTs); d <= new Date(); d.setDate(d.getDate()+1)) {
+        weekKeys.push(d.toISOString().slice(0,10));
+      }
+      let weekComm = 0;
+      try {
+        const weekSnaps = await Promise.all(weekKeys.map(k => db.ref('users/' + user.uid + '/dailyCommission/' + k).once('value')));
+        weekComm = weekSnaps.reduce((s, snap) => s + (snap.val() || 0), 0);
+      } catch(e) {}
+      const promoWeekEl = document.getElementById('promoWeekComm');
+      const promoTotalEl = document.getElementById('promoTotalComm');
+      const promoDirEl = document.getElementById('promoDirectCount');
+      const promoTeamEl = document.getElementById('promoTeamCount');
+      if (promoWeekEl) promoWeekEl.textContent = '₹' + weekComm.toLocaleString('en-IN', {minimumFractionDigits:2});
+      if (promoTotalEl) promoTotalEl.textContent = '₹' + totalCommAll.toLocaleString('en-IN', {minimumFractionDigits:2});
+      if (promoDirEl) promoDirEl.textContent = level1.length;
+      if (promoTeamEl) promoTeamEl.textContent = teamAll.length;
       renderRefRows();
       renderCommissionRows(allRefs);
 
@@ -7454,6 +7513,14 @@
             });
             // Mark as given
             await db.ref('users/' + uid + '/welcomeBonusGiven').set(true);
+            // Record in transaction history so it appears in Transaction History page
+            await db.ref('users/' + uid + '/transactions').push({
+              type: 'welcome_bonus',
+              amount: WELCOME_AMOUNT,
+              description: '🎁 Welcome Bonus',
+              details: 'First login bonus credited',
+              timestamp: Date.now()
+            });
             // Send notification
             await db.ref('users/' + uid + '/notifications').push({
               icon: '🎁',
