@@ -1166,12 +1166,24 @@ function renderLastResults(mins, history) {
     return;
   }
   const colorMap = { 'violet': '#7c4dff', 'red': '#e02020', 'green': '#27ae60' };
-  // Sort by timestamp (or round number as fallback) descending so we get the most RECENT 5 results,
-  // not just the first 5 in whatever order Firebase returned them (history grows unbounded over time)
-  const sorted = [...history].sort((a, b) => (b.timestamp || b.round || 0) - (a.timestamp || a.round || 0));
+  // Sort by round (or timestamp as fallback) descending, then deduplicate by round number.
+  // This mirrors the exact logic index.html's loadAllHistory() already uses correctly -
+  // without deduplication, a round that got written multiple times (e.g. from the historical
+  // race condition in game-engine.js, now fixed at the source) would show as the same
+  // result repeated several times in "Last 5", which never matched the player-facing page
+  // since that page already deduplicated by round.
+  const seen = new Set();
+  const deduped = [...history]
+    .sort((a, b) => (b.round || b.timestamp || 0) - (a.round || a.timestamp || 0))
+    .filter(h => {
+      if (!h || h.round === undefined) return false;
+      if (seen.has(h.round)) return false;
+      seen.add(h.round);
+      return true;
+    });
   // Compact horizontal chips
   el.innerHTML = '<div style="display:flex;gap:0.3rem;flex-wrap:wrap;">' +
-    sorted.slice(0, 5).map(h => {
+    deduped.slice(0, 5).map(h => {
       const bg = colorMap[h.color] || '#7c4dff';
       const bs = h.bigSmall === 'Big' ? 'B' : 'S';
       const bsColor = h.bigSmall === 'Big' ? 'var(--gold)' : '#60a5fa';
