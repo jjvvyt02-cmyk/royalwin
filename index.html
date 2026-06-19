@@ -7,6 +7,7 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="apple-touch-icon" href="favicon.svg">
   <link rel="manifest" href="manifest.json">
+  <script src="https://www.google.com/recaptcha/api.js?render=explicit&onload=onRecaptchaLoad" async defer></script>
   <meta name="theme-color" content="#f0c040">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -1882,7 +1883,6 @@
           <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.75rem 0.8rem;font-size:0.88rem;color:var(--muted);white-space:nowrap;">🇮🇳 +91</div>
           <input class="form-input" type="tel" id="regContact" placeholder="9876543210" maxlength="10" inputmode="numeric" pattern="[0-9]*" style="flex:1;">
         </div>
-        <div style="font-size:0.68rem;color:var(--muted);margin-top:0.3rem;">Enter 10-digit mobile number. OTP will be sent via SMS.</div>
       </div>
       <div class="form-group">
         <label class="form-label">Username</label>
@@ -1905,23 +1905,11 @@
         <input type="checkbox" id="terms" checked>
         <label for="terms">I agree to the <a onclick="showPage('terms')" style="color:var(--gold);cursor:pointer;">Terms & Conditions</a> and <a onclick="showPage('privacy')" style="color:var(--gold);cursor:pointer;">Privacy Policy</a></label>
       </div>
-      <button class="btn btn-gold btn-full" onclick="sendOTP()">🚀 Send OTP & Continue</button>
+      <!-- reCAPTCHA widget — shown when user clicks Register -->
+      <div id="recaptchaContainer" style="display:none;margin-bottom:1rem;">
+        <div id="recaptchaWidget"></div>
       </div>
-      <div class="otp-wrap" id="otpWrap">
-        <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
-          <button onclick="goBackFromOTP()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--muted);font-size:1rem;cursor:pointer;flex-shrink:0;">←</button>
-          <div style="font-size:0.9rem;color:var(--muted);">Enter the 6-digit OTP sent to your mobile</div>
-        </div>
-        <div class="otp-inputs">
-          <input class="otp-input" maxlength="1" id="otp1" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,'otp2')">
-          <input class="otp-input" maxlength="1" id="otp2" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,'otp3')">
-          <input class="otp-input" maxlength="1" id="otp3" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,'otp4')">
-          <input class="otp-input" maxlength="1" id="otp4" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,'otp5')">
-          <input class="otp-input" maxlength="1" id="otp5" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,'otp6')">
-          <input class="otp-input" maxlength="1" id="otp6" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,null)">
-        </div>
-        <div class="otp-timer">Resend OTP in <span id="otpTimer">59</span>s &nbsp;<button class="resend-btn" id="resendBtn" style="display:none;" onclick="resendOTP()">Resend</button></div>
-        <button class="btn btn-gold btn-full" onclick="verifyOTP()">✅ Verify & Create Account</button>
+      <button class="btn btn-gold btn-full" id="registerBtn" onclick="startRegisterWithCaptcha()">🚀 Register Now</button>
       </div>
       <div class="auth-footer"><span data-t="auth.haveacc">Already have an account?</span> <a onclick="showPage('login')">Sign In</a></div>
     </div>
@@ -2481,15 +2469,14 @@
       }
     }
     if (name === 'register') {
-      // Always reset to the form view first - prevents landing on a stale OTP screen
-      // left over from a previous registration attempt (e.g. after logout, or clicking
-      // "Register Now" again), since showPage only manages page-level visibility and
-      // never touched this internal sub-section state before.
-      const otpWrapEl = document.getElementById('otpWrap');
-      const formFieldsEl = document.getElementById('registerFormFields');
-      if (otpWrapEl) otpWrapEl.style.display = 'none';
-      if (formFieldsEl) formFieldsEl.style.display = 'block';
-      if (window.otpInterval) clearInterval(window.otpInterval);
+      // Reset CAPTCHA when navigating to register page
+      const captchaContainer = document.getElementById('recaptchaContainer');
+      const registerBtn = document.getElementById('registerBtn');
+      if (captchaContainer) captchaContainer.style.display = 'none';
+      if (registerBtn) { registerBtn.disabled = false; registerBtn.style.opacity = '1'; registerBtn.textContent = '🚀 Register Now'; }
+      if (typeof grecaptcha !== 'undefined' && _recaptchaWidgetId !== null) {
+        try { grecaptcha.reset(_recaptchaWidgetId); } catch(e) {}
+      }
 
       if (!window._referralCode) {
         try {
@@ -4639,12 +4626,68 @@
       loadWithdrawHistory();
     } catch(e) { showToast('❌ Withdrawal failed: ' + e.message); }
   }
-  let otpInterval;
-  async function sendOTP() {
+  // ── RECAPTCHA + REGISTRATION ──
+  let _recaptchaWidgetId = null;
+  let _recaptchaReady = false;
+
+  window.onRecaptchaLoad = function() {
+    _recaptchaReady = true;
+  };
+
+  function renderCaptcha() {
+    const container = document.getElementById('recaptchaWidget');
+    if (!container) return;
+    // Clear any previous render
+    container.innerHTML = '';
+    if (typeof grecaptcha !== 'undefined' && _recaptchaReady) {
+      _recaptchaWidgetId = grecaptcha.render('recaptchaWidget', {
+        sitekey: '6Le15ictAAAAHaaE69TiO6eO76jD5SsLlNZmJLq',
+        theme: 'dark',
+        callback: onCaptchaSuccess,
+        'expired-callback': onCaptchaExpired
+      });
+    }
+  }
+
+  function onCaptchaExpired() {
+    showToast('⚠️ CAPTCHA expired. Please verify again.');
+    const btn = document.getElementById('registerBtn');
+    if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '🚀 Register Now'; }
+  }
+
+  async function onCaptchaSuccess(token) {
+    // CAPTCHA passed — verify token on backend then register
+    const btn = document.getElementById('registerBtn');
+    if (btn) { btn.disabled = true; btn.style.opacity = '0.6'; btn.textContent = '⏳ Verifying...'; }
+    try {
+      const resp = await fetch('https://royalwin-api.vercel.app/api/verify-captcha', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
+      const data = await resp.json();
+      if (!data.success) {
+        showToast('❌ CAPTCHA verification failed. Please try again.');
+        if (typeof grecaptcha !== 'undefined') grecaptcha.reset(_recaptchaWidgetId);
+        if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '🚀 Register Now'; }
+        return;
+      }
+      // CAPTCHA verified — proceed to create account
+      await doRegister();
+    } catch(e) {
+      showToast('❌ Verification failed. Please try again.');
+      if (typeof grecaptcha !== 'undefined') grecaptcha.reset(_recaptchaWidgetId);
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '🚀 Register Now'; }
+    }
+  }
+
+  function startRegisterWithCaptcha() {
+    // Validate form first before showing CAPTCHA
     const rawContact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
     const username = document.getElementById('regUsername') ? document.getElementById('regUsername').value.trim() : '';
     const password = document.getElementById('regPassword') ? document.getElementById('regPassword').value : '';
     const inviteCode = document.getElementById('inviteCodeInput') ? document.getElementById('inviteCodeInput').value.trim() : '';
+    const terms = document.getElementById('terms');
     if (!inviteCode) { showToast('⚠️ Invite code is mandatory to register'); return; }
     if (!rawContact || rawContact.length !== 10 || !/^[6-9]\d{9}$/.test(rawContact)) {
       showToast('⚠️ Enter a valid 10-digit Indian mobile number'); return;
@@ -4653,143 +4696,17 @@
     if (!password || password.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
     const pwErr = validatePassword(password);
     if (pwErr) { showToast('⚠️ ' + pwErr); return; }
-    window._regContact = '+91' + rawContact;
-    try {
-      showToast('⏳ Sending OTP to +91' + rawContact + '...');
-      const resp = await fetch('https://royalwin-api.vercel.app/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: rawContact })
-      });
-      const data = await resp.json();
-      if (!data.success) { showToast('❌ ' + (data.msg || 'Failed to send OTP')); return; }
-      window._regOTPExpiry = Date.now() + 300000;
-      showToast('📱 OTP sent to +91' + rawContact);
-      const fields = document.getElementById('registerFormFields');
-      if (fields) fields.style.display = 'none';
-      document.getElementById('otpWrap').style.display = 'block';
-      startOTPTimer();
-      document.getElementById('otp1').focus();
-    } catch(e) {
-      showToast('❌ Could not send OTP. Please try again.');
-    }
-  }
-
-  function startOTPTimer() {
-    let secs = 59;
-    document.getElementById('resendBtn').style.display = 'none';
-    document.getElementById('otpTimer').textContent = secs;
-    clearInterval(otpInterval);
-    otpInterval = setInterval(() => {
-      secs--;
-      document.getElementById('otpTimer').textContent = secs;
-      if (secs <= 0) {
-        clearInterval(otpInterval);
-        document.getElementById('otpTimer').parentElement.innerHTML = '<button class="resend-btn" onclick="resendOTP()">Resend OTP</button>';
-      }
-    }, 1000);
-  }
-
-  async function resendOTP() {
-    const rawContact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
-    if (!rawContact || rawContact.length !== 10) { showToast('⚠️ Session expired. Please start again.'); showPage('register'); return; }
-    try {
-      showToast('⏳ Resending OTP...');
-      const resp = await fetch('https://royalwin-api.vercel.app/api/send-otp', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: rawContact })
-      });
-      const data = await resp.json();
-      if (!data.success) { showToast('❌ ' + (data.msg || 'Failed to resend OTP')); return; }
-      window._regOTPExpiry = Date.now() + 300000;
-      showToast('📱 OTP resent to +91' + rawContact);
-      startOTPTimer();
-    } catch(e) {
-      showToast('❌ Could not resend OTP. Please try again.');
-    }
+    if (terms && !terms.checked) { showToast('⚠️ Please accept the Terms & Conditions'); return; }
+    // All valid — show and render CAPTCHA
+    const container = document.getElementById('recaptchaContainer');
+    if (container) container.style.display = 'block';
+    renderCaptcha();
+    // Scroll to show CAPTCHA
+    container.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
   function otpMove(el, nextId) {
     if (el.value && nextId) document.getElementById(nextId).focus();
-  }
-
-  function togglePasswordVisibility(inputId, btnEl) {
-    const input = document.getElementById(inputId);
-    if (!input) return;
-    if (input.type === 'password') {
-      input.type = 'text';
-      btnEl.textContent = '🙈';
-    } else {
-      input.type = 'password';
-      btnEl.textContent = '👁️';
-    }
-  }
-
-  function validatePassword(pass) {
-    if (!pass || pass.length < 8) return 'Password must be at least 8 characters.';
-    if (!/\d/.test(pass)) return 'Password must contain at least one number.';
-    return null;
-  }
-
-  async function verifyOTP() {
-    if (window._otpVerifyInProgress) return;
-    window._otpVerifyInProgress = true;
-    const verifyBtn = document.querySelector('#page-register .btn-full');
-    if (verifyBtn) { verifyBtn.disabled = true; verifyBtn.style.opacity = '0.6'; verifyBtn.textContent = '⏳ Verifying...'; }
-    try {
-      const otp = ['otp1','otp2','otp3','otp4','otp5','otp6'].map(id => document.getElementById(id).value).join('');
-      if (otp.length < 6) { showToast('⚠️ Please enter the full 6-digit OTP'); return; }
-      const pwField = document.getElementById('regPassword');
-      if (pwField) {
-        const pwErr = validatePassword(pwField.value);
-        if (pwErr) { showToast('⚠️ ' + pwErr); return; }
-      }
-      const rawContact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
-      try {
-        const resp = await fetch('https://royalwin-api.vercel.app/api/verify-otp', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phone: rawContact, otp })
-        });
-        const data = await resp.json();
-        if (!data.success) { showToast('❌ ' + (data.msg || 'Wrong OTP. Please try again.')); return; }
-        showToast('✅ Verified!');
-        await doRegister();
-      } catch(e) {
-        showToast('❌ Verification failed. Please try again.');
-      }
-    } finally {
-      window._otpVerifyInProgress = false;
-      const btn = document.querySelector('#page-register .btn-full');
-      if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '✅ Verify & Create Account'; }
-    }
-  }
-  function goBackFromOTP() {
-    // Hide OTP section, show registration form
-    const otpSection = document.getElementById('otpWrap');
-    const formSection = document.getElementById('registerFormFields');
-    if (otpSection) otpSection.style.display = 'none';
-    if (formSection) formSection.style.display = 'block';
-    // Clear OTP inputs
-    ['otp1','otp2','otp3','otp4','otp5','otp6'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.value = '';
-    });
-    // Clear timer
-    if (window.otpInterval) clearInterval(window.otpInterval);
-    window._phoneConfirmResult = null;
-    window._confirmResult = null;
-  }
-
-  function copyOtpToClipboard() {
-    const otp = window._regOTP || '';
-    if (!otp) return;
-    navigator.clipboard.writeText(otp).then(() => {
-      showToast('✅ OTP copied!');
-    }).catch(() => {
-      showToast('⚠️ Could not copy — please select manually');
-    });
   }
 
   async function changePassword() {
