@@ -6175,7 +6175,10 @@
         if (!bet || bet.status === 'pending') return;
         const timer = bet.timer || cgTimer;
         if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
-        const existsIdx = cgMyBetsByTimer[timer].findIndex(b => b.round === bet.round && b.selection === bet.selection);
+        // Use round+selection+timestamp as unique key — allows multiple bets on same selection in same round
+        const existsIdx = cgMyBetsByTimer[timer].findIndex(b =>
+          b.round === bet.round && b.selection === bet.selection && b.timestamp === bet.timestamp
+        );
         if (existsIdx !== -1) cgMyBetsByTimer[timer][existsIdx] = bet;
         else cgMyBetsByTimer[timer].unshift(bet);
         cgMyBets = cgMyBetsByTimer[cgTimer] || [];
@@ -6648,7 +6651,7 @@
         const bsBets = samePeriodBets.map(b => b.savedBS).filter(Boolean);
         const hasBigAndSmall = bsBets.includes('big') && bsBets.includes('small');
         const uniqueNums = [...new Set(numBets.map(b => b.savedNum))];
-        const hasMultiNum = uniqueNums.length >= 3;
+        const hasMultiNum = uniqueNums.length >= 4;
 
         let fraudDetail = null;
         if (hasRedAndGreen) fraudDetail = 'Bet on both Red + Green in period ' + currentRound;
@@ -7937,17 +7940,30 @@
                 if (!bet || bet.status === 'pending') return;
                 const t = bet.timer || 1;
                 if (!cgMyBetsByTimer[t]) cgMyBetsByTimer[t] = [];
-                const idx = cgMyBetsByTimer[t].findIndex(b => b.round === bet.round && b.selection === bet.selection);
+                const idx = cgMyBetsByTimer[t].findIndex(b =>
+                  b.round === bet.round && b.selection === bet.selection && b.timestamp === bet.timestamp
+                );
                 if (idx !== -1) cgMyBetsByTimer[t][idx] = bet;
                 else cgMyBetsByTimer[t].unshift(bet);
-                // Update My Bets UI if game overlay is open
+                // Show result popup only for bets settled in the last 2 minutes
+                // (prevents popup firing for old bets when listener first attaches)
+                const isRecent = (Date.now() - (bet.timestamp || 0)) < 120000;
+                if (isRecent && document.getElementById('colorGameOverlay')?.classList.contains('open') && t === cgTimer) {
+                  const won = bet.status === 'won';
+                  const parts = (bet.result || '').split('/').map(s => s.trim());
+                  const num = parseInt(parts[1]);
+                  const colorRaw = {0:'violet-red',1:'green',2:'red',3:'green',4:'red',5:'violet-green',6:'red',7:'green',8:'red',9:'green'}[num] || parts[0];
+                  const winAmt = won ? Math.abs(bet.pl || 0) : 0;
+                  showCGResult(won, isNaN(num) ? undefined : num, colorRaw, winAmt, bet.bet || 0, bet.round);
+                }
+                // Update My Bets UI if game is open
                 if (document.getElementById('colorGameOverlay')?.classList.contains('open')) {
                   cgMyBets = cgMyBetsByTimer[cgTimer] || [];
                   renderMyBets();
                 }
                 // Remove from in-memory pending array
                 window._cgPendingBets = (window._cgPendingBets || []).filter(b =>
-                  !(b.round === bet.round && b.selection === bet.selection)
+                  !(b.round === bet.round && b.selection === bet.selection && b.timestamp === bet.timestamp)
                 );
               });
           }
