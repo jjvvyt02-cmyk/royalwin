@@ -1398,11 +1398,13 @@
       margin: 0 0 0.5rem !important;
     }
     .cg-num-btn {
-      font-size: 0.85rem !important;
+      font-size: 1.1rem !important;
       aspect-ratio: 1 !important;
       min-height: unset !important;
-      border-radius: 10px !important;
+      border-radius: 8px !important;
+      padding: 0 !important;
     }
+    .cg-numbers { gap: 0.35rem !important; }
     .cg-color-btn[id="cgBigBtn"],
     .cg-color-btn[id="cgSmallBtn"] {
       padding: 0.64rem !important;
@@ -7464,8 +7466,8 @@
           });
         }
       } catch(e) { /* suppressed */ }
-      allTransactions = txs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
-      renderTxRows(allTransactions);
+      window.allTransactions = txs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      renderTxRows(window.allTransactions);
     } catch(e) {
       console.error('Transaction history error:', e);
       container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Error: ' + e.message + '</div>';
@@ -7484,8 +7486,8 @@
     el.style.background = 'rgba(240,192,64,0.15)'; el.style.color = 'var(--gold)';
     el.style.borderColor = 'var(--gold)'; el.classList.add('active');
     currentTxFilter = filter; _txPage = 1; _lastTxFilter = filter;
-    const filtered = filter === 'all' ? allTransactions :
-      allTransactions.filter(tx => tx.type === filter || (filter === 'deposit' && tx.type === 'deposit_bonus'));
+    const filtered = filter === 'all' ? (window.allTransactions || []) :
+      (window.allTransactions || []).filter(tx => tx.type === filter || (filter === 'deposit' && tx.type === 'deposit_bonus'));
     renderTxRows(filtered);
   }
 
@@ -7535,16 +7537,16 @@
         </div>
         <div style="text-align:right;flex-shrink:0;">
           <div style="font-weight:800;color:${cfg.color};font-size:0.92rem;">${cfg.sign}₹${amt.toLocaleString('en-IN', {minimumFractionDigits:2})}</div>
-          <div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">Bal: ${balText}</div>
+          ${tx.balance > 0 ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:2px;">Bal: ₹${Number(tx.balance).toLocaleString('en-IN', {minimumFractionDigits:2})}</div>` : ''}
         </div>
       </div>`;
     }).join('');
 
     if (totalPages > 1) {
       container.innerHTML += `<div style="display:flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.7rem 0 1.5rem;border-top:1px solid var(--border);margin-top:0.5rem;">
-        <button onclick="_txPage=Math.max(1,_txPage-1);filterTx(document.querySelector('.history-filters .hf-btn.active'),currentTxFilter||'all');" style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_txPage<=1?'opacity:0.4;':''}">◀</button>
+        <button onclick="_txPage=Math.max(1,_txPage-1);renderTxRows(window.allTransactions);" style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_txPage<=1?'opacity:0.4;':''}">◀</button>
         <span style="color:var(--muted);font-size:0.78rem;min-width:80px;text-align:center;">Page ${_txPage} of ${totalPages}</span>
-        <button onclick="_txPage=Math.min(${totalPages},_txPage+1);filterTx(document.querySelector('.history-filters .hf-btn.active'),currentTxFilter||'all');" style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_txPage>=totalPages?'opacity:0.4;':''}">▶</button>
+        <button onclick="_txPage=Math.min(${totalPages},_txPage+1);renderTxRows(window.allTransactions);" style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_txPage>=totalPages?'opacity:0.4;':''}">▶</button>
       </div>`;
     }
   }
