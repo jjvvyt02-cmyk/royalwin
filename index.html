@@ -6490,8 +6490,10 @@
         let resolved = false;
         const db2 = window.fbDB || fbDB;
         if (db2) {
-          // Use a real-time listener on lastResultTime — fires instantly when game engine writes result
-          // This replaces polling (300ms intervals) with push-based updates (~100ms latency)
+          // When timer ends, listen for the game engine to write the result to history
+          // Then update the results display (Last 5, etc.) — bet settlement is handled
+          // server-side by the game engine writing to wingoMyBets, which the persistent
+          // listener at login picks up instantly. No duplicate local settlement needed.
           const resultRef = db2.ref('wingo/wingo' + mins + 'min/lastResultTime');
           const listener = resultRef.on('value', async (snap) => {
             if (resolved) return;
@@ -6499,27 +6501,19 @@
             if (lastTime > roundStartTime - 2000) {
               resolved = true;
               resultRef.off('value', listener);
-              resolveRoundForTimer(mins, roundStartTime);
+              // Update the game history display (Last 5 results)
+              loadAllHistory();
+              // Update My Bets from Firebase — game engine has already settled
+              setTimeout(() => loadMyBetsFromFirebase(false), 800);
             }
           });
-          // Also listen on history for the specific round as a backup
-          const histRef = db2.ref('wingo/wingo' + mins + 'min/history');
-          const histListener = histRef.orderByChild('round').equalTo(expectedRound).limitToLast(1).on('value', snap => {
-            if (resolved) return;
-            if (snap.val()) {
-              resolved = true;
-              resultRef.off('value', listener);
-              histRef.off('value', histListener);
-              resolveRoundForTimer(mins, roundStartTime);
-            }
-          });
-          // Safety fallback after 10 seconds — resolve whatever we have
+          // Safety fallback after 10 seconds
           setTimeout(() => {
             if (!resolved) {
               resolved = true;
               try { resultRef.off('value', listener); } catch(e) {}
-              try { histRef.off('value', histListener); } catch(e) {}
-              resolveRoundForTimer(mins, roundStartTime);
+              loadAllHistory();
+              setTimeout(() => loadMyBetsFromFirebase(false), 500);
             }
           }, 10000);
         }
