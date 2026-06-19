@@ -1877,8 +1877,12 @@
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">Mobile / Email</label>
-        <input class="form-input" type="text" id="regContact" placeholder="+91 9876543210 or email@example.com">
+        <label class="form-label">Mobile Number</label>
+        <div style="display:flex;gap:0.5rem;align-items:center;">
+          <div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.75rem 0.8rem;font-size:0.88rem;color:var(--muted);white-space:nowrap;">🇮🇳 +91</div>
+          <input class="form-input" type="tel" id="regContact" placeholder="9876543210" maxlength="10" inputmode="numeric" pattern="[0-9]*" style="flex:1;">
+        </div>
+        <div style="font-size:0.68rem;color:var(--muted);margin-top:0.3rem;">Enter 10-digit mobile number. OTP will be sent via SMS.</div>
       </div>
       <div class="form-group">
         <label class="form-label">Username</label>
@@ -1906,14 +1910,7 @@
       <div class="otp-wrap" id="otpWrap">
         <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
           <button onclick="goBackFromOTP()" style="width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);color:var(--muted);font-size:1rem;cursor:pointer;flex-shrink:0;">←</button>
-          <div style="font-size:0.9rem;color:var(--muted);">Enter the 6-digit OTP sent to your mobile/email</div>
-        </div>
-        <div id="otpDisplayBox" style="display:none;background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.35);border-radius:10px;padding:0.7rem 1rem;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between;">
-          <div>
-            <div style="font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;">Your OTP (testing mode)</div>
-            <div id="otpDisplayValue" style="font-family:'Cinzel',serif;font-size:1.3rem;color:var(--gold);font-weight:700;letter-spacing:2px;">------</div>
-          </div>
-          <button onclick="copyOtpToClipboard()" style="background:rgba(240,192,64,0.2);border:1px solid rgba(240,192,64,0.3);border-radius:6px;padding:0.4rem 0.7rem;color:var(--gold);font-size:0.75rem;cursor:pointer;font-family:'Exo 2',sans-serif;">📋 Copy</button>
+          <div style="font-size:0.9rem;color:var(--muted);">Enter the 6-digit OTP sent to your mobile</div>
         </div>
         <div class="otp-inputs">
           <input class="otp-input" maxlength="1" id="otp1" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,'otp2')">
@@ -2492,8 +2489,6 @@
       const formFieldsEl = document.getElementById('registerFormFields');
       if (otpWrapEl) otpWrapEl.style.display = 'none';
       if (formFieldsEl) formFieldsEl.style.display = 'block';
-      const otpBoxEl = document.getElementById('otpDisplayBox');
-      if (otpBoxEl) otpBoxEl.style.display = 'none';
       if (window.otpInterval) clearInterval(window.otpInterval);
 
       if (!window._referralCode) {
@@ -4646,56 +4641,37 @@
   }
   let otpInterval;
   async function sendOTP() {
-    const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
+    const rawContact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
     const username = document.getElementById('regUsername') ? document.getElementById('regUsername').value.trim() : '';
     const password = document.getElementById('regPassword') ? document.getElementById('regPassword').value : '';
     const inviteCode = document.getElementById('inviteCodeInput') ? document.getElementById('inviteCodeInput').value.trim() : '';
     if (!inviteCode) { showToast('⚠️ Invite code is mandatory to register'); return; }
-    if (!contact) { showToast('⚠️ Enter your mobile or email'); return; }
+    if (!rawContact || rawContact.length !== 10 || !/^[6-9]\d{9}$/.test(rawContact)) {
+      showToast('⚠️ Enter a valid 10-digit Indian mobile number'); return;
+    }
     if (!username) { showToast('⚠️ Enter a username'); return; }
     if (!password || password.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
-    // Validate password strength BEFORE sending OTP
     const pwErr = validatePassword(password);
     if (pwErr) { showToast('⚠️ ' + pwErr); return; }
-
-    const isEmail = contact.includes('@');
-
+    window._regContact = '+91' + rawContact;
     try {
-      // Unified fake-OTP flow for BOTH email and phone (real Firebase Phone Auth requires
-      // the Blaze billing plan, which is not yet upgraded - this lets registration work
-      // for all users right now; switch phone back to real SMS OTP once Blaze is active)
-      const otp = Math.floor(100000 + Math.random() * 900000).toString();
-      const db = window.fbDB || fbDB;
-      const otpKey = contact.replace(/[.#$\[\]]/g, '_');
-      if (db) {
-        await db.ref('otpVerification/' + otpKey).set({ otp, expires: Date.now() + 300000 });
-      }
-      window._regOTP = otp;
+      showToast('⏳ Sending OTP to +91' + rawContact + '...');
+      const resp = await fetch('https://royalwin-api.vercel.app/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: rawContact })
+      });
+      const data = await resp.json();
+      if (!data.success) { showToast('❌ ' + (data.msg || 'Failed to send OTP')); return; }
       window._regOTPExpiry = Date.now() + 300000;
-      window._regIsEmail = isEmail;
-      const otpBox = document.getElementById('otpDisplayBox');
-      const otpVal = document.getElementById('otpDisplayValue');
-      if (otpBox && otpVal) {
-        otpVal.textContent = otp;
-        otpBox.style.display = 'flex';
-      }
-      showToast(isEmail ? '📧 OTP generated — see box above' : '📱 OTP generated — SMS delivery coming soon, see box above');
+      showToast('📱 OTP sent to +91' + rawContact);
       const fields = document.getElementById('registerFormFields');
       if (fields) fields.style.display = 'none';
       document.getElementById('otpWrap').style.display = 'block';
       startOTPTimer();
       document.getElementById('otp1').focus();
-
     } catch(e) {
-      console.error('OTP send error:', e);
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
-      }
-      const msg = e.code === 'auth/invalid-phone-number' ? 'Invalid phone number. Use format: +91XXXXXXXXXX' :
-                  e.code === 'auth/too-many-requests' ? 'Too many attempts. Try again later.' :
-                  e.message;
-      showToast('❌ ' + msg);
+      showToast('❌ Could not send OTP. Please try again.');
     }
   }
 
@@ -4715,28 +4691,22 @@
   }
 
   async function resendOTP() {
-    const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
-    if (!contact) { showToast('⚠️ Session expired. Please start again.'); showPage('register'); return; }
-    const isEmail = contact.includes('@');
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const db = window.fbDB || fbDB;
-    const otpKey = contact.replace(/[.#$\[\]]/g, '_');
+    const rawContact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
+    if (!rawContact || rawContact.length !== 10) { showToast('⚠️ Session expired. Please start again.'); showPage('register'); return; }
     try {
-      if (db) {
-        await db.ref('otpVerification/' + otpKey).set({ otp, expires: Date.now() + 300000 });
-      }
-      window._regOTP = otp;
+      showToast('⏳ Resending OTP...');
+      const resp = await fetch('https://royalwin-api.vercel.app/api/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: rawContact })
+      });
+      const data = await resp.json();
+      if (!data.success) { showToast('❌ ' + (data.msg || 'Failed to resend OTP')); return; }
       window._regOTPExpiry = Date.now() + 300000;
-      const otpBox = document.getElementById('otpDisplayBox');
-      const otpVal = document.getElementById('otpDisplayValue');
-      if (otpBox && otpVal) {
-        otpVal.textContent = otp;
-        otpBox.style.display = 'flex';
-      }
-      showToast(isEmail ? '📧 New OTP generated — see box above' : '📱 New OTP generated — see box above');
+      showToast('📱 OTP resent to +91' + rawContact);
       startOTPTimer();
     } catch(e) {
-      showToast('❌ Failed to resend OTP: ' + e.message);
+      showToast('❌ Could not resend OTP. Please try again.');
     }
   }
 
@@ -4763,40 +4733,32 @@
   }
 
   async function verifyOTP() {
-    if (window._otpVerifyInProgress) return; // Prevent double-submit
+    if (window._otpVerifyInProgress) return;
     window._otpVerifyInProgress = true;
     const verifyBtn = document.querySelector('#page-register .btn-full');
     if (verifyBtn) { verifyBtn.disabled = true; verifyBtn.style.opacity = '0.6'; verifyBtn.textContent = '⏳ Verifying...'; }
     try {
-    const otp = ['otp1','otp2','otp3','otp4','otp5','otp6'].map(id => document.getElementById(id).value).join('');
-    if (otp.length < 6) { showToast('⚠️ Please enter the full 6-digit OTP'); return; }
-    const pwField = document.getElementById('regPassword');
-    if (pwField) {
-      const pwErr = validatePassword(pwField.value);
-      if (pwErr) { showToast('⚠️ ' + pwErr); return; }
-    }
-
-    const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
-
-    try {
-      const db = window.fbDB || fbDB;
-      const otpKey = contact.replace(/[.#$\[\]]/g, '_');
-      if (db) {
-        const snap = await db.ref('otpVerification/' + otpKey).once('value');
-        const data = snap.val();
-        if (!data) { showToast('❌ OTP expired. Please request a new one.'); return; }
-        if (Date.now() > data.expires) { showToast('❌ OTP expired. Please request a new one.'); return; }
-        if (data.otp !== otp) { showToast('❌ Wrong OTP. Please try again.'); return; }
-        await db.ref('otpVerification/' + otpKey).remove();
+      const otp = ['otp1','otp2','otp3','otp4','otp5','otp6'].map(id => document.getElementById(id).value).join('');
+      if (otp.length < 6) { showToast('⚠️ Please enter the full 6-digit OTP'); return; }
+      const pwField = document.getElementById('regPassword');
+      if (pwField) {
+        const pwErr = validatePassword(pwField.value);
+        if (pwErr) { showToast('⚠️ ' + pwErr); return; }
       }
-      showToast('✅ Verified!');
-      await doRegister();
-    } catch(e) {
-      const msg = e.code === 'auth/invalid-verification-code' ? 'Wrong OTP. Please try again.' :
-                  e.code === 'auth/code-expired' ? 'OTP expired. Please request a new one.' :
-                  e.message;
-      showToast('❌ ' + msg);
-    }
+      const rawContact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
+      try {
+        const resp = await fetch('https://royalwin-api.vercel.app/api/verify-otp', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ phone: rawContact, otp })
+        });
+        const data = await resp.json();
+        if (!data.success) { showToast('❌ ' + (data.msg || 'Wrong OTP. Please try again.')); return; }
+        showToast('✅ Verified!');
+        await doRegister();
+      } catch(e) {
+        showToast('❌ Verification failed. Please try again.');
+      }
     } finally {
       window._otpVerifyInProgress = false;
       const btn = document.querySelector('#page-register .btn-full');
@@ -4818,8 +4780,6 @@
     if (window.otpInterval) clearInterval(window.otpInterval);
     window._phoneConfirmResult = null;
     window._confirmResult = null;
-    const otpBox = document.getElementById('otpDisplayBox');
-    if (otpBox) otpBox.style.display = 'none';
   }
 
   function copyOtpToClipboard() {
@@ -5734,14 +5694,15 @@
     // Validate password strength BEFORE sending OTP
     const pwErr = validatePassword(password);
     if (pwErr) { showToast('⚠️ ' + pwErr); return; }
-    const isEmail = contact.includes('@');
-    const email = isEmail ? contact : contact.replace(/\s/g,'') + '@royalwin.app';
+    // Phone-only registration — contact is always a 10-digit number
+    // Firebase Auth requires email format so we use phone@royalwin.app internally
+    const email = contact.replace(/\s/g,'') + '@royalwin.app';
 
     try {
       showToast('⏳ Creating your account...');
       const userCred = await firebase.auth().createUserWithEmailAndPassword(email, password);
       const user = userCred.user;
-      window._registrationInProgress = true; // Prevents welcome bonus from firing during Firebase's automatic post-signup login
+      window._registrationInProgress = true;
       const _rc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       const myRefCode = 'ROY-' + Array.from({length:6}, () => _rc[Math.floor(Math.random() * _rc.length)]).join('');
       let memberId;
@@ -5758,9 +5719,9 @@
         firstName,
         lastName,
         username,
-        email: isEmail ? contact : '',
-        mobile: isEmail ? '' : contact,
-        contact,
+        email: '',
+        mobile: '+91' + contact.replace(/\s/g,''),
+        contact: '+91' + contact.replace(/\s/g,''),
         balance: 0,
         referralCode: myRefCode,
         referredBy: inviteCode || '',
