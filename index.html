@@ -4656,15 +4656,28 @@
   function renderCaptcha() {
     const container = document.getElementById('recaptchaWidget');
     if (!container) return;
-    // Clear any previous render
+    // If already rendered, just reset it instead of rendering again
+    if (_recaptchaWidgetId !== null && typeof grecaptcha !== 'undefined') {
+      try { grecaptcha.reset(_recaptchaWidgetId); return; } catch(e) {}
+    }
+    // Clear container and render fresh
     container.innerHTML = '';
-    if (typeof grecaptcha !== 'undefined' && _recaptchaReady) {
-      _recaptchaWidgetId = grecaptcha.render('recaptchaWidget', {
-        sitekey: '6Le15ictAAAAHaaE69TiO6eO76jD5SsLlNZmJLq',
-        theme: 'dark',
-        callback: onCaptchaSuccess,
-        'expired-callback': onCaptchaExpired
-      });
+    _recaptchaWidgetId = null;
+    if (typeof grecaptcha !== 'undefined' && grecaptcha.render) {
+      try {
+        _recaptchaWidgetId = grecaptcha.render('recaptchaWidget', {
+          sitekey: '6Le15ictAAAAHaaE69TiO6eO76jD5SsLlNZmJLq',
+          theme: 'dark',
+          callback: onCaptchaSuccess,
+          'expired-callback': onCaptchaExpired
+        });
+      } catch(e) {
+        // Already rendered in this element — reset instead
+        try { grecaptcha.reset(_recaptchaWidgetId); } catch(e2) {}
+      }
+    } else {
+      // grecaptcha not loaded yet — wait and retry
+      setTimeout(renderCaptcha, 500);
     }
   }
 
