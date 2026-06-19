@@ -1241,13 +1241,21 @@ function updateNextResultBadges() {
         return;
       }
       const entries = Object.values(summary);
-      const totalBets = entries.reduce((s, e) => s + e.count, 0);
-      const totalAmt = entries.reduce((s, e) => s + e.totalAmount, 0);
+      // Aggregate by selection (value) — player writes raw entries with {type, value, amount, timestamp}
+      const aggregated = {};
+      entries.forEach(e => {
+        const sel = e.value || e.selection || '?';
+        if (!aggregated[sel]) aggregated[sel] = { selection: sel, count: 0, totalAmount: 0 };
+        aggregated[sel].count++;
+        aggregated[sel].totalAmount += parseFloat(e.amount || e.totalAmount || 0);
+      });
+      const agg = Object.values(aggregated);
+      const totalBets = entries.length;
+      const totalAmt = entries.reduce((s, e) => s + parseFloat(e.amount || e.totalAmount || 0), 0);
       if (betsEl) betsEl.textContent = totalBets + ' bets · ₹' + totalAmt.toLocaleString('en-IN');
       if (summaryEl) {
         const colorMap = { green:'#27ae60', red:'#e02020', violet:'#7c4dff', big:'var(--gold)', small:'#2563eb' };
-        summaryEl.innerHTML = entries.map(e => {
-          const key = e.selection.toLowerCase().replace(' ', '_');
+        summaryEl.innerHTML = agg.map(e => {
           const col = colorMap[e.selection.toLowerCase()] || 'var(--muted)';
           return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.2rem 0;border-bottom:1px solid rgba(255,255,255,0.04);">
             <span style="color:${col};font-weight:700;">${e.selection}</span>
