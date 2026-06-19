@@ -1398,10 +1398,10 @@
       margin: 0 0 0.5rem !important;
     }
     .cg-num-btn {
-      font-size: 0.49rem !important;
+      font-size: 0.85rem !important;
       aspect-ratio: 1 !important;
-      min-height: 22px !important;
-      border-radius: 50% !important;
+      min-height: unset !important;
+      border-radius: 10px !important;
     }
     .cg-color-btn[id="cgBigBtn"],
     .cg-color-btn[id="cgSmallBtn"] {
@@ -1568,7 +1568,7 @@
   /* ── SMALL MOBILE 400px ── */
   @media (max-width: 400px) {
     .cg-color-btn { font-size: 0.62rem !important; padding: 0.6rem 0.05rem !important; }
-    .cg-num-btn { font-size: 0.54rem !important; min-height: 25px !important; }
+    .cg-num-btn { font-size: 0.75rem !important; min-height: unset !important; border-radius: 10px !important; }
     .cg-ttab { font-size: 0.82rem !important; }
     .mobile-nav-item { font-size: 0.5rem !important; }
     .hs-val { font-size: 0.88rem !important; }
@@ -7926,6 +7926,75 @@
           loadNotifications();
           checkDepositBonus();
           loadAnnouncement();
+
+          // ── BACKGROUND BET SETTLER ──
+          // Runs every 30 seconds regardless of whether the game is open.
+          // Checks Firebase for any pending bets that now have results available
+          // and settles them immediately — so users always see up-to-date results
+          // in My Bets even when they're navigating around the app.
+          if (window._bgSettleInterval) clearInterval(window._bgSettleInterval);
+          const bgSettle = async () => {
+            const dbBg = window.fbDB || fbDB;
+            const userBg = window.currentUser;
+            if (!dbBg || !userBg) return;
+            try {
+              const pSnap = await dbBg.ref('users/' + userBg.uid + '/wingoPendingBets').once('value');
+              if (!pSnap.val()) return;
+              const pending = Object.entries(pSnap.val()).map(([k,v]) => ({...v, _firebaseKey:k}));
+              if (pending.length === 0) return;
+              const rounds = [...new Set(pending.map(b => ({ round: b.round, timer: b.timer||1 })).map(JSON.stringify))].map(JSON.parse);
+              for (const {round, timer} of rounds) {
+                const hSnap = await dbBg.ref('wingo/wingo' + timer + 'min/history')
+                  .orderByChild('round').equalTo(round).limitToLast(1).once('value');
+                if (!hSnap.val()) continue;
+                const roundData = Object.values(hSnap.val())[0];
+                if (!roundData) continue;
+                const roundBets = pending.filter(b => b.round === round && (b.timer||1) === timer);
+                for (const bet of roundBets) {
+                  const winNum = parseInt(roundData.num);
+                  const winColorRaw = roundData.color;
+                  const FEE = 0.04;
+                  const actualBet = bet.actualBet || Math.round((bet.bet||0)*(1-FEE));
+                  let betWon = false, betWinAmt = 0;
+                  const sc = bet.savedColor, sn = bet.savedNum, sb = bet.savedBS;
+                  if (sc==='violet'&&(winColorRaw==='violet'||winColorRaw==='violet-red'||winColorRaw==='violet-green')){betWon=true;betWinAmt=actualBet*4.5;}
+                  else if (sc==='red'&&winColorRaw==='red'){betWon=true;betWinAmt=actualBet*2;}
+                  else if (sc==='red'&&winColorRaw==='violet-red'){betWon=true;betWinAmt=actualBet*1.5;}
+                  else if (sc==='green'&&winColorRaw==='green'){betWon=true;betWinAmt=actualBet*2;}
+                  else if (sc==='green'&&winColorRaw==='violet-green'){betWon=true;betWinAmt=actualBet*1.5;}
+                  else if (sn!==null&&sn!==undefined&&parseInt(sn)===winNum){betWon=true;betWinAmt=actualBet*9;}
+                  else if (sb==='big'&&winNum>=5){betWon=true;betWinAmt=actualBet*2;}
+                  else if (sb==='small'&&winNum<=4){betWon=true;betWinAmt=actualBet*2;}
+                  const histLabel = (winColorRaw==='violet-red'||winColorRaw==='violet-green')?'violet':winColorRaw;
+                  const betRecord = {
+                    round:bet.round, bet:bet.bet, actualBet,
+                    selection:bet.selection, selColor:bet.selColor,
+                    result:histLabel+' / '+winNum, resultBg:roundData.histBg||'#27ae60',
+                    pl:betWon?Math.round(betWinAmt):-bet.bet,
+                    status:betWon?'won':'lost', timer, timestamp:Date.now()
+                  };
+                  if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
+                  const idx = cgMyBetsByTimer[timer].findIndex(b=>b.round===bet.round&&b.selection===bet.selection);
+                  if (idx!==-1) cgMyBetsByTimer[timer][idx]=betRecord;
+                  else cgMyBetsByTimer[timer].unshift(betRecord);
+                  if (betWon&&betWinAmt>0) {
+                    dbBg.ref('users/'+userBg.uid+'/balance').transaction(bal=>parseFloat(((bal||0)+betWinAmt).toFixed(2)));
+                  }
+                  dbBg.ref('users/'+userBg.uid+'/wingoPendingBets/'+bet._firebaseKey).remove();
+                  const rk='wingo'+timer+'min_round_'+bet.round+'_'+Date.now();
+                  dbBg.ref('users/'+userBg.uid+'/wingoMyBets/'+rk).set(betRecord);
+                }
+              }
+              // Update My Bets UI if game is open
+              if (document.getElementById('colorGameOverlay')?.classList.contains('open')) {
+                cgMyBets = cgMyBetsByTimer[cgTimer] || [];
+                renderMyBets();
+              }
+            } catch(e) {}
+          };
+          // Run immediately on login, then every 30 seconds
+          setTimeout(bgSettle, 2000);
+          window._bgSettleInterval = setInterval(bgSettle, 30000);
           document.getElementById('navGuest').style.display = 'none';
           const loader = document.getElementById('appLoader');
           if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 400); }
