@@ -6550,6 +6550,15 @@
     const fee = Math.round(amt * cgSettings.fee);
     const actualAmt = amt - fee;
     const sel = cgSelectedColor ? cgSelectedColor.toUpperCase() : cgSelectedBigSmall ? cgSelectedBigSmall.toUpperCase() : 'Number ' + cgSelectedNum;
+    // Capture selection immediately before any async operations clear them
+    const capturedColor = cgSelectedColor;
+    const capturedNum = cgSelectedNum;
+    const capturedBS = cgSelectedBigSmall;
+    const capturedAmt = amt;
+    const capturedActualAmt = actualAmt;
+    const capturedTimer = cgTimer;
+    const capturedRound = cgRoundByTimer[cgTimer];
+
     _isPlacingBet = true;
     showToast('✅ Bet of ₹' + amt + ' placed on ' + sel + '!');
     document.getElementById('cgConfirmBtn').disabled = true;
@@ -6595,35 +6604,35 @@
         _isPlacingBet = false;
       }
     }, 1500);
-    window._cgActualBet = actualAmt;
-    const selColor = cgSelectedColor === 'green' ? '#27ae60' : cgSelectedColor === 'red' ? '#e02020' : cgSelectedColor === 'violet' ? '#7c4dff' : cgSelectedBigSmall === 'big' ? '#ffd700' : cgSelectedBigSmall === 'small' ? '#2563eb' : '#aaa';
-    const selLabel = cgSelectedColor ? cgSelectedColor.charAt(0).toUpperCase()+cgSelectedColor.slice(1) : cgSelectedBigSmall ? cgSelectedBigSmall.charAt(0).toUpperCase()+cgSelectedBigSmall.slice(1) : 'No.'+cgSelectedNum;
+    window._cgActualBet = capturedActualAmt;
+    const selColor = capturedColor === 'green' ? '#27ae60' : capturedColor === 'red' ? '#e02020' : capturedColor === 'violet' ? '#7c4dff' : capturedBS === 'big' ? '#ffd700' : capturedBS === 'small' ? '#2563eb' : '#aaa';
+    const selLabel = capturedColor ? capturedColor.charAt(0).toUpperCase()+capturedColor.slice(1) : capturedBS ? capturedBS.charAt(0).toUpperCase()+capturedBS.slice(1) : 'No.'+capturedNum;
     if (!window._cgPendingBets) window._cgPendingBets = [];
     const pendingBetObj = {
-      round: cgRoundByTimer[cgTimer], bet: amt, actualBet: actualAmt,
+      round: capturedRound, bet: capturedAmt, actualBet: capturedActualAmt,
       selection: selLabel, selColor,
-      savedColor: cgSelectedColor, savedNum: cgSelectedNum, savedBS: cgSelectedBigSmall,
-      timer: cgTimer, timestamp: Date.now()
+      savedColor: capturedColor, savedNum: capturedNum, savedBS: capturedBS,
+      timer: capturedTimer, timestamp: Date.now()
     };
     window._cgPendingBets.push(pendingBetObj);
     window._cgPendingBet = window._cgPendingBets[window._cgPendingBets.length - 1];
     try {
       const db2 = window.fbDB || fbDB;
       if (db2 && window.currentUser) {
-        const pendingKey = 'p_' + cgTimer + '_' + cgRoundByTimer[cgTimer] + '_' + Date.now();
+        const pendingKey = 'p_' + capturedTimer + '_' + capturedRound + '_' + Date.now();
         db2.ref('users/' + window.currentUser.uid + '/wingoPendingBets/' + pendingKey).set(pendingBetObj);
         pendingBetObj._firebaseKey = pendingKey;
       }
     } catch(e) {}
-    if (!cgMyBetsByTimer[cgTimer]) cgMyBetsByTimer[cgTimer] = [];
+    if (!cgMyBetsByTimer[capturedTimer]) cgMyBetsByTimer[capturedTimer] = [];
     const pendingEntry = {
-      round: cgRoundByTimer[cgTimer], bet: amt, actualBet: actualAmt,
+      round: capturedRound, bet: capturedAmt, actualBet: capturedActualAmt,
       selection: selLabel, selColor,
       result: '⏳ Waiting...', resultBg: 'rgba(240,192,64,0.3)',
       pl: null, status: 'pending', timestamp: Date.now(),
       _firebaseKey: pendingBetObj._firebaseKey
     };
-    cgMyBetsByTimer[cgTimer].unshift(pendingEntry);
+    cgMyBetsByTimer[capturedTimer].unshift(pendingEntry);
     cgMyBetsPage = 1;
     renderMyBets();
     try {
@@ -6632,13 +6641,13 @@
       if (db && user) {
         const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
         const currentBal = parseFloat(balSnap.val() || 0);
-        if (currentBal < amt) { showToast('❌ Insufficient balance!'); return; }
+        if (currentBal < capturedAmt) { showToast('❌ Insufficient balance!'); return; }
         await db.ref('users/' + user.uid + '/balance').transaction(bal => {
           const current = parseFloat(bal || 0);
-          if (current < amt) return; // abort if insufficient
-          return parseFloat((current - amt).toFixed(2));
+          if (current < capturedAmt) return; // abort if insufficient
+          return parseFloat((current - capturedAmt).toFixed(2));
         });
-        updateBalanceDisplay(currentBal - amt);
+        updateBalanceDisplay(currentBal - capturedAmt);
         try {
           const todayKey = new Date().toISOString().split('T')[0];
           db.ref('users/' + user.uid + '/dailyBets/' + todayKey).transaction(function(val) {
@@ -6755,9 +6764,9 @@
         const summary = snap.val() || {};
         const key = selLabel.toLowerCase().replace(/\s/g, '_') + '_' + Date.now();
         let betType = 'color', betValue = selLabel.toLowerCase();
-        if (cgSelectedNum !== null && cgSelectedNum !== undefined) { betType = 'number'; betValue = String(cgSelectedNum); }
-        else if (cgSelectedBigSmall) { betType = 'bigsmall'; betValue = cgSelectedBigSmall.toLowerCase(); }
-        else if (cgSelectedColor) { betType = 'color'; betValue = cgSelectedColor.toLowerCase(); }
+        if (capturedNum !== null && capturedNum !== undefined) { betType = 'number'; betValue = String(capturedNum); }
+        else if (capturedBS) { betType = 'bigsmall'; betValue = capturedBS.toLowerCase(); }
+        else if (capturedColor) { betType = 'color'; betValue = capturedColor.toLowerCase(); }
         summary[key] = { type: betType, value: betValue, amount: amt, timestamp: Date.now() };
         await db.ref(path).set(summary);
       }
@@ -6767,19 +6776,51 @@
   async function resolveRoundForTimer(timerMode, roundStartTime) {
     roundStartTime = roundStartTime || Date.now();
     const currentRound = cgRoundByTimer[timerMode];
-    const pendingBetsForRound = (window._cgPendingBets || []).filter(b =>
+    const roundToResolve = currentRound - 1;
+
+    // First check in-memory pending bets
+    let pendingBetsForRound = (window._cgPendingBets || []).filter(b =>
       (b.timer === timerMode || !b.timer) &&
-      (b.round === currentRound - 1 || b.round === currentRound)
+      (b.round === roundToResolve || b.round === currentRound)
     );
+
+    // If nothing in memory, load from Firebase — covers page refresh case
+    if (pendingBetsForRound.length === 0) {
+      try {
+        const dbLoad = window.fbDB || fbDB;
+        const userLoad = window.currentUser;
+        if (dbLoad && userLoad) {
+          const pSnap = await dbLoad.ref('users/' + userLoad.uid + '/wingoPendingBets').once('value');
+          if (pSnap.val()) {
+            const fromFirebase = Object.entries(pSnap.val())
+              .map(([k, v]) => ({ ...v, _firebaseKey: k }))
+              .filter(b => (b.timer === timerMode || !b.timer) &&
+                (b.round === roundToResolve || b.round === currentRound));
+            if (fromFirebase.length > 0) {
+              window._cgPendingBets = window._cgPendingBets || [];
+              fromFirebase.forEach(b => {
+                if (!window._cgPendingBets.some(p => p.round === b.round && p.selection === b.selection)) {
+                  window._cgPendingBets.push(b);
+                }
+              });
+              pendingBetsForRound = fromFirebase;
+            }
+          }
+        }
+      } catch(e) {}
+    }
+
+    // Clean up resolved rounds from memory
+    window._cgPendingBets = (window._cgPendingBets || []).filter(b =>
+      !(  (b.timer === timerMode || !b.timer) &&
+          (b.round === roundToResolve || b.round === currentRound)  )
+    );
+    window._cgPendingBet = null;
+
     const firstBet = pendingBetsForRound[0] || null;
     const savedSelectedColor = firstBet ? firstBet.savedColor : cgSelectedColor;
     const savedSelectedNum = firstBet ? (firstBet.savedNum !== undefined ? firstBet.savedNum : null) : cgSelectedNum;
     const savedSelectedBS = firstBet ? firstBet.savedBS : cgSelectedBigSmall;
-    window._cgPendingBets = (window._cgPendingBets || []).filter(b =>
-      !(  (b.timer === timerMode || !b.timer) &&
-          (b.round === currentRound - 1 || b.round === currentRound)  )
-    );
-    window._cgPendingBet = null;
     const isActiveTimer = (timerMode === cgTimer);
     let winNum;
     const timerKey = 'wingo/wingo' + timerMode + 'min';
