@@ -438,6 +438,7 @@
     <div class="admin-tabs">
       <button class="admin-tab active" onclick="switchTab('bets')">📋 Live Bets</button>
       <button class="admin-tab" onclick="switchTab('finance')">💰 Finance</button>
+      <button class="admin-tab" onclick="switchTab('withdrawals')">💸 Withdrawals <span id="pendingWithdrawBadge" style="display:none;background:#e02020;color:#fff;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.7rem;margin-left:4px;">0</span></button>
       <button class="admin-tab" onclick="switchTab('users')">👥 Users</button>
       <button class="admin-tab" onclick="switchTab('chat')">💬 Live Chat <span id="chatUnreadBadge" style="display:none;background:#e02020;color:#fff;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.7rem;margin-left:4px;">0</span></button>
       <button class="admin-tab" onclick="switchTab('settings')">⚙️ Settings</button>
@@ -651,6 +652,23 @@
     </div>
 
     <!-- ── USERS TAB ── -->
+    <!-- ── WITHDRAWALS TAB ── -->
+    <div class="admin-panel" id="panel-withdrawals">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.8rem;">
+        <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💸 Withdrawal Requests</div>
+        <div style="display:flex;gap:0.5rem;flex-wrap:wrap;">
+          <button onclick="loadWithdrawals('pending')" id="wfilter-pending" style="font-size:0.75rem;padding:0.3rem 0.8rem;border-radius:6px;border:1px solid var(--gold);background:rgba(240,192,64,0.15);color:var(--gold);cursor:pointer;font-family:'Exo 2',sans-serif;">⏳ Pending</button>
+          <button onclick="loadWithdrawals('approved')" id="wfilter-approved" style="font-size:0.75rem;padding:0.3rem 0.8rem;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;font-family:'Exo 2',sans-serif;">✅ Approved</button>
+          <button onclick="loadWithdrawals('rejected')" id="wfilter-rejected" style="font-size:0.75rem;padding:0.3rem 0.8rem;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;font-family:'Exo 2',sans-serif;">❌ Rejected</button>
+          <button onclick="loadWithdrawals('all')" id="wfilter-all" style="font-size:0.75rem;padding:0.3rem 0.8rem;border-radius:6px;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;font-family:'Exo 2',sans-serif;">📋 All</button>
+        </div>
+      </div>
+      <div id="withdrawalStats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.8rem;margin-bottom:1rem;"></div>
+      <div id="withdrawalsList" style="display:flex;flex-direction:column;gap:0.6rem;">
+        <div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>
+      </div>
+    </div>
+
     <div class="admin-panel" id="panel-users">
 
       <!-- Fraud Alerts -->
@@ -1835,6 +1853,7 @@ function renderUsers(users) {
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem;">
         <div style="font-family:'Cinzel',serif;color:var(--green);font-weight:700;">₹${(u.balance || 0).toLocaleString('en-IN')}</div>
         <div style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end;">
+          <button onclick="openReferralOverview('${u.uid}', '${u.username || 'Unknown'}', '${u.memberId || ''}')" style="font-size:0.68rem;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:var(--green);cursor:pointer;">👥 Referrals</button>
           <button onclick="document.getElementById('manualUid').value='${u.uid}';switchTab('finance');" style="font-size:0.68rem;background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:4px;padding:0.2rem 0.5rem;color:var(--gold);cursor:pointer;">💰 Balance</button>
           <button onclick="toggleBlockUser('${u.uid}', ${!u.isBlocked})" style="font-size:0.68rem;background:${u.isBlocked ? 'rgba(0,230,118,0.1)' : 'rgba(224,32,32,0.1)'};border:1px solid ${u.isBlocked ? 'rgba(0,230,118,0.2)' : 'rgba(224,32,32,0.2)'};border-radius:4px;padding:0.2rem 0.5rem;color:${u.isBlocked ? 'var(--green)' : 'var(--red2)'};cursor:pointer;">${u.isBlocked ? '✅ Unblock' : '🚫 Block'}</button>
           <button onclick="resetWithdrawDetails('${u.uid}')" style="font-size:0.68rem;background:rgba(124,77,255,0.1);border:1px solid rgba(124,77,255,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:#7c4dff;cursor:pointer;">🔓 Reset Withdraw</button>
@@ -2957,6 +2976,7 @@ window.switchTab = function(tab) {
     }
   });
   if (tab === 'finance') { loadRevenueStats('today'); loadCXPayBalance(); loadWGPayBalance(); loadUserStats(); }
+  if (tab === 'withdrawals') { loadWithdrawals('pending'); }
   if (tab === 'users') { loadUsers(); loadFraudAlerts(); }
   if (tab === 'chat') {
     const user = auth.currentUser;
@@ -2968,6 +2988,185 @@ window.switchTab = function(tab) {
     if (user) { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadAdminUpiIdSetting(); loadUsdtAddresses(); }
     else { onAuthStateChanged(auth, (u) => { if (u) { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadAdminUpiIdSetting(); loadUsdtAddresses(); } }); }
   }
+};
+
+// ── WITHDRAWALS MANAGEMENT ──
+let _currentWithdrawFilter = 'pending';
+window.loadWithdrawals = async function(filter) {
+  _currentWithdrawFilter = filter || 'pending';
+  // Update filter button styles
+  ['pending','approved','rejected','all'].forEach(f => {
+    const btn = document.getElementById('wfilter-' + f);
+    if (!btn) return;
+    const active = f === _currentWithdrawFilter;
+    btn.style.background = active ? 'rgba(240,192,64,0.15)' : 'var(--card)';
+    btn.style.borderColor = active ? 'var(--gold)' : 'var(--border)';
+    btn.style.color = active ? 'var(--gold)' : 'var(--muted)';
+  });
+  const el = document.getElementById('withdrawalsList');
+  const statsEl = document.getElementById('withdrawalStats');
+  if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
+  try {
+    const snap = await get(ref(db, 'adminRequests/withdrawals'));
+    const data = snap.val() || {};
+    const all = Object.entries(data).map(([k, v]) => ({ key: k, ...v }));
+    // Stats
+    const pending = all.filter(w => w.status === 'pending');
+    const approved = all.filter(w => w.status === 'approved');
+    const rejected = all.filter(w => w.status === 'rejected');
+    const pendingAmt = pending.reduce((s, w) => s + (w.amountToSend || w.amount || 0), 0);
+    const approvedAmt = approved.reduce((s, w) => s + (w.amountToSend || w.amount || 0), 0);
+    if (statsEl) statsEl.innerHTML = `
+      <div style="background:rgba(255,165,0,0.08);border:1px solid rgba(255,165,0,0.2);border-radius:10px;padding:0.8rem;text-align:center;">
+        <div style="font-size:0.65rem;color:var(--muted);">⏳ Pending</div>
+        <div style="font-family:'Cinzel',serif;font-size:1rem;color:orange;font-weight:800;">${pending.length}</div>
+        <div style="font-size:0.7rem;color:var(--muted);">₹${pendingAmt.toLocaleString('en-IN')}</div>
+      </div>
+      <div style="background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:10px;padding:0.8rem;text-align:center;">
+        <div style="font-size:0.65rem;color:var(--muted);">✅ Approved</div>
+        <div style="font-family:'Cinzel',serif;font-size:1rem;color:var(--green);font-weight:800;">${approved.length}</div>
+        <div style="font-size:0.7rem;color:var(--muted);">₹${approvedAmt.toLocaleString('en-IN')}</div>
+      </div>
+      <div style="background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.2);border-radius:10px;padding:0.8rem;text-align:center;">
+        <div style="font-size:0.65rem;color:var(--muted);">❌ Rejected</div>
+        <div style="font-family:'Cinzel',serif;font-size:1rem;color:var(--red2);font-weight:800;">${rejected.length}</div>
+      </div>`;
+    // Update badge
+    const badge = document.getElementById('pendingWithdrawBadge');
+    if (badge) { badge.textContent = pending.length; badge.style.display = pending.length > 0 ? 'inline' : 'none'; }
+    // Filter and sort
+    let filtered = _currentWithdrawFilter === 'all' ? all : all.filter(w => w.status === _currentWithdrawFilter);
+    filtered.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+    if (!el) return;
+    if (filtered.length === 0) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No ' + _currentWithdrawFilter + ' withdrawals</div>'; return; }
+    el.innerHTML = filtered.map(w => {
+      const d = w.timestamp ? new Date(w.timestamp).toLocaleString('en-IN', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+      const statusColor = w.status === 'approved' ? 'var(--green)' : w.status === 'rejected' ? 'var(--red2)' : 'orange';
+      const statusIcon = w.status === 'approved' ? '✅' : w.status === 'rejected' ? '❌' : '⏳';
+      const isPending = w.status === 'pending';
+      return `<div style="background:var(--card);border:1px solid ${isPending ? 'rgba(255,165,0,0.3)' : 'var(--border)'};border-radius:10px;padding:0.9rem 1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:0.6rem;">
+          <div>
+            <div style="font-weight:700;font-size:0.88rem;">${w.username || '—'} <span style="font-size:0.68rem;color:var(--gold);">ID: ${w.memberId || '—'}</span></div>
+            <div style="font-size:0.72rem;color:var(--muted);">${w.contact || '—'} · ${d}</div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">${w.method || '—'}: ${w.upiId || '—'}</div>
+          </div>
+          <div style="text-align:right;">
+            <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:800;color:var(--red2);">₹${(w.amountToSend||w.amount||0).toLocaleString('en-IN')}</div>
+            <div style="font-size:0.65rem;color:var(--muted);">Requested: ₹${(w.amount||0).toLocaleString('en-IN')}</div>
+            <div style="font-size:0.72rem;color:${statusColor};font-weight:700;">${statusIcon} ${w.status?.toUpperCase()}</div>
+          </div>
+        </div>
+        ${isPending ? `<div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
+          <button onclick="approveWithdrawal('${w.key}','${w.uid}','${w.username||''}','${w.memberId||''}')" style="flex:1;padding:0.5rem;background:rgba(39,174,96,0.15);border:1px solid rgba(39,174,96,0.3);border-radius:8px;color:var(--green);font-weight:700;cursor:pointer;font-size:0.8rem;font-family:'Exo 2',sans-serif;">✅ Approve</button>
+          <button onclick="rejectWithdrawal('${w.key}','${w.uid}','${w.amount||0}','${w.username||''}','${w.memberId||''}')" style="flex:1;padding:0.5rem;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:8px;color:var(--red2);font-weight:700;cursor:pointer;font-size:0.8rem;font-family:'Exo 2',sans-serif;">❌ Reject</button>
+        </div>` : `<div style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;">Processed: ${w.processedAt ? new Date(w.processedAt).toLocaleString('en-IN') : '—'}${w.rejectionReason ? ' · Reason: ' + w.rejectionReason : ''}</div>`}
+      </div>`;
+    }).join('');
+  } catch(e) { if (el) el.innerHTML = '<div style="color:var(--red2);padding:1rem;">Error: ' + e.message + '</div>'; }
+};
+
+window.approveWithdrawal = async function(key, uid, username, memberId) {
+  if (!confirm('Approve withdrawal for ' + username + '? This marks it as processed — make sure you have sent the payment manually first.')) return;
+  try {
+    await update(ref(db, 'adminRequests/withdrawals/' + key), { status: 'approved', processedAt: Date.now() });
+    // Notify user
+    await push(ref(db, 'users/' + uid + '/notifications'), {
+      icon: '✅', title: 'Withdrawal Approved',
+      body: 'Your withdrawal request has been approved and payment is being processed.',
+      read: false, timestamp: Date.now()
+    });
+    showToast('✅ Withdrawal approved for ' + username);
+    loadWithdrawals(_currentWithdrawFilter);
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
+window.rejectWithdrawal = async function(key, uid, amount, username, memberId) {
+  const reason = prompt('Rejection reason (shown to user):');
+  if (reason === null) return; // cancelled
+  try {
+    // Refund balance to user
+    await runTransaction(ref(db, 'users/' + uid + '/balance'), bal => parseFloat(((bal || 0) + parseFloat(amount)).toFixed(2)));
+    await update(ref(db, 'adminRequests/withdrawals/' + key), { status: 'rejected', processedAt: Date.now(), rejectionReason: reason || 'Rejected by admin' });
+    // Notify user with refund info
+    await push(ref(db, 'users/' + uid + '/notifications'), {
+      icon: '❌', title: 'Withdrawal Rejected',
+      body: `Your withdrawal of ₹${parseFloat(amount).toLocaleString('en-IN')} was rejected. ₹${parseFloat(amount).toLocaleString('en-IN')} refunded to your balance. Reason: ${reason || 'Rejected by admin'}`,
+      read: false, timestamp: Date.now()
+    });
+    // Record refund in transaction history
+    await push(ref(db, 'users/' + uid + '/transactions'), {
+      type: 'withdrawal_refund', amount: parseFloat(amount),
+      description: 'Withdrawal rejected — refund', details: reason || 'Rejected by admin',
+      timestamp: Date.now()
+    });
+    showToast('❌ Withdrawal rejected & ₹' + parseFloat(amount).toLocaleString('en-IN') + ' refunded to ' + username);
+    loadWithdrawals(_currentWithdrawFilter);
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
+// ── REFERRAL OVERVIEW PER USER ──
+window.openReferralOverview = async function(uid, username, memberId) {
+  let modal = document.getElementById('referralOverviewModal');
+  if (modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'referralOverviewModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:1rem;';
+  modal.innerHTML = `<div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.2rem;max-width:480px;width:100%;max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.95rem;">👥 Referrals of ${username} (${memberId})</div>
+      <button onclick="document.getElementById('referralOverviewModal').remove()" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
+    </div>
+    <div id="referralOverviewContent" style="color:var(--muted);text-align:center;padding:1rem;">Loading...</div>
+  </div>`;
+  document.body.appendChild(modal);
+  try {
+    const [l1Snap, l2Snap, l3Snap, l4Snap] = await Promise.all([
+      get(ref(db, 'users/' + uid + '/referrals')),
+      get(ref(db, 'users/' + uid + '/referrals_l2')),
+      get(ref(db, 'users/' + uid + '/referrals_l3')),
+      get(ref(db, 'users/' + uid + '/referrals_l4'))
+    ]);
+    const levels = [
+      { label: 'L1 Direct', data: l1Snap.val() },
+      { label: 'L2 Team', data: l2Snap.val() },
+      { label: 'L3 Team', data: l3Snap.val() },
+      { label: 'L4 Team', data: l4Snap.val() }
+    ];
+    const totalComm = levels.reduce((s, l) => s + Object.values(l.data || {}).reduce((ss, r) => ss + (r.bonus||0) + (r.commission||0), 0), 0);
+    const totalRefs = levels.reduce((s, l) => s + Object.keys(l.data || {}).length, 0);
+    let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:1rem;">
+      <div style="background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.2);border-radius:8px;padding:0.7rem;text-align:center;">
+        <div style="font-size:0.62rem;color:var(--muted);">Total Referrals</div>
+        <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;font-weight:800;">${totalRefs}</div>
+      </div>
+      <div style="background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:8px;padding:0.7rem;text-align:center;">
+        <div style="font-size:0.62rem;color:var(--muted);">Total Commission</div>
+        <div style="font-family:'Cinzel',serif;color:var(--green);font-size:1.1rem;font-weight:800;">₹${totalComm.toLocaleString('en-IN',{minimumFractionDigits:2})}</div>
+      </div>
+    </div>`;
+    levels.forEach(({ label, data }) => {
+      const refs = Object.values(data || {});
+      if (refs.length === 0) return;
+      html += `<div style="margin-bottom:0.8rem;">
+        <div style="font-size:0.75rem;font-weight:700;color:var(--gold);margin-bottom:0.4rem;">${label} (${refs.length})</div>
+        <div style="display:flex;flex-direction:column;gap:0.3rem;">
+          ${refs.map(r => `<div style="display:flex;justify-content:space-between;align-items:center;background:var(--bg3);border-radius:8px;padding:0.5rem 0.7rem;font-size:0.72rem;">
+            <div>
+              <span style="color:var(--text);font-weight:600;">${r.memberId || '—'}</span>
+              <span style="color:var(--muted);margin-left:0.4rem;">${r.joinedAt ? new Date(r.joinedAt).toLocaleDateString('en-IN') : '—'}</span>
+            </div>
+            <div style="text-align:right;">
+              <div style="color:var(--green);">Dep: ₹${(r.firstDepositAmt||0).toLocaleString('en-IN')}</div>
+              <div style="color:var(--gold);">Bonus: ₹${((r.bonus||0)+(r.commission||0)).toLocaleString('en-IN',{minimumFractionDigits:2})}</div>
+            </div>
+          </div>`).join('')}
+        </div>
+      </div>`;
+    });
+    if (totalRefs === 0) html = '<div style="color:var(--muted);text-align:center;padding:1rem;">No referrals yet</div>';
+    document.getElementById('referralOverviewContent').innerHTML = html;
+  } catch(e) { document.getElementById('referralOverviewContent').innerHTML = '<div style="color:var(--red2);">Error: ' + e.message + '</div>'; }
 };
 
 // ── ANNOUNCEMENT (unified) ──
