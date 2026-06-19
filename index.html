@@ -999,10 +999,10 @@
   .hf-btn.active, .hf-btn:hover { border-color: var(--gold); color: var(--gold); background: rgba(240,192,64,0.05); }
   .bet-history-table { background: var(--card); border: 1px solid var(--border); border-radius: 14px; overflow: hidden; }
   .bh-row {
-    display: grid; grid-template-columns: 1.1fr 1.4fr 0.6fr 0.8fr 0.8fr;
-    gap: 0.4rem; padding: 0.7rem 1rem;
+    display: grid; grid-template-columns: 1fr 1.3fr 1fr 0.8fr 0.8fr;
+    gap: 0.3rem; padding: 0.6rem 0.8rem;
     border-bottom: 1px solid rgba(255,255,255,0.04);
-    font-size: 0.8rem; align-items: center;
+    font-size: 0.78rem; align-items: center;
   }
   .bh-row.head {
     background: rgba(255,255,255,0.03); color: var(--muted);
@@ -1322,7 +1322,7 @@
     .hs-card { padding: 0.65rem !important; }
     .hs-val { font-size: 0.95rem !important; }
     .hs-lbl { font-size: 0.62rem !important; }
-    .bh-row { grid-template-columns: 1fr 1.3fr 0.55fr 0.7fr 0.75fr !important; font-size: 0.65rem !important; padding: 0.45rem 0.5rem !important; }
+    .bh-row { grid-template-columns: 0.9fr 1.2fr 1fr 0.7fr 0.7fr !important; font-size: 0.6rem !important; padding: 0.4rem 0.4rem !important; }
     .bh-row > *:nth-child(5), .bh-row > *:nth-child(6) { display: block !important; }
 
     /* ── GAMES SECTION ── */
@@ -6156,7 +6156,7 @@
               // Save result
               const rKey = 'wingo' + t + 'min_round_' + bet.round + '_' + Date.now();
               dbSettle.ref('users/' + userSettle.uid + '/wingoMyBets/' + rKey).set(betRecord);
-              addBetToHistory('WinGo', bet.bet, histLabel+'/'+winNum, betWon ? betWinAmt.toFixed(0) : 0, betWon, bet.round.toString(), 0, t);
+              addBetToHistory('WinGo', bet.bet, histLabel+'/'+winNum, betWon ? betWinAmt.toFixed(0) : 0, betWon, bet.round.toString(), 0, t, bet.selection);
             }
           }
         }
@@ -6278,11 +6278,11 @@
                         const userSettle = window.currentUser;
                         if (dbSettle && userSettle) {
                           dbSettle.ref('users/' + userSettle.uid + '/balance').transaction(bal => parseFloat(((bal||0)+betWinAmt).toFixed(2)));
-                          addBetToHistory('WinGo', bet.bet, winColor+'/'+winNum, betWinAmt.toFixed(0), true, bet.round.toString(), 0, timerMode);
+                          addBetToHistory('WinGo', bet.bet, winColor+'/'+winNum, betWinAmt.toFixed(0), true, bet.round.toString(), 0, timerMode, bet.selection);
                         }
                       } catch(e) {}
                     } else if (!betWon) {
-                      addBetToHistory('WinGo', bet.bet, winColor+'/'+winNum, 0, false, bet.round.toString(), 0, timerMode);
+                      addBetToHistory('WinGo', bet.bet, winColor+'/'+winNum, 0, false, bet.round.toString(), 0, timerMode, bet.selection);
                     }
                     // Remove from pending
                     try {
@@ -7034,7 +7034,7 @@
               db3.ref('users/' + window.currentUser.uid + '/wingoPendingBets/' + pendingBet._firebaseKey).remove();
             }
           } catch(e) {}
-          addBetToHistory('WinGo', pendingBet.bet, histColorLabel + ' / ' + winNum, betWinAmt.toFixed(0), betWon, timerRound.toString(), 0, timerMode);
+          addBetToHistory('WinGo', pendingBet.bet, histColorLabel + ' / ' + winNum, betWinAmt.toFixed(0), betWon, timerRound.toString(), 0, timerMode, pendingBet.selection);
           try {
             const db2 = window.fbDB || fbDB;
             if (db2 && window.currentUser) {
@@ -7590,10 +7590,10 @@
         day:'numeric', month:'short', hour:'2-digit', minute:'2-digit', hour12:false
       }) : (d.time || '—');
       return `<div class="bh-row">
-        <div><div style="font-weight:700;">${d.icon} ${d.game}</div><div style="font-size:0.7rem;color:var(--gold);margin-top:1px;">${d.mode || ''}</div></div>
-        <div><div style="font-size:0.72rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.round || '—'}</div><div style="font-size:0.7rem;color:var(--muted);margin-top:1px;">${timeStr}</div></div>
-        <div>₹${d.bet}</div>
-        <div style="font-size:0.75rem;">${result}</div>
+        <div><div style="font-weight:700;">${d.icon} ${d.game}</div><div style="font-size:0.68rem;color:var(--gold);margin-top:1px;">${d.mode || ''}</div></div>
+        <div><div style="font-size:0.7rem;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${d.round || '—'}</div><div style="font-size:0.68rem;color:var(--muted);margin-top:1px;">${timeStr}</div></div>
+        <div style="font-weight:600;">₹${d.bet}${d.selection ? ' / <span style="text-transform:capitalize;">' + d.selection + '</span>' : ''}</div>
+        <div style="font-size:0.72rem;">${result}</div>
         <div class="${d.won ? 'bh-win' : 'bh-lose'}">${d.won ? '+₹'+d.profit : '-₹'+Math.abs(d.profit)}</div>
       </div>`;
     }).join('');
@@ -7613,7 +7613,7 @@
     currentBetFilter = filter;
     renderBetHistory(filter);
   }
-  async function addBetToHistory(game, bet, result, profit, won, round, balanceAfter, timerMode) {
+  async function addBetToHistory(game, bet, result, profit, won, round, balanceAfter, timerMode, selection) {
     const now = new Date();
     const time = now.toLocaleDateString('en-IN', {day:'numeric', month:'short'}) + ', ' +
                  now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
@@ -7636,6 +7636,7 @@
       profit: won ? parseFloat(profit) : -parseFloat(bet),
       won, time, round: round || '—',
       mode: timerMode ? timerMode + 'Min' : null,
+      selection: selection || null,
       timestamp: Date.now(),
       balance: currentBal
     };
@@ -9284,11 +9285,11 @@
     <div class="cg-numbers" id="cgNumbers"></div>
 
     
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:0.5rem;">
-      <button class="cg-color-btn" id="cgBigBtn" onclick="selectBigSmall('big',this)" style="background:linear-gradient(135deg,#b8860b,#ffd700);color:#000;font-size:1.2rem;font-weight:800;letter-spacing:1px;">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;margin-bottom:0.4rem;">
+      <button class="cg-color-btn" id="cgBigBtn" onclick="selectBigSmall('big',this)" style="background:linear-gradient(135deg,#b8860b,#ffd700);color:#000;font-size:1rem;font-weight:800;letter-spacing:1px;padding:0.5rem;">
         Big
       </button>
-      <button class="cg-color-btn" id="cgSmallBtn" onclick="selectBigSmall('small',this)" style="background:linear-gradient(135deg,#1a3a6e,#2563eb);color:#fff;font-size:1.2rem;font-weight:800;letter-spacing:1px;">
+      <button class="cg-color-btn" id="cgSmallBtn" onclick="selectBigSmall('small',this)" style="background:linear-gradient(135deg,#1a3a6e,#2563eb);color:#fff;font-size:1rem;font-weight:800;letter-spacing:1px;padding:0.5rem;">
         Small
       </button>
     </div>
@@ -9303,7 +9304,7 @@
         <div class="cg-bet-preset" onclick="setBet(this,500)">₹500</div>
         <div class="cg-bet-preset" onclick="setBet(this,1000)">₹1,000</div>
       </div>
-      <div style="display:flex;gap:0.3rem;margin-bottom:0.5rem;">
+      <div style="display:flex;gap:0.3rem;margin-bottom:0.4rem;">
         <button class="cg-x-btn" style="flex:1;" onclick="mulBet(2)">×2</button>
         <button class="cg-x-btn" style="flex:1;" onclick="mulBet(3)">×3</button>
         <button class="cg-x-btn" style="flex:1;" onclick="mulBet(5)">×5</button>
@@ -9313,11 +9314,11 @@
       <input type="hidden" id="cgBetAmt" value="10">
       
       <div style="display:flex;align-items:stretch;gap:0.5rem;">
-        <div style="background:var(--bg3);border:1px solid rgba(240,192,64,0.15);border-radius:8px;padding:0.7rem 0.8rem;display:flex;flex-direction:column;justify-content:center;flex:0 0 40%;box-sizing:border-box;">
-          <span style="font-size:0.62rem;color:var(--muted);line-height:1.2;">Total Bet</span>
-          <span style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:800;color:var(--gold);line-height:1.2;" id="cgBetDisplay">₹10</span>
+        <div style="background:var(--bg3);border:1px solid rgba(240,192,64,0.15);border-radius:8px;padding:0.5rem 0.8rem;display:flex;flex-direction:column;justify-content:center;flex:0 0 40%;box-sizing:border-box;">
+          <span style="font-size:0.6rem;color:var(--muted);line-height:1.2;">Total Bet</span>
+          <span style="font-family:'Cinzel',serif;font-size:0.9rem;font-weight:800;color:var(--gold);line-height:1.2;" id="cgBetDisplay">₹10</span>
         </div>
-        <button class="cg-confirm-btn default-btn" id="cgConfirmBtn" onclick="placeBet()" style="flex:0 0 calc(60% - 0.5rem);margin-top:0;padding:0.7rem 0.5rem;font-size:0.82rem;box-sizing:border-box;">Select</button>
+        <button class="cg-confirm-btn default-btn" id="cgConfirmBtn" onclick="placeBet()" style="flex:0 0 calc(60% - 0.5rem);margin-top:0;padding:0.5rem 0.5rem;font-size:0.82rem;box-sizing:border-box;">Select</button>
       </div>
     </div>
 
@@ -9529,7 +9530,7 @@
 
     <div class="bet-history-table">
       <div class="bh-row head">
-        <div>Game</div><div>Period / Time</div><div>Bet</div><div>Result</div><div>Profit/Loss</div>
+        <div>Game</div><div>Period / Time</div><div>Bet</div><div>Result</div><div>P&amp;L</div>
       </div>
       <div id="betHistoryRows"></div>
     </div>
