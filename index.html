@@ -7448,6 +7448,22 @@
           });
         }
       } catch(e) { /* suppressed */ }
+      // Also include wingoMyBets — game engine writes settled bets here directly
+      try {
+        const wingoSnap = await db.ref('users/' + user.uid + '/wingoMyBets').once('value');
+        if (wingoSnap.val()) {
+          Object.values(wingoSnap.val()).forEach(b => {
+            if (b.status === 'pending') return;
+            txs.push({
+              type: b.status === 'won' ? 'win' : 'loss',
+              amount: b.status === 'won' ? Math.abs(b.pl || 0) : (b.bet || 0),
+              details: 'WinGo ' + (b.timer || 1) + 'Min · ' + (b.selection || '') + ' → ' + (b.result || ''),
+              balance: 0,
+              timestamp: b.timestamp || 0
+            });
+          });
+        }
+      } catch(e) { /* suppressed */ }
       allTransactions = txs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
       renderTxRows(allTransactions);
     } catch(e) {
