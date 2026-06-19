@@ -6091,6 +6091,18 @@
     const db2 = window.fbDB || fbDB;
     const user2 = window.currentUser;
     if (db2 && user2) {
+      // Real-time listener: when a bet result is written to wingoMyBets, refresh My Bets instantly
+      db2.ref('users/' + user2.uid + '/wingoMyBets').limitToLast(10).on('child_added', snap => {
+        const bet = snap.val();
+        if (!bet || bet.status === 'pending') return;
+        const timer = bet.timer || cgTimer;
+        if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
+        const existsIdx = cgMyBetsByTimer[timer].findIndex(b => b.round === bet.round && b.selection === bet.selection);
+        if (existsIdx !== -1) cgMyBetsByTimer[timer][existsIdx] = bet;
+        else cgMyBetsByTimer[timer].unshift(bet);
+        cgMyBets = cgMyBetsByTimer[cgTimer] || [];
+        renderMyBets();
+      });
       db2.ref('users/' + user2.uid + '/wingoPendingBets').on('child_removed', snap => {
         setTimeout(() => loadMyBetsFromFirebase(false), 300);
       });
@@ -6137,16 +6149,65 @@
                     roundData = entries.find(e => e.round === bet.round);
                   }
                   if (roundData) {
-                    window._cgPendingBets = window._cgPendingBets || [];
-                    const exists = window._cgPendingBets.some(b => b.round === bet.round && b.selection === bet.selection);
-                    if (!exists) {
-                      bet._firebaseKey = key;
-                      window._cgPendingBets.push(bet);
+                    // Settle the bet directly using the found round data
+                    // instead of relying on cgRoundByTimer (which has stale values on load)
+                    const winNum = parseInt(roundData.num);
+                    const winColor = roundData.color;
+                    const bigSmall = roundData.bigSmall;
+                    const FEE = cgSettings ? cgSettings.fee : 0.04;
+                    const actualBet = bet.actualBet || Math.round((bet.bet || 0) * (1 - FEE));
+                    let betWon = false, betWinAmt = 0;
+                    const numColorsLocal = {0:'violet-red',1:'green',2:'red',3:'green',4:'red',5:'violet-green',6:'red',7:'green',8:'red',9:'green'};
+                    const winColorRaw = numColorsLocal[winNum];
+                    const wc = winColorRaw === 'violet-red' || winColorRaw === 'violet-green' ? 'violet' : winColorRaw === '#e02020' ? 'red' : winColorRaw;
+                    const savedColor = bet.savedColor || bet.selColor || '';
+                    const savedNum = bet.savedNum !== undefined ? bet.savedNum : null;
+                    const savedBS = bet.savedBS || '';
+                    const CP = cgSettings ? cgSettings.colorPayout : 2;
+                    const VP = cgSettings ? cgSettings.violetPayout : 4.5;
+                    const NP = cgSettings ? cgSettings.numPayout : 9;
+                    const BSP = cgSettings ? cgSettings.bigSmallPayout : 2;
+                    if (savedColor === 'violet' && (winColorRaw === 'violet-red' || winColorRaw === 'violet-green')) { betWon=true; betWinAmt=actualBet*VP; }
+                    else if (savedColor === 'red' && winColorRaw === 'red') { betWon=true; betWinAmt=actualBet*CP; }
+                    else if (savedColor === 'green' && winColorRaw === 'green') { betWon=true; betWinAmt=actualBet*CP; }
+                    else if (savedColor === 'red' && winColorRaw === 'violet-red') { betWon=true; betWinAmt=actualBet*BSP; }
+                    else if (savedColor === 'green' && winColorRaw === 'violet-green') { betWon=true; betWinAmt=actualBet*BSP; }
+                    else if (savedNum !== null && savedNum === winNum) { betWon=true; betWinAmt=actualBet*NP; }
+                    else if (savedBS === 'big' && winNum >= 5) { betWon=true; betWinAmt=actualBet*BSP; }
+                    else if (savedBS === 'small' && winNum <= 4) { betWon=true; betWinAmt=actualBet*BSP; }
+                    const betRecord = {
+                      round: bet.round, bet: bet.bet, actualBet,
+                      selection: bet.selection, selColor: bet.selColor,
+                      result: winColor + ' / ' + winNum, resultBg: roundData.histBg || '#27ae60',
+                      pl: betWon ? Math.round(betWinAmt) : -bet.bet,
+                      status: betWon ? 'won' : 'lost',
+                      timer: timerMode, timestamp: Date.now()
+                    };
+                    const timer = bet.timer || timerMode;
+                    if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
+                    const existsIdx = cgMyBetsByTimer[timer].findIndex(b => b.round === bet.round && b.selection === bet.selection);
+                    if (existsIdx !== -1) cgMyBetsByTimer[timer][existsIdx] = betRecord;
+                    else cgMyBetsByTimer[timer].unshift(betRecord);
+                    // Credit winnings if won
+                    if (betWon && betWinAmt > 0) {
+                      try {
+                        const dbSettle = window.fbDB || fbDB;
+                        const userSettle = window.currentUser;
+                        if (dbSettle && userSettle) {
+                          dbSettle.ref('users/' + userSettle.uid + '/balance').transaction(bal => parseFloat(((bal||0)+betWinAmt).toFixed(2)));
+                          addBetToHistory('WinGo', bet.bet, winColor+'/'+winNum, betWinAmt.toFixed(0), true, bet.round.toString(), 0);
+                        }
+                      } catch(e) {}
+                    } else if (!betWon) {
+                      addBetToHistory('WinGo', bet.bet, winColor+'/'+winNum, 0, false, bet.round.toString(), 0);
                     }
-                    if (!cgHistoryByTimer[timerMode] || cgHistoryByTimer[timerMode].length === 0) {
-                      cgHistoryByTimer[timerMode] = [roundData];
-                    }
-                    setTimeout(() => resolveRoundForTimer(timerMode, 0), 200);
+                    // Remove from pending
+                    try {
+                      const dbR = window.fbDB || fbDB;
+                      const userR = window.currentUser;
+                      if (dbR && userR) dbR.ref('users/' + userR.uid + '/wingoPendingBets/' + key).remove();
+                    } catch(e) {}
+                    renderMyBets();
                   } else {
                     if (betAge > 24 * 60 * 60 * 1000) {
                       const timer = bet.timer || cgTimer;
@@ -6347,30 +6408,44 @@
           }
         }
         const roundStartTime = Date.now();
-        let pollAttempts = 0;
-        const pollForResult = async () => {
-          pollAttempts++;
-          try {
-            const db2 = window.fbDB || fbDB;
-            if (db2) {
-              const hSnap = await db2.ref('wingo/wingo' + mins + 'min/history')
-                .orderByChild('round').equalTo(cgRoundByTimer[mins] - 1)
-                .limitToLast(1).once('value');
-              if (hSnap.val()) {
-                resolveRoundForTimer(mins, roundStartTime);
-                return;
-              }
-              const tSnap = await db2.ref('wingo/wingo' + mins + 'min/lastResultTime').once('value');
-              if ((tSnap.val() || 0) > roundStartTime - 3000) {
-                resolveRoundForTimer(mins, roundStartTime);
-                return;
-              }
+        const expectedRound = cgRoundByTimer[mins] - 1;
+        let resolved = false;
+        const db2 = window.fbDB || fbDB;
+        if (db2) {
+          // Use a real-time listener on lastResultTime — fires instantly when game engine writes result
+          // This replaces polling (300ms intervals) with push-based updates (~100ms latency)
+          const resultRef = db2.ref('wingo/wingo' + mins + 'min/lastResultTime');
+          const listener = resultRef.on('value', async (snap) => {
+            if (resolved) return;
+            const lastTime = snap.val() || 0;
+            if (lastTime > roundStartTime - 2000) {
+              resolved = true;
+              resultRef.off('value', listener);
+              resolveRoundForTimer(mins, roundStartTime);
             }
-          } catch(e) {}
-          if (pollAttempts < 30) setTimeout(pollForResult, 300);
-          else resolveRoundForTimer(mins, roundStartTime);
-        };
-        setTimeout(pollForResult, 300);
+          });
+          // Also listen on history for the specific round as a backup
+          const histRef = db2.ref('wingo/wingo' + mins + 'min/history');
+          const histListener = histRef.orderByChild('round').equalTo(expectedRound).limitToLast(1).on('value', snap => {
+            if (resolved) return;
+            if (snap.val()) {
+              resolved = true;
+              resultRef.off('value', listener);
+              histRef.off('value', histListener);
+              resolveRoundForTimer(mins, roundStartTime);
+            }
+          });
+          // Safety fallback after 10 seconds — resolve whatever we have
+          setTimeout(() => {
+            if (!resolved) {
+              resolved = true;
+              try { resultRef.off('value', listener); } catch(e) {}
+              try { histRef.off('value', histListener); } catch(e) {}
+              resolveRoundForTimer(mins, roundStartTime);
+            }
+          }, 10000);
+        }
+
       }
     }
 
