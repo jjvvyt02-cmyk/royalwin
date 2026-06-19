@@ -6164,6 +6164,8 @@
     }, 800); // slight delay to let Firebase and cgSettings initialize first
 
     loadMyBetsFromFirebase(true);
+    // Also trigger background settler immediately in case user just logged back in
+    if (window._bgSettle) setTimeout(window._bgSettle, 300);
     const db2 = window.fbDB || fbDB;
     const user2 = window.currentUser;
     if (db2 && user2) {
@@ -7927,6 +7929,35 @@
           checkDepositBonus();
           loadAnnouncement();
 
+          // ── PERSISTENT REAL-TIME BET RESULT LISTENER ──
+          // Fires the instant game engine writes a settled bet to wingoMyBets
+          // Works regardless of whether game overlay is open or closed
+          const dbPersist = window.fbDB || fbDB;
+          if (dbPersist) {
+            if (window._wingoMyBetsListener) {
+              try { dbPersist.ref('users/' + user.uid + '/wingoMyBets').off('child_added', window._wingoMyBetsListener); } catch(e) {}
+            }
+            window._wingoMyBetsListener = dbPersist.ref('users/' + user.uid + '/wingoMyBets')
+              .limitToLast(20).on('child_added', snap => {
+                const bet = snap.val();
+                if (!bet || bet.status === 'pending') return;
+                const t = bet.timer || 1;
+                if (!cgMyBetsByTimer[t]) cgMyBetsByTimer[t] = [];
+                const idx = cgMyBetsByTimer[t].findIndex(b => b.round === bet.round && b.selection === bet.selection);
+                if (idx !== -1) cgMyBetsByTimer[t][idx] = bet;
+                else cgMyBetsByTimer[t].unshift(bet);
+                // Update My Bets UI if game overlay is open
+                if (document.getElementById('colorGameOverlay')?.classList.contains('open')) {
+                  cgMyBets = cgMyBetsByTimer[cgTimer] || [];
+                  renderMyBets();
+                }
+                // Remove from in-memory pending array
+                window._cgPendingBets = (window._cgPendingBets || []).filter(b =>
+                  !(b.round === bet.round && b.selection === bet.selection)
+                );
+              });
+          }
+
           // ── BACKGROUND BET SETTLER ──
           // Runs every 30 seconds regardless of whether the game is open.
           // Checks Firebase for any pending bets that now have results available
@@ -7993,7 +8024,8 @@
             } catch(e) {}
           };
           // Run immediately on login, then every 30 seconds
-          setTimeout(bgSettle, 2000);
+          window._bgSettle = bgSettle;
+          setTimeout(bgSettle, 500);
           window._bgSettleInterval = setInterval(bgSettle, 30000);
           document.getElementById('navGuest').style.display = 'none';
           const loader = document.getElementById('appLoader');
