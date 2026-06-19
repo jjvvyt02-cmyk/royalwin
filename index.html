@@ -6075,18 +6075,94 @@
       window._cgTimersStarted = true;
     }
     const overlay = document.getElementById('colorGameOverlay');
-    // Always open from the very top — never auto-scroll to results
     if (overlay) {
       overlay.scrollTop = 0;
-      // Force scroll to top again after content loads
       setTimeout(() => { overlay.scrollTop = 0; }, 100);
       setTimeout(() => { overlay.scrollTop = 0; }, 400);
     }
-    switchCGTab('results'); // isManual not passed = false, no auto-scroll
+    switchCGTab('results');
     cgHistPage = 1;
     cgMyBetsPage = 1;
     loadAllHistory();
     setTimeout(rwBarFinish, 300);
+
+    // Immediately settle any pending bets that have results in Firebase
+    // This handles bets placed while game was closed (timers were stopped)
+    // Don't wait for the timer tick — check Firebase directly right now
+    setTimeout(async () => {
+      const dbSettle = window.fbDB || fbDB;
+      const userSettle = window.currentUser;
+      if (!dbSettle || !userSettle) return;
+      try {
+        const pSnap = await dbSettle.ref('users/' + userSettle.uid + '/wingoPendingBets').once('value');
+        if (!pSnap.val()) return;
+        const pendingBets = Object.entries(pSnap.val()).map(([k, v]) => ({ ...v, _firebaseKey: k }));
+        if (pendingBets.length === 0) return;
+        // Group by timer
+        const byTimer = { 1: [], 3: [], 5: [] };
+        pendingBets.forEach(b => { const t = b.timer || 1; if (byTimer[t]) byTimer[t].push(b); });
+        // For each timer, check if there's a result available for each pending round
+        for (const [timerStr, bets] of Object.entries(byTimer)) {
+          if (bets.length === 0) continue;
+          const t = parseInt(timerStr);
+          const rounds = [...new Set(bets.map(b => b.round))];
+          for (const round of rounds) {
+            const hSnap = await dbSettle.ref('wingo/wingo' + t + 'min/history')
+              .orderByChild('round').equalTo(round).limitToLast(1).once('value');
+            if (!hSnap.val()) continue; // no result yet — leave as pending
+            const roundData = Object.values(hSnap.val())[0];
+            if (!roundData) continue;
+            // Result exists — settle these bets directly
+            const roundBets = bets.filter(b => b.round === round);
+            for (const bet of roundBets) {
+              const winNum = parseInt(roundData.num);
+              const winColorRaw = roundData.color;
+              const FEE = cgSettings ? cgSettings.fee : 0.04;
+              const actualBet = bet.actualBet || Math.round((bet.bet || 0) * (1 - FEE));
+              let betWon = false, betWinAmt = 0;
+              const CP = cgSettings ? cgSettings.colorPayout : 2;
+              const VP = cgSettings ? cgSettings.violetPayout : 4.5;
+              const NP = cgSettings ? cgSettings.numPayout : 9;
+              const BSP = cgSettings ? cgSettings.bigSmallPayout : 2;
+              const sc = bet.savedColor, sn = bet.savedNum, sb = bet.savedBS;
+              if (sc === 'violet' && (winColorRaw === 'violet' || winColorRaw === 'violet-red' || winColorRaw === 'violet-green')) { betWon=true; betWinAmt=actualBet*VP; }
+              else if (sc === 'red' && (winColorRaw === 'red' || winColorRaw === 'violet-red')) { betWon=true; betWinAmt=actualBet*(winColorRaw==='violet-red'?BSP:CP); }
+              else if (sc === 'green' && (winColorRaw === 'green' || winColorRaw === 'violet-green')) { betWon=true; betWinAmt=actualBet*(winColorRaw==='violet-green'?BSP:CP); }
+              else if (sn !== null && sn !== undefined && parseInt(sn) === winNum) { betWon=true; betWinAmt=actualBet*NP; }
+              else if (sb === 'big' && winNum >= 5) { betWon=true; betWinAmt=actualBet*BSP; }
+              else if (sb === 'small' && winNum <= 4) { betWon=true; betWinAmt=actualBet*BSP; }
+              const histLabel = (winColorRaw==='violet-red'||winColorRaw==='violet-green') ? 'violet' : winColorRaw;
+              const betRecord = {
+                round: bet.round, bet: bet.bet, actualBet,
+                selection: bet.selection, selColor: bet.selColor,
+                result: histLabel + ' / ' + winNum,
+                resultBg: roundData.histBg || '#27ae60',
+                pl: betWon ? Math.round(betWinAmt) : -bet.bet,
+                status: betWon ? 'won' : 'lost',
+                timer: t, timestamp: Date.now()
+              };
+              if (!cgMyBetsByTimer[t]) cgMyBetsByTimer[t] = [];
+              const idx = cgMyBetsByTimer[t].findIndex(b => b.round === bet.round && b.selection === bet.selection);
+              if (idx !== -1) cgMyBetsByTimer[t][idx] = betRecord;
+              else cgMyBetsByTimer[t].unshift(betRecord);
+              // Credit winnings
+              if (betWon && betWinAmt > 0) {
+                dbSettle.ref('users/' + userSettle.uid + '/balance').transaction(bal => parseFloat(((bal||0)+betWinAmt).toFixed(2)));
+              }
+              // Remove from pending
+              dbSettle.ref('users/' + userSettle.uid + '/wingoPendingBets/' + bet._firebaseKey).remove();
+              // Save result
+              const rKey = 'wingo' + t + 'min_round_' + bet.round + '_' + Date.now();
+              dbSettle.ref('users/' + userSettle.uid + '/wingoMyBets/' + rKey).set(betRecord);
+              addBetToHistory('WinGo', bet.bet, histLabel+'/'+winNum, betWon ? betWinAmt.toFixed(0) : 0, betWon, bet.round.toString(), 0);
+            }
+          }
+        }
+        cgMyBets = cgMyBetsByTimer[cgTimer] || [];
+        renderMyBets();
+      } catch(e) { console.warn('Immediate settle error:', e.message); }
+    }, 800); // slight delay to let Firebase and cgSettings initialize first
+
     loadMyBetsFromFirebase(true);
     const db2 = window.fbDB || fbDB;
     const user2 = window.currentUser;
