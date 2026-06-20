@@ -7973,6 +7973,19 @@
             }
           });
           checkDepositBonus();
+          // ── DAILY LOGIN EXP (2 EXP per day) ──
+          (async () => {
+            try {
+              const db = window.fbDB || fbDB;
+              const uid = user.uid;
+              const todayIST = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
+              const lastLoginSnap = await db.ref(`users/${uid}/vip/lastLoginExpDate`).once('value');
+              if (lastLoginSnap.val() !== todayIST) {
+                await db.ref(`users/${uid}/vip/exp`).transaction(exp => (exp || 0) + 2);
+                await db.ref(`users/${uid}/vip/lastLoginExpDate`).set(todayIST);
+              }
+            } catch(e) {}
+          })();
           loadAnnouncement();
 
           // ── PERSISTENT REAL-TIME BET RESULT LISTENER ──
@@ -8922,6 +8935,15 @@
           <div id="vipProgressBar" style="background:linear-gradient(90deg,#c07a10,var(--gold2));height:100%;border-radius:20px;transition:width 0.5s;width:0%;"></div>
         </div>
         <div style="font-size:0.7rem;color:var(--muted);margin-top:0.4rem;" id="vipExpNeeded">Earn 200 more EXP to reach Silver</div>
+        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:0.7rem 0.9rem;margin-top:0.8rem;">
+          <div style="font-size:0.78rem;font-weight:700;color:var(--gold);margin-bottom:0.5rem;">⚡ How to Earn EXP</div>
+          <div style="display:flex;flex-direction:column;gap:0.35rem;">
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;"><span style="color:var(--muted);">🎯 Every ₹100 bet</span><span style="color:var(--text);font-weight:600;">+1 EXP</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;"><span style="color:var(--muted);">💳 Every ₹100 deposited (min ₹500)</span><span style="color:var(--text);font-weight:600;">+1 EXP</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;"><span style="color:var(--muted);">📅 Daily login</span><span style="color:var(--text);font-weight:600;">+2 EXP</span></div>
+            <div style="display:flex;justify-content:space-between;font-size:0.75rem;"><span style="color:var(--muted);">👥 Referred user first deposit</span><span style="color:var(--text);font-weight:600;">+5 EXP</span></div>
+          </div>
+        </div>
       </div>
 
       
