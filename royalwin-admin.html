@@ -1725,6 +1725,7 @@ async function loadRevenueStats(period = 'today') {
 
   } catch(e) { console.error('Revenue stats error:', e); }
 }
+window.loadRevenueStats = loadRevenueStats;
 
 function loadSettings() {
   // Load announcement
