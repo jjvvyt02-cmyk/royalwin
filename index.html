@@ -3898,22 +3898,32 @@
 
   var _withHistPage = 1;
   var _withHistData = [];
+  var _withHistListener = null;
   async function loadWithdrawHistoryPage(page) {
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
     const el = document.getElementById('withdrawHistoryPageRows');
     if (!user || !db || !el) return;
 
-    if (page) { _withHistPage = page; }
-    else if (!_withHistData.length) {
-      el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
-      try {
-        const snap = await db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(user.uid).once('value');
-        const data = snap.val();
-        _withHistData = data ? Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0)) : [];
-      } catch(e) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Failed to load</div>'; return; }
+    if (page) { _withHistPage = page; _renderWithdrawHistory(); return; }
+
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
+
+    if (_withHistListener) {
+      try { (window.fbDB||fbDB).ref('adminRequests/withdrawals').off('value', _withHistListener); } catch(e) {}
+      _withHistListener = null;
     }
 
+    _withHistListener = db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(user.uid).on('value', snap => {
+      const data = snap.val();
+      _withHistData = data ? Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0)) : [];
+      _renderWithdrawHistory();
+    });
+  }
+
+  function _renderWithdrawHistory() {
+    const el = document.getElementById('withdrawHistoryPageRows');
+    if (!el) return;
     const rows = _withHistData;
     if (!rows.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No withdrawals yet</div>'; return; }
 
@@ -5725,6 +5735,7 @@
       if (avatarEl) avatarEl.textContent = username.charAt(0).toUpperCase();
 
       // Sign out and redirect to login — user must login consciously
+      window._postRegistrationSignOut = true;
       await firebase.auth().signOut();
       window._registrationInProgress = false;
       isLoggedIn = false;
@@ -5733,15 +5744,9 @@
       try { localStorage.removeItem('royalwin_referralCode'); } catch(e) {}
       showToast('🎉 Registration successful! Please login to continue');
       setTimeout(() => {
+        window._postRegistrationSignOut = false;
         showPage('login');
       }, 800);
-    setTimeout(async () => {
-      const db = window.fbDB || fbDB;
-      const user = window.currentUser || firebase.auth().currentUser;
-      if (db && user) {
-        const snap = await db.ref('users/' + user.uid + '/lastSpinDate').once('value');
-      }
-    }, 1200);
     } catch(e) {
       console.error('Register error:', e);
       window._registrationInProgress = false;
@@ -8107,6 +8112,7 @@
         } else {
           window.currentUser = null;
           isLoggedIn = false;
+          if (window._postRegistrationSignOut) return;
           const ng = document.getElementById('navGuest');
           const nu = document.getElementById('navUser');
           if (ng) ng.style.display = 'flex';
