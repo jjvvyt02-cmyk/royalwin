@@ -95,7 +95,7 @@ async function runBot() {
     // Step 2: New prediction for next period
     if (currentPeriod && currentPeriod !== lastPredictedPeriod) {
       const color = randomColor();
-      const nextPeriod = currentPeriod;
+      const nextPeriod = currentPeriod + 1;
       const multiplier = getMultiplier();
       const stakeLabel = multiplier === 1
         ? '1x 🟡 (Base Stake)'
