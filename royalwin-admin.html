@@ -607,8 +607,8 @@
         <h3>💳 Manually Add/Deduct Balance</h3>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:0.8rem;align-items:end;">
           <div>
-            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Member ID</div>
-            <input class="form-input" type="text" id="manualUid" placeholder="e.g. 382947" style="font-size:0.82rem;">
+            <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Member ID or UID</div>
+            <input class="form-input" type="text" id="manualUid" placeholder="e.g. Iev6jHt3" style="font-size:0.82rem;">
           </div>
           <div>
             <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Amount (₹)</div>
@@ -979,6 +979,7 @@ onValue(ref(db, '.info/connected'), (snap) => {
 // ── AUTH ──
 onAuthStateChanged(auth, (user) => {
   if (user) {
+    window._adminUser = user;
     document.getElementById('loginWrap').style.display = 'none';
     document.getElementById('adminWrap').style.display = 'block';
     document.getElementById('fbAuthStatus').textContent = user.email;
@@ -1241,21 +1242,13 @@ function updateNextResultBadges() {
         return;
       }
       const entries = Object.values(summary);
-      // Aggregate by selection (value) — player writes raw entries with {type, value, amount, timestamp}
-      const aggregated = {};
-      entries.forEach(e => {
-        const sel = e.value || e.selection || '?';
-        if (!aggregated[sel]) aggregated[sel] = { selection: sel, count: 0, totalAmount: 0 };
-        aggregated[sel].count++;
-        aggregated[sel].totalAmount += parseFloat(e.amount || e.totalAmount || 0);
-      });
-      const agg = Object.values(aggregated);
-      const totalBets = entries.length;
-      const totalAmt = entries.reduce((s, e) => s + parseFloat(e.amount || e.totalAmount || 0), 0);
+      const totalBets = entries.reduce((s, e) => s + e.count, 0);
+      const totalAmt = entries.reduce((s, e) => s + e.totalAmount, 0);
       if (betsEl) betsEl.textContent = totalBets + ' bets · ₹' + totalAmt.toLocaleString('en-IN');
       if (summaryEl) {
         const colorMap = { green:'#27ae60', red:'#e02020', violet:'#7c4dff', big:'var(--gold)', small:'#2563eb' };
-        summaryEl.innerHTML = agg.map(e => {
+        summaryEl.innerHTML = entries.map(e => {
+          const key = e.selection.toLowerCase().replace(' ', '_');
           const col = colorMap[e.selection.toLowerCase()] || 'var(--muted)';
           return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.2rem 0;border-bottom:1px solid rgba(255,255,255,0.04);">
             <span style="color:${col};font-weight:700;">${e.selection}</span>
@@ -1618,9 +1611,12 @@ async function loadRevenueStats(period = 'today') {
   else if (period === 'month') { const d = new Date(today); d.setDate(1); startTime = d.getTime(); }
 
   // Check auth before reading
-  const currentUser = auth.currentUser;
-  if (!currentUser) { console.error('loadRevenueStats: not authenticated'); return; }
-  console.log('loadRevenueStats: auth.uid =', currentUser.uid);
+  const currentUser = auth.currentUser || window._adminUser;
+  if (!currentUser) { 
+    // Retry after short delay if auth not ready
+    setTimeout(() => loadRevenueStats(period), 500);
+    return; 
+  }
 
   try {
     const [depSnap, withSnap, usersSnap] = await Promise.all([
@@ -1862,7 +1858,8 @@ function renderUsers(users) {
         <div style="font-family:'Cinzel',serif;color:var(--green);font-weight:700;">₹${(u.balance || 0).toLocaleString('en-IN')}</div>
         <div style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end;">
           <button onclick="openReferralOverview('${u.uid}', '${u.username || 'Unknown'}', '${u.memberId || ''}')" style="font-size:0.68rem;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:var(--green);cursor:pointer;">👥 Referrals</button>
-          <button onclick="document.getElementById('manualUid').value='${u.memberId || u.uid}';switchTab('finance');" style="font-size:0.68rem;background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:4px;padding:0.2rem 0.5rem;color:var(--gold);cursor:pointer;">💰 Balance</button>
+          <button onclick="viewUserDeposits('${u.uid}', '${u.username || 'Unknown'}')" style="font-size:0.68rem;background:rgba(0,150,255,0.1);border:1px solid rgba(0,150,255,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:#4fc3f7;cursor:pointer;">💳 Deposits</button>
+          <button onclick="document.getElementById('manualUid').value='${u.uid}';switchTab('finance');" style="font-size:0.68rem;background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:4px;padding:0.2rem 0.5rem;color:var(--gold);cursor:pointer;">💰 Balance</button>
           <button onclick="toggleBlockUser('${u.uid}', ${!u.isBlocked})" style="font-size:0.68rem;background:${u.isBlocked ? 'rgba(0,230,118,0.1)' : 'rgba(224,32,32,0.1)'};border:1px solid ${u.isBlocked ? 'rgba(0,230,118,0.2)' : 'rgba(224,32,32,0.2)'};border-radius:4px;padding:0.2rem 0.5rem;color:${u.isBlocked ? 'var(--green)' : 'var(--red2)'};cursor:pointer;">${u.isBlocked ? '✅ Unblock' : '🚫 Block'}</button>
           <button onclick="resetWithdrawDetails('${u.uid}')" style="font-size:0.68rem;background:rgba(124,77,255,0.1);border:1px solid rgba(124,77,255,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:#7c4dff;cursor:pointer;">🔓 Reset Withdraw</button>
           <button onclick="deleteUser('${u.uid}', '${u.username || 'Unknown'}')" style="font-size:0.68rem;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:4px;padding:0.2rem 0.5rem;color:var(--red2);cursor:pointer;">🗑️ Delete</button>
@@ -2102,9 +2099,7 @@ window.manualBalance = async function() {
       details: 'Manual ' + (type === 'add' ? 'credit' : 'deduction') + ' by admin',
       balance: newBal, timestamp: Date.now()
     });
-    const memberSnap = await get(ref(db, 'users/' + uid + '/memberId'));
-    const memberIdDisplay = memberSnap.val() || input;
-    if (infoEl) infoEl.textContent = '✅ Done! Member ID: ' + memberIdDisplay + ' | Old: ₹' + currentBal.toLocaleString('en-IN') + ' → New: ₹' + newBal.toLocaleString('en-IN');
+    if (infoEl) infoEl.textContent = '✅ Done! UID: ' + uid + ' | Old: ₹' + currentBal.toLocaleString('en-IN') + ' → New: ₹' + newBal.toLocaleString('en-IN');
     showToast((type === 'add' ? '✅ Added' : '➖ Deducted') + ' ₹' + amt.toLocaleString('en-IN') + ' | New balance: ₹' + newBal.toLocaleString('en-IN'));
   } catch(e) { showToast('❌ Error: ' + e.message); if (infoEl) infoEl.textContent = '❌ ' + e.message; }
 };
@@ -2208,6 +2203,7 @@ function loadFinance() {
         <div style="display:flex;align-items:center;gap:0.6rem;flex:1;min-width:0;">
           <div style="font-weight:800;color:var(--green);font-size:0.92rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}${r.bonusAmt > 0 ? '<span style="color:var(--gold);font-size:0.68rem;margin-left:3px;">+₹'+r.bonusAmt+'</span>' : ''}</div>
           <div style="font-size:0.75rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.username || 'Unknown'}</div>
+          <div style="font-size:0.68rem;color:var(--gold);white-space:nowrap;">${r.memberId || '—'}</div>
           <div style="font-size:0.68rem;color:var(--muted);white-space:nowrap;">${r.contact || '—'}</div>
           <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})}</div>
         </div>
@@ -3115,6 +3111,48 @@ window.rejectWithdrawal = async function(key, uid, amount, username, memberId) {
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
+// ── DEPOSIT HISTORY PER USER ──
+window.viewUserDeposits = async function(uid, username) {
+  let modal = document.getElementById('userDepositsModal');
+  if (modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'userDepositsModal';
+  modal.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);display:flex;align-items:center;justify-content:center;padding:1rem;';
+  modal.innerHTML = `<div style="background:#1a1a2e;border:1px solid var(--border);border-radius:14px;padding:1.2rem;max-width:600px;width:100%;max-height:80vh;overflow-y:auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+      <div style="font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);">💳 Deposits — ${username}</div>
+      <button onclick="document.getElementById('userDepositsModal').remove()" style="background:none;border:none;color:var(--muted);font-size:1.2rem;cursor:pointer;">✕</button>
+    </div>
+    <div id="userDepositsContent" style="font-size:0.78rem;color:var(--muted);">Loading...</div>
+  </div>`;
+  document.body.appendChild(modal);
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+
+  try {
+    const snap = await get(ref(db, 'adminRequests/deposits'));
+    const all = snap.val() ? Object.entries(snap.val()) : [];
+    const userDeps = all.filter(([,d]) => d.uid === uid).sort((a,b) => (b[1].timestamp||0)-(a[1].timestamp||0));
+    const el = document.getElementById('userDepositsContent');
+    if (!userDeps.length) { el.innerHTML = '<div style="text-align:center;padding:1rem;">No deposits found</div>'; return; }
+    const total = userDeps.filter(([,d]) => d.status==='approved').reduce((s,[,d]) => s+(d.amount||0), 0);
+    el.innerHTML = `<div style="color:var(--green);font-weight:700;margin-bottom:0.8rem;">Total Approved: ₹${total.toLocaleString('en-IN')} (${userDeps.length} records)</div>` +
+      userDeps.map(([key,d]) => {
+        const time = d.timestamp ? new Date(d.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
+        const statusColor = d.status==='approved' ? 'var(--green)' : d.status==='pending' ? 'var(--gold)' : 'var(--red2)';
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.4rem;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:700;color:var(--green);">₹${(d.amount||0).toLocaleString('en-IN')}${d.bonusAmt>0?` <span style="color:var(--gold);font-size:0.68rem;">+₹${d.bonusAmt} bonus</span>`:''}</div>
+            <div style="font-size:0.7rem;color:var(--muted);">${d.method||'UPI'} · ${time}</div>
+          </div>
+          <span style="font-size:0.72rem;font-weight:700;color:${statusColor};">${d.status||'unknown'}</span>
+        </div>`;
+      }).join('');
+  } catch(e) {
+    const el = document.getElementById('userDepositsContent');
+    if (el) el.innerHTML = '<div style="color:var(--red2);">Error: ' + e.message + '</div>';
+  }
+};
+
 // ── REFERRAL OVERVIEW PER USER ──
 window.openReferralOverview = async function(uid, username, memberId) {
   let modal = document.getElementById('referralOverviewModal');
@@ -3301,7 +3339,7 @@ window.quickLookup = async function() {
         <div><span style="color:var(--muted);">Status:</span> <span style="color:${userData.isBlocked?'var(--red2)':'var(--green)'};">${userData.isBlocked?'🚫 Blocked':'✅ Active'}</span></div>
       </div>
       <div style="display:flex;gap:0.4rem;margin-top:0.6rem;">
-        <button onclick="document.getElementById('manualUid').value='${userData.memberId || uid}';switchTab('finance');" style="background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:var(--gold);cursor:pointer;font-size:0.72rem;">💰 Adjust Balance</button>
+        <button onclick="document.getElementById('manualUid').value='${uid}';switchTab('finance');" style="background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:var(--gold);cursor:pointer;font-size:0.72rem;">💰 Adjust Balance</button>
         <button onclick="toggleBlockUser('${uid}', ${!userData.isBlocked})" style="background:${userData.isBlocked?'rgba(0,230,118,0.1)':'rgba(224,32,32,0.1)'};border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:${userData.isBlocked?'var(--green)':'var(--red2)'};cursor:pointer;font-size:0.72rem;">${userData.isBlocked?'✅ Unblock':'🚫 Block'}</button>
       </div>`;
   } catch(e) {
