@@ -2684,7 +2684,7 @@
       'ref.l2rebate':'2 level lower commission rebate',
       'ref.l3rebate':'3 level lower commission rebate',
       'ref.l4rebate':'4 level lower commission rebate',
-      'ref.ratenote':'Commission rates are set by the admin and may change.',
+      'ref.ratenote':'Commission rates may change from time to time.',
       'bet.nobets':'No bets yet','bet.netprofit':'Net Profit',
       'bet.totalbets':'Total Bets','bet.winrate':'Win Rate',
       'tx.none':'No transactions yet','tx.login':'Please log in to view transactions',
@@ -4091,7 +4091,7 @@
         amount: amt, status: 'pending', method: 'UPI - 100% Bonus',
         bonusPct: 100, bonusAmt: amt, wagerReq: 10, timestamp: Date.now()
       });
-      showToast('✅ Request submitted! You will receive ₹' + (amt * 2).toLocaleString('en-IN') + ' after admin approval.');
+      showToast('✅ Request submitted! You will receive ₹' + (amt * 2).toLocaleString('en-IN') + ' after verification.');
       showPage('home');
     } catch(e) { showToast('❌ Error: ' + e.message); }
   }
@@ -4159,7 +4159,7 @@
       await db.ref('users/' + user.uid + '/withdrawDetails/' + method).set({
         ...details, savedAt: Date.now(), lockedByAdmin: false
       });
-      showToast('✅ Details saved! Cannot be changed without admin approval.');
+      showToast('✅ Details saved! Cannot be changed without contacting support.');
       loadSavedWithdrawDetails();
     } catch(e) { showToast('❌ Error: ' + e.message); }
   }
@@ -6024,7 +6024,7 @@
       document.getElementById('qrConfirmed').style.display = 'block';
       document.getElementById('qrConfirmMsg').textContent = '₹' + amt.toLocaleString('en-IN') + ' payment submitted! Admin will verify and credit shortly.';
       clearInterval(qrTimerInterval);
-      showToast('✅ Payment submitted! Awaiting admin verification.');
+      showToast('✅ Payment submitted! Awaiting verification.');
       setTimeout(() => closeQR(), 4000);
     } catch(e) { showToast('❌ Error: ' + e.message); }
   }
@@ -7523,8 +7523,8 @@
       loss:              { icon:'🎮', label:'Bet Loss',          color:'#e02020', sign:'-' },
       commission:        { icon:'💰', label:'Commission',        color:'#27ae60', sign:'+' },
       referral_bonus:    { icon:'👥', label:'Referral Bonus',    color:'#27ae60', sign:'+' },
-      manual_add:        { icon:'➕', label:'Admin Credit',      color:'#27ae60', sign:'+' },
-      manual_deduct:     { icon:'➖', label:'Admin Debit',       color:'#e02020', sign:'-' },
+      manual_add:        { icon:'➕', label:'Credit',      color:'#27ae60', sign:'+' },
+      manual_deduct:     { icon:'➖', label:'Debit',       color:'#e02020', sign:'-' },
       spin:              { icon:'🎡', label:'Daily Spin',        color:'#27ae60', sign:'+' },
       vip_weekly:        { icon:'📅', label:'VIP Weekly Bonus',  color:'#27ae60', sign:'+' },
       vip_monthly:       { icon:'🗓️', label:'VIP Monthly Bonus', color:'#27ae60', sign:'+' },
