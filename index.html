@@ -3876,6 +3876,7 @@
           <div style="font-size:0.72rem;color:var(--muted);">${r.method||'UPI'}</div>
           <div style="font-size:0.7rem;color:var(--muted);">${time}</div>
         </div>
+        ${r.orderId ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:0.2rem;font-family:monospace;">#${r.orderId}</div>` : ''}
         ${r.status==='pending'?'<div style="font-size:0.68rem;color:var(--gold);margin-top:0.3rem;">⏳ Verification in progress...</div>':''}
         ${r.status==='cancelled'?'<div style="font-size:0.68rem;color:var(--muted);margin-top:0.3rem;">Payment not completed</div>':''}
       </div>`;
@@ -3948,6 +3949,7 @@
           <div style="font-weight:700;color:var(--red2);font-size:1rem;">-₹${(r.amount||0).toLocaleString('en-IN')}</div>
           <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">${r.method||'UPI'}</div>
           <div style="font-size:0.7rem;color:var(--muted);">${time}</div>
+          ${r.orderId||r.wgpayTranFlow ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:0.1rem;font-family:monospace;">#${r.orderId||r.wgpayTranFlow}</div>` : ''}
           ${r.status==='processing'?'<div style="font-size:0.68rem;color:var(--gold);margin-top:0.2rem;">Expected within 24 hours</div>':''}
           ${r.status==='failed'||r.status==='rejected'?'<div style="font-size:0.68rem;color:var(--red2);margin-top:0.2rem;">Amount refunded to wallet</div>':''}
         </div>
