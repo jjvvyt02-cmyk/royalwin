@@ -50,7 +50,7 @@ function sendTelegram(text) {
 }
 
 function randomColor() {
-  const colors = ['Red', 'Green', 'Violet'];
+  const colors = ['Red', 'Green'];
   return colors[Math.floor(Math.random() * colors.length)];
 }
 
@@ -77,7 +77,12 @@ async function runBot() {
       const pendingRound = String(pendingPrediction.period);
 
       if (resultRound === pendingRound) {
-        const actualColor = lastResult.color.toLowerCase();
+        let actualColor = lastResult.color.toLowerCase();
+        const num = lastResult.num;
+        // violet+red (0) = red, violet+green (5) = green
+        if (actualColor === 'violet') {
+          actualColor = num === 0 ? 'red' : 'green';
+        }
         const predicted = pendingPrediction.color.toLowerCase();
         const isWin = predicted === actualColor;
 
