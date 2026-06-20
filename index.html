@@ -7,7 +7,7 @@
   <link rel="icon" type="image/x-icon" href="favicon.ico">
   <link rel="apple-touch-icon" href="favicon.svg">
   <link rel="manifest" href="manifest.json">
-  <script src="https://www.google.com/recaptcha/api.js?render=explicit&onload=onRecaptchaLoad" async defer></script>
+  <script src="https://js.hcaptcha.com/1/api.js?render=explicit&onload=onRecaptchaLoad" async defer></script>
   <meta name="theme-color" content="#f0c040">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -2475,8 +2475,8 @@
       const registerBtn = document.getElementById('registerBtn');
       if (captchaContainer) captchaContainer.style.display = 'none';
       if (registerBtn) { registerBtn.disabled = false; registerBtn.style.opacity = '1'; registerBtn.textContent = '🚀 Register Now'; }
-      if (typeof grecaptcha !== 'undefined' && _recaptchaWidgetId !== null) {
-        try { grecaptcha.reset(_recaptchaWidgetId); } catch(e) {}
+      if (typeof hcaptcha !== 'undefined' && _recaptchaWidgetId !== null) {
+        try { hcaptcha.reset(_recaptchaWidgetId); } catch(e) {}
       }
 
       if (!window._referralCode) {
@@ -4667,27 +4667,23 @@
   function renderCaptcha() {
     const container = document.getElementById('recaptchaWidget');
     if (!container) return;
-    // If already rendered, just reset it instead of rendering again
-    if (_recaptchaWidgetId !== null && typeof grecaptcha !== 'undefined') {
-      try { grecaptcha.reset(_recaptchaWidgetId); return; } catch(e) {}
+    if (_recaptchaWidgetId !== null && typeof hcaptcha !== 'undefined') {
+      try { hcaptcha.reset(_recaptchaWidgetId); return; } catch(e) {}
     }
-    // Clear container and render fresh
     container.innerHTML = '';
     _recaptchaWidgetId = null;
-    if (typeof grecaptcha !== 'undefined' && grecaptcha.render) {
+    if (typeof hcaptcha !== 'undefined' && hcaptcha.render) {
       try {
-        _recaptchaWidgetId = grecaptcha.render('recaptchaWidget', {
-          sitekey: '6LeAOCgtAAAADPM49d9Q7zy9ktJQapqCEzcqDtt',
+        _recaptchaWidgetId = hcaptcha.render('recaptchaWidget', {
+          sitekey: 'e704e6be-f302-4af2-9248-74949b4c4522',
           theme: 'dark',
           callback: onCaptchaSuccess,
           'expired-callback': onCaptchaExpired
         });
       } catch(e) {
-        // Already rendered in this element — reset instead
-        try { grecaptcha.reset(_recaptchaWidgetId); } catch(e2) {}
+        try { hcaptcha.reset(_recaptchaWidgetId); } catch(e2) {}
       }
     } else {
-      // grecaptcha not loaded yet — wait and retry
       setTimeout(renderCaptcha, 500);
     }
   }
@@ -4711,7 +4707,7 @@
       const data = await resp.json();
       if (!data.success) {
         showToast('❌ CAPTCHA verification failed. Please try again.');
-        if (typeof grecaptcha !== 'undefined') grecaptcha.reset(_recaptchaWidgetId);
+        if (typeof hcaptcha !== 'undefined') hcaptcha.reset(_recaptchaWidgetId);
         if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '🚀 Register Now'; }
         return;
       }
@@ -4719,7 +4715,7 @@
       await doRegister();
     } catch(e) {
       showToast('❌ Verification failed. Please try again.');
-      if (typeof grecaptcha !== 'undefined') grecaptcha.reset(_recaptchaWidgetId);
+      if (typeof hcaptcha !== 'undefined') hcaptcha.reset(_recaptchaWidgetId);
       if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = '🚀 Register Now'; }
     }
   }
