@@ -5345,6 +5345,9 @@
     const db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
     if (!user || !db) return;
     window._chatInitialized = true;
+    // Clear unread badge
+    const badge = document.getElementById('chatUnreadBadge');
+    if (badge) { badge.style.display = 'none'; badge.textContent = ''; }
 
     const chatRef = db.ref('chats/' + user.uid + '/messages');
     const msgsEl = document.getElementById('chatMessages');
@@ -7944,6 +7947,19 @@
           isLoggedIn = true;
           loadUserProfile(user.uid);
           loadNotifications();
+          // ── CHAT UNREAD BADGE ──
+          if (window._chatUnreadListener) {
+            try { (window.fbDB||fbDB).ref('chats/' + user.uid + '/messages').off('value', window._chatUnreadListener); } catch(e) {}
+          }
+          window._chatUnreadListener = (window.fbDB||fbDB).ref('chats/' + user.uid + '/messages').on('value', snap => {
+            const msgs = snap.val() || {};
+            const unread = Object.values(msgs).filter(m => m.sender === 'admin' && !m.readByUser).length;
+            const badge = document.getElementById('chatUnreadBadge');
+            if (badge) {
+              badge.textContent = unread > 9 ? '9+' : unread;
+              badge.style.display = unread > 0 ? 'flex' : 'none';
+            }
+          });
           checkDepositBonus();
           loadAnnouncement();
 
@@ -9509,6 +9525,7 @@
         <path d="M4 20C4 17 7.58 14 12 14C16.42 14 20 17 20 20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       </svg>
       <div id="bottomAvatar" style="display:none;position:absolute;top:0;left:0;width:24px;height:24px;border-radius:50%;background:var(--gold);color:#000;font-size:0.65rem;font-weight:800;align-items:center;justify-content:center;"></div>
+      <div id="chatUnreadBadge" style="display:none;position:absolute;top:-4px;right:-6px;background:#e02020;color:#fff;font-size:0.5rem;font-weight:800;border-radius:50%;width:14px;height:14px;align-items:center;justify-content:center;line-height:1;z-index:10;"></div>
     </div>
     <span>Account</span>
   </button>
