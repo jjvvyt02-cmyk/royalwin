@@ -211,7 +211,7 @@
     font-family: 'Cinzel', serif; font-size: 1.8rem; font-weight: 800;
     color: var(--gold); margin-bottom: 0.5rem;
   }
-  .section-sub { color: var(--muted); margin-bottom: 0.8rem; font-size: 0.95rem; }
+  .section-sub { color: var(--muted); margin-bottom: 2.5rem; font-size: 0.95rem; }
   .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.2rem; }
   .game-card {
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
@@ -452,31 +452,31 @@
   .wallet-hero {
     background: linear-gradient(135deg, #120c00, var(--card));
     border: 1px solid rgba(240,192,64,0.2); border-radius: 16px;
-    padding: 0.8rem 1.2rem; display:block;
-    margin-bottom: 0.8rem;
+    padding: 2rem 2.5rem; display:block;
+    margin-bottom: 2rem;
   }
-  .wallet-balance-label { color: var(--muted); font-size: 1.02rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.2rem; text-align:left; display:block; }
-  .wallet-balance-val { font-family:'Cinzel',serif; font-size:2rem; font-weight:900; color:var(--gold2); text-align:left; display:block; }
-  .wallet-balance-sub { color:var(--muted); font-size:0.82rem; margin-top:0.2rem; text-align:left; display:block; }
-  .wallet-action-btns { display:flex; gap:0.6rem; flex-wrap:wrap; }
-  .wallet-tabs { display:flex; gap:0; margin-bottom:0.8rem; background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .wallet-balance-label { color: var(--muted); font-size: 1.02rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.4rem; text-align:left; display:block; }
+  .wallet-balance-val { font-family:'Cinzel',serif; font-size:2.8rem; font-weight:900; color:var(--gold2); text-align:left; display:block; }
+  .wallet-balance-sub { color:var(--muted); font-size:0.82rem; margin-top:0.3rem; text-align:left; display:block; }
+  .wallet-action-btns { display:flex; gap:1rem; flex-wrap:wrap; }
+  .wallet-tabs { display:flex; gap:0; margin-bottom:2rem; background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
   .wallet-tab {
-    flex:1; padding:0.55rem; text-align:center; cursor:pointer; font-size:0.9rem;
+    flex:1; padding:0.9rem; text-align:center; cursor:pointer; font-size:0.9rem;
     font-family:'Exo 2',sans-serif; font-weight:600; transition:all 0.2s;
     color:var(--muted); background:none; border:none;
   }
   .wallet-tab.active { background:linear-gradient(135deg,#c07a10,var(--gold2)); color:#000; }
   .wallet-panel { display:none; }
   .wallet-panel.active { display:block; }
-  .deposit-methods { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:0.5rem; margin-bottom:0.8rem; }
+  .deposit-methods { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:1rem; margin-bottom:2rem; }
   .method-card {
     background:var(--card); border:2px solid var(--border); border-radius:12px;
-    padding:0.6rem; text-align:center; cursor:pointer; transition:all 0.2s;
+    padding:1.2rem; text-align:center; cursor:pointer; transition:all 0.2s;
   }
   .method-card:hover, .method-card.selected { border-color:var(--gold); background:rgba(240,192,64,0.05); }
-  .method-icon { font-size:2rem; margin-bottom:0.3rem; }
+  .method-icon { font-size:2rem; margin-bottom:0.5rem; }
   .method-name { font-size:0.82rem; font-weight:600; }
-  .method-limit { font-size:0.72rem; color:var(--muted); margin-top:0.1rem; }
+  .method-limit { font-size:0.72rem; color:var(--muted); margin-top:0.2rem; }
   .amount-presets { display:flex; gap:0.6rem; flex-wrap:wrap; margin-bottom:1.2rem; }
   .amount-preset {
     background:var(--bg3); border:1px solid var(--border); border-radius:8px;
@@ -558,27 +558,27 @@
   .wheel-close { position:absolute; top:1.5rem; right:1.5rem; background:none; border:1px solid var(--border); color:var(--muted); border-radius:6px; padding:0.4rem 0.8rem; cursor:pointer; font-family:'Exo 2',sans-serif; }
 
   /* Profile Page */
-  .profile-page { padding:0.8rem 0.8rem 2rem; max-width:900px; margin:0 auto; }
+  .profile-page { padding:1rem 1rem 2rem; max-width:900px; margin:0 auto; }
   .profile-hero {
     background:linear-gradient(135deg,#0d0a1a,var(--card)); border:1px solid var(--border);
-    border-radius:16px; padding:1rem; display:flex; gap:1rem; align-items:center;
-    margin-bottom:1rem; flex-wrap:wrap;
+    border-radius:16px; padding:2.5rem; display:flex; gap:2rem; align-items:center;
+    margin-bottom:2rem; flex-wrap:wrap;
   }
   .profile-avatar-big {
-    width:70px; height:70px; border-radius:50%;
+    width:90px; height:90px; border-radius:50%;
     background:linear-gradient(135deg,var(--purple),var(--red));
     display:flex; align-items:center; justify-content:center;
-    font-size:1.8rem; font-weight:800; border:3px solid var(--gold); flex-shrink:0;
+    font-size:2.2rem; font-weight:800; border:3px solid var(--gold); flex-shrink:0;
     cursor:pointer; position:relative;
   }
   .avatar-edit { position:absolute; bottom:0; right:0; background:var(--gold); color:#000; border-radius:50%; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:0.7rem; }
   .profile-info h2 { font-family:'Cinzel',serif; font-size:1.5rem; color:var(--gold); margin-bottom:0.3rem; }
-  .profile-info .uid { color:var(--muted); font-size:0.82rem; margin-bottom:0.5rem; }
+  .profile-info .uid { color:var(--muted); font-size:0.82rem; margin-bottom:0.8rem; }
   .profile-badges { display:flex; gap:0.5rem; flex-wrap:wrap; }
   .p-badge { background:rgba(240,192,64,0.1); border:1px solid rgba(240,192,64,0.2); border-radius:20px; padding:0.25rem 0.8rem; font-size:0.75rem; color:var(--gold); }
-  .profile-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.8rem; margin-bottom:1rem; }
-  .profile-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:0.8rem; }
-  .profile-card h4 { font-family:'Cinzel',serif; color:var(--gold); font-size:0.95rem; margin-bottom:0.6rem; }
+  .profile-grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; margin-bottom:2rem; }
+  .profile-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:1.5rem; }
+  .profile-card h4 { font-family:'Cinzel',serif; color:var(--gold); font-size:0.95rem; margin-bottom:1.2rem; }
 
   /* VIP Page */
   .vip-page { padding:1rem 1rem 2rem; max-width:1000px; margin:0 auto; }
@@ -1250,11 +1250,11 @@
     }
     .wallet-hero {
       flex-direction: column !important;
-      padding: 0.7rem 1rem !important;
-      gap: 0.4rem !important;
+      padding: 1rem !important;
+      gap: 0.5rem !important;
       text-align: center !important;
     }
-    .wallet-balance-val { font-size: 1.8rem !important; }
+    .wallet-balance-val { font-size: 2rem !important; }
     .deposit-methods {
       grid-template-columns: 1fr 1fr !important;
       gap: 0.5rem !important;
@@ -8263,37 +8263,37 @@
       </div>
 
       
-      <div id="bonusSelectionSection" style="display:none;margin-bottom:0.8rem;">
-        <div class="section-title" style="font-size:1.1rem;margin-bottom:0.5rem;">🎁 First Deposit Bonus</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.5rem;max-width:600px;">
-          <div id="bonusOpt1" onclick="selectBonus(1)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:0.6rem 0.4rem;cursor:pointer;text-align:center;transition:all 0.2s;">
+      <div id="bonusSelectionSection" style="display:none;margin-bottom:1.5rem;">
+        <div class="section-title" style="font-size:1.1rem;margin-bottom:0.8rem;">🎁 First Deposit Bonus</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.8rem;max-width:600px;">
+          <div id="bonusOpt1" onclick="selectBonus(1)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s;">
             <div style="font-size:1.6rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;">8%</div>
-            <div style="font-size:0.78rem;font-weight:700;margin:0.2rem 0;">Bonus on Deposit</div>
+            <div style="font-size:0.78rem;font-weight:700;margin:0.3rem 0;">Bonus on Deposit</div>
             <div style="font-size:0.68rem;color:var(--muted);">1x Wager Required</div>
           </div>
-          <div id="bonusOpt2" onclick="selectBonus(2)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:0.6rem 0.4rem;cursor:pointer;text-align:center;transition:all 0.2s;">
+          <div id="bonusOpt2" onclick="selectBonus(2)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s;">
             <div style="font-size:1.6rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;">15%</div>
-            <div style="font-size:0.78rem;font-weight:700;margin:0.2rem 0;">Bonus on Deposit</div>
+            <div style="font-size:0.78rem;font-weight:700;margin:0.3rem 0;">Bonus on Deposit</div>
             <div style="font-size:0.68rem;color:var(--muted);">2.5x Wager Required</div>
           </div>
-          <div id="bonusOpt3" onclick="selectBonus(3)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:0.6rem 0.4rem;cursor:pointer;text-align:center;transition:all 0.2s;position:relative;overflow:hidden;">
+          <div id="bonusOpt3" onclick="selectBonus(3)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:1rem;cursor:pointer;text-align:center;transition:all 0.2s;position:relative;overflow:hidden;">
             <div style="position:absolute;top:0;left:0;right:0;background:var(--gold);font-size:0.58rem;font-weight:700;color:#000;padding:0.15rem;text-align:center;">BEST</div>
             <div style="font-size:1.6rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;margin-top:0.6rem;">100%</div>
-            <div style="font-size:0.78rem;font-weight:700;margin:0.2rem 0;">Bonus on Deposit</div>
+            <div style="font-size:0.78rem;font-weight:700;margin:0.3rem 0;">Bonus on Deposit</div>
             <div style="font-size:0.68rem;color:var(--muted);">10x Wager Required</div>
           </div>
         </div>
-        <div id="selectedBonusInfo" style="margin-top:0.5rem;padding:0.5rem 0.8rem;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-size:0.8rem;color:var(--muted);max-width:500px;display:none;"></div>
+        <div id="selectedBonusInfo" style="margin-top:0.8rem;padding:0.7rem 1rem;background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.2);border-radius:10px;font-size:0.8rem;color:var(--muted);max-width:500px;display:none;"></div>
       </div>
 
       
-      <div id="recurringBonusInfo" style="display:none;margin-bottom:0.6rem;padding:0.5rem 0.8rem;background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:10px;max-width:500px;">
+      <div id="recurringBonusInfo" style="display:none;margin-bottom:1.2rem;padding:0.8rem 1rem;background:rgba(39,174,96,0.08);border:1px solid rgba(39,174,96,0.2);border-radius:10px;max-width:500px;">
         <div style="font-size:0.85rem;font-weight:700;color:var(--green);">🎁 5% Bonus Auto-Applied</div>
         <div style="font-size:0.75rem;color:var(--muted);margin-top:0.2rem;">You'll receive 5% bonus on this deposit with 1x wager requirement.</div>
-        <div style="font-size:0.78rem;color:var(--green);margin-top:0.2rem;" id="recurringBonusAmt"></div>
+        <div style="font-size:0.78rem;color:var(--green);margin-top:0.3rem;" id="recurringBonusAmt"></div>
       </div>
 
-      <div class="section-title" style="font-size:1.1rem;margin-bottom:0.5rem;">Select Amount</div>
+      <div class="section-title" style="font-size:1.1rem;margin-bottom:1rem;">Select Amount</div>
       <div class="amount-presets" id="amountPresets">
         <div class="amount-preset selected" onclick="setAmount(this,'300')">₹300</div>
         <div class="amount-preset" onclick="setAmount(this,'500')">₹500</div>
@@ -8350,7 +8350,7 @@
       <div class="section-sub">Withdrawals processed within 24 hours</div>
 
       
-      <div id="wagerSection" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:0.7rem 1rem;margin-bottom:0.6rem;">
+      <div id="wagerSection" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1rem;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
           <div style="font-size:0.85rem;font-weight:700;color:var(--gold);">🎯 Wager Progress</div>
           <div style="font-size:0.78rem;color:var(--gold);font-weight:700;" id="wagerPctText">100%</div>
@@ -8700,8 +8700,8 @@
   <div class="profile-page">
 
     
-    <div style="background:linear-gradient(135deg,#1a1a35,#0d0d1a);padding:0.8rem 1rem 0.8rem;margin:-0.8rem -0.8rem 0.8rem;border-bottom:1px solid var(--border);">
-      <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:0.8rem;">
+    <div style="background:linear-gradient(135deg,#1a1a35,#0d0d1a);padding:1.5rem 1rem 1rem;margin:-1rem -1rem 1rem;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:1rem;margin-bottom:1.2rem;">
         <div style="width:64px;height:64px;border-radius:50%;background:linear-gradient(135deg,#c07a10,var(--gold2));display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:1.8rem;font-weight:800;color:#000;flex-shrink:0;" id="profileAvatarBig">U</div>
         <div style="flex:1;">
           <div style="display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap;">
@@ -8717,9 +8717,9 @@
       </div>
 
       
-      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:14px;padding:0.7rem 1rem;margin-bottom:0.6rem;">
-        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.2rem;">Total Balance</div>
-        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.6rem;">
+      <div style="background:rgba(255,255,255,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:14px;padding:1rem 1.2rem;margin-bottom:0.8rem;">
+        <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Total Balance</div>
+        <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.8rem;">
           <div style="font-family:'Cinzel',serif;font-size:1.8rem;font-weight:800;color:var(--gold);" id="profileBalance">₹0.00</div>
           <button onclick="refreshWalletBalance()" class="refresh-btn" title="Refresh balance">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
@@ -8727,19 +8727,19 @@
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;text-align:center;">
           <div onclick="showPage('wallet')" style="cursor:pointer;">
-            <div style="width:36px;height:36px;border-radius:10px;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin:0 auto 0.2rem;">💳</div>
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">💳</div>
             <div style="font-size:0.65rem;color:var(--muted);">Wallet</div>
           </div>
           <div onclick="showPage('wallet');setTimeout(()=>switchWalletTab('deposit'),50)" style="cursor:pointer;">
-            <div style="width:36px;height:36px;border-radius:10px;background:rgba(240,192,64,0.15);border:1px solid rgba(240,192,64,0.2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin:0 auto 0.2rem;">⬇️</div>
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(240,192,64,0.15);border:1px solid rgba(240,192,64,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">⬇️</div>
             <div style="font-size:0.65rem;color:var(--muted);">Deposit</div>
           </div>
           <div onclick="showPage('wallet');setTimeout(()=>switchWalletTab('withdraw'),50)" style="cursor:pointer;">
-            <div style="width:36px;height:36px;border-radius:10px;background:rgba(39,174,96,0.15);border:1px solid rgba(39,174,96,0.2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin:0 auto 0.2rem;">⬆️</div>
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(39,174,96,0.15);border:1px solid rgba(39,174,96,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">⬆️</div>
             <div style="font-size:0.65rem;color:var(--muted);">Withdraw</div>
           </div>
           <div onclick="showPage('vip')" style="cursor:pointer;">
-            <div style="width:36px;height:36px;border-radius:10px;background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.2);display:flex;align-items:center;justify-content:center;font-size:1.1rem;margin:0 auto 0.2rem;">💎</div>
+            <div style="width:44px;height:44px;border-radius:12px;background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">💎</div>
             <div style="font-size:0.65rem;color:var(--muted);">VIP</div>
           </div>
         </div>
@@ -8748,19 +8748,19 @@
 
     
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:0.8rem;grid-auto-rows:1fr;">
-      <div onclick="showPage('bethistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.6rem 0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;">
+      <div onclick="showPage('bethistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 0.8rem;cursor:pointer;display:flex;align-items:center;gap:0.7rem;">
         <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:rgba(39,174,96,0.15);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🎯</div>
         <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Bet History</div><div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">Win &amp; Loss</div></div>
       </div>
-      <div onclick="showPage('history')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.6rem 0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;">
+      <div onclick="showPage('history')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 0.8rem;cursor:pointer;display:flex;align-items:center;gap:0.7rem;">
         <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:rgba(124,77,255,0.15);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">💰</div>
         <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Transaction</div><div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">All transactions</div></div>
       </div>
-      <div onclick="showPage('deposithistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.6rem 0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;">
+      <div onclick="showPage('deposithistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 0.8rem;cursor:pointer;display:flex;align-items:center;gap:0.7rem;">
         <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:rgba(240,192,64,0.15);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">⬇️</div>
         <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Deposit</div><div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">My deposits</div></div>
       </div>
-      <div onclick="showPage('withdrawhistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.6rem 0.7rem;cursor:pointer;display:flex;align-items:center;gap:0.5rem;">
+      <div onclick="showPage('withdrawhistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 0.8rem;cursor:pointer;display:flex;align-items:center;gap:0.7rem;">
         <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:rgba(224,32,32,0.15);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">⬆️</div>
         <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Withdrawal</div><div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">My withdrawals</div></div>
       </div>
@@ -8768,22 +8768,22 @@
 
     
     <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;overflow:hidden;margin-bottom:0.8rem;">
-      <div onclick="showPage('gifts')" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;border-bottom:1px solid var(--border);cursor:pointer;">
+      <div onclick="showPage('gifts')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎁</span><span style="font-size:0.88rem;">Gifts</span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
-      <div onclick="showLanguageModal()" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;border-bottom:1px solid var(--border);cursor:pointer;">
+      <div onclick="showLanguageModal()" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🌐</span><span style="font-size:0.88rem;">Language</span></div>
         <div style="display:flex;align-items:center;gap:0.5rem;">
           <span id="currentLangLabel" style="font-size:0.8rem;color:var(--gold);">English</span>
           <span style="color:var(--muted);font-size:0.8rem;">›</span>
         </div>
       </div>
-      <div onclick="showPage('gamestats')" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;border-bottom:1px solid var(--border);cursor:pointer;">
+      <div onclick="showPage('gamestats')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">📊</span><span style="font-size:0.88rem;"><span data-t="acc.gamestats">Game Stats</span></span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
-      <div onclick="showPage('support')" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;border-bottom:1px solid var(--border);cursor:pointer;">
+      <div onclick="showPage('support')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎧</span><span style="font-size:0.88rem;">Support</span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
@@ -10743,11 +10743,11 @@ window.claimVipMonthly = function() {
     <!-- Legal -->
     <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem;">
       <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);padding:0.9rem 1rem;border-bottom:1px solid var(--border);">📄 Legal</div>
-      <div onclick="showPage('terms')" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;border-bottom:1px solid var(--border);cursor:pointer;">
+      <div onclick="showPage('terms')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">📋</span><span style="font-size:0.88rem;">Terms & Conditions</span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
-      <div onclick="showPage('privacy')" style="display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.8rem;border-bottom:1px solid var(--border);cursor:pointer;">
+      <div onclick="showPage('privacy')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
         <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🔐</span><span style="font-size:0.88rem;">Privacy Policy</span></div>
         <span style="color:var(--muted);font-size:0.8rem;">›</span>
       </div>
