@@ -10495,10 +10495,11 @@ window.loadActivityAwardPage = function() {
   if (!user) return;
   var db = firebase.database();
   var todayKey = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
+  var utcKey = new Date().toISOString().split('T')[0];
   var TASKS = [{id:1,target:2000,reward:25},{id:2,target:5000,reward:85},
     {id:3,target:10000,reward:215},{id:4,target:50000,reward:1015},{id:5,target:100000,reward:2015}];
 
-  // Clear existing listener and timer
+  // Clear existing listener
   if (window._activityListener) {
     try { firebase.database().ref('users/'+user.uid+'/dailyBets/'+todayKey).off('value', window._activityListener); } catch(e) {}
   }
@@ -10531,9 +10532,16 @@ window.loadActivityAwardPage = function() {
     });
   }
 
-  // Live listener on dailyBets
-  window._activityListener = db.ref('users/'+user.uid+'/dailyBets/'+todayKey).on('value', function(snap) {
-    renderActivity(parseFloat(snap.val()||0));
+  // Live listener on dailyBets — listens to IST key
+  // Also read UTC key once for backward compatibility with old bets
+  db.ref('users/'+user.uid+'/dailyBets/'+utcKey).once('value').then(function(utcSnap) {
+    var utcBets = parseFloat(utcSnap.val() || 0);
+    window._activityListener = db.ref('users/'+user.uid+'/dailyBets/'+todayKey).on('value', function(snap) {
+      var istBets = parseFloat(snap.val() || 0);
+      // Use whichever is higher, or combine if keys differ
+      var total = todayKey === utcKey ? istBets : istBets + utcBets;
+      renderActivity(total);
+    });
   });
 
   // Auto-refresh every 1 hour as fallback
