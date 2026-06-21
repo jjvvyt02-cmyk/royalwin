@@ -469,14 +469,15 @@
   .wallet-panel { display:none; }
   .wallet-panel.active { display:block; }
   .deposit-methods { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:0.6rem; margin-bottom:0.8rem; }
+  .withdraw-methods { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.6rem; margin-bottom:0.6rem; }
   .method-card {
     background:var(--card); border:2px solid var(--border); border-radius:12px;
-    padding:0.9rem; text-align:center; cursor:pointer; transition:all 0.2s;
+    padding:0.7rem; text-align:center; cursor:pointer; transition:all 0.2s;
   }
   .method-card:hover, .method-card.selected { border-color:var(--gold); background:rgba(240,192,64,0.05); }
-  .method-icon { font-size:2rem; margin-bottom:0.5rem; }
+  .method-icon { font-size:2rem; margin-bottom:0.3rem; }
   .method-name { font-size:0.82rem; font-weight:600; }
-  .method-limit { font-size:0.72rem; color:var(--muted); margin-top:0.2rem; }
+  .method-limit { font-size:0.72rem; color:var(--muted); margin-top:0.15rem; }
   .amount-presets { display:flex; gap:0.6rem; flex-wrap:wrap; margin-bottom:1.2rem; }
   .amount-preset {
     background:var(--bg3); border:1px solid var(--border); border-radius:8px;
@@ -1258,6 +1259,11 @@
     .deposit-methods {
       grid-template-columns: 1fr 1fr !important;
       gap: 0.5rem !important;
+      padding: 0 0.8rem !important;
+    }
+    .withdraw-methods {
+      grid-template-columns: 1fr 1fr 1fr !important;
+      gap: 0.4rem !important;
       padding: 0 0.8rem !important;
     }
     .amount-presets { gap: 0.4rem !important; flex-wrap: wrap !important; padding: 0 0.8rem !important; }
@@ -8293,17 +8299,17 @@
       <div id="bonusSelectionSection" style="display:none;margin-bottom:0.8rem;">
         <div class="section-title" style="font-size:1.1rem;margin-bottom:0.5rem;">🎁 First Deposit Bonus</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.6rem;max-width:600px;">
-          <div id="bonusOpt1" onclick="selectBonus(1)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:0.8rem;cursor:pointer;text-align:center;transition:all 0.2s;">
+          <div id="bonusOpt1" onclick="selectBonus(1)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:0.6rem 0.4rem;cursor:pointer;text-align:center;transition:all 0.2s;">
             <div style="font-size:1.6rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;">8%</div>
             <div style="font-size:0.78rem;font-weight:700;margin:0.3rem 0;">Bonus on Deposit</div>
             <div style="font-size:0.68rem;color:var(--muted);">1x Wager Required</div>
           </div>
-          <div id="bonusOpt2" onclick="selectBonus(2)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:0.8rem;cursor:pointer;text-align:center;transition:all 0.2s;">
+          <div id="bonusOpt2" onclick="selectBonus(2)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:0.6rem 0.4rem;cursor:pointer;text-align:center;transition:all 0.2s;">
             <div style="font-size:1.6rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;">15%</div>
             <div style="font-size:0.78rem;font-weight:700;margin:0.3rem 0;">Bonus on Deposit</div>
             <div style="font-size:0.68rem;color:var(--muted);">2.5x Wager Required</div>
           </div>
-          <div id="bonusOpt3" onclick="selectBonus(3)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:0.8rem;cursor:pointer;text-align:center;transition:all 0.2s;position:relative;overflow:hidden;">
+          <div id="bonusOpt3" onclick="selectBonus(3)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:0.6rem 0.4rem;cursor:pointer;text-align:center;transition:all 0.2s;position:relative;overflow:hidden;">
             <div style="position:absolute;top:0;left:0;right:0;background:var(--gold);font-size:0.58rem;font-weight:700;color:#000;padding:0.15rem;text-align:center;">BEST</div>
             <div style="font-size:1.6rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;margin-top:0.6rem;">100%</div>
             <div style="font-size:0.78rem;font-weight:700;margin:0.3rem 0;">Bonus on Deposit</div>
@@ -8389,7 +8395,7 @@
       </div>
 
       
-      <div class="deposit-methods" style="margin-bottom:0.6rem;">
+      <div class="withdraw-methods" style="margin-bottom:0.6rem;">
         <div class="method-card" id="wm-upi" onclick="selectWithdrawMethod('upi',this)" style="flex:1;opacity:0.45;position:relative;">
           <div style="position:absolute;top:-6px;right:-6px;background:var(--red2);color:#fff;font-size:0.55rem;font-weight:800;padding:0.15rem 0.4rem;border-radius:6px;z-index:1;">SOON</div>
           <div class="method-icon" style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#6C3CE1,#4B9BF5);display:flex;align-items:center;justify-content:center;margin:0 auto 0.4rem;font-size:1.3rem;">📲</div>
