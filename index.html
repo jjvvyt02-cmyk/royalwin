@@ -211,7 +211,7 @@
     font-family: 'Cinzel', serif; font-size: 1.8rem; font-weight: 800;
     color: var(--gold); margin-bottom: 0.5rem;
   }
-  .section-sub { color: var(--muted); margin-bottom: 0.8rem; font-size: 0.95rem; }
+  .section-sub { color: var(--muted); margin-bottom: 0.5rem; font-size: 0.95rem; }
   .games-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 1.2rem; }
   .game-card {
     background: var(--card); border: 1px solid var(--border); border-radius: 12px;
@@ -453,13 +453,13 @@
     background: linear-gradient(135deg, #120c00, var(--card));
     border: 1px solid rgba(240,192,64,0.2); border-radius: 16px;
     padding: 2rem 2.5rem; display:block;
-    margin-bottom: 0.8rem;
+    margin-bottom: 0.5rem;
   }
   .wallet-balance-label { color: var(--muted); font-size: 1.02rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:0.4rem; text-align:left; display:block; }
   .wallet-balance-val { font-family:'Cinzel',serif; font-size:2.8rem; font-weight:900; color:var(--gold2); text-align:left; display:block; }
   .wallet-balance-sub { color:var(--muted); font-size:0.82rem; margin-top:0.3rem; text-align:left; display:block; }
   .wallet-action-btns { display:flex; gap:1rem; flex-wrap:wrap; }
-  .wallet-tabs { display:flex; gap:0; margin-bottom:0.8rem; background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+  .wallet-tabs { display:flex; gap:0; margin-bottom:0.5rem; background:var(--card); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
   .wallet-tab {
     flex:1; padding:0.9rem; text-align:center; cursor:pointer; font-size:0.9rem;
     font-family:'Exo 2',sans-serif; font-weight:600; transition:all 0.2s;
@@ -468,7 +468,7 @@
   .wallet-tab.active { background:linear-gradient(135deg,#c07a10,var(--gold2)); color:#000; }
   .wallet-panel { display:none; }
   .wallet-panel.active { display:block; }
-  .deposit-methods { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:0.6rem; margin-bottom:0.8rem; }
+  .deposit-methods { display:grid; grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); gap:0.6rem; margin-bottom:0.5rem; }
   .withdraw-methods { display:grid; grid-template-columns:1fr 1fr 1fr; gap:0.6rem; margin-bottom:0.6rem; }
   .method-card {
     background:var(--card); border:2px solid var(--border); border-radius:12px;
@@ -3871,7 +3871,7 @@
     const rows = _depHistData;
     if (!rows.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No deposits yet</div>'; return; }
 
-    const PER_PAGE = 10, MAX_PAGES = 5;
+    const PER_PAGE = 5, MAX_PAGES = 10;
     const limited = rows.slice(0, PER_PAGE * MAX_PAGES);
     const totalPages = Math.min(Math.ceil(limited.length / PER_PAGE), MAX_PAGES);
     if (_depHistPage > totalPages) _depHistPage = 1;
@@ -3948,7 +3948,7 @@
     const rows = _withHistData;
     if (!rows.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No withdrawals yet</div>'; return; }
 
-    const PER_PAGE = 10, MAX_PAGES = 5;
+    const PER_PAGE = 5, MAX_PAGES = 10;
     const limited = rows.slice(0, PER_PAGE * MAX_PAGES);
     const totalPages = Math.min(Math.ceil(limited.length / PER_PAGE), MAX_PAGES);
     if (_withHistPage > totalPages) _withHistPage = 1;
@@ -4486,6 +4486,17 @@
 
   function selectBonus(opt) {
     if (window._bonus100Locked && opt !== 3) return; // locked to 100%
+    // Toggle — clicking selected bonus deselects it
+    if (selectedBonusOption === opt) {
+      selectedBonusOption = 0;
+      [1,2,3].forEach(i => {
+        const el = document.getElementById('bonusOpt' + i);
+        if (el) { el.style.borderColor = 'var(--border)'; el.style.background = 'var(--card)'; }
+      });
+      const infoEl = document.getElementById('selectedBonusInfo');
+      if (infoEl) infoEl.style.display = 'none';
+      return;
+    }
     selectedBonusOption = opt;
     [1,2,3].forEach(i => {
       const el = document.getElementById('bonusOpt' + i);
@@ -5937,8 +5948,8 @@
     try {
       const db = window.fbDB || fbDB;
       const orderId = 'RW' + Date.now() + window.currentUser.uid.substring(0,6);
-      let bonusPct=0, bonusAmt=0, wagerReq=0;
-      if (selectedBonusOption===1){bonusPct=8;bonusAmt=Math.round(amt*0.08);wagerReq=1;}
+      let bonusPct=0, bonusAmt=0, wagerReq=1;
+      if (selectedBonusOption===1){bonusPct=8;bonusAmt=Math.round(amt*0.08);wagerReq=1.5;}
       else if (selectedBonusOption===2){bonusPct=15;bonusAmt=Math.round(amt*0.15);wagerReq=2.5;}
       else {
         const hasDepSnap = await db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value');
@@ -6011,8 +6022,8 @@
       const db = window.fbDB || fbDB;
       const hasDepSnap = await db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value');
       const isFirst = !hasDepSnap.val();
-      let bonusPct = 0, bonusAmt = 0, wagerReq = 0;
-      if (selectedBonusOption === 1) { bonusPct = 8;   bonusAmt = Math.round(amt * 0.08);  wagerReq = 1; }
+      let bonusPct = 0, bonusAmt = 0, wagerReq = 1;
+      if (selectedBonusOption === 1) { bonusPct = 8;   bonusAmt = Math.round(amt * 0.08);  wagerReq = 1.5; }
       else if (selectedBonusOption === 2) { bonusPct = 15;  bonusAmt = Math.round(amt * 0.15);  wagerReq = 2.5; }
       else if (selectedBonusOption === 3 && isFirst) { bonusPct = 100; bonusAmt = Math.round(amt * 1.00);  wagerReq = 10; }
       else if (!isFirst) { bonusPct = 5; bonusAmt = Math.round(amt * 0.05); wagerReq = 1; }
@@ -8296,7 +8307,7 @@
       </div>
 
       
-      <div id="bonusSelectionSection" style="display:none;margin-bottom:0.8rem;">
+      <div id="bonusSelectionSection" style="display:none;margin-bottom:0.5rem;">
         <div class="section-title" style="font-size:1.1rem;margin-bottom:0.5rem;">🎁 First Deposit Bonus</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.6rem;max-width:600px;">
           <div id="bonusOpt1" onclick="selectBonus(1)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:0.6rem 0.4rem;cursor:pointer;text-align:center;transition:all 0.2s;">
@@ -8383,7 +8394,7 @@
       <div class="section-sub">Withdrawals processed within 24 hours</div>
 
       
-      <div id="wagerSection" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem 1.2rem;margin-bottom:0.6rem;">
+      <div id="wagerSection" style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1rem 1.2rem;margin-bottom:0.5rem;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
           <div style="font-size:0.85rem;font-weight:700;color:var(--gold);">🎯 Wager Progress</div>
           <div style="font-size:0.78rem;color:var(--gold);font-weight:700;" id="wagerPctText">100%</div>
@@ -9866,8 +9877,8 @@ function openUSDTModal() {
     var db = window.fbDB || fbDB;
     db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value').then(function(hasDepSnap) {
       var isFirst = !hasDepSnap.val();
-      var bonusPct = 0, bonusAmt = 0, wagerReq = 0;
-      if (selectedBonusOption === 1) { bonusPct = 8;   bonusAmt = Math.round(amt * 0.08);  wagerReq = 1; }
+      var bonusPct = 0, bonusAmt = 0, wagerReq = 1;
+      if (selectedBonusOption === 1) { bonusPct = 8;   bonusAmt = Math.round(amt * 0.08);  wagerReq = 1.5; }
       else if (selectedBonusOption === 2) { bonusPct = 15;  bonusAmt = Math.round(amt * 0.15);  wagerReq = 2.5; }
       else if (selectedBonusOption === 3 && isFirst) { bonusPct = 100; bonusAmt = Math.round(amt * 1.00);  wagerReq = 10; }
       else if (!isFirst) { bonusPct = 5; bonusAmt = Math.round(amt * 0.05); wagerReq = 1; }
