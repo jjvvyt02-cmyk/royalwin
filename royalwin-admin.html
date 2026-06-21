@@ -1334,7 +1334,7 @@ function renderLiveBets(bets) {
     const pl = b.pl !== undefined ? (b.pl > 0 ? `<span style="color:var(--green);">+₹${b.pl}</span>` : `<span style="color:var(--red2);">-₹${Math.abs(b.pl)}</span>`) : '<span style="color:var(--muted);">Pending</span>';
     return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.5rem 0.8rem;border-bottom:1px solid rgba(255,255,255,0.04);font-size:0.75rem;">
       <div>
-        <span style="color:var(--gold);font-weight:700;">${b.username||b.uid?.substring(0,8)||'—'}</span>
+        <span style="color:var(--gold);font-weight:700;">${b.username||b.memberId||'—'}</span>
         <span style="color:var(--muted);margin-left:0.4rem;">${b.selection||'—'}</span>
       </div>
       <div style="display:flex;gap:0.8rem;align-items:center;">
@@ -1725,7 +1725,6 @@ async function loadRevenueStats(period = 'today') {
 
   } catch(e) { console.error('Revenue stats error:', e); }
 }
-window.loadRevenueStats = loadRevenueStats;
 
 function loadSettings() {
   // Load announcement
@@ -1860,7 +1859,7 @@ function renderUsers(users) {
         <div style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:flex-end;">
           <button onclick="openReferralOverview('${u.uid}', '${u.username || 'Unknown'}', '${u.memberId || ''}')" style="font-size:0.68rem;background:rgba(0,230,118,0.1);border:1px solid rgba(0,230,118,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:var(--green);cursor:pointer;">👥 Referrals</button>
           <button onclick="viewUserDeposits('${u.uid}', '${u.username || 'Unknown'}')" style="font-size:0.68rem;background:rgba(0,150,255,0.1);border:1px solid rgba(0,150,255,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:#4fc3f7;cursor:pointer;">💳 Deposits</button>
-          <button onclick="document.getElementById('manualUid').value='${u.uid}';switchTab('finance');" style="font-size:0.68rem;background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:4px;padding:0.2rem 0.5rem;color:var(--gold);cursor:pointer;">💰 Balance</button>
+          <button onclick="document.getElementById('manualUid').value='${u.memberId||u.uid}';switchTab('finance');" style="font-size:0.68rem;background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:4px;padding:0.2rem 0.5rem;color:var(--gold);cursor:pointer;">💰 Balance</button>
           <button onclick="toggleBlockUser('${u.uid}', ${!u.isBlocked})" style="font-size:0.68rem;background:${u.isBlocked ? 'rgba(0,230,118,0.1)' : 'rgba(224,32,32,0.1)'};border:1px solid ${u.isBlocked ? 'rgba(0,230,118,0.2)' : 'rgba(224,32,32,0.2)'};border-radius:4px;padding:0.2rem 0.5rem;color:${u.isBlocked ? 'var(--green)' : 'var(--red2)'};cursor:pointer;">${u.isBlocked ? '✅ Unblock' : '🚫 Block'}</button>
           <button onclick="resetWithdrawDetails('${u.uid}')" style="font-size:0.68rem;background:rgba(124,77,255,0.1);border:1px solid rgba(124,77,255,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:#7c4dff;cursor:pointer;">🔓 Reset Withdraw</button>
           <button onclick="deleteUser('${u.uid}', '${u.username || 'Unknown'}')" style="font-size:0.68rem;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:4px;padding:0.2rem 0.5rem;color:var(--red2);cursor:pointer;">🗑️ Delete</button>
@@ -2100,7 +2099,7 @@ window.manualBalance = async function() {
       details: 'Manual ' + (type === 'add' ? 'credit' : 'deduction') + ' by admin',
       balance: newBal, timestamp: Date.now()
     });
-    if (infoEl) infoEl.textContent = '✅ Done! UID: ' + uid + ' | Old: ₹' + currentBal.toLocaleString('en-IN') + ' → New: ₹' + newBal.toLocaleString('en-IN');
+    if (infoEl) infoEl.textContent = '✅ Done! Member: ' + input + ' | Old: ₹' + currentBal.toLocaleString('en-IN') + ' → New: ₹' + newBal.toLocaleString('en-IN');
     showToast((type === 'add' ? '✅ Added' : '➖ Deducted') + ' ₹' + amt.toLocaleString('en-IN') + ' | New balance: ₹' + newBal.toLocaleString('en-IN'));
   } catch(e) { showToast('❌ Error: ' + e.message); if (infoEl) infoEl.textContent = '❌ ' + e.message; }
 };
@@ -2120,7 +2119,7 @@ window.adjustWager = async function() {
     if (type === 'reset') {
       await set(ref(db, 'users/' + uid + '/wager'), { required: 0, completed: 0 });
       showToast('✅ Wager reset for user');
-      if (infoEl) infoEl.textContent = '✅ Wager reset — UID: ' + uid + ' | Required: ₹0, Completed: ₹0';
+      if (infoEl) infoEl.textContent = '✅ Wager reset — Member: ' + input + ' | Required: ₹0, Completed: ₹0';
       return;
     }
     if (!amt || isNaN(amt)) { showToast('⚠️ Enter a valid amount'); return; }
@@ -2132,7 +2131,7 @@ window.adjustWager = async function() {
     }
     await update(ref(db, 'users/' + uid + '/wager'), { required: newRequired });
     showToast('✅ Wager ' + (type === 'add' ? 'increased' : 'reduced') + '! Required: ₹' + newRequired.toLocaleString('en-IN'));
-    if (infoEl) infoEl.textContent = '✅ UID: ' + uid + ' | Required: ₹' + newRequired.toLocaleString('en-IN') + ' · Completed: ₹' + parseFloat(wager.completed||0).toLocaleString('en-IN') + ' · Remaining: ₹' + Math.max(0, newRequired - parseFloat(wager.completed||0)).toLocaleString('en-IN');
+    if (infoEl) infoEl.textContent = '✅ Member: ' + input + ' | Required: ₹' + newRequired.toLocaleString('en-IN') + ' · Completed: ₹' + parseFloat(wager.completed||0).toLocaleString('en-IN') + ' · Remaining: ₹' + Math.max(0, newRequired - parseFloat(wager.completed||0)).toLocaleString('en-IN');
   } catch(e) { showToast('❌ Error: ' + e.message); if (infoEl) infoEl.textContent = '❌ ' + e.message; }
 };
 
@@ -2271,6 +2270,7 @@ function loadFinance() {
           </div>
           ${methodBadge}
           <div style="font-size:0.75rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.username || 'Unknown'}</div>
+          <div style="font-size:0.68rem;color:var(--gold);white-space:nowrap;">${r.memberId || '—'}</div>
           <div style="font-size:0.68rem;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;" title="${r.upiId || ''}">${r.upiId || '—'}</div>
           <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})}</div>
           ${(r.wgpayTranFlow || r.payoutOrderId) ? `<div style="font-size:0.62rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;" title="${r.wgpayTranFlow || r.payoutOrderId}">#${r.wgpayTranFlow || r.payoutOrderId}</div>` : ''}
@@ -2814,6 +2814,7 @@ function loadChatUserList() {
     }
 
     listEl.innerHTML = entries.map(([uid, chat]) => {
+      window._adminChatData = data;
       const info = chat.info || {};
       const isUnread = info.unreadByAdmin;
       if (isUnread) totalUnread++;
@@ -2842,10 +2843,13 @@ function loadChatUserList() {
 
 window.selectAdminChat = function(uid, username) {
   _adminSelectedUid = uid;
+  const entries = Object.entries(window._adminChatData || {});
+  const chatEntry = entries.find(([u]) => u === uid);
+  const memberId = chatEntry ? (chatEntry[1].info?.memberId || uid.substring(0,8)) : uid.substring(0,8);
 
   // Update header
   document.getElementById('adminChatName').textContent = username;
-  document.getElementById('adminChatUid').textContent = 'UID: ' + uid;
+  document.getElementById('adminChatUid').textContent = 'Member: ' + memberId;
   document.getElementById('adminChatStatus').style.display = 'block';
 
   // Mark as read by admin
@@ -3340,7 +3344,7 @@ window.quickLookup = async function() {
         <div><span style="color:var(--muted);">Status:</span> <span style="color:${userData.isBlocked?'var(--red2)':'var(--green)'};">${userData.isBlocked?'🚫 Blocked':'✅ Active'}</span></div>
       </div>
       <div style="display:flex;gap:0.4rem;margin-top:0.6rem;">
-        <button onclick="document.getElementById('manualUid').value='${uid}';switchTab('finance');" style="background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:var(--gold);cursor:pointer;font-size:0.72rem;">💰 Adjust Balance</button>
+        <button onclick="document.getElementById('manualUid').value='${memberId||uid}';switchTab('finance');" style="background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:var(--gold);cursor:pointer;font-size:0.72rem;">💰 Adjust Balance</button>
         <button onclick="toggleBlockUser('${uid}', ${!userData.isBlocked})" style="background:${userData.isBlocked?'rgba(0,230,118,0.1)':'rgba(224,32,32,0.1)'};border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:${userData.isBlocked?'var(--green)':'var(--red2)'};cursor:pointer;font-size:0.72rem;">${userData.isBlocked?'✅ Unblock':'🚫 Block'}</button>
       </div>`;
   } catch(e) {
