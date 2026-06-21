@@ -6769,7 +6769,7 @@
         });
         updateBalanceDisplay(currentBal - capturedAmt);
         try {
-          const todayKey = new Date().toISOString().split('T')[0];
+          const todayKey = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
           db.ref('users/' + user.uid + '/dailyBets/' + todayKey).transaction(function(val) {
             return parseFloat(((val || 0) + amt).toFixed(2));
           });
@@ -10455,7 +10455,13 @@ window.loadInvitationBonusPage = function() {
     {bonus:7,invites:1000,reward:48555},{bonus:8,invites:5000,reward:355555},
     {bonus:9,invites:10000,reward:755555},{bonus:10,invites:20000,reward:1555555}
   ];
-  db.ref('users/'+user.uid+'/referrals').once('value').then(function(snap) {
+
+  // Clear existing listener
+  if (window._inviteListener) {
+    try { firebase.database().ref('users/'+user.uid+'/referrals').off('value', window._inviteListener); } catch(e) {}
+  }
+
+  window._inviteListener = db.ref('users/'+user.uid+'/referrals').on('value', function(snap) {
     var refs = snap.val() || {};
     var total = Object.keys(refs).length;
     var deposited = Object.values(refs).filter(function(r){return r.hasDeposited;}).length;
@@ -10488,7 +10494,7 @@ window.loadActivityAwardPage = function() {
   var user = firebase.auth().currentUser;
   if (!user) return;
   var db = firebase.database();
-  var todayKey = new Date().toISOString().split('T')[0];
+  var todayKey = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
   var TASKS = [{id:1,target:2000,reward:25},{id:2,target:5000,reward:85},
     {id:3,target:10000,reward:215},{id:4,target:50000,reward:1015},{id:5,target:100000,reward:2015}];
 
@@ -10534,7 +10540,7 @@ window.loadActivityAwardPage = function() {
   window._activityTimer = setInterval(function() {
     var currentUser = firebase.auth().currentUser;
     if (!currentUser) return;
-    var key = new Date().toISOString().split('T')[0];
+    var key = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
     db.ref('users/'+currentUser.uid+'/dailyBets/'+key).once('value').then(function(snap) {
       renderActivity(parseFloat(snap.val()||0));
     });
@@ -10569,7 +10575,7 @@ function _attendRenderUI(streak, alreadyClaimed, totalEarned) {
 window.claimAttendance = function() {
   var user = window.currentUser, db = window.fbDB;
   if (!user || !db) { showToast('🔐 Please sign in first'); return; }
-  var today = new Date().toDateString(), yesterday = new Date(Date.now() - 86400000).toDateString();
+  var today = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0], yesterday = new Date(Date.now() + 5.5*60*60*1000 - 86400000).toISOString().split('T')[0];
   db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
     var data = snap.val() || {}, streak = data.streak || 0, lastCheckin = data.lastCheckin || '', totalEarned = parseFloat(data.totalEarned || 0);
     if (lastCheckin === today) { showToast('⚠️ Already checked in today!'); return; }
@@ -10633,7 +10639,7 @@ window.claimInviteTier = function(tierNum, reward) {
 window.claimActivityTask = function(taskId, reward) {
   var user = window.currentUser, db = window.fbDB;
   if (!user || !db) { showToast('🔐 Please sign in first'); return; }
-  var todayKey = new Date().toISOString().split('T')[0];
+  var todayKey = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
   db.ref('users/'+user.uid+'/claimedActivityTasks/'+todayKey+'/task'+taskId).once('value').then(function(snap) {
     if (snap.val()) { showToast('⚠️ Already claimed today!'); return; }
     db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
