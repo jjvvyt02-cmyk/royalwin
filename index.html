@@ -313,12 +313,12 @@
     pointer-events:none;
   }
   .agency-top { display:flex; align-items:center; justify-content:space-between; margin-bottom:0.6rem; }
-  .agency-label { font-size:0.78rem; color:rgba(240,192,64,0.7); font-weight:600; letter-spacing:1px; text-transform:uppercase; }
+  .agency-label { font-size:1rem; color:rgba(240,192,64,0.7); font-weight:700; letter-spacing:1px; text-transform:uppercase; }
   .agency-commission-val {
     font-family:'Cinzel',serif; font-size:2.4rem; font-weight:900; color:var(--gold2);
     line-height:1; margin-bottom:0.2rem;
   }
-  .agency-commission-lbl { font-size:0.75rem; color:rgba(240,192,64,0.5); }
+  .agency-commission-lbl { font-size:0.86rem; color:rgba(240,192,64,0.5); }
 
   /* Sub stats grid */
   .sub-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.7rem; margin:0.9rem 1rem 0; }
@@ -1942,7 +1942,7 @@
           <button type="button" onclick="togglePasswordVisibility('loginPassword', this)" style="position:absolute;right:0.7rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0.2rem;">👁️</button>
         </div>
       </div>
-      <div style="text-align:right;margin-bottom:1.2rem;"><a style="color:var(--gold);font-size:0.82rem;cursor:pointer;" onclick="showPage('forgot')">Forgot password?</a></div>
+      <div style="text-align:right;margin-bottom:1.2rem;"><a style="color:var(--gold);font-size:0.94rem;cursor:pointer;" onclick="showPage('forgot')">Forgot password?</a></div>
       <button class="btn btn-gold btn-full" onclick="doLogin()">Sign In</button>
       <div class="auth-footer">No account? <a onclick="showPage('register')">Register now</a></div>
     </div>
@@ -1963,11 +1963,11 @@
       
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:1rem;padding-top:0.8rem;border-top:1px solid rgba(240,192,64,0.12);">
         <div>
-          <div style="font-size:0.68rem;color:var(--muted);"><span data-t="ref.totalcomm">Total Commission Earned</span></div>
+          <div style="font-size:0.78rem;color:var(--muted);"><span data-t="ref.totalcomm">Total Commission Earned</span></div>
           <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--green);" id="agencyTotalComm">₹0.00</div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:0.68rem;color:var(--muted);"><span data-t="ref.totalrefs">Total Referrals</span></div>
+          <div style="font-size:0.78rem;color:var(--muted);"><span data-t="ref.totalrefs">Total Referrals</span></div>
           <div style="font-family:'Cinzel',serif;font-size:1.1rem;font-weight:800;color:var(--gold);" id="agencyTotalRefs">0</div>
         </div>
       </div>
@@ -1983,21 +1983,21 @@
         </div>
         <div style="display:flex;flex-direction:column;gap:0.6rem;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.65rem;color:var(--muted);">Registrations</span>
-            <span style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:800;color:var(--text);" id="dirRegCount">0</span>
+            <span style="font-size:0.75rem;color:var(--muted);">Registrations</span>
+            <span style="font-family:'Cinzel',serif;font-size:1.09rem;font-weight:800;color:var(--text);" id="dirRegCount">0</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.65rem;color:var(--muted);">Deposits</span>
-            <span style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:800;color:var(--text);" id="dirDepCount">0</span>
+            <span style="font-size:0.75rem;color:var(--muted);">Deposits</span>
+            <span style="font-family:'Cinzel',serif;font-size:1.09rem;font-weight:800;color:var(--text);" id="dirDepCount">0</span>
           </div>
           <div style="height:1px;background:rgba(255,255,255,0.06);"></div>
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.65rem;color:var(--muted);">Deposit amount</span>
-            <span style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:800;color:var(--gold);" id="dirDepAmt">0.00</span>
+            <span style="font-size:0.75rem;color:var(--muted);">Deposit amount</span>
+            <span style="font-family:'Cinzel',serif;font-size:1.09rem;font-weight:800;color:var(--gold);" id="dirDepAmt">0.00</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.65rem;color:var(--muted);">First deposits</span>
-            <span style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:800;color:var(--text);" id="dirFirstDep">0</span>
+            <span style="font-size:0.75rem;color:var(--muted);">First deposits</span>
+            <span style="font-family:'Cinzel',serif;font-size:1.09rem;font-weight:800;color:var(--text);" id="dirFirstDep">0</span>
           </div>
         </div>
       </div>
@@ -2010,21 +2010,21 @@
         </div>
         <div style="display:flex;flex-direction:column;gap:0.6rem;">
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.65rem;color:var(--muted);">Registrations</span>
-            <span style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:800;color:var(--text);" id="teamRegCount">0</span>
+            <span style="font-size:0.75rem;color:var(--muted);">Registrations</span>
+            <span style="font-family:'Cinzel',serif;font-size:1.09rem;font-weight:800;color:var(--text);" id="teamRegCount">0</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.65rem;color:var(--muted);">Deposits</span>
-            <span style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:800;color:var(--text);" id="teamDepCount">0</span>
+            <span style="font-size:0.75rem;color:var(--muted);">Deposits</span>
+            <span style="font-family:'Cinzel',serif;font-size:1.09rem;font-weight:800;color:var(--text);" id="teamDepCount">0</span>
           </div>
           <div style="height:1px;background:rgba(255,255,255,0.06);"></div>
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.65rem;color:var(--muted);">Deposit amount</span>
-            <span style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:800;color:var(--gold);" id="teamDepAmt">0.00</span>
+            <span style="font-size:0.75rem;color:var(--muted);">Deposit amount</span>
+            <span style="font-family:'Cinzel',serif;font-size:1.09rem;font-weight:800;color:var(--gold);" id="teamDepAmt">0.00</span>
           </div>
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <span style="font-size:0.65rem;color:var(--muted);">First deposits</span>
-            <span style="font-family:'Cinzel',serif;font-size:0.95rem;font-weight:800;color:var(--text);" id="teamFirstDep">0</span>
+            <span style="font-size:0.75rem;color:var(--muted);">First deposits</span>
+            <span style="font-family:'Cinzel',serif;font-size:1.09rem;font-weight:800;color:var(--text);" id="teamFirstDep">0</span>
           </div>
         </div>
       </div>
@@ -2042,7 +2042,7 @@
       
       <div class="ref-invite-row" onclick="copyLink()" style="gap:0.5rem;">
         <span class="ref-invite-label" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="refLink">https://jjvvyt02-cmyk.github.io/royalwin</span>
-        <span style="color:var(--gold);font-size:0.78rem;white-space:nowrap;font-weight:700;">Copy Link 🔗</span>
+        <span style="color:var(--gold);font-size:0.9rem;white-space:nowrap;font-weight:700;">Copy Link 🔗</span>
       </div>
     </div>
 
@@ -2086,24 +2086,24 @@
     <!-- Promotion Data Card — overall all-time stats -->
     <div style="margin:0 1rem 1.5rem;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
       <div style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-        <div style="font-size:0.8rem;font-weight:700;color:var(--gold);">📊 Promotion Data</div>
+        <div style="font-size:0.92rem;font-weight:700;color:var(--gold);">📊 Promotion Data</div>
         <div style="width:1px;"></div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0;">
         <div style="padding:0.9rem 1rem;border-right:1px solid var(--border);border-bottom:1px solid var(--border);">
-          <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem;">This Week Commission</div>
+          <div style="font-size:0.79rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem;">This Week Commission</div>
           <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:800;color:var(--green);" id="promoWeekComm">₹0.00</div>
         </div>
         <div style="padding:0.9rem 1rem;border-bottom:1px solid var(--border);">
-          <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem;">Total Commission</div>
+          <div style="font-size:0.79rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem;">Total Commission</div>
           <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:800;color:var(--green);" id="promoTotalComm">₹0.00</div>
         </div>
         <div style="padding:0.9rem 1rem;border-right:1px solid var(--border);">
-          <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem;">Direct Subordinates</div>
+          <div style="font-size:0.79rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem;">Direct Subordinates</div>
           <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:800;color:var(--gold);" id="promoDirectCount">0</div>
         </div>
         <div style="padding:0.9rem 1rem;">
-          <div style="font-size:0.6rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem;">Team Subordinates</div>
+          <div style="font-size:0.79rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;margin-bottom:0.3rem;">Team Subordinates</div>
           <div style="font-family:'Cinzel',serif;font-size:1rem;font-weight:800;color:var(--gold);" id="promoTeamCount">0</div>
         </div>
       </div>
@@ -2127,24 +2127,24 @@
       
       <div style="flex:1;display:flex;align-items:center;gap:0.4rem;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.8rem;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-        <input id="refSearchInput" type="text" placeholder="Search Member ID..." oninput="filterSubData()" style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:0.78rem;font-family:'Exo 2',sans-serif;">
-        <span id="refSearchCount" style="font-size:0.68rem;color:var(--muted);white-space:nowrap;"></span>
-        <button id="refSearchClear" onclick="document.getElementById('refSearchInput').value='';filterSubData();" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:0.9rem;padding:0;display:none;">✕</button>
+        <input id="refSearchInput" type="text" placeholder="Search Member ID..." oninput="filterSubData()" style="flex:1;background:none;border:none;outline:none;color:var(--text);font-size:0.9rem;font-family:'Exo 2',sans-serif;">
+        <span id="refSearchCount" style="font-size:0.78rem;color:var(--muted);white-space:nowrap;"></span>
+        <button id="refSearchClear" onclick="document.getElementById('refSearchInput').value='';filterSubData();" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:1.03rem;padding:0;display:none;">✕</button>
       </div>
       
-      <button onclick="filterSubData()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.5rem 0.8rem;color:#000;font-weight:800;cursor:pointer;font-size:0.9rem;">🔍</button>
+      <button onclick="filterSubData()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.5rem 0.8rem;color:#000;font-weight:800;cursor:pointer;font-size:1.03rem;">🔍</button>
     </div>
 
     
     <div style="padding:0 1rem 0.8rem;display:flex;gap:0.6rem;">
-      <select id="subdataLevel" onchange="filterSubData()" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.8rem;color:var(--text);font-size:0.82rem;font-family:'Exo 2',sans-serif;outline:none;">
+      <select id="subdataLevel" onchange="filterSubData()" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.8rem;color:var(--text);font-size:0.94rem;font-family:'Exo 2',sans-serif;outline:none;">
         <option value="all">All</option>
         <option value="1">Level 1</option>
         <option value="2">Level 2</option>
         <option value="3">Level 3</option>
         <option value="4">Level 4</option>
       </select>
-      <input id="subdataDate" type="date" onchange="filterSubData()" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.8rem;color:var(--text);font-size:0.82rem;font-family:'Exo 2',sans-serif;outline:none;color-scheme:dark;">
+      <input id="subdataDate" type="date" onchange="filterSubData()" style="flex:1;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.5rem 0.8rem;color:var(--text);font-size:0.94rem;font-family:'Exo 2',sans-serif;outline:none;color-scheme:dark;">
     </div>
 
     
@@ -2152,38 +2152,38 @@
       <div style="display:grid;grid-template-columns:1fr 1fr;">
         <div style="padding:1rem;border-right:1px solid var(--border);border-bottom:1px solid var(--border);">
           <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-deposits">0</div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">Deposits</div>
+          <div style="font-size:0.83rem;color:var(--muted);margin-top:2px;">Deposits</div>
         </div>
         <div style="padding:1rem;border-bottom:1px solid var(--border);">
           <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-depamt">0.00</div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;"><span data-t="ref.depamt">Deposit amount</span></div>
+          <div style="font-size:0.83rem;color:var(--muted);margin-top:2px;"><span data-t="ref.depamt">Deposit amount</span></div>
         </div>
         <div style="padding:1rem;border-right:1px solid var(--border);border-bottom:1px solid var(--border);">
           <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-bettors">0</div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;"><span data-t="ref.bettors">Number of bettors</span></div>
+          <div style="font-size:0.83rem;color:var(--muted);margin-top:2px;"><span data-t="ref.bettors">Number of bettors</span></div>
         </div>
         <div style="padding:1rem;border-bottom:1px solid var(--border);">
           <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-totalbet">0.00</div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;"><span data-t="ref.totalbet">Total bet</span></div>
+          <div style="font-size:0.83rem;color:var(--muted);margin-top:2px;"><span data-t="ref.totalbet">Total bet</span></div>
         </div>
         <div style="padding:1rem;border-right:1px solid var(--border);">
           <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-firstdeps">0</div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;"><span data-t="ref.firstdeps">First deposits</span></div>
+          <div style="font-size:0.83rem;color:var(--muted);margin-top:2px;"><span data-t="ref.firstdeps">First deposits</span></div>
         </div>
         <div style="padding:1rem;">
           <div style="font-family:'Cinzel',serif;font-size:1.4rem;font-weight:800;color:var(--text);" id="sd-firstamt">0.00</div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;"><span data-t="ref.firstamt">First deposit amount</span></div>
+          <div style="font-size:0.83rem;color:var(--muted);margin-top:2px;"><span data-t="ref.firstamt">First deposit amount</span></div>
         </div>
       </div>
     </div>
 
     
     <div style="margin:0 1rem;background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
-      <div style="display:grid;grid-template-columns:0.4fr 1.2fr 1.1fr 0.8fr 0.8fr;gap:0.2rem;padding:0.6rem 0.9rem;background:rgba(255,255,255,0.03);font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;">
+      <div style="display:grid;grid-template-columns:0.4fr 1.2fr 1.1fr 0.8fr 0.8fr;gap:0.2rem;padding:0.6rem 0.9rem;background:rgba(255,255,255,0.03);font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.4px;">
         <div>Lv</div><div>Member ID</div><div>Joined</div><div>Deposit</div><div>Bonus</div>
       </div>
       <div id="subdataRows">
-        <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;"><span data-t="ref.nodata">No data</span></div>
+        <div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.94rem;"><span data-t="ref.nodata">No data</span></div>
       </div>
     </div>
   </div>
@@ -8286,11 +8286,15 @@
 
     <div class="wallet-tabs">
       <button class="wallet-tab active" id="tab-deposit" onclick="switchWalletTab('deposit')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="vertical-align:middle;margin-right:4px;"><path d="M12 2C9 2 6 4 6 7v1H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V10a2 2 0 00-2-2h-1V7c0-3-3-5-6-5z" fill="currentColor" fill-opacity="0.9"/><path d="M9 7c0-1.7 1.3-3 3-3s3 1.3 3 3v1H9V7z" fill="currentColor" fill-opacity="0.5"/></svg>
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:linear-gradient(135deg,#e67e22,#f39c12);margin-right:6px;vertical-align:middle;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2C9 2 6 4 6 7v1H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V10a2 2 0 00-2-2h-1V7c0-3-3-5-6-5z" fill="white"/></svg>
+        </span>
         Deposit
       </button>
       <button class="wallet-tab" id="tab-withdraw" onclick="switchWalletTab('withdraw')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" style="vertical-align:middle;margin-right:4px;"><rect x="3" y="4" width="18" height="14" rx="2" fill="currentColor" fill-opacity="0.9"/><rect x="5" y="7" width="14" height="2" rx="1" fill="var(--bg2)" fill-opacity="0.7"/><rect x="5" y="11" width="10" height="2" rx="1" fill="var(--bg2)" fill-opacity="0.7"/><rect x="5" y="15" width="6" height="1.5" rx="0.75" fill="var(--bg2)" fill-opacity="0.7"/><rect x="3" y="18" width="18" height="3" rx="1.5" fill="currentColor" fill-opacity="0.7"/></svg>
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;border-radius:6px;background:linear-gradient(135deg,#1a6fa8,#2980b9);margin-right:6px;vertical-align:middle;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="14" rx="2" fill="white"/><rect x="5" y="7" width="14" height="2" rx="1" fill="#2980b9"/><rect x="5" y="11" width="10" height="2" rx="1" fill="#2980b9"/></svg>
+        </span>
         Withdraw
       </button>
     </div>
