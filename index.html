@@ -8937,13 +8937,34 @@
           <div id="vipProgressBar" style="background:linear-gradient(90deg,#c07a10,var(--gold2));height:100%;border-radius:20px;transition:width 0.5s;width:0%;"></div>
         </div>
         <div style="font-size:0.7rem;color:var(--muted);margin-top:0.4rem;" id="vipExpNeeded">Earn 200 more EXP to reach Silver</div>
-        <div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:10px;padding:0.7rem 0.9rem;margin-top:0.8rem;">
-          <div style="font-size:0.78rem;font-weight:700;color:var(--gold);margin-bottom:0.5rem;">⚡ How to Earn EXP</div>
-          <div style="display:flex;flex-direction:column;gap:0.35rem;">
-            <div style="display:flex;justify-content:space-between;font-size:0.75rem;"><span style="color:var(--muted);">🎯 Every ₹100 bet</span><span style="color:var(--text);font-weight:600;">+1 EXP</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:0.75rem;"><span style="color:var(--muted);">💳 Every ₹100 deposited (min ₹500)</span><span style="color:var(--text);font-weight:600;">+1 EXP</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:0.75rem;"><span style="color:var(--muted);">📅 Daily login</span><span style="color:var(--text);font-weight:600;">+2 EXP</span></div>
-            <div style="display:flex;justify-content:space-between;font-size:0.75rem;"><span style="color:var(--muted);">👥 Referred user first deposit</span><span style="color:var(--text);font-weight:600;">+5 EXP</span></div>
+        <button onclick="document.getElementById('expInfoModal').style.display='flex'" style="margin-top:0.8rem;background:rgba(240,192,64,0.1);border:1px solid rgba(240,192,64,0.3);border-radius:8px;padding:0.4rem 1rem;color:var(--gold);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">⚡ How to Earn EXP</button>
+
+        <!-- EXP Info Modal -->
+        <div id="expInfoModal" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,0.85);align-items:center;justify-content:center;padding:1rem;">
+          <div style="background:#1a1a2e;border:1px solid var(--border);border-radius:14px;padding:1.2rem;max-width:340px;width:100%;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+              <div style="font-family:'Cinzel',serif;font-size:1rem;color:var(--gold);">⚡ How to Earn EXP</div>
+              <button onclick="document.getElementById('expInfoModal').style.display='none'" style="background:none;border:none;color:var(--muted);font-size:1.3rem;cursor:pointer;line-height:1;">✕</button>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:0.6rem;">
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0.8rem;background:rgba(240,192,64,0.05);border-radius:8px;">
+                <span style="font-size:0.82rem;color:var(--muted);">🎯 Every ₹100 bet</span>
+                <span style="font-size:0.85rem;color:var(--gold);font-weight:700;">+1 EXP</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0.8rem;background:rgba(240,192,64,0.05);border-radius:8px;">
+                <span style="font-size:0.82rem;color:var(--muted);">💳 Every ₹100 deposited (min ₹500)</span>
+                <span style="font-size:0.85rem;color:var(--gold);font-weight:700;">+1 EXP</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0.8rem;background:rgba(240,192,64,0.05);border-radius:8px;">
+                <span style="font-size:0.82rem;color:var(--muted);">📅 Daily login</span>
+                <span style="font-size:0.85rem;color:var(--gold);font-weight:700;">+2 EXP</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;align-items:center;padding:0.6rem 0.8rem;background:rgba(240,192,64,0.05);border-radius:8px;">
+                <span style="font-size:0.82rem;color:var(--muted);">👥 Referred user first deposit</span>
+                <span style="font-size:0.85rem;color:var(--gold);font-weight:700;">+5 EXP</span>
+              </div>
+            </div>
+            <button onclick="document.getElementById('expInfoModal').style.display='none'" style="width:100%;margin-top:1rem;padding:0.65rem;background:linear-gradient(135deg,#c07a10,var(--gold));border:none;border-radius:10px;color:#000;font-weight:700;font-size:0.9rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Got it</button>
           </div>
         </div>
       </div>
