@@ -10491,8 +10491,14 @@ window.loadActivityAwardPage = function() {
   var todayKey = new Date().toISOString().split('T')[0];
   var TASKS = [{id:1,target:2000,reward:25},{id:2,target:5000,reward:85},
     {id:3,target:10000,reward:215},{id:4,target:50000,reward:1015},{id:5,target:100000,reward:2015}];
-  db.ref('users/'+user.uid+'/dailyBets/'+todayKey).once('value').then(function(snap) {
-    var bets = parseFloat(snap.val()||0);
+
+  // Clear existing listener and timer
+  if (window._activityListener) {
+    try { firebase.database().ref('users/'+user.uid+'/dailyBets/'+todayKey).off('value', window._activityListener); } catch(e) {}
+  }
+  if (window._activityTimer) clearInterval(window._activityTimer);
+
+  function renderActivity(bets) {
     var betEl = document.getElementById('activityTodayBets');
     if (betEl) betEl.textContent = '₹'+bets.toLocaleString('en-IN');
     db.ref('users/'+user.uid+'/claimedActivityTasks/'+todayKey).once('value').then(function(cs) {
@@ -10517,7 +10523,22 @@ window.loadActivityAwardPage = function() {
         }
       });
     });
+  }
+
+  // Live listener on dailyBets
+  window._activityListener = db.ref('users/'+user.uid+'/dailyBets/'+todayKey).on('value', function(snap) {
+    renderActivity(parseFloat(snap.val()||0));
   });
+
+  // Auto-refresh every 1 hour as fallback
+  window._activityTimer = setInterval(function() {
+    var currentUser = firebase.auth().currentUser;
+    if (!currentUser) return;
+    var key = new Date().toISOString().split('T')[0];
+    db.ref('users/'+currentUser.uid+'/dailyBets/'+key).once('value').then(function(snap) {
+      renderActivity(parseFloat(snap.val()||0));
+    });
+  }, 60 * 60 * 1000);
 }
 
 <script>
