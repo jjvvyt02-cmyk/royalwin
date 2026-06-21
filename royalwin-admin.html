@@ -438,6 +438,7 @@
     <div class="admin-tabs">
       <button class="admin-tab active" onclick="switchTab('bets')">📋 Live Bets</button>
       <button class="admin-tab" onclick="switchTab('finance')">💰 Finance</button>
+      <button class="admin-tab" onclick="switchTab('deposits')">⬇️ Deposits <span id="depPendingBadge" style="display:none;background:#e02020;color:#fff;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.7rem;margin-left:4px;">0</span></button>
       <button class="admin-tab" onclick="switchTab('withdrawals')">💸 Withdrawals <span id="pendingWithdrawBadge" style="display:none;background:#e02020;color:#fff;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.7rem;margin-left:4px;">0</span></button>
       <button class="admin-tab" onclick="switchTab('users')">👥 Users</button>
       <button class="admin-tab" onclick="switchTab('chat')">💬 Live Chat <span id="chatUnreadBadge" style="display:none;background:#e02020;color:#fff;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.7rem;margin-left:4px;">0</span></button>
@@ -578,30 +579,6 @@
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
 
-        <!-- Deposit Requests -->
-        <div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;">
-            <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬇️ Deposits <span id="depPendingBadge" style="background:var(--red2);color:#fff;border-radius:50%;padding:0.1rem 0.45rem;font-size:0.65rem;font-family:'Exo 2',sans-serif;margin-left:4px;display:none;">0</span></div>
-            <button onclick="toggleDepHistory()" id="depHistBtn" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.6rem;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Show History</button>
-          </div>
-          <div id="depositRequests" style="display:flex;flex-direction:column;gap:0.4rem;">
-            <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending deposits</div>
-          </div>
-        </div>
-
-        <!-- Withdrawal Requests -->
-        <div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.8rem;">
-            <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">⬆️ Withdrawals <span id="withPendingBadge" style="background:var(--red2);color:#fff;border-radius:50%;padding:0.1rem 0.45rem;font-size:0.65rem;font-family:'Exo 2',sans-serif;margin-left:4px;display:none;">0</span></div>
-            <button onclick="toggleWithHistory()" id="withHistBtn" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.2rem 0.6rem;color:var(--muted);font-size:0.72rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Show History</button>
-          </div>
-          <div id="withdrawRequests" style="display:flex;flex-direction:column;gap:0.4rem;">
-            <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending withdrawals</div>
-          </div>
-        </div>
-
-      </div>
-
       <!-- Manual Balance Add -->
       <div class="control-card" style="margin-top:1.5rem;">
         <h3>💳 Manually Add/Deduct Balance</h3>
@@ -653,6 +630,16 @@
 
     <!-- ── USERS TAB ── -->
     <!-- ── WITHDRAWALS TAB ── -->
+    <div class="admin-panel" id="panel-deposits">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <h2 style="margin:0;font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">⬇️ Deposits</h2>
+        <button onclick="toggleDepHistory()" id="depHistBtn" style="background:var(--bg3);border:1px solid var(--border);border-radius:6px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.78rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Show History</button>
+      </div>
+      <div id="depositRequests" style="display:flex;flex-direction:column;gap:0.4rem;">
+        <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">Loading...</div>
+      </div>
+    </div>
+
     <div class="admin-panel" id="panel-withdrawals">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.8rem;">
         <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">💸 Withdrawal Requests</div>
@@ -2244,7 +2231,7 @@ function loadFinance() {
     const historyWiths = requests.filter(([,r]) => r.status !== 'pending');
 
     // Update badge
-    const withBadge = document.getElementById('withPendingBadge');
+    const withBadge = document.getElementById('pendingWithdrawBadge');
     if (withBadge) { withBadge.textContent = pendingWiths.length; withBadge.style.display = pendingWiths.length > 0 ? 'inline' : 'none'; }
 
     // Decide which to show
@@ -2988,6 +2975,7 @@ window.switchTab = function(tab) {
   });
   if (tab === 'finance') { loadRevenueStats('today'); loadCXPayBalance(); loadWGPayBalance(); loadUserStats(); }
   if (tab === 'withdrawals') { loadWithdrawals('pending'); }
+  if (tab === 'deposits') { loadDeposits(); }
   if (tab === 'users') { loadUsers(); loadFraudAlerts(); }
   if (tab === 'chat') {
     const user = auth.currentUser;
@@ -3003,6 +2991,17 @@ window.switchTab = function(tab) {
 
 // ── WITHDRAWALS MANAGEMENT ──
 let _currentWithdrawFilter = 'pending';
+window.loadDeposits = function() {
+  window._showDepHistory = false;
+  const btn = document.getElementById('depHistBtn');
+  if (btn) btn.textContent = 'Show History';
+  // Trigger a re-render by toggling the flag — listener will pick it up
+  const el = document.getElementById('depositRequests');
+  if (el && el.children.length === 0) {
+    el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">Loading...</div>';
+  }
+};
+
 window.loadWithdrawals = async function(filter) {
   _currentWithdrawFilter = filter || 'pending';
   // Update filter button styles
