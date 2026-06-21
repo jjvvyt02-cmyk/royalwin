@@ -8771,15 +8771,21 @@
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;text-align:center;">
           <div onclick="showPage('wallet')" style="cursor:pointer;">
-            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#c0392b,#e74c3c);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">💳</div>
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#c0392b,#e74c3c);display:flex;align-items:center;justify-content:center;margin:0 auto 0.3rem;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="2" y="5" width="20" height="14" rx="3" fill="white" fill-opacity="0.9"/><rect x="2" y="9" width="20" height="3" fill="#c0392b"/><circle cx="18" cy="15" r="2" fill="#c0392b"/></svg>
+            </div>
             <div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">Wallet</div>
           </div>
           <div onclick="showPage('wallet');setTimeout(()=>switchWalletTab('deposit'),50)" style="cursor:pointer;">
-            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#e67e22,#f39c12);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">🪙</div>
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#e67e22,#f39c12);display:flex;align-items:center;justify-content:center;margin:0 auto 0.3rem;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M12 2C9 2 6 4 6 7v1H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V10a2 2 0 00-2-2h-1V7c0-3-3-5-6-5z" fill="white" fill-opacity="0.9"/><path d="M9 7c0-1.7 1.3-3 3-3s3 1.3 3 3v1H9V7z" fill="#e67e22"/></svg>
+            </div>
             <div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">Deposit</div>
           </div>
           <div onclick="showPage('wallet');setTimeout(()=>switchWalletTab('withdraw'),50)" style="cursor:pointer;">
-            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1a6fa8,#2980b9);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">🏧</div>
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1a6fa8,#2980b9);display:flex;align-items:center;justify-content:center;margin:0 auto 0.3rem;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect x="3" y="4" width="18" height="14" rx="2" fill="white" fill-opacity="0.9"/><rect x="5" y="7" width="14" height="2" rx="1" fill="#2980b9"/><rect x="5" y="11" width="10" height="2" rx="1" fill="#2980b9"/><rect x="5" y="15" width="6" height="1.5" rx="0.75" fill="#2980b9"/><rect x="3" y="18" width="18" height="3" rx="1.5" fill="white" fill-opacity="0.7"/></svg>
+            </div>
             <div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">Withdraw</div>
           </div>
           <div onclick="showPage('vip')" style="cursor:pointer;">
@@ -8793,19 +8799,27 @@
     
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.5rem;grid-auto-rows:1fr;">
       <div onclick="showPage('bethistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 0.8rem;cursor:pointer;display:flex;align-items:center;gap:0.7rem;">
-        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:linear-gradient(135deg,#1565c0,#1e88e5);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">📋</div>
+        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:linear-gradient(135deg,#1565c0,#1e88e5);display:flex;align-items:center;justify-content:center;">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="2" width="16" height="18" rx="2" fill="white" fill-opacity="0.9"/><rect x="6" y="5" width="10" height="1.5" rx="0.75" fill="#1565c0"/><rect x="6" y="8" width="10" height="1.5" rx="0.75" fill="#1565c0"/><rect x="6" y="11" width="7" height="1.5" rx="0.75" fill="#1565c0"/><circle cx="15" cy="16" r="3" fill="#f0c040"/><text x="15" y="17.2" text-anchor="middle" font-size="4.5" fill="#1565c0" font-weight="bold">$</text></svg>
+        </div>
         <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Bet History</div><div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">Win &amp; Loss</div></div>
       </div>
       <div onclick="showPage('history')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 0.8rem;cursor:pointer;display:flex;align-items:center;gap:0.7rem;">
-        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:linear-gradient(135deg,#1b5e20,#43a047);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🔄</div>
+        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:linear-gradient(135deg,#1b5e20,#43a047);display:flex;align-items:center;justify-content:center;">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><rect x="3" y="2" width="16" height="18" rx="2" fill="white" fill-opacity="0.9"/><rect x="6" y="5" width="10" height="1.5" rx="0.75" fill="#1b5e20"/><rect x="6" y="8" width="10" height="1.5" rx="0.75" fill="#1b5e20"/><rect x="6" y="11" width="7" height="1.5" rx="0.75" fill="#1b5e20"/><path d="M17 14 A3 3 0 1 1 14 17" stroke="#f0c040" stroke-width="1.5" fill="none" stroke-linecap="round"/><path d="M14 15.5l0 1.5 1.5 0" stroke="#f0c040" stroke-width="1.2" fill="none" stroke-linecap="round"/></svg>
+        </div>
         <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Transaction</div><div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">All transactions</div></div>
       </div>
       <div onclick="showPage('deposithistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 0.8rem;cursor:pointer;display:flex;align-items:center;gap:0.7rem;">
-        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:linear-gradient(135deg,#b71c1c,#e53935);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🪙</div>
+        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:linear-gradient(135deg,#b71c1c,#e53935);display:flex;align-items:center;justify-content:center;">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M6 2h10a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z" fill="white" fill-opacity="0.9"/><path d="M11 2v7" stroke="#b71c1c" stroke-width="1.5" stroke-linecap="round"/><path d="M8 6l3 3 3-3" stroke="#b71c1c" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="6" y="13" width="10" height="1.5" rx="0.75" fill="#b71c1c"/><rect x="6" y="16" width="7" height="1.5" rx="0.75" fill="#b71c1c"/></svg>
+        </div>
         <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Deposit</div><div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">My deposits</div></div>
       </div>
       <div onclick="showPage('withdrawhistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 0.8rem;cursor:pointer;display:flex;align-items:center;gap:0.7rem;">
-        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:linear-gradient(135deg,#e65100,#fb8c00);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">💸</div>
+        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:linear-gradient(135deg,#e65100,#fb8c00);display:flex;align-items:center;justify-content:center;">
+          <svg width="22" height="22" viewBox="0 0 22 22" fill="none"><path d="M4 8l7-5 7 5v9a2 2 0 01-2 2H6a2 2 0 01-2-2V8z" fill="white" fill-opacity="0.9"/><path d="M9 20v-6h4v6" fill="#e65100"/><circle cx="16" cy="17" r="3.5" fill="#43a047"/><path d="M14.5 17l1 1 2-1.5" stroke="white" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
         <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Withdrawal</div><div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">My withdrawals</div></div>
       </div>
     </div>
