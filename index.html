@@ -8285,8 +8285,14 @@
     </div>
 
     <div class="wallet-tabs">
-      <button class="wallet-tab active" id="tab-deposit" onclick="switchWalletTab('deposit')">⬇️ Deposit</button>
-      <button class="wallet-tab" id="tab-withdraw" onclick="switchWalletTab('withdraw')">⬆️ Withdraw</button>
+      <button class="wallet-tab active" id="tab-deposit" onclick="switchWalletTab('deposit')">
+        <svg width="16" height="16" viewBox="0 0 22 22" fill="none" style="vertical-align:middle;margin-right:4px;"><path d="M6 2h10a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2z" fill="currentColor" fill-opacity="0.9"/><path d="M11 6v7" stroke="var(--bg2)" stroke-width="1.8" stroke-linecap="round"/><path d="M8 10l3 3 3-3" stroke="var(--bg2)" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Deposit
+      </button>
+      <button class="wallet-tab" id="tab-withdraw" onclick="switchWalletTab('withdraw')">
+        <svg width="16" height="16" viewBox="0 0 22 22" fill="none" style="vertical-align:middle;margin-right:4px;"><rect x="3" y="4" width="16" height="14" rx="2" fill="currentColor" fill-opacity="0.9"/><rect x="5" y="7" width="12" height="1.5" rx="0.75" fill="var(--bg2)"/><rect x="5" y="10" width="8" height="1.5" rx="0.75" fill="var(--bg2)"/><rect x="3" y="16" width="16" height="2.5" rx="1.25" fill="currentColor" fill-opacity="0.7"/></svg>
+        Withdraw
+      </button>
     </div>
 
     
@@ -8789,7 +8795,9 @@
             <div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">Withdraw</div>
           </div>
           <div onclick="showPage('vip')" style="cursor:pointer;">
-            <div style="width:44px;height:44px;border-radius:12px;background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">💎</div>
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1b5e20,#43a047);display:flex;align-items:center;justify-content:center;margin:0 auto 0.3rem;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><path d="M5 7l4 8 3-5 3 5 4-8" stroke="white" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </div>
             <div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">VIP</div>
           </div>
         </div>
