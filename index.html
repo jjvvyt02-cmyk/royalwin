@@ -6770,13 +6770,14 @@
         updateBalanceDisplay(currentBal - capturedAmt);
         try {
           const todayKey = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
-          const fbdb = window.fbDB || db;
-          const uid = (window.currentUser || user).uid;
-          fbdb.ref('users/' + uid + '/dailyBets/' + todayKey).transaction(function(val) {
-            return parseFloat(((val || 0) + capturedAmt).toFixed(2));
-          });
-          // Add to pending bets index for efficient game engine settlement
-          fbdb.ref('pendingBetsIndex/wingo' + capturedTimer + 'min/' + uid).set(true);
+          const fbdb = window.fbDB;
+          const uid = user.uid;
+          if (fbdb && uid) {
+            await fbdb.ref('users/' + uid + '/dailyBets/' + todayKey).transaction(function(val) {
+              return parseFloat(((val || 0) + capturedAmt).toFixed(2));
+            });
+            fbdb.ref('pendingBetsIndex/wingo' + capturedTimer + 'min/' + uid).set(true);
+          }
         } catch(e) { console.warn('dailyBets update failed:', e); }
 
         const roundKey = 'wingo' + cgTimer + 'min_round_' + cgRoundByTimer[cgTimer];
@@ -10494,10 +10495,9 @@ window.loadInvitationBonusPage = function() {
   });
 }
 window.loadActivityAwardPage = function() {
-  if (!firebase.apps.length) return;
-  var user = window.currentUser || firebase.auth().currentUser;
-  if (!user) { setTimeout(window.loadActivityAwardPage, 500); return; }
-  var db = window.fbDB || firebase.database();
+  var db = window.fbDB;
+  var user = window.currentUser;
+  if (!db || !user) { setTimeout(window.loadActivityAwardPage, 500); return; }
   var todayKey = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
   var utcKey = new Date().toISOString().split('T')[0];
   var TASKS = [{id:1,target:2000,reward:25},{id:2,target:5000,reward:85},
