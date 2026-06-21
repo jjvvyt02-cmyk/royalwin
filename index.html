@@ -3871,7 +3871,7 @@
     const rows = _depHistData;
     if (!rows.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No deposits yet</div>'; return; }
 
-    const PER_PAGE = 5, MAX_PAGES = 10;
+    const PER_PAGE = 10, MAX_PAGES = 5;
     const limited = rows.slice(0, PER_PAGE * MAX_PAGES);
     const totalPages = Math.min(Math.ceil(limited.length / PER_PAGE), MAX_PAGES);
     if (_depHistPage > totalPages) _depHistPage = 1;
@@ -3948,7 +3948,7 @@
     const rows = _withHistData;
     if (!rows.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No withdrawals yet</div>'; return; }
 
-    const PER_PAGE = 5, MAX_PAGES = 10;
+    const PER_PAGE = 10, MAX_PAGES = 5;
     const limited = rows.slice(0, PER_PAGE * MAX_PAGES);
     const totalPages = Math.min(Math.ceil(limited.length / PER_PAGE), MAX_PAGES);
     if (_withHistPage > totalPages) _withHistPage = 1;
@@ -4261,7 +4261,7 @@
       } catch(e) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Failed to load</div>'; return; }
     }
     if (!_walDepData.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No deposits yet</div>'; return; }
-    const PER_PAGE = 10, MAX_PAGES = 5;
+    const PER_PAGE = 5, MAX_PAGES = 10;
     const limited = _walDepData.slice(0, PER_PAGE * MAX_PAGES);
     const totalPages = Math.min(Math.ceil(limited.length / PER_PAGE), MAX_PAGES);
     if (_walDepPage > totalPages) _walDepPage = 1;
@@ -4312,7 +4312,7 @@
       } catch(e) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Failed to load</div>'; return; }
     }
     if (!_walWithData.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No withdrawals yet</div>'; return; }
-    const PER_PAGE = 10, MAX_PAGES = 5;
+    const PER_PAGE = 5, MAX_PAGES = 10;
     const limited = _walWithData.slice(0, PER_PAGE * MAX_PAGES);
     const totalPages = Math.min(Math.ceil(limited.length / PER_PAGE), MAX_PAGES);
     if (_walWithPage > totalPages) _walWithPage = 1;
@@ -8771,20 +8771,20 @@
         </div>
         <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.5rem;text-align:center;">
           <div onclick="showPage('wallet')" style="cursor:pointer;">
-            <div style="width:44px;height:44px;border-radius:12px;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">💳</div>
-            <div style="font-size:0.65rem;color:var(--muted);">Wallet</div>
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#c0392b,#e74c3c);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">💳</div>
+            <div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">Wallet</div>
           </div>
           <div onclick="showPage('wallet');setTimeout(()=>switchWalletTab('deposit'),50)" style="cursor:pointer;">
-            <div style="width:44px;height:44px;border-radius:12px;background:rgba(240,192,64,0.15);border:1px solid rgba(240,192,64,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">⬇️</div>
-            <div style="font-size:0.65rem;color:var(--muted);">Deposit</div>
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#e67e22,#f39c12);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">🪙</div>
+            <div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">Deposit</div>
           </div>
           <div onclick="showPage('wallet');setTimeout(()=>switchWalletTab('withdraw'),50)" style="cursor:pointer;">
-            <div style="width:44px;height:44px;border-radius:12px;background:rgba(39,174,96,0.15);border:1px solid rgba(39,174,96,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">⬆️</div>
-            <div style="font-size:0.65rem;color:var(--muted);">Withdraw</div>
+            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,#1a6fa8,#2980b9);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">🏧</div>
+            <div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">Withdraw</div>
           </div>
           <div onclick="showPage('vip')" style="cursor:pointer;">
             <div style="width:44px;height:44px;border-radius:12px;background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.2);display:flex;align-items:center;justify-content:center;font-size:1.3rem;margin:0 auto 0.3rem;">💎</div>
-            <div style="font-size:0.65rem;color:var(--muted);">VIP</div>
+            <div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">VIP</div>
           </div>
         </div>
       </div>
@@ -8793,20 +8793,20 @@
     
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem;margin-bottom:0.5rem;grid-auto-rows:1fr;">
       <div onclick="showPage('bethistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 0.8rem;cursor:pointer;display:flex;align-items:center;gap:0.7rem;">
-        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:rgba(39,174,96,0.15);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🎯</div>
-        <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Bet History</div><div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">Win &amp; Loss</div></div>
+        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:linear-gradient(135deg,#1565c0,#1e88e5);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">📋</div>
+        <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Bet History</div><div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">Win &amp; Loss</div></div>
       </div>
       <div onclick="showPage('history')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 0.8rem;cursor:pointer;display:flex;align-items:center;gap:0.7rem;">
-        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:rgba(124,77,255,0.15);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">💰</div>
-        <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Transaction</div><div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">All transactions</div></div>
+        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:linear-gradient(135deg,#1b5e20,#43a047);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🔄</div>
+        <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Transaction</div><div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">All transactions</div></div>
       </div>
       <div onclick="showPage('deposithistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 0.8rem;cursor:pointer;display:flex;align-items:center;gap:0.7rem;">
-        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:rgba(240,192,64,0.15);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">⬇️</div>
-        <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Deposit</div><div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">My deposits</div></div>
+        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:linear-gradient(135deg,#b71c1c,#e53935);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">🪙</div>
+        <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Deposit</div><div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">My deposits</div></div>
       </div>
       <div onclick="showPage('withdrawhistory')" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 0.8rem;cursor:pointer;display:flex;align-items:center;gap:0.7rem;">
-        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:rgba(224,32,32,0.15);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">⬆️</div>
-        <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Withdrawal</div><div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">My withdrawals</div></div>
+        <div style="width:38px;height:38px;min-width:38px;border-radius:10px;background:linear-gradient(135deg,#e65100,#fb8c00);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">💸</div>
+        <div style="min-width:0;"><div style="font-size:0.8rem;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Withdrawal</div><div style="font-size:0.72rem;color:var(--muted);white-space:nowrap;">My withdrawals</div></div>
       </div>
     </div>
 
