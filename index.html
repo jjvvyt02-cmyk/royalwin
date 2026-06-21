@@ -4535,7 +4535,7 @@
     if (infoEl && selectedBonusOption > 0) {
       infoEl.style.display = 'block';
       if (selectedBonusOption === 1) {
-        infoEl.innerHTML = '✅ <strong>8% Bonus Selected</strong> — You get +₹' + b1 + ' bonus. Must wager ₹' + amt.toLocaleString('en-IN') + ' (1x) before withdrawing.';
+        infoEl.innerHTML = '✅ <strong>8% Bonus Selected</strong> — You get +₹' + b1 + ' bonus. Must wager ₹' + (amt * 1.5).toLocaleString('en-IN') + ' (1.5x) before withdrawing.';
       } else if (selectedBonusOption === 2) {
         infoEl.innerHTML = '✅ <strong>15% Bonus Selected</strong> — You get +₹' + b2 + ' bonus. Must wager ₹' + (amt * 2.5).toLocaleString('en-IN') + ' (2.5x) before withdrawing.';
       } else if (selectedBonusOption === 3) {
@@ -8329,7 +8329,7 @@
           <div id="bonusOpt1" onclick="selectBonus(1)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:0.6rem 0.4rem;cursor:pointer;text-align:center;transition:all 0.2s;">
             <div style="font-size:1.6rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;">8%</div>
             <div style="font-size:0.78rem;font-weight:700;margin:0.3rem 0;">Bonus on Deposit</div>
-            <div style="font-size:0.68rem;color:var(--muted);">1x Wager Required</div>
+            <div style="font-size:0.68rem;color:var(--muted);">1.5x Wager Required</div>
           </div>
           <div id="bonusOpt2" onclick="selectBonus(2)" style="background:var(--card);border:2px solid var(--border);border-radius:14px;padding:0.6rem 0.4rem;cursor:pointer;text-align:center;transition:all 0.2s;">
             <div style="font-size:1.6rem;font-weight:900;color:var(--gold);font-family:'Cinzel',serif;">15%</div>
