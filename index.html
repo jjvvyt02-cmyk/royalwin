@@ -6775,6 +6775,8 @@
           fbdb.ref('users/' + uid + '/dailyBets/' + todayKey).transaction(function(val) {
             return parseFloat(((val || 0) + capturedAmt).toFixed(2));
           });
+          // Add to pending bets index for efficient game engine settlement
+          fbdb.ref('pendingBetsIndex/wingo' + capturedTimer + 'min/' + uid).set(true);
         } catch(e) { console.warn('dailyBets update failed:', e); }
 
         const roundKey = 'wingo' + cgTimer + 'min_round_' + cgRoundByTimer[cgTimer];
