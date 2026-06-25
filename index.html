@@ -6770,6 +6770,20 @@
         });
         updateBalanceDisplay(currentBal - capturedAmt);
 
+        // Write dailyBets client-side for instant Activity Award update
+        // Game engine does NOT write dailyBets to avoid double counting
+        try {
+          const todayKey = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
+          const fbdb = window.fbDB;
+          const uid = user.uid;
+          if (fbdb && uid) {
+            fbdb.ref('users/' + uid + '/dailyBets/' + todayKey).transaction(function(val) {
+              return parseFloat(((val || 0) + capturedAmt).toFixed(2));
+            });
+            fbdb.ref('pendingBetsIndex/wingo' + capturedTimer + 'min/' + uid).set(true);
+          }
+        } catch(e) { console.warn('dailyBets update failed:', e); }
+
         const roundKey = 'wingo' + cgTimer + 'min_round_' + cgRoundByTimer[cgTimer];
         const userBetsSnap = await db.ref('users/' + user.uid + '/roundBets/' + roundKey).once('value');
         const prevBets = userBetsSnap.val() || {};
@@ -8220,6 +8234,9 @@
             cgScheduleByTimer[mins] = [];
           }
         });
+      });
+      fbDB.ref('.info/serverTimeOffset').on('value', (snap) => {
+        window._serverTimeOffset = snap.val() || 0;
       });
       fbDB.ref('wingo/bettinglocked').on('value', (snap) => {
         if (snap.val() === true) cgBettingOpen = false;
