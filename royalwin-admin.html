@@ -627,9 +627,10 @@
         <div id="wagerCurrentInfo" style="margin-top:0.8rem;font-size:0.8rem;color:var(--muted);"></div>
       </div>
     </div>
+    </div>
+    <!-- END FINANCE PANEL -->
 
-    <!-- ── USERS TAB ── -->
-    <!-- ── WITHDRAWALS TAB ── -->
+    <!-- ── DEPOSITS TAB ── -->
     <div class="admin-panel" id="panel-deposits">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
         <h2 style="margin:0;font-family:'Cinzel',serif;color:var(--gold);font-size:1.1rem;">⬇️ Deposits</h2>
@@ -677,7 +678,7 @@
     </div>
 
     <!-- ── LIVE BETS TAB ── -->
-    <div class="admin-panel active" id="panel-bets">
+    <div class="admin-panel" id="panel-bets">
       <div style="margin-bottom:1.2rem;">
         <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;margin-bottom:0.3rem;">💰 Live Bet Summary</div>
         <div style="font-size:0.8rem;color:var(--muted);">Real-time bets placed this round — per timer mode</div>
@@ -1016,7 +1017,7 @@ function initAdmin() {
   loadRevenueStats();
   loadCXPayBalance();
   loadWGPayBalance();
-  // Pre-load settings data
+  switchTab('bets');
   setTimeout(() => { loadGiftCodes(); loadCommissionRates(); loadLimits(); }, 1000);
 }
 
