@@ -7965,13 +7965,13 @@
     }
   }, 8000);
   const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyBOw37okdtBnUv3rfnnUg8nE0Vb5LHyl6g",
-    authDomain: "royalwin-32d97.firebaseapp.com",
-    databaseURL: "https://royalwin-32d97-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "royalwin-32d97",
-    storageBucket: "royalwin-32d97.firebasestorage.app",
-    messagingSenderId: "1056996003114",
-    appId: "1:1056996003114:web:8c89f3af4a3b81fd582253",
+    apiKey: "AIzaSyDFiGTDrek9ju6LtmEWZST-PsVjjZiCZ6E",
+    authDomain: "royalwin-22446.firebaseapp.com",
+    databaseURL: "https://royalwin-22446-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "royalwin-22446",
+    storageBucket: "royalwin-22446.firebasestorage.app",
+    messagingSenderId: "441796320694",
+    appId: "1:441796320694:web:f69595cfda590746b87517",
     measurementId: "G-6Q7DX3EG1G"
   };
   function initFirebase() {
@@ -9890,15 +9890,16 @@ function openUSDTModal() {
   modal.style.display = 'flex';
   document.getElementById('usdtConfirmed').style.display = 'none';
   var amt = parseFloat(document.getElementById('depositAmount').value) || 1000;
-  // Deposit rate: ₹95 per USDT
   var usdt = (amt / 95).toFixed(2);
   var amtEl = document.getElementById('usdtModalAmount');
   if (amtEl) amtEl.textContent = 'Send exactly ' + usdt + ' USDT for ₹' + amt.toLocaleString('en-IN') + ' deposit';
   var addrEl = document.getElementById('usdtAddressDisplay');
   var qrEl = document.getElementById('usdtQrCode');
-  if (addrEl) addrEl.textContent = 'Loading...';
+  if (addrEl) addrEl.textContent = 'Generating address...';
   if (qrEl) qrEl.innerHTML = '';
-  var totalSeconds = 5 * 60;
+
+  // Timer element
+  var totalSeconds = 15 * 60;
   var timerEl = document.getElementById('usdtCountdown');
   if (!timerEl) {
     timerEl = document.createElement('div');
@@ -9909,7 +9910,10 @@ function openUSDTModal() {
   }
   timerEl.style.display = 'block';
   window._usdtDepositKey = null;
-  window._usdtTimerInterval = null;
+  window._usdtInvoiceId = null;
+  if (window._usdtTimerInterval) clearInterval(window._usdtTimerInterval);
+  if (window._usdtPollInterval) clearInterval(window._usdtPollInterval);
+
   if (window.currentUser && (window.fbDB || fbDB)) {
     var db = window.fbDB || fbDB;
     db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value').then(function(hasDepSnap) {
@@ -9919,21 +9923,60 @@ function openUSDTModal() {
       else if (selectedBonusOption === 2) { bonusPct = 15;  bonusAmt = Math.round(amt * 0.15);  wagerReq = 2.5; }
       else if (selectedBonusOption === 3 && isFirst) { bonusPct = 100; bonusAmt = Math.round(amt * 1.00);  wagerReq = 10; }
       else if (!isFirst) { bonusPct = 5; bonusAmt = Math.round(amt * 0.05); wagerReq = 1; }
+
+      // Create Firebase deposit record first to get orderId
       db.ref('adminRequests/deposits').push({
         amount: amt, status: 'pending',
-        method: bonusPct > 0 ? `USDT TRC20 · ${bonusPct}% bonus` : 'USDT TRC20',
-        uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
+        method: bonusPct > 0 ? `USDT TRC20 · ${bonusPct}% bonus (QuantumPay)` : 'USDT TRC20 (QuantumPay)',
+        uid: window.currentUser.uid,
+        memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
         username: window.userProfile ? window.userProfile.username : 'Unknown',
         contact: window.userProfile ? (window.userProfile.contact || '') : '',
         isFirstDeposit: isFirst,
         bonusPct: bonusPct, bonusAmt: bonusAmt, wagerReq: wagerReq,
         timestamp: Date.now()
-      }).then(function(ref) {
+      }).then(async function(ref) {
         window._usdtDepositKey = ref.key;
+        const orderId = 'RW' + Date.now() + window.currentUser.uid.substring(0,6);
+        await db.ref('adminRequests/deposits/' + ref.key).update({ orderId: orderId });
+
+        // Create QuantumPay invoice
+        try {
+          const qpResp = await fetch('https://royalwin-api.vercel.app/api/quantumpay-create', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ amount: parseFloat(usdt), ref: orderId, expiryMinutes: 15 })
+          });
+          const qpData = await qpResp.json();
+          if (qpData.address) {
+            window._usdtInvoiceId = qpData.id;
+            if (addrEl) addrEl.textContent = qpData.address;
+            if (qrEl && window.drawQRCode) drawQRCode(qrEl, qpData.address);
+            await db.ref('adminRequests/deposits/' + ref.key).update({ qpInvoiceId: qpData.id, usdtAddress: qpData.address });
+
+            // Poll for payment status every 10 seconds
+            window._usdtPollInterval = setInterval(async function() {
+              try {
+                const pollResp = await fetch('https://royalwin-api.vercel.app/api/quantumpay-status?id=' + qpData.id);
+                const pollData = await pollResp.json();
+                if (pollData.status === 'completed') {
+                  clearInterval(window._usdtPollInterval);
+                  clearInterval(window._usdtTimerInterval);
+                  showToast('✅ Payment detected! Your balance will be credited shortly.');
+                  document.getElementById('usdtConfirmed').style.display = 'block';
+                }
+              } catch(e) {}
+            }, 10000);
+          } else {
+            if (addrEl) addrEl.textContent = 'Failed to generate address. Try again.';
+          }
+        } catch(e) {
+          console.error('QuantumPay error:', e);
+          if (addrEl) addrEl.textContent = 'Failed to connect to payment gateway.';
+        }
       });
     });
   }
-  if (window._usdtTimerInterval) clearInterval(window._usdtTimerInterval);
 
   window._usdtTimerInterval = setInterval(function() {
     totalSeconds--;
