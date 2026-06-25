@@ -6482,7 +6482,8 @@
       const istMidnight = istNow - (istNow % (24 * 60 * 60 * 1000));
       const msSinceMidnightIST = istNow - istMidnight;
       const elapsed = msSinceMidnightIST % periodMs;
-      const remaining = Math.ceil((periodMs - elapsed) / 1000);
+      const remainingMs = periodMs - elapsed;
+      const remaining = Math.floor(remainingMs / 1000);
       const totalSecs = mins * 60;
       const dateStr = `${istDate.getUTCFullYear()}${String(istDate.getUTCMonth()+1).padStart(2,'0')}${String(istDate.getUTCDate()).padStart(2,'0')}`;
       const minutesSinceMidnight = istDate.getUTCHours() * 60 + istDate.getUTCMinutes();
@@ -6502,7 +6503,7 @@
           const roundEl = document.getElementById('cgRoundNum');
           if (roundEl) roundEl.textContent = roundId;
         }
-        if (remaining <= 10 && cgBettingOpenByTimer[mins]) {
+        if (remainingMs <= 10000 && cgBettingOpenByTimer[mins]) {
           cgBettingOpenByTimer[mins] = false;
           cgBettingOpen = false;
           updateCGStatus();
