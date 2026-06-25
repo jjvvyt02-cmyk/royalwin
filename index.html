@@ -6503,7 +6503,13 @@
           const roundEl = document.getElementById('cgRoundNum');
           if (roundEl) roundEl.textContent = roundId;
         }
-        if (remainingMs <= 10000 && cgBettingOpenByTimer[mins]) {
+        // Use server-synced time ONLY for betting close check (prevents drift on 1min timer)
+        const serverNow = Date.now() + (window._serverTimeOffset || 0);
+        const serverIstNow = serverNow + IST_OFFSET;
+        const serverMsSinceMidnight = serverIstNow - (serverIstNow - (serverIstNow % (24*60*60*1000)));
+        const serverRemainingMs = periodMs - (serverMsSinceMidnight % periodMs);
+
+        if (serverRemainingMs <= 10000 && cgBettingOpenByTimer[mins]) {
           cgBettingOpenByTimer[mins] = false;
           cgBettingOpen = false;
           updateCGStatus();
@@ -6550,10 +6556,24 @@
               setTimeout(() => loadMyBetsFromFirebase(false), 800);
             }
           });
+          // Poll every 500ms for faster result detection
+          const pollInterval = setInterval(() => {
+            if (resolved) { clearInterval(pollInterval); return; }
+            db2.ref('wingo/wingo' + mins + 'min/lastResultTime').once('value').then(s => {
+              if (s.val() > roundStartTime - 2000) {
+                resolved = true;
+                clearInterval(pollInterval);
+                try { resultRef.off('value', listener); } catch(e) {}
+                loadAllHistory();
+                setTimeout(() => loadMyBetsFromFirebase(false), 500);
+              }
+            });
+          }, 500);
           // Safety fallback after 10 seconds
           setTimeout(() => {
             if (!resolved) {
               resolved = true;
+              clearInterval(pollInterval);
               try { resultRef.off('value', listener); } catch(e) {}
               loadAllHistory();
               setTimeout(() => loadMyBetsFromFirebase(false), 500);
@@ -8234,6 +8254,9 @@
             cgScheduleByTimer[mins] = [];
           }
         });
+      });
+      fbDB.ref('.info/serverTimeOffset').on('value', (snap) => {
+        window._serverTimeOffset = snap.val() || 0;
       });
       fbDB.ref('.info/serverTimeOffset').on('value', (snap) => {
         window._serverTimeOffset = snap.val() || 0;
