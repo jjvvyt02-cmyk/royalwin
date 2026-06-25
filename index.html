@@ -10537,6 +10537,8 @@ window.loadInvitationBonusPage = function() {
     });
   });
 }
+</script>
+<script>
 window.loadActivityAwardPage = function() {
   var db = window.fbDB || firebase.database();
   var user = window.currentUser || firebase.auth().currentUser;
@@ -10614,6 +10616,7 @@ window.loadActivityAwardPage = function() {
     });
   }, 60 * 60 * 1000);
 }
+</script>
 
 <script>
 var ATTEND_REWARDS = [5, 8, 16, 25, 45, 90, 188];
