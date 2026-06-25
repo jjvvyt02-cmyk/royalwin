@@ -2965,9 +2965,9 @@ window.adminSendChat = async function() {
 // ── SWITCH TAB ──
 window.switchTab = function(tab) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
-  document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.admin-panel').forEach(p => { p.classList.remove('active'); p.style.display='none'; });
   const panel = document.getElementById('panel-' + tab);
-  if (panel) panel.classList.add('active');
+  if (panel) { panel.classList.add('active'); panel.style.display='block'; }
   document.querySelectorAll('.admin-tab').forEach(t => {
     if (t.getAttribute('onclick') && t.getAttribute('onclick').indexOf(tab) !== -1) {
       t.classList.add('active');
