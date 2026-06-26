@@ -2843,7 +2843,7 @@ function loadChatUserList() {
     }
 
     listEl.innerHTML = entries.map(([uid, chat]) => {
-      window._adminChatData = data;
+      window._adminChatData = chats;
       const info = chat.info || {};
       const isUnread = info.unreadByAdmin;
       if (isUnread) totalUnread++;
