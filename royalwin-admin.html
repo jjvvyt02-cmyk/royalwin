@@ -3024,7 +3024,7 @@ window.loadQPDashboard = async function(filter) {
     const r2 = await fetch('https://royalwin-api.vercel.app/api/quantumpay-invoices');
     const invoices = await r2.json();
     // Fetch deposit records from Firebase to get member info
-    const depSnap = await db.ref('adminRequests/deposits').once('value');
+    const depSnap = await get(ref(db, 'adminRequests/deposits'));
     const depData = depSnap.val() || {};
     const depByInvoice = {};
     Object.values(depData).forEach(d => { if (d.qpInvoiceId) depByInvoice[d.qpInvoiceId] = d; });
