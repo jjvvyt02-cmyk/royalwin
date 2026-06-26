@@ -9994,8 +9994,12 @@ function openUSDTModal() {
           const qpData = await qpResp.json();
           if (qpData.address) {
             window._usdtInvoiceId = qpData.id;
+            _activeUsdtAddress = qpData.address;
             if (addrEl) addrEl.textContent = qpData.address;
-            if (qrEl && window.drawQRCode) drawQRCode(qrEl, qpData.address);
+            if (qrEl && typeof QRCode !== 'undefined') {
+              qrEl.innerHTML = '';
+              new QRCode(qrEl, { text: qpData.address, width: 160, height: 160, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
+            }
             await db.ref('adminRequests/deposits/' + ref.key).update({ qpInvoiceId: qpData.id, usdtAddress: qpData.address });
 
             // Poll for payment status every 10 seconds
@@ -10044,6 +10048,7 @@ function openUSDTModal() {
   window._usdtConfirmed = false;
 
   getAssignedUsdtAddress().then(function(addr) {
+    if (_activeUsdtAddress) return; // QuantumPay already set address
     _activeUsdtAddress = addr;
     if (window._usdtDepositKey && (window.fbDB || fbDB)) {
       var db = window.fbDB || fbDB;
