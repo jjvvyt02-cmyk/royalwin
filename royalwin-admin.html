@@ -438,6 +438,7 @@
     <div class="admin-tabs">
       <button class="admin-tab active" onclick="switchTab('bets')">📋 Live Bets</button>
       <button class="admin-tab" onclick="switchTab('finance')">💰 Finance</button>
+      <button class="admin-tab" onclick="switchTab('quantumpay')">💚 QuantumPay</button>
       <button class="admin-tab" onclick="switchTab('deposits')">⬇️ Deposits <span id="depPendingBadge" style="display:none;background:#e02020;color:#fff;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.7rem;margin-left:4px;">0</span></button>
       <button class="admin-tab" onclick="switchTab('withdrawals')">💸 Withdrawals <span id="pendingWithdrawBadge" style="display:none;background:#e02020;color:#fff;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.7rem;margin-left:4px;">0</span></button>
       <button class="admin-tab" onclick="switchTab('users')">👥 Users</button>
@@ -754,6 +755,46 @@
             <button onclick="adminSendChat()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.6rem 1.2rem;color:#000;font-weight:800;cursor:pointer;font-family:'Exo 2',sans-serif;">Send</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <div class="admin-panel" id="panel-quantumpay">
+      <div style="margin-bottom:1.2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.8rem;">
+        <div style="font-size:1.1rem;font-weight:700;color:var(--gold);">💚 QuantumPay — USDT Invoices</div>
+        <div style="display:flex;gap:0.6rem;flex-wrap:wrap;">
+          <button onclick="loadQPDashboard('all')" id="qp-filter-all" class="btn btn-gold" style="padding:0.4rem 1rem;font-size:0.8rem;">All</button>
+          <button onclick="loadQPDashboard('pending')" id="qp-filter-pending" style="padding:0.4rem 1rem;font-size:0.8rem;background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;">Pending</button>
+          <button onclick="loadQPDashboard('completed')" id="qp-filter-completed" style="padding:0.4rem 1rem;font-size:0.8rem;background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;">Completed</button>
+          <button onclick="loadQPDashboard('expired')" id="qp-filter-expired" style="padding:0.4rem 1rem;font-size:0.8rem;background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;">Expired</button>
+          <button onclick="loadQPDashboard(window._qpCurrentFilter||'all')" style="padding:0.4rem 1rem;font-size:0.8rem;background:rgba(38,161,123,0.15);border:1px solid #26a17b;border-radius:8px;color:#26a17b;cursor:pointer;">🔄 Refresh</button>
+        </div>
+      </div>
+      <!-- Stats Row -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:0.8rem;margin-bottom:1.2rem;" id="qpStatsRow">
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem;text-align:center;">
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Total Invoices</div>
+          <div style="font-size:1.4rem;font-weight:800;color:var(--gold);" id="qpStatTotal">—</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem;text-align:center;">
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Pending</div>
+          <div style="font-size:1.4rem;font-weight:800;color:#f0c040;" id="qpStatPending">—</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem;text-align:center;">
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Completed</div>
+          <div style="font-size:1.4rem;font-weight:800;color:#26a17b;" id="qpStatCompleted">—</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem;text-align:center;">
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Total USDT</div>
+          <div style="font-size:1.4rem;font-weight:800;color:#26a17b;" id="qpStatUsdt">—</div>
+        </div>
+        <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem;text-align:center;">
+          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Expired</div>
+          <div style="font-size:1.4rem;font-weight:800;color:#e05050;" id="qpStatExpired">—</div>
+        </div>
+      </div>
+      <!-- Invoices Table -->
+      <div id="qpInvoiceRows" style="display:flex;flex-direction:column;gap:0.6rem;">
+        <div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>
       </div>
     </div>
 
@@ -2963,6 +3004,71 @@ window.adminSendChat = async function() {
   } catch(e) { showToast('❌ Failed to send: ' + e.message); }
 };
 
+// ── QUANTUMPAY DASHBOARD ──
+window._qpCurrentFilter = 'all';
+window.loadQPDashboard = async function(filter) {
+  window._qpCurrentFilter = filter || 'all';
+  // Update filter button styles
+  ['all','pending','completed','expired'].forEach(f => {
+    const btn = document.getElementById('qp-filter-' + f);
+    if (!btn) return;
+    if (f === window._qpCurrentFilter) {
+      btn.className = 'btn btn-gold'; btn.style.cssText = 'padding:0.4rem 1rem;font-size:0.8rem;';
+    } else {
+      btn.className = ''; btn.style.cssText = 'padding:0.4rem 1rem;font-size:0.8rem;background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:8px;color:var(--text);cursor:pointer;';
+    }
+  });
+  const rowsEl = document.getElementById('qpInvoiceRows');
+  if (rowsEl) rowsEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
+  try {
+    const resp = await fetch('https://royalwin-api.vercel.app/api/quantumpay-status?list=1');
+    // list endpoint not available — fetch from Railway directly via Vercel proxy
+    const r2 = await fetch('https://royalwin-quantumpay-production.up.railway.app/api/invoices');
+    const invoices = await r2.json();
+    // Stats
+    const total = invoices.length;
+    const pending = invoices.filter(i => i.status === 'pending').length;
+    const completed = invoices.filter(i => i.status === 'completed').length;
+    const expired = invoices.filter(i => i.status === 'expired').length;
+    const totalUsdt = invoices.filter(i => i.status === 'completed').reduce((s, i) => s + (i.amount || 0), 0).toFixed(2);
+    document.getElementById('qpStatTotal').textContent = total;
+    document.getElementById('qpStatPending').textContent = pending;
+    document.getElementById('qpStatCompleted').textContent = completed;
+    document.getElementById('qpStatExpired').textContent = expired;
+    document.getElementById('qpStatUsdt').textContent = totalUsdt + ' USDT';
+    // Filter
+    const filtered = filter === 'all' ? invoices : invoices.filter(i => i.status === filter);
+    if (!filtered.length) {
+      if (rowsEl) rowsEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No invoices found</div>';
+      return;
+    }
+    const statusColor = { pending: '#f0c040', completed: '#26a17b', expired: '#e05050', detected: '#4b9bf5' };
+    const rows = filtered.map(inv => {
+      const date = new Date(inv.date).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+      const expires = inv.expiresAt ? new Date(inv.expiresAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : '—';
+      const color = statusColor[inv.status] || '#aaa';
+      return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.9rem 1rem;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.5rem;">
+          <div style="font-weight:700;font-size:0.85rem;color:var(--gold);">${inv.id}</div>
+          <div style="font-size:0.75rem;font-weight:700;color:${color};background:${color}22;padding:0.2rem 0.6rem;border-radius:6px;">${inv.status.toUpperCase()}</div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.3rem 1rem;font-size:0.78rem;">
+          <div><span style="color:var(--muted);">Amount:</span> <b>${inv.amount} USDT</b></div>
+          <div><span style="color:var(--muted);">Ref:</span> ${inv.ref || '—'}</div>
+          <div><span style="color:var(--muted);">Address:</span> <span style="font-family:monospace;font-size:0.7rem;">${inv.address || '—'}</span></div>
+          <div><span style="color:var(--muted);">Created:</span> ${date}</div>
+          <div><span style="color:var(--muted);">Expires:</span> ${expires}</div>
+          <div><span style="color:var(--muted);">TX Hash:</span> <span style="font-family:monospace;font-size:0.7rem;">${inv.txHash ? inv.txHash.substring(0,16)+'...' : '—'}</span></div>
+        </div>
+      </div>`;
+    }).join('');
+    if (rowsEl) rowsEl.innerHTML = rows;
+  } catch(e) {
+    if (rowsEl) rowsEl.innerHTML = '<div style="text-align:center;color:#e05050;padding:2rem;">Failed to load invoices. Check Railway is running.</div>';
+    console.error('QP dashboard error:', e);
+  }
+};
+
 // ── SWITCH TAB ──
 window.switchTab = function(tab) {
   document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
@@ -2988,6 +3094,7 @@ window.switchTab = function(tab) {
     if (user) { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadAdminUpiIdSetting(); loadUsdtAddresses(); }
     else { onAuthStateChanged(auth, (u) => { if (u) { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadAdminUpiIdSetting(); loadUsdtAddresses(); } }); }
   }
+  if (tab === 'quantumpay') { loadQPDashboard('all'); }
 };
 
 // ── WITHDRAWALS MANAGEMENT ──
