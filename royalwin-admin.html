@@ -3021,9 +3021,7 @@ window.loadQPDashboard = async function(filter) {
   const rowsEl = document.getElementById('qpInvoiceRows');
   if (rowsEl) rowsEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
   try {
-    const resp = await fetch('https://royalwin-api.vercel.app/api/quantumpay-status?list=1');
-    // list endpoint not available — fetch from Railway directly via Vercel proxy
-    const r2 = await fetch('https://royalwin-quantumpay-production.up.railway.app/api/invoices');
+    const r2 = await fetch('https://royalwin-api.vercel.app/api/quantumpay-invoices');
     const invoices = await r2.json();
     // Fetch deposit records from Firebase to get member info
     const depSnap = await db.ref('adminRequests/deposits').once('value');
