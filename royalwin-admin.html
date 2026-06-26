@@ -2710,7 +2710,7 @@ window.loadUserStats = async function() {
 };
 
 // ── GIFT CODE MANAGER ──
-async function loadGiftCodes() {
+window.loadGiftCodes = async function loadGiftCodes() {
   const el = document.getElementById('giftCodesList');
   if (el) el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.82rem;">Loading...</div>';
   try {
