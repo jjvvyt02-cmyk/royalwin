@@ -4401,6 +4401,10 @@
       if (amtInput) { amtInput.min = 1000; amtInput.value = 1000; amtInput.placeholder = 'Enter amount in ₹'; }
       if (labelEl) labelEl.textContent = 'Or enter custom amount (Min ₹1,000)';
       if (usdtEq) { usdtEq.style.display = 'block'; _updateUsdtEquivalent(); }
+      const upiCards = document.getElementById('upiGatewayCards');
+      const usdtCards = document.getElementById('usdtGatewayCards');
+      if (upiCards) upiCards.style.display = 'none';
+      if (usdtCards) usdtCards.style.display = 'flex';
     } else {
       if (presetsEl) presetsEl.innerHTML = `
         <div class="amount-preset selected" onclick="setAmount(this,'300')">₹300</div>
@@ -4413,6 +4417,10 @@
       if (amtInput) { amtInput.min = 300; amtInput.value = 300; amtInput.placeholder = 'Enter amount in ₹'; }
       if (labelEl) labelEl.textContent = 'Or enter custom amount (₹300 – ₹20,000)';
       if (usdtEq) usdtEq.style.display = 'none';
+      const upiCards = document.getElementById('upiGatewayCards');
+      const usdtCards = document.getElementById('usdtGatewayCards');
+      if (upiCards) upiCards.style.display = 'flex';
+      if (usdtCards) usdtCards.style.display = 'none';
     }
     updateBonusPreview();
     const btn = document.getElementById('depositActionBtn');
@@ -8409,9 +8417,9 @@
           <span style="font-size:1rem;font-weight:800;color:#26a17b;" id="usdtAmountDisplay">0 USDT</span>
         </div>
       </div>
-      <div style="margin-bottom:1rem;">
+      <div style="margin-bottom:1rem;" id="gatewaySection">
         <div class="section-title" style="font-size:0.95rem;margin-bottom:0.6rem;">Select Gateway</div>
-        <div style="display:flex;gap:0.7rem;max-width:400px;">
+        <div id="upiGatewayCards" style="display:flex;gap:0.7rem;max-width:400px;">
           <div class="method-card selected" id="gw-wgpay" onclick="selectDepositGateway('wgpay',this)" style="flex:1;cursor:pointer;">
             <div style="font-weight:700;font-size:0.85rem;">⚡ WGPay</div>
             <div style="font-size:0.65rem;color:var(--muted);margin-top:0.15rem;">Fast UPI</div>
@@ -8419,6 +8427,12 @@
           <div class="method-card" id="gw-cxpay" onclick="selectDepositGateway('cxpay',this)" style="flex:1;cursor:pointer;">
             <div style="font-weight:700;font-size:0.85rem;">💳 CXPay</div>
             <div style="font-size:0.65rem;color:var(--muted);margin-top:0.15rem;">UPI</div>
+          </div>
+        </div>
+        <div id="usdtGatewayCards" style="display:none;gap:0.7rem;max-width:400px;">
+          <div class="method-card selected" style="flex:1;cursor:default;">
+            <div style="font-weight:700;font-size:0.85rem;">💚 QuantumPay</div>
+            <div style="font-size:0.65rem;color:var(--muted);margin-top:0.15rem;">USDT TRC-20</div>
           </div>
         </div>
       </div>
