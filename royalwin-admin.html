@@ -1614,7 +1614,7 @@ window.toggleMaintenance = async function(isOn) {
 };
 
 // ── REVENUE DASHBOARD ──
-async function loadRevenueStats(period = 'today') {
+window.loadRevenueStats = async function loadRevenueStats(period = 'today') {
   // Update period buttons
   ['today','week','month','all'].forEach(p => {
     const btn = document.getElementById('revBtn-' + p);
