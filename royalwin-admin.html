@@ -3070,7 +3070,7 @@ window.loadQPDashboard = async function(filter) {
     }).join('');
     if (rowsEl) rowsEl.innerHTML = rows;
   } catch(e) {
-    if (rowsEl) rowsEl.innerHTML = '<div style="text-align:center;color:#e05050;padding:2rem;">Failed to load invoices. Check Railway is running.</div>';
+    if (rowsEl) rowsEl.innerHTML = `<div style="text-align:center;color:#e05050;padding:2rem;">Error: ${e.message}</div>`;
     console.error('QP dashboard error:', e);
   }
 };
