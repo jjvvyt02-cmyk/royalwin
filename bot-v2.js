@@ -113,9 +113,8 @@ async function runBot() {
         `─────────────────\n` +
         `📌 Period: <b>${nextPeriod}</b>\n` +
         `${colorEmoji(color)} Prediction: <b>${color.toUpperCase()}</b>\n` +
-        `💰 Stake: <b>${stakeLabel}</b>\n` +
+        `💰 Stake: <b>${multiplier}x</b>\n` +
         `─────────────────\n` +
-        `⏰ Round starting soon!\n` +
         `🔗 Play: https://royalwingames.com`;
 
       await sendTelegram(msg);
