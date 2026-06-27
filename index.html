@@ -9943,7 +9943,7 @@ function openUSDTModal() {
   if (qrEl) qrEl.innerHTML = '';
 
   // Timer element
-  var totalSeconds = 15 * 60;
+  var totalSeconds = 5 * 60;
   var timerEl = document.getElementById('usdtCountdown');
   if (!timerEl) {
     timerEl = document.createElement('div');
@@ -9989,7 +9989,7 @@ function openUSDTModal() {
           const qpResp = await fetch('https://royalwin-api.vercel.app/api/quantumpay-create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount: parseFloat(usdt), ref: orderId, expiryMinutes: 15 })
+            body: JSON.stringify({ amount: parseFloat(usdt), ref: orderId, expiryMinutes: 5 })
           });
           const qpData = await qpResp.json();
           if (qpData.address) {
