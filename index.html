@@ -2003,7 +2003,7 @@
       </div>
       
       <div class="ref-invite-row" onclick="copyLink()" style="gap:0.5rem;">
-        <span class="ref-invite-label" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="refLink">https://jjvvyt02-cmyk.github.io/royalwin</span>
+        <span class="ref-invite-label" style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="refLink">https://royalwingames.com?invitationCode=</span>
         <span style="color:var(--gold);font-size:0.9rem;white-space:nowrap;font-weight:700;">Copy Link 🔗</span>
       </div>
     </div>
@@ -3784,7 +3784,7 @@
   function downloadRefQR() {
     const profile = window.userProfile;
     const code = profile && profile.referralCode ? profile.referralCode : (document.getElementById('myRefCode') ? document.getElementById('myRefCode').textContent : 'ROYALWIN');
-    const link = 'https://jjvvyt02-cmyk.github.io/royalwin?invitationCode=' + code;
+    const link = 'https://royalwingames.com?invitationCode=' + code;
     const canvas = document.getElementById('refQrCanvas');
     if (!canvas) { showToast('📋 Share link: ' + link); return; }
     const ctx = canvas.getContext('2d');
