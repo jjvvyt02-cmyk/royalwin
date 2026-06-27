@@ -1,11 +1,13 @@
 const admin = require('firebase-admin');
 const https = require('https');
 
-const serviceAccount = JSON.parse(process.env.FIREBASE_JSON);
-
 admin.initializeApp({
-  credential: admin.credential.cert(serviceAccount),
-  databaseURL: 'https://royalwin-32d97-default-rtdb.asia-southeast1.firebasedatabase.app'
+  credential: admin.credential.cert({
+    projectId: process.env.FIREBASE_PROJECT_ID,
+    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
+    privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n')
+  }),
+  databaseURL: process.env.FIREBASE_DATABASE_URL
 });
 
 const db = admin.database();
@@ -114,7 +116,7 @@ async function runBot() {
         `💰 Stake: <b>${stakeLabel}</b>\n` +
         `─────────────────\n` +
         `⏰ Round starting soon!\n` +
-        `🔗 Play: https://jjvvyt02-cmyk.github.io/royalwin/`;
+        `🔗 Play: https://royalwingames.com`;
 
       await sendTelegram(msg);
       console.log(`Prediction: Period ${nextPeriod} → ${color} | ${multiplier}x`);
