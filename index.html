@@ -905,44 +905,6 @@
     100% { transform: translateX(-50%); }
   }
 
-  /* ─── QR DEPOSIT ─── */
-  .qr-modal {
-    display: none; position: fixed; inset: 0; z-index: 650;
-    background: rgba(0,0,0,0.88); backdrop-filter: blur(10px);
-    align-items: center; justify-content: center;
-  }
-  .qr-modal.open { display: flex; }
-  .qr-card {
-    background: var(--card); border: 1px solid var(--border); border-radius: 20px;
-    padding: 2rem; width: 100%; max-width: 380px; text-align: center;
-    animation: scaleIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
-    position: relative;
-  }
-  .qr-close { position: absolute; top: 1rem; right: 1rem; background: none; border: 1px solid var(--border); color: var(--muted); border-radius: 6px; padding: 0.3rem 0.7rem; cursor: pointer; font-family: 'Exo 2', sans-serif; }
-  .qr-title { font-family: 'Cinzel', serif; font-size: 1.2rem; color: var(--gold); margin-bottom: 0.3rem; }
-  .qr-sub { color: var(--muted); font-size: 0.82rem; margin-bottom: 1.5rem; }
-  .qr-box {
-    background: #fff; border-radius: 16px; padding: 1rem;
-    display: inline-block; margin-bottom: 1.2rem;
-    box-shadow: 0 0 40px rgba(240,192,64,0.15);
-  }
-  .qr-upi-id {
-    background: var(--bg3); border: 1px dashed rgba(240,192,64,0.3);
-    border-radius: 10px; padding: 0.7rem 1rem; margin-bottom: 1.2rem;
-    display: flex; align-items: center; justify-content: space-between; gap: 1rem;
-  }
-  .qr-upi-text { font-size: 0.9rem; color: var(--text); font-weight: 600; }
-  .qr-steps { text-align: left; background: var(--bg3); border-radius: 10px; padding: 1rem 1.2rem; margin-bottom: 1.2rem; }
-  .qr-steps h4 { font-size: 0.8rem; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.6rem; }
-  .qr-step { display: flex; gap: 0.7rem; align-items: flex-start; margin-bottom: 0.5rem; font-size: 0.82rem; color: var(--text); }
-  .qr-step-num { background: rgba(240,192,64,0.15); color: var(--gold); border-radius: 50%; width: 20px; height: 20px; display: flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
-  .qr-amt-row { display: flex; gap: 0.5rem; margin-bottom: 1rem; }
-  .qr-amt-input { flex: 1; background: var(--bg3); border: 1px solid var(--border); border-radius: 8px; padding: 0.6rem 1rem; color: var(--text); font-family: 'Exo 2', sans-serif; font-size: 0.9rem; outline: none; }
-  .qr-amt-input:focus { border-color: rgba(240,192,64,0.4); }
-  .qr-timer { background: rgba(240,192,64,0.06); border: 1px solid rgba(240,192,64,0.15); border-radius: 8px; padding: 0.5rem 1rem; font-size: 0.82rem; color: var(--gold); margin-bottom: 1rem; }
-  .qr-timer span { font-weight: 800; font-size: 1rem; }
-  .qr-confirmed { display: none; padding: 1.5rem 0; }
-  .qr-confirmed .big-check { font-size: 3rem; margin-bottom: 0.5rem; }
 
   /* ─── MOBILE BOTTOM NAV ─── */
   .mobile-nav {
@@ -1496,7 +1458,7 @@
     .wheel-canvas { width: 220px !important; height: 220px !important; }
 
     /* ── QR MODAL ── */
-    .qr-card { padding: 1.2rem !important; margin: 0 0.8rem !important; max-width: calc(100vw - 1.6rem) !important; }
+
 
     /* ── TOAST ── */
     .toast {
@@ -5818,117 +5780,7 @@
 
   function showTicker() { /* removed */ }
   function buildTicker() { /* removed */ }
-  let qrTimerInterval = null;
 
-  var _qrInstance = null;
-  function drawQRCode(data) {
-    const container = document.getElementById('qrCanvas');
-    if (!container) return;
-    try {
-      container.innerHTML = '';
-      if (typeof QRCode !== 'undefined') {
-        _qrInstance = new QRCode(container, {
-          text: 'upi://pay?pa=' + data,
-          width: 180, height: 180,
-          colorDark: '#000000', colorLight: '#ffffff',
-          correctLevel: QRCode.CorrectLevel.M
-        });
-      }
-    } catch(e) { /* suppressed */ }
-  }
-  var _activeUpiId = 'royalwin@upi';
-  function loadAdminUpiIds(cb) {
-    const db = window.fbDB || fbDB;
-    if (!db) { cb([{id:'royalwin@upi', label:'Default'}]); return; }
-    db.ref('settings/upiIds').once('value').then(snap => {
-      const data = snap.val();
-      if (data && typeof data === 'object') {
-        const ids = Object.values(data).filter(u => u.active && u.id);
-        if (ids.length > 0) { cb(ids); return; }
-      }
-      db.ref('settings/upiId').once('value').then(s => {
-        cb([{id: s.val() || 'royalwin@upi', label:'Default'}]);
-      });
-    }).catch(() => cb([{id:'royalwin@upi', label:'Default'}]));
-  }
-
-  async function getAssignedUpiId() {
-    const db = window.fbDB || fbDB;
-    if (!db) return 'royalwin@upi';
-    try {
-      const snap = await db.ref('settings/upiIds').once('value');
-      const data = snap.val();
-      if (data && typeof data === 'object') {
-        const ids = Object.values(data).filter(u => u.active && u.id);
-        if (ids.length > 0) {
-          const random = ids[Math.floor(Math.random() * ids.length)];
-          return random.id;
-        }
-      }
-      const single = await db.ref('settings/upiId').once('value');
-      return single.val() || 'royalwin@upi';
-    } catch(e) {
-      return 'royalwin@upi';
-    }
-  }
-
-  function openQR() {
-    showToast('⚠️ Please use Pay Now button to deposit.');
-  }
-  async function confirmQRPayment() {
-    showToast('⚠️ Please use Pay Now button to deposit.');
-  }
-
-  function closeQR() {
-    document.getElementById('qrModal').classList.remove('open');
-    clearInterval(qrTimerInterval);
-  }
-
-  function updateQR() {
-    const amt = parseInt(document.getElementById('qrAmount').value) || 500;
-    if (amt < 300) { showToast('⚠️ Minimum deposit is ₹300'); return; }
-    if (amt > 20000) { showToast('⚠️ Maximum deposit is ₹20,000'); return; }
-    getAssignedUpiId().then(function(upiId) {
-      _activeUpiId = upiId;
-      const el = document.getElementById('qrUpiDisplay');
-      if (el) el.textContent = upiId;
-      const stepEl = document.getElementById('qrUpiStep');
-      if (stepEl) stepEl.textContent = upiId;
-      const qrContainer = document.getElementById('qrCanvas');
-      if (qrContainer && typeof QRCode !== 'undefined') {
-        qrContainer.innerHTML = '';
-        new QRCode(qrContainer, {
-          text: 'upi://pay?pa=' + upiId + '&am=' + amt + '&cu=INR',
-          width: 180, height: 180,
-          colorDark: '#000000', colorLight: '#ffffff',
-          correctLevel: QRCode.CorrectLevel.M
-        });
-      }
-    });
-  }
-
-  function copyUPI() {
-    const id = _activeUpiId || 'royalwin@upi';
-    if (navigator.clipboard) { navigator.clipboard.writeText(id).then(() => showToast('📋 Copied: ' + id)).catch(() => _fbCopy(id)); }
-    else { _fbCopy(id); }
-  }
-
-  function startQRTimer() {
-    let secs = 600; // 10 minutes
-    clearInterval(qrTimerInterval);
-    qrTimerInterval = setInterval(() => {
-      secs--;
-      const m = Math.floor(secs / 60).toString().padStart(2, '0');
-      const s = (secs % 60).toString().padStart(2, '0');
-      const el = document.getElementById('qrTimerVal');
-      if (el) el.textContent = m + ':' + s;
-      if (secs <= 0) {
-        clearInterval(qrTimerInterval);
-        if (el) el.textContent = 'Expired';
-        showToast('⚠️ QR expired. Please generate a new one.');
-      }
-    }, 1000);
-  }
 
     const VERCEL_API_URL = 'https://royalwin-api.vercel.app';
 
@@ -6023,40 +5875,7 @@
     }
   }
 
-  async function confirmQRPayment() {
-    const amt = parseFloat(document.getElementById('qrAmount').value || 500);
-    if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
-    try {
-      const db = window.fbDB || fbDB;
-      const hasDepSnap = await db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value');
-      const isFirst = !hasDepSnap.val();
-      let bonusPct = 0, bonusAmt = 0, wagerReq = 1;
-      if (selectedBonusOption === 1) { bonusPct = 8;   bonusAmt = Math.round(amt * 0.08);  wagerReq = 1.5; }
-      else if (selectedBonusOption === 2) { bonusPct = 15;  bonusAmt = Math.round(amt * 0.15);  wagerReq = 2.5; }
-      else if (selectedBonusOption === 3 && isFirst) { bonusPct = 100; bonusAmt = Math.round(amt * 1.00);  wagerReq = 10; }
-      else if (!isFirst) { bonusPct = 5; bonusAmt = Math.round(amt * 0.05); wagerReq = 1; }
-      await db.ref('adminRequests/deposits').push({
-        amount: amt, status: 'pending',
-        method: bonusPct > 0 ? `UPI QR · ${bonusPct}% bonus` : 'UPI QR',
-        uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
-        username: window.userProfile ? window.userProfile.username : 'Unknown',
-        contact: window.userProfile ? (window.userProfile.contact || window.userProfile.mobile || window.userProfile.email || '') : '',
-        referredBy: window.userProfile ? (window.userProfile.referredBy || '') : '',
-        isFirstDeposit: isFirst,
-        assignedUpiId: _activeUpiId || 'royalwin@upi',
-        bonusPct, bonusAmt, wagerReq,
-        timestamp: Date.now()
-      });
-      await db.ref('users/' + window.currentUser.uid + '/depositRequests').push({
-        amount: amt, status: 'pending', method: 'UPI QR', timestamp: Date.now()
-      });
-      document.getElementById('qrConfirmed').style.display = 'block';
-      document.getElementById('qrConfirmMsg').textContent = '₹' + amt.toLocaleString('en-IN') + ' payment submitted! Admin will verify and credit shortly.';
-      clearInterval(qrTimerInterval);
-      showToast('✅ Payment submitted! Awaiting verification.');
-      setTimeout(() => closeQR(), 4000);
-    } catch(e) { showToast('❌ Error: ' + e.message); }
-  }
+
   const numColors = ['violet-red','#27ae60','#e02020','#27ae60','#e02020','violet-green','#e02020','#27ae60','#e02020','#27ae60'];
   const numBigSmall = ['Small','Small','Small','Small','Small','Big','Big','Big','Big','Big'];
   let cgSettings = { fee: 0.04, minBet: 10, maxBet: 50000, colorPayout: 2, violetPayout: 4.5, numPayout: 9, bigSmallPayout: 1.5 };
@@ -9579,51 +9398,7 @@
   </div>
 </div>
 
-<div class="qr-modal" id="qrModal">
-  <div class="qr-card">
-    <button class="qr-close" onclick="closeQR()">✕</button>
-    <div class="qr-title">📱 UPI Deposit</div>
-    <div class="qr-sub">Scan QR code or copy UPI ID to pay</div>
 
-    
-    <div id="upiSelector" style="display:none;margin-bottom:0.8rem;">
-      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Select payment account:</div>
-      <div id="upiOptions" style="display:flex;flex-direction:column;gap:0.4rem;"></div>
-    </div>
-
-    <div class="qr-amt-row">
-      <input class="qr-amt-input" type="number" id="qrAmount" placeholder="Enter amount (₹300–₹20,000)" min="300" max="20000" value="500">
-      <button class="btn btn-gold" style="padding:0.6rem 1rem;font-size:0.85rem;white-space:nowrap;" onclick="updateQR()">Set</button>
-    </div>
-
-    <div class="qr-box">
-      <div id="qrCanvas" style="width:180px;height:180px;background:#fff;border-radius:8px;display:flex;align-items:center;justify-content:center;"></div>
-    </div>
-
-    <div class="qr-upi-id">
-      <div class="qr-upi-text" id="qrUpiDisplay">Loading...</div>
-      <button class="copy-btn" onclick="copyUPI()">📋 Copy</button>
-    </div>
-
-    <div class="qr-timer">⏳ QR expires in <span id="qrTimerVal">10:00</span></div>
-
-    <div class="qr-steps">
-      <h4><span data-t="wallet.howtopay">How to Pay</span></h4>
-      <div class="qr-step"><div class="qr-step-num">1</div><div>Open any UPI app (GPay, PhonePe, Paytm, BHIM)</div></div>
-      <div class="qr-step"><div class="qr-step-num">2</div><div>Scan the QR code or send to <strong id="qrUpiStep">royalwin@upi</strong></div></div>
-      <div class="qr-step"><div class="qr-step-num">3</div><div>Enter the exact amount and complete payment</div></div>
-      <div class="qr-step"><div class="qr-step-num">4</div><div>Click "I've Paid" below — balance credits in seconds</div></div>
-    </div>
-
-    <button class="btn btn-gold" style="width:100%;padding:0.85rem;" onclick="confirmQRPayment()">✅ I've Paid</button>
-
-    <div class="qr-confirmed" id="qrConfirmed">
-      <div class="big-check">✅</div>
-      <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--green);margin-bottom:0.3rem;"><span data-t="wallet.paid">Payment Received!</span></div>
-      <div style="color:var(--muted);font-size:0.85rem;" id="qrConfirmMsg">₹500 has been credited to your wallet.</div>
-    </div>
-  </div>
-</div>
 
 <div class="mobile-nav" id="mobileNav">
 
