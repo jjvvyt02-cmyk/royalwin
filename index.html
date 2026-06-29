@@ -5889,7 +5889,7 @@
 
   const numColors = ['violet-red','#27ae60','#e02020','#27ae60','#e02020','violet-green','#e02020','#27ae60','#e02020','#27ae60'];
   const numBigSmall = ['Small','Small','Small','Small','Small','Big','Big','Big','Big','Big'];
-  let cgSettings = { fee: 0.04, minBet: 10, maxBet: 50000, colorPayout: 2, violetPayout: 4.5, numPayout: 9, bigSmallPayout: 1.5 };
+  let cgSettings = { fee: 0.04, minBet: 10, maxBet: 50000, colorPayout: 2, violetPayout: 4.5, numPayout: 9, bigSmallPayout: 2, colorOnVioletPayout: 1.5 };
   async function loadGameSettings() {
     try {
       const db = window.fbDB || fbDB;
@@ -5993,21 +5993,25 @@
             const roundBets = bets.filter(b => b.round === round);
             for (const bet of roundBets) {
               const winNum = parseInt(roundData.num);
-              const winColorRaw = roundData.color;
+              const _numColorsRaw = {0:'violet-red',1:'green',2:'red',3:'green',4:'red',5:'violet-green',6:'red',7:'green',8:'red',9:'green'};
+              const winColorRaw = _numColorsRaw[winNum];
               const FEE = cgSettings ? cgSettings.fee : 0.04;
               const actualBet = bet.actualBet || Math.round((bet.bet || 0) * (1 - FEE));
               let betWon = false, betWinAmt = 0;
               const CP = cgSettings ? cgSettings.colorPayout : 2;
               const VP = cgSettings ? cgSettings.violetPayout : 4.5;
               const NP = cgSettings ? cgSettings.numPayout : 9;
-              const BSP = cgSettings ? cgSettings.bigSmallPayout : 2;
+              const BSP = cgSettings ? cgSettings.colorOnVioletPayout : 1.5;
+              const BSPP = cgSettings ? cgSettings.bigSmallPayout : 2;
               const sc = bet.savedColor, sn = bet.savedNum, sb = bet.savedBS;
-              if (sc === 'violet' && (winColorRaw === 'violet' || winColorRaw === 'violet-red' || winColorRaw === 'violet-green')) { betWon=true; betWinAmt=actualBet*VP; }
-              else if (sc === 'red' && (winColorRaw === 'red' || winColorRaw === 'violet-red')) { betWon=true; betWinAmt=actualBet*(winColorRaw==='violet-red'?BSP:CP); }
-              else if (sc === 'green' && (winColorRaw === 'green' || winColorRaw === 'violet-green')) { betWon=true; betWinAmt=actualBet*(winColorRaw==='violet-green'?BSP:CP); }
+              if (sc === 'violet' && (winColorRaw === 'violet-red' || winColorRaw === 'violet-green')) { betWon=true; betWinAmt=actualBet*VP; }
+              else if (sc === 'red' && winColorRaw === 'red') { betWon=true; betWinAmt=actualBet*CP; }
+              else if (sc === 'red' && winColorRaw === 'violet-red') { betWon=true; betWinAmt=actualBet*BSP; }
+              else if (sc === 'green' && winColorRaw === 'green') { betWon=true; betWinAmt=actualBet*CP; }
+              else if (sc === 'green' && winColorRaw === 'violet-green') { betWon=true; betWinAmt=actualBet*BSP; }
               else if (sn !== null && sn !== undefined && parseInt(sn) === winNum) { betWon=true; betWinAmt=actualBet*NP; }
-              else if (sb === 'big' && winNum >= 5) { betWon=true; betWinAmt=actualBet*BSP; }
-              else if (sb === 'small' && winNum <= 4) { betWon=true; betWinAmt=actualBet*BSP; }
+              else if (sb === 'big' && winNum >= 5) { betWon=true; betWinAmt=actualBet*BSPP; }
+              else if (sb === 'small' && winNum <= 4) { betWon=true; betWinAmt=actualBet*BSPP; }
               const histLabel = (winColorRaw==='violet-red'||winColorRaw==='violet-green') ? 'violet' : winColorRaw;
               const betRecord = {
                 round: bet.round, bet: bet.bet, actualBet,
@@ -6124,15 +6128,16 @@
                     const CP = cgSettings ? cgSettings.colorPayout : 2;
                     const VP = cgSettings ? cgSettings.violetPayout : 4.5;
                     const NP = cgSettings ? cgSettings.numPayout : 9;
-                    const BSP = cgSettings ? cgSettings.bigSmallPayout : 2;
+                    const BSP = cgSettings ? cgSettings.colorOnVioletPayout : 1.5;
+                    const BSPP = cgSettings ? cgSettings.bigSmallPayout : 2;
                     if (savedColor === 'violet' && (winColorRaw === 'violet-red' || winColorRaw === 'violet-green')) { betWon=true; betWinAmt=actualBet*VP; }
                     else if (savedColor === 'red' && winColorRaw === 'red') { betWon=true; betWinAmt=actualBet*CP; }
                     else if (savedColor === 'green' && winColorRaw === 'green') { betWon=true; betWinAmt=actualBet*CP; }
                     else if (savedColor === 'red' && winColorRaw === 'violet-red') { betWon=true; betWinAmt=actualBet*BSP; }
                     else if (savedColor === 'green' && winColorRaw === 'violet-green') { betWon=true; betWinAmt=actualBet*BSP; }
                     else if (savedNum !== null && savedNum === winNum) { betWon=true; betWinAmt=actualBet*NP; }
-                    else if (savedBS === 'big' && winNum >= 5) { betWon=true; betWinAmt=actualBet*BSP; }
-                    else if (savedBS === 'small' && winNum <= 4) { betWon=true; betWinAmt=actualBet*BSP; }
+                    else if (savedBS === 'big' && winNum >= 5) { betWon=true; betWinAmt=actualBet*BSPP; }
+                    else if (savedBS === 'small' && winNum <= 4) { betWon=true; betWinAmt=actualBet*BSPP; }
                     const betRecord = {
                       round: bet.round, bet: bet.bet, actualBet,
                       selection: bet.selection, selColor: bet.selColor,
@@ -6875,11 +6880,11 @@
     if (savedSelectedColor === 'violet' && (winColor === 'violet-red' || winColor === 'violet-green')) { won=true; winAmt=actualBet*cgSettings.violetPayout; }
     else if (savedSelectedColor === 'red' && winColor === 'red') { won=true; winAmt=actualBet*cgSettings.colorPayout; }
     else if (savedSelectedColor === 'green' && winColor === 'green') { won=true; winAmt=actualBet*cgSettings.colorPayout; }
-    else if (savedSelectedColor === 'red' && winColor === 'violet-red') { won=true; winAmt=actualBet*cgSettings.bigSmallPayout; }
-    else if (savedSelectedColor === 'green' && winColor === 'violet-green') { won=true; winAmt=actualBet*cgSettings.bigSmallPayout; }
+    else if (savedSelectedColor === 'red' && winColor === 'violet-red') { won=true; winAmt=actualBet*cgSettings.colorOnVioletPayout; }
+    else if (savedSelectedColor === 'green' && winColor === 'violet-green') { won=true; winAmt=actualBet*cgSettings.colorOnVioletPayout; }
     else if (savedSelectedNum !== null && savedSelectedNum === winNum) { won=true; winAmt=actualBet*cgSettings.numPayout; }
-    else if (savedSelectedBS === 'big' && winNum >= 5) { won=true; winAmt=actualBet*cgSettings.colorPayout; }
-    else if (savedSelectedBS === 'small' && winNum <= 4) { won=true; winAmt=actualBet*cgSettings.colorPayout; }
+    else if (savedSelectedBS === 'big' && winNum >= 5) { won=true; winAmt=actualBet*cgSettings.bigSmallPayout; }
+    else if (savedSelectedBS === 'small' && winNum <= 4) { won=true; winAmt=actualBet*cgSettings.bigSmallPayout; }
     const histBg = winColor === 'violet-red'
       ? 'linear-gradient(135deg, #7c4dff 50%, #e02020 50%)'
       : winColor === 'violet-green'
@@ -6914,8 +6919,8 @@
           if (pendingBet.savedColor === 'violet' && (winColor === 'violet-red' || winColor === 'violet-green')) { betWon=true; betWinAmt=betActual*cgSettings.violetPayout; }
           else if (pendingBet.savedColor === 'red' && winColor === 'red') { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
           else if (pendingBet.savedColor === 'green' && winColor === 'green') { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
-          else if (pendingBet.savedColor === 'red' && winColor === 'violet-red') { betWon=true; betWinAmt=betActual*cgSettings.bigSmallPayout; }
-          else if (pendingBet.savedColor === 'green' && winColor === 'violet-green') { betWon=true; betWinAmt=betActual*cgSettings.bigSmallPayout; }
+          else if (pendingBet.savedColor === 'red' && winColor === 'violet-red') { betWon=true; betWinAmt=betActual*cgSettings.colorOnVioletPayout; }
+          else if (pendingBet.savedColor === 'green' && winColor === 'violet-green') { betWon=true; betWinAmt=betActual*cgSettings.colorOnVioletPayout; }
           else if (pendingBet.savedNum !== null && pendingBet.savedNum !== undefined && parseInt(pendingBet.savedNum) === winNum) { betWon=true; betWinAmt=betActual*cgSettings.numPayout; }
           else if (pendingBet.savedBS === 'big' && winNum >= 5) { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
           else if (pendingBet.savedBS === 'small' && winNum <= 4) { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
@@ -10880,4 +10885,3 @@ window.claimVipMonthly = function() {
 </script>
 </body>
 </html>
-  
