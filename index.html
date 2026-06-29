@@ -3098,6 +3098,8 @@
     if (!user || !db) { showToast('🔐 Please sign in'); return; }
 
     try {
+      const __depCheck = await db.ref('users/' + user.uid + '/hasDeposited').once('value');
+      if (!__depCheck.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
       const snap = await db.ref('users/' + user.uid + '/vip').once('value');
       const vipData = snap.val() || { exp: 0, weeklyClaimedAt: 0, monthlyClaimedAt: 0 };
       const exp = vipData.exp || 0;
@@ -5576,6 +5578,11 @@
 
   async function spinWheel() {
     if (spinning) return;
+    const _spinUser = window.currentUser, _spinDb = window.fbDB;
+    if (_spinUser && _spinDb) {
+      const _depSnap = await _spinDb.ref('users/' + _spinUser.uid + '/hasDeposited').once('value');
+      if (!_depSnap.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
+    }
     spinning = true;
     document.getElementById('spinBtn').disabled = true;
     document.getElementById('wheelResult').style.display = 'none';
@@ -10470,6 +10477,8 @@ function _attendRenderUI(streak, alreadyClaimed, totalEarned) {
 window.claimAttendance = function() {
   var user = window.currentUser, db = window.fbDB;
   if (!user || !db) { showToast('🔐 Please sign in first'); return; }
+  db.ref('users/' + user.uid + '/hasDeposited').once('value').then(function(__depSnap) {
+    if (!__depSnap.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
   var today = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0], yesterday = new Date(Date.now() + 5.5*60*60*1000 - 86400000).toISOString().split('T')[0];
   db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
     var data = snap.val() || {}, streak = data.streak || 0, lastCheckin = data.lastCheckin || '', totalEarned = parseFloat(data.totalEarned || 0);
@@ -10574,6 +10583,8 @@ function _getVipLevelData(exp) {
 window.claimVipWeekly = function() {
   var user=window.currentUser, db=window.fbDB;
   if (!user||!db) { showToast('🔐 Please sign in first'); return; }
+  db.ref('users/'+user.uid+'/hasDeposited').once('value').then(function(__d) {
+    if (!__d.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
   var weekStart=new Date(); weekStart.setHours(0,0,0,0); weekStart.setDate(weekStart.getDate()-weekStart.getDay());
   var weekKey=weekStart.toISOString().split('T')[0];
   db.ref('users/'+user.uid+'/vip/claimedWeekly/'+weekKey).once('value').then(function(snap) {
@@ -10608,6 +10619,8 @@ window.claimVipMonthly = function() {
   var user=window.currentUser, db=window.fbDB;
   if (!user||!db) { showToast('🔐 Please sign in first'); return; }
   var now=new Date(), monthKey=now.getFullYear()+'-'+(now.getMonth()+1);
+  db.ref('users/'+user.uid+'/hasDeposited').once('value').then(function(__dm) {
+    if (!__dm.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
   db.ref('users/'+user.uid+'/vip/claimedMonthly/'+monthKey).once('value').then(function(snap) {
     if (snap.val()) { showToast('⚠️ Already claimed monthly bonus!'); return; }
     db.ref('users/'+user.uid+'/vip/exp').once('value').then(function(expSnap) {
