@@ -10479,7 +10479,7 @@ window.claimAttendance = function() {
   if (!user || !db) { showToast('🔐 Please sign in first'); return; }
   db.ref('users/' + user.uid + '/hasDeposited').once('value').then(function(__depSnap) {
     if (!__depSnap.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
-  var today = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0], yesterday = new Date(Date.now() + 5.5*60*60*1000 - 86400000).toISOString().split('T')[0];
+    var today = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0], yesterday = new Date(Date.now() + 5.5*60*60*1000 - 86400000).toISOString().split('T')[0];
   db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
     var data = snap.val() || {}, streak = data.streak || 0, lastCheckin = data.lastCheckin || '', totalEarned = parseFloat(data.totalEarned || 0);
     if (lastCheckin === today) { showToast('⚠️ Already checked in today!'); return; }
@@ -10511,6 +10511,7 @@ window.claimAttendance = function() {
       });
     });
   }).catch(function(e) { showToast('❌ '+e.message); });
+  }); // end hasDeposited check
 };
 window.claimInviteTier = function(tierNum, reward) {
   var user = window.currentUser, db = window.fbDB;
