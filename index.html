@@ -10584,33 +10584,35 @@ function _getVipLevelData(exp) {
   return level;
 }
 window.claimVipWeekly = function() {
-  var user=window.currentUser, db=window.fbDB;
+  var user=window.currentUser, db=window.fbDB||(typeof fbDB!=='undefined'?fbDB:null);
   if (!user||!db) { showToast('🔐 Please sign in first'); return; }
-  db.ref('users/'+user.uid+'/hasDeposited').once('value').then(function(__d) {
-    if (!__d.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
+  if (window.userProfile && !window.userProfile.hasDeposited) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
   var weekStart=new Date(); weekStart.setHours(0,0,0,0); weekStart.setDate(weekStart.getDate()-weekStart.getDay());
   var weekKey=weekStart.toISOString().split('T')[0];
-  db.ref('users/'+user.uid+'/vip/claimedWeekly/'+weekKey).once('value').then(function(snap) {
-    if (snap.val()) { showToast('⚠️ Already claimed weekly bonus!'); return; }
-    db.ref('users/'+user.uid+'/vip/exp').once('value').then(function(expSnap) {
-      var level=_getVipLevelData(parseFloat(expSnap.val()||0)), reward=level.weekly;
-      db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
-        var newBal=parseFloat(((balSnap.val()||0)+reward).toFixed(2));
-        var updates={}; updates['users/'+user.uid+'/vip/claimedWeekly/'+weekKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
-        db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
-          var w=wSnap.val()||{required:0,completed:0,startedAt:0};
-          var isNew=!w.startedAt||w.startedAt===0;
-          var newWager={
-            required:parseFloat((parseFloat(w.required||0)+reward).toFixed(2)),
-            completed:parseFloat(w.completed||0),
-            startedAt:isNew?Date.now():w.startedAt
-          };
-          db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
-            db.ref().update(updates).then(function() {
-              db.ref('users/'+user.uid+'/transactions').push({type:'vip_weekly',amount:reward,details:level.name+' VIP Weekly Bonus (1x wager)',balance:newBal,timestamp:Date.now()});
-              if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-              showToast('👑 Weekly VIP bonus! +₹'+reward+' credited! (1x wager required)');
-              if (typeof loadVipPage==='function') loadVipPage();
+  db.ref('users/'+user.uid+'/hasDeposited').once('value').then(function(__d) {
+    if (!__d.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
+    db.ref('users/'+user.uid+'/vip/claimedWeekly/'+weekKey).once('value').then(function(snap) {
+      if (snap.val()) { showToast('⚠️ Already claimed weekly bonus!'); return; }
+      db.ref('users/'+user.uid+'/vip/exp').once('value').then(function(expSnap) {
+        var level=_getVipLevelData(parseFloat(expSnap.val()||0)), reward=level.weekly;
+        db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
+          var newBal=parseFloat(((balSnap.val()||0)+reward).toFixed(2));
+          var updates={}; updates['users/'+user.uid+'/vip/claimedWeekly/'+weekKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
+          db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
+            var w=wSnap.val()||{required:0,completed:0,startedAt:0};
+            var isNew=!w.startedAt||w.startedAt===0;
+            var newWager={
+              required:parseFloat((parseFloat(w.required||0)+reward).toFixed(2)),
+              completed:parseFloat(w.completed||0),
+              startedAt:isNew?Date.now():w.startedAt
+            };
+            db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
+              db.ref().update(updates).then(function() {
+                db.ref('users/'+user.uid+'/transactions').push({type:'vip_weekly',amount:reward,details:level.name+' VIP Weekly Bonus (1x wager)',balance:newBal,timestamp:Date.now()});
+                if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+                showToast('👑 Weekly VIP bonus! +₹'+reward+' credited! (1x wager required)');
+                if (typeof loadVipPage==='function') loadVipPage();
+              });
             });
           });
         });
@@ -10619,253 +10621,38 @@ window.claimVipWeekly = function() {
   });
 };
 window.claimVipMonthly = function() {
-  var user=window.currentUser, db=window.fbDB;
+  var user=window.currentUser, db=window.fbDB||(typeof fbDB!=='undefined'?fbDB:null);
   if (!user||!db) { showToast('🔐 Please sign in first'); return; }
+  if (window.userProfile && !window.userProfile.hasDeposited) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
   var now=new Date(), monthKey=now.getFullYear()+'-'+(now.getMonth()+1);
   db.ref('users/'+user.uid+'/hasDeposited').once('value').then(function(__dm) {
     if (!__dm.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
-  db.ref('users/'+user.uid+'/vip/claimedMonthly/'+monthKey).once('value').then(function(snap) {
-    if (snap.val()) { showToast('⚠️ Already claimed monthly bonus!'); return; }
-    db.ref('users/'+user.uid+'/vip/exp').once('value').then(function(expSnap) {
-      var level=_getVipLevelData(parseFloat(expSnap.val()||0)), reward=level.monthly;
-      db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
-        var newBal=parseFloat(((balSnap.val()||0)+reward).toFixed(2));
-        var updates={}; updates['users/'+user.uid+'/vip/claimedMonthly/'+monthKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
-        db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
-          var w=wSnap.val()||{required:0,completed:0,startedAt:0};
-          var isNew=!w.startedAt||w.startedAt===0;
-          var newWager={
-            required:parseFloat((parseFloat(w.required||0)+reward).toFixed(2)),
-            completed:parseFloat(w.completed||0),
-            startedAt:isNew?Date.now():w.startedAt
-          };
-          db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
-            db.ref().update(updates).then(function() {
-              db.ref('users/'+user.uid+'/transactions').push({type:'vip_monthly',amount:reward,details:level.name+' VIP Monthly Bonus (1x wager)',balance:newBal,timestamp:Date.now()});
-              if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-              showToast('👑 Monthly VIP bonus! +₹'+reward+' credited! (1x wager required)');
-              if (typeof loadVipPage==='function') loadVipPage();
+    db.ref('users/'+user.uid+'/vip/claimedMonthly/'+monthKey).once('value').then(function(snap) {
+      if (snap.val()) { showToast('⚠️ Already claimed monthly bonus!'); return; }
+      db.ref('users/'+user.uid+'/vip/exp').once('value').then(function(expSnap) {
+        var level=_getVipLevelData(parseFloat(expSnap.val()||0)), reward=level.monthly;
+        db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
+          var newBal=parseFloat(((balSnap.val()||0)+reward).toFixed(2));
+          var updates={}; updates['users/'+user.uid+'/vip/claimedMonthly/'+monthKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
+          db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
+            var w=wSnap.val()||{required:0,completed:0,startedAt:0};
+            var isNew=!w.startedAt||w.startedAt===0;
+            var newWager={
+              required:parseFloat((parseFloat(w.required||0)+reward).toFixed(2)),
+              completed:parseFloat(w.completed||0),
+              startedAt:isNew?Date.now():w.startedAt
+            };
+            db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
+              db.ref().update(updates).then(function() {
+                db.ref('users/'+user.uid+'/transactions').push({type:'vip_monthly',amount:reward,details:level.name+' VIP Monthly Bonus (1x wager)',balance:newBal,timestamp:Date.now()});
+                if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+                showToast('👑 Monthly VIP bonus! +₹'+reward+' credited! (1x wager required)');
+                if (typeof loadVipPage==='function') loadVipPage();
+              });
             });
           });
         });
       });
     });
   });
-};
-</script>
-
-<div class="page" id="page-accountsettings">
-  <div class="support-page" style="padding:1rem 1rem 5rem;max-width:600px;margin:0 auto;min-height:100%;">
-
-    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1rem;">
-      <button onclick="showPage('profile')" class="back-btn" style="flex-shrink:0;">←</button>
-      <div style="display:flex;flex-direction:column;justify-content:center;">
-        <div class="section-title" style="margin-bottom:0.1rem;line-height:1.2;">⚙️ Settings</div>
-      </div>
-    </div>
-
-    <!-- Change Username -->
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
-      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:0.3rem;">👤 Change Username</div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:1rem;">Can be changed once every 7 days</div>
-      <div style="display:flex;flex-direction:column;gap:0.7rem;">
-        <div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">New Username</div>
-          <input type="text" id="settingsNewUsername" class="form-input" placeholder="Enter new username" style="font-size:0.85rem;" maxlength="20">
-        </div>
-        <div id="settingsUsernameMsg" style="display:none;font-size:0.8rem;text-align:center;padding:0.5rem;border-radius:8px;"></div>
-        <div id="settingsUsernameCooldown" style="display:none;font-size:0.75rem;color:var(--muted);text-align:center;"></div>
-        <button onclick="changeUsername()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem;color:#000;font-weight:800;font-size:0.88rem;cursor:pointer;font-family:'Exo 2',sans-serif;width:100%;">Update Username</button>
-      </div>
-    </div>
-
-    <!-- Change Password -->
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
-      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:1rem;">🔒 Change Password</div>
-      <div style="display:flex;flex-direction:column;gap:0.7rem;">
-        <div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Current Password</div>
-          <input type="password" id="settingsOldPassword" class="form-input" placeholder="Enter current password" style="font-size:0.85rem;">
-        </div>
-        <div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">New Password</div>
-          <input type="password" id="settingsNewPassword" class="form-input" placeholder="Min 8 characters" style="font-size:0.85rem;">
-        </div>
-        <div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Confirm New Password</div>
-          <input type="password" id="settingsConfirmPassword" class="form-input" placeholder="Repeat new password" style="font-size:0.85rem;">
-        </div>
-        <button onclick="changePassword()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem;color:#000;font-weight:800;font-size:0.88rem;cursor:pointer;font-family:'Exo 2',sans-serif;width:100%;margin-top:0.3rem;">Update Password</button>
-        <div id="settingsPasswordMsg" style="display:none;font-size:0.8rem;text-align:center;padding:0.5rem;border-radius:8px;"></div>
-      </div>
-    </div>
-
-    <!-- Saved Payment Details -->
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
-      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:0.3rem;">💳 Payment Details</div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:1rem;">Save your payment details for faster withdrawals</div>
-
-      <!-- UPI -->
-      <div style="margin-bottom:1rem;">
-        <div style="font-size:0.75rem;font-weight:700;color:var(--text);margin-bottom:0.5rem;">📱 UPI</div>
-        <div id="settingsSavedUpi" style="display:none;background:rgba(240,192,64,0.05);border:1px solid rgba(240,192,64,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">
-          <div style="font-size:0.62rem;color:var(--muted);">Saved UPI ID</div>
-          <div style="font-size:0.82rem;font-weight:700;color:var(--gold);" id="settingsSavedUpiText">—</div>
-          <div style="font-size:0.62rem;color:var(--muted);margin-top:0.3rem;">🔒 To change, contact support</div>
-        </div>
-        <div id="settingsUpiInputArea" style="display:flex;gap:0.5rem;">
-          <input type="text" id="settingsUpiInput" class="form-input" placeholder="e.g. name@upi" style="font-size:0.85rem;flex:1;">
-          <button onclick="saveUpiDetails()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem 1rem;color:#000;font-weight:800;font-size:0.82rem;cursor:pointer;">Save</button>
-        </div>
-        <div id="settingsUpiMsg" style="display:none;font-size:0.78rem;margin-top:0.4rem;padding:0.4rem;border-radius:6px;"></div>
-      </div>
-
-      <div style="height:1px;background:var(--border);margin-bottom:1rem;"></div>
-
-      <!-- Bank Transfer -->
-      <div style="margin-bottom:1rem;">
-        <div style="font-size:0.75rem;font-weight:700;color:var(--text);margin-bottom:0.5rem;">🏦 Bank Transfer</div>
-        <div id="settingsSavedBank" style="display:none;background:rgba(39,174,96,0.05);border:1px solid rgba(39,174,96,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">
-          <div style="display:flex;flex-direction:column;gap:0.2rem;">
-            <div style="font-size:0.62rem;color:var(--muted);">Account Holder</div>
-            <div style="font-size:0.8rem;font-weight:700;color:var(--text);" id="settingsSavedBankName">—</div>
-            <div style="font-size:0.62rem;color:var(--muted);margin-top:0.2rem;">Account Number</div>
-            <div style="font-size:0.8rem;font-weight:700;color:var(--text);" id="settingsSavedBankAcc">—</div>
-            <div style="font-size:0.62rem;color:var(--muted);margin-top:0.2rem;">IFSC · Bank</div>
-            <div style="font-size:0.78rem;color:var(--muted);" id="settingsSavedBankIfsc">—</div>
-            <div style="font-size:0.62rem;color:var(--muted);margin-top:0.3rem;">🔒 To change, contact support</div>
-          </div>
-        </div>
-        <div style="display:flex;flex-direction:column;gap:0.5rem;">
-          <input type="text" id="settingsBankName" class="form-input" placeholder="Account holder name" style="font-size:0.85rem;">
-          <input type="text" id="settingsBankAcc" class="form-input" placeholder="Account number" style="font-size:0.85rem;" inputmode="numeric">
-          <input type="text" id="settingsBankIfsc" class="form-input" placeholder="IFSC code" style="font-size:0.85rem;text-transform:uppercase;" oninput="this.value=this.value.toUpperCase()">
-          <input type="text" id="settingsBankBankName" class="form-input" placeholder="Bank name (e.g. SBI, HDFC)" style="font-size:0.85rem;">
-          <button onclick="saveBankDetails()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem;color:#000;font-weight:800;font-size:0.85rem;cursor:pointer;width:100%;">Save Bank Details</button>
-        </div>
-        <div id="settingsBankMsg" style="display:none;font-size:0.78rem;margin-top:0.4rem;padding:0.4rem;border-radius:6px;"></div>
-      </div>
-
-      <div style="height:1px;background:var(--border);margin-bottom:1rem;"></div>
-
-      <!-- USDT TRC20 -->
-      <div>
-        <div style="font-size:0.75rem;font-weight:700;color:var(--text);margin-bottom:0.3rem;">💚 USDT (TRC20)</div>
-        <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.5rem;">TRC20 network only</div>
-        <div id="settingsSavedUsdt" style="display:none;background:rgba(39,174,96,0.05);border:1px solid rgba(39,174,96,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.5rem;">
-          <div style="font-size:0.62rem;color:var(--muted);">Saved Wallet (TRC20)</div>
-          <div style="font-size:0.75rem;font-weight:700;color:var(--green);word-break:break-all;" id="settingsSavedUsdtText">—</div>
-          <div style="font-size:0.62rem;color:var(--muted);margin-top:0.3rem;">🔒 To change, contact support</div>
-        </div>
-        <div style="display:flex;gap:0.5rem;">
-          <input type="text" id="settingsUsdtInput" class="form-input" placeholder="TRC20 wallet address" style="font-size:0.82rem;flex:1;">
-          <button onclick="saveUsdtDetails()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.75rem 1rem;color:#000;font-weight:800;font-size:0.82rem;cursor:pointer;">Save</button>
-        </div>
-        <div id="settingsUsdtMsg" style="display:none;font-size:0.78rem;margin-top:0.4rem;padding:0.4rem;border-radius:6px;"></div>
-      </div>
-
-    </div>
-
-    <!-- Logout All Devices -->
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
-      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);margin-bottom:0.3rem;">🔐 Security</div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-bottom:1rem;">Logout from all devices for security</div>
-      <button onclick="logoutAllDevices()" style="width:100%;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.25);border-radius:10px;padding:0.75rem;color:var(--red2);font-size:0.88rem;font-weight:700;cursor:pointer;">🚪 Logout All Devices</button>
-    </div>
-
-    <!-- Legal -->
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;margin-bottom:1rem;">
-      <div style="font-family:'Cinzel',serif;font-size:0.85rem;color:var(--gold);padding:0.9rem 1rem;border-bottom:1px solid var(--border);">📄 Legal</div>
-      <div onclick="showPage('terms')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
-        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">📋</span><span style="font-size:0.88rem;">Terms & Conditions</span></div>
-        <span style="color:var(--muted);font-size:0.8rem;">›</span>
-      </div>
-      <div onclick="showPage('privacy')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;">
-        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🔐</span><span style="font-size:0.88rem;">Privacy Policy</span></div>
-        <span style="color:var(--muted);font-size:0.8rem;">›</span>
-      </div>
-      <div onclick="showPage('responsible')" style="display:flex;align-items:center;justify-content:space-between;padding:0.9rem 1rem;cursor:pointer;">
-        <div style="display:flex;align-items:center;gap:0.8rem;"><span style="font-size:1.1rem;">🎗️</span><span style="font-size:0.88rem;">Responsible Gambling</span></div>
-        <span style="color:var(--muted);font-size:0.8rem;">›</span>
-      </div>
-    </div>
-
-  </div>
-</div>
-
-<div class="page" id="page-weeklyrebate">
-  <div style="max-width:520px;margin:0 auto;padding:0 0 2rem;">
-    <div style="display:flex;align-items:center;gap:0.8rem;margin-bottom:1.2rem;padding:1rem 0 0.8rem;border-bottom:1px solid var(--border);">
-      <button onclick="showPage('promotions')" class="back-btn">←</button>
-      <div style="font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);">💰 Weekly Loss Rebate</div>
-    </div>
-
-    <!-- Info Card -->
-    <div style="background:linear-gradient(135deg,rgba(124,77,255,0.15),rgba(168,125,255,0.08));border:1px solid rgba(124,77,255,0.3);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
-      <div style="font-size:0.82rem;color:var(--text);line-height:1.6;">
-        <div style="font-weight:700;color:#a87dff;margin-bottom:0.5rem;">How it works:</div>
-        <div>• Calculated every <strong style="color:var(--gold);">Monday</strong> for the previous week</div>
-        <div>• If your net loss > <strong style="color:var(--gold);">50%</strong> of your total deposits this week</div>
-        <div>• You receive <strong style="color:var(--gold);">5%</strong> of your net loss back</div>
-        <div style="margin-top:0.5rem;font-size:0.75rem;color:var(--muted);">Example: Deposited ₹1,000 · Lost ₹600 (60%) → Get ₹30 back</div>
-      </div>
-    </div>
-
-    <!-- Stats Card -->
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;margin-bottom:1rem;">
-      <div style="font-family:'Cinzel',serif;font-size:0.82rem;color:var(--gold);margin-bottom:1rem;">📊 This Week Stats</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.8rem;margin-bottom:1rem;">
-        <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
-          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.3rem;">Total Deposited</div>
-          <div style="font-size:1rem;font-weight:800;color:var(--green);" id="rebateWeekDeposit">₹0</div>
-        </div>
-        <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
-          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.3rem;">Net Loss</div>
-          <div style="font-size:1rem;font-weight:800;color:var(--red2);" id="rebateWeekLoss">₹0</div>
-        </div>
-        <div style="background:var(--bg3);border-radius:10px;padding:0.8rem;text-align:center;">
-          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.3rem;">Loss %</div>
-          <div style="font-size:1rem;font-weight:800;color:var(--text);" id="rebateLossPct">0%</div>
-        </div>
-        <div style="background:rgba(124,77,255,0.1);border:1px solid rgba(124,77,255,0.2);border-radius:10px;padding:0.8rem;text-align:center;">
-          <div style="font-size:0.65rem;color:var(--muted);margin-bottom:0.3rem;">Rebate Amount</div>
-          <div style="font-size:1rem;font-weight:800;color:#a87dff;" id="rebateAmount">₹0</div>
-        </div>
-      </div>
-      <div id="rebateStatusMsg" style="font-size:0.78rem;color:var(--muted);text-align:center;margin-bottom:0.8rem;"></div>
-      <button id="rebateClaimBtn" onclick="claimWeeklyRebate()" style="width:100%;background:linear-gradient(135deg,#7c4dff,#a87dff);border:none;border-radius:10px;padding:0.85rem;color:#fff;font-weight:800;font-size:0.9rem;cursor:pointer;font-family:'Exo 2',sans-serif;display:none;">💰 Claim Rebate</button>
-    </div>
-
-    <!-- History -->
-    <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;">
-      <div style="font-family:'Cinzel',serif;font-size:0.82rem;color:var(--gold);padding:0.9rem 1rem;border-bottom:1px solid var(--border);">📋 Claim History</div>
-      <div id="rebateHistory" style="min-height:60px;">
-        <div style="text-align:center;color:var(--muted);padding:1.5rem;font-size:0.82rem;">No claims yet</div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- Welcome Bonus Popup -->
-<div id="welcomeBonusPopup" style="display:none;position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,0.75);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
-  <div style="background:linear-gradient(135deg,#1a1035,#2d1b69);border:2px solid rgba(124,77,255,0.5);border-radius:24px;padding:2rem 1.5rem;max-width:320px;width:90%;text-align:center;position:relative;animation:popIn 0.4s ease;">
-    <div style="font-size:3rem;margin-bottom:0.5rem;">🎁</div>
-    <div style="font-family:'Cinzel',serif;font-size:1.3rem;font-weight:900;color:var(--gold);margin-bottom:0.3rem;">Welcome Bonus!</div>
-    <div style="font-size:0.85rem;color:var(--muted);margin-bottom:1.2rem;">Welcome to RoyalWin!</div>
-    <div style="background:rgba(124,77,255,0.15);border:1px solid rgba(124,77,255,0.3);border-radius:14px;padding:1rem;margin-bottom:1rem;">
-      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:0.3rem;">Bonus Credited</div>
-      <div style="font-family:'Cinzel',serif;font-size:2rem;font-weight:900;color:#a87dff;">₹38</div>
-      <div style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;">2x wager (₹76) required for withdrawal</div>
-    </div>
-    <div style="display:flex;align-items:center;justify-content:center;gap:0.5rem;margin-bottom:1rem;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-      <span style="font-size:0.75rem;color:var(--muted);">Auto closing in <span id="welcomeCountdown">3</span>s</span>
-    </div>
-    <button onclick="closeWelcomeBonus()" style="background:linear-gradient(135deg,#7c4dff,#a87dff);border:none;border-radius:12px;padding:0.75rem 2rem;color:#fff;font-weight:800;font-size:0.9rem;cursor:pointer;font-family:'Exo 2',sans-serif;width:100%;">🎮 Start Playing</button>
-  </div>
-</div>
-
-
-</div>
-</body>
-</html>
+}
