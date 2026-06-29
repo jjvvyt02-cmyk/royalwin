@@ -10475,8 +10475,10 @@ function _attendRenderUI(streak, alreadyClaimed, totalEarned) {
   else { var nextDay=Math.min(streak+1,7), reward=ATTEND_REWARDS[nextDay-1]; btn.textContent='✅ Check In Today — Claim ₹'+reward; btn.disabled=false; btn.style.background=''; btn.style.color=''; }
 }
 window.claimAttendance = function() {
-  var user = window.currentUser, db = window.fbDB;
+  var user = window.currentUser, db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
   if (!user || !db) { showToast('🔐 Please sign in first'); return; }
+  var _prof = window.userProfile;
+  if (_prof && !_prof.hasDeposited) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
   db.ref('users/' + user.uid + '/hasDeposited').once('value').then(function(__depSnap) {
     if (!__depSnap.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
     var today = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0], yesterday = new Date(Date.now() + 5.5*60*60*1000 - 86400000).toISOString().split('T')[0];
