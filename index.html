@@ -10480,38 +10480,38 @@ window.claimAttendance = function() {
   db.ref('users/' + user.uid + '/hasDeposited').once('value').then(function(__depSnap) {
     if (!__depSnap.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
     var today = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0], yesterday = new Date(Date.now() + 5.5*60*60*1000 - 86400000).toISOString().split('T')[0];
-  db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
-    var data = snap.val() || {}, streak = data.streak || 0, lastCheckin = data.lastCheckin || '', totalEarned = parseFloat(data.totalEarned || 0);
-    if (lastCheckin === today) { showToast('⚠️ Already checked in today!'); return; }
-    if (lastCheckin && lastCheckin !== yesterday) streak = 0;
-    var newStreak = (streak % 7) + 1, reward = ATTEND_REWARDS[newStreak - 1], newTotal = parseFloat((totalEarned + reward).toFixed(2));
-    db.ref('users/' + user.uid + '/balance').once('value').then(function(balSnap) {
-      var newBal = parseFloat(((balSnap.val() || 0) + reward).toFixed(2));
-      var updates = {};
-      updates['users/'+user.uid+'/attendance/streak'] = newStreak;
-      updates['users/'+user.uid+'/attendance/lastCheckin'] = today;
-      updates['users/'+user.uid+'/attendance/totalEarned'] = newTotal;
-      updates['users/'+user.uid+'/balance'] = newBal;
-      db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
-        var w = wSnap.val() || {required:0,completed:0,startedAt:0};
-        var isNew = !w.startedAt || w.startedAt === 0;
-        var newWager = {
-          required: parseFloat((parseFloat(w.required||0) + reward).toFixed(2)),
-          completed: parseFloat(w.completed||0),
-          startedAt: isNew ? Date.now() : w.startedAt
-        };
-        db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
-          db.ref().update(updates).then(function() {
-            db.ref('users/'+user.uid+'/transactions').push({type:'attendance',amount:reward,details:'Day '+newStreak+' attendance bonus (1x wager)',balance:newBal,timestamp:Date.now()});
-            if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-            showToast('🎁 Day '+newStreak+' check-in! +₹'+reward+' credited! (1x wager required)');
-            _attendRenderUI(newStreak, true, newTotal);
+    db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
+      var data = snap.val() || {}, streak = data.streak || 0, lastCheckin = data.lastCheckin || '', totalEarned = parseFloat(data.totalEarned || 0);
+      if (lastCheckin === today) { showToast('⚠️ Already checked in today!'); return; }
+      if (lastCheckin && lastCheckin !== yesterday) streak = 0;
+      var newStreak = (streak % 7) + 1, reward = ATTEND_REWARDS[newStreak - 1], newTotal = parseFloat((totalEarned + reward).toFixed(2));
+      db.ref('users/' + user.uid + '/balance').once('value').then(function(balSnap) {
+        var newBal = parseFloat(((balSnap.val() || 0) + reward).toFixed(2));
+        var updates = {};
+        updates['users/'+user.uid+'/attendance/streak'] = newStreak;
+        updates['users/'+user.uid+'/attendance/lastCheckin'] = today;
+        updates['users/'+user.uid+'/attendance/totalEarned'] = newTotal;
+        updates['users/'+user.uid+'/balance'] = newBal;
+        db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
+          var w = wSnap.val() || {required:0,completed:0,startedAt:0};
+          var isNew = !w.startedAt || w.startedAt === 0;
+          var newWager = {
+            required: parseFloat((parseFloat(w.required||0) + reward).toFixed(2)),
+            completed: parseFloat(w.completed||0),
+            startedAt: isNew ? Date.now() : w.startedAt
+          };
+          db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
+            db.ref().update(updates).then(function() {
+              db.ref('users/'+user.uid+'/transactions').push({type:'attendance',amount:reward,details:'Day '+newStreak+' attendance bonus (1x wager)',balance:newBal,timestamp:Date.now()});
+              if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
+              showToast('🎁 Day '+newStreak+' check-in! +₹'+reward+' credited! (1x wager required)');
+              _attendRenderUI(newStreak, true, newTotal);
+            }).catch(function(e) { showToast('❌ '+e.message); });
           }).catch(function(e) { showToast('❌ '+e.message); });
-        }).catch(function(e) { showToast('❌ '+e.message); });
+        });
       });
-    });
-  }).catch(function(e) { showToast('❌ '+e.message); });
-  }); // end hasDeposited check
+    }).catch(function(e) { showToast('❌ '+e.message); });
+  });
 };
 window.claimInviteTier = function(tierNum, reward) {
   var user = window.currentUser, db = window.fbDB;
