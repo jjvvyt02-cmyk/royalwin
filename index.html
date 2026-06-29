@@ -5114,6 +5114,8 @@
       await db.ref('users/' + user.uid + '/balance').transaction(bal => (bal || 0) + amount);
       await db.ref('users/' + user.uid + '/weeklyRebateClaimed').set(Date.now());
       await db.ref('users/' + user.uid + '/weeklyRebateHistory').push({ amount, timestamp: Date.now() });
+      const balSnap2 = await db.ref('users/' + user.uid + '/balance').once('value');
+      await db.ref('users/' + user.uid + '/transactions').push({ type: 'weekly_rebate', amount, details: 'Weekly Loss Rebate (5% of net loss)', balance: parseFloat(balSnap2.val() || 0), timestamp: Date.now() });
       await pushNotification(user.uid, '💰', 'Weekly Rebate Credited!', '₹' + amount + ' has been added to your wallet.');
       showToast('🎉 ₹' + amount + ' rebate credited!');
       loadWeeklyRebatePage();
@@ -5227,6 +5229,8 @@
       await db.ref('users/' + user.uid + '/balance').transaction(bal => (bal || 0) + amount);
       await db.ref('users/' + user.uid + '/weeklyRebateClaimed').set(Date.now());
       await db.ref('users/' + user.uid + '/weeklyRebateHistory').push({ amount, timestamp: Date.now() });
+      const balSnapP = await db.ref('users/' + user.uid + '/balance').once('value');
+      await db.ref('users/' + user.uid + '/transactions').push({ type: 'weekly_rebate', amount, details: 'Weekly Loss Rebate (5% of net loss)', balance: parseFloat(balSnapP.val() || 0), timestamp: Date.now() });
       await pushNotification(user.uid, '💰', 'Weekly Rebate Credited!', '₹' + amount + ' rebate added to your wallet.');
       showToast('🎉 ₹' + amount + ' rebate credited!');
       loadPromoRebateCard();
@@ -10672,7 +10676,8 @@ window.loadAttendancePage = function() {
   if (!user || !db) { _attendRenderUI(0, false, 0); return; }
   db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
     var data = snap.val() || {}, streak = data.streak || 0, lastCheckin = data.lastCheckin || '', totalEarned = data.totalEarned || 0;
-    var today = new Date().toDateString(), yesterday = new Date(Date.now() - 86400000).toDateString();
+    var today = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
+    var yesterday = new Date(Date.now() + 5.5*60*60*1000 - 86400000).toISOString().split('T')[0];
     if (lastCheckin && lastCheckin !== today && lastCheckin !== yesterday) streak = 0;
     _attendRenderUI(streak, lastCheckin === today, totalEarned);
   }).catch(function() { _attendRenderUI(0, false, 0); });
@@ -10875,3 +10880,4 @@ window.claimVipMonthly = function() {
 </script>
 </body>
 </html>
+  
