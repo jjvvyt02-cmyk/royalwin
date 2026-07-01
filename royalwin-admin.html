@@ -963,87 +963,127 @@
   </div>
 </div>
 
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
-import { getDatabase, ref, set, get, onValue, push, remove, update, off } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut, updatePassword } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+<script>
+// ── NEON ADMIN CONFIG ──
+const API = 'https://royalwin-api.vercel.app';
+const ADMIN_TOKEN = localStorage.getItem('royalwin_admin_token') || '';
 
-// ── FIREBASE CONFIG ──
-// TODO: Replace with your Firebase project config
-// Get from: https://console.firebase.google.com → Project Settings → Your Apps
-const FIREBASE_CONFIG = {
-  apiKey: "AIzaSyDFiGTDrek9ju6LtmEWZST-PsVjjZiCZ6E",
-  authDomain: "royalwin-22446.firebaseapp.com",
-  databaseURL: "https://royalwin-22446-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "royalwin-22446",
-  storageBucket: "royalwin-22446.firebasestorage.app",
-  messagingSenderId: "1056996003114",
-  appId: "1:1056996003114:web:8c89f3af4a3b81fd582253",
-  measurementId: "G-6Q7DX3EG1G"
-};
-
-const app = initializeApp(FIREBASE_CONFIG);
-const db = getDatabase(app);
-const auth = getAuth(app);
+async function apiCall(endpoint, method = 'GET', body = null) {
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', 'x-admin-token': ADMIN_TOKEN }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + endpoint, opts);
+  const data = await res.json();
+  if (res.status === 401) {
+    localStorage.removeItem('royalwin_admin_token');
+    window._adminLoggedIn = false;
+    document.getElementById('loginWrap').style.display = 'flex';
+    document.getElementById('adminWrap').style.display = 'none';
+    throw new Error('Session expired');
+  }
+  return data;
+}
 
 // ── STATE ──
 let selectedNum = null;
 const scheduleDataByTimer = {1: Array(5).fill(null), 3: Array(5).fill(null), 5: Array(5).fill(null)};
 let weightData = { 0:10,1:10,2:10,3:10,4:10,5:10,6:10,7:10,8:10,9:10 };
 let currentRound = 20250513001;
+window._adminLoggedIn = false;
 
-// ── FIREBASE CONNECTION STATUS ──
-onValue(ref(db, '.info/connected'), (snap) => {
-  const connected = snap.val();
-  const dot = document.getElementById('fbDot');
-  const txt = document.getElementById('fbStatusText');
-  const detail = document.getElementById('fbStatusDetail');
-  const dbUrl = document.getElementById('fbDbUrl');
-  if (dot) { dot.className = 'fb-dot ' + (connected ? 'connected' : 'error'); }
-  if (txt) txt.textContent = connected ? 'Firebase Connected' : 'Disconnected';
-  if (detail) { detail.textContent = connected ? 'Connected' : 'Disconnected'; detail.style.color = connected ? 'var(--green)' : 'var(--red2)'; }
-  if (dbUrl) dbUrl.textContent = FIREBASE_CONFIG.databaseURL;
-});
+// ── CONNECTION STATUS ──
+async function checkConnection() {
+  try {
+    const data = await fetch(API + '/api/health');
+    const dot = document.getElementById('fbDot');
+    const txt = document.getElementById('fbStatusText');
+    const detail = document.getElementById('fbStatusDetail');
+    const dbUrl = document.getElementById('fbDbUrl');
+    if (dot) dot.className = 'fb-dot connected';
+    if (txt) txt.textContent = 'Neon DB Connected';
+    if (detail) { detail.textContent = 'Connected'; detail.style.color = 'var(--green)'; }
+    if (dbUrl) dbUrl.textContent = 'ep-blue-leaf-ao30x2um.c-2.ap-southeast-1.aws.neon.tech';
+  } catch(e) {
+    const dot = document.getElementById('fbDot');
+    if (dot) dot.className = 'fb-dot error';
+  }
+}
 
 // ── AUTH ──
-onAuthStateChanged(auth, (user) => {
-  if (user) {
-    window._adminUser = user;
-    document.getElementById('loginWrap').style.display = 'none';
-    document.getElementById('adminWrap').style.display = 'block';
-    document.getElementById('fbAuthStatus').textContent = user.email;
-    initAdmin();
-  } else {
-    document.getElementById('loginWrap').style.display = 'flex';
-    document.getElementById('adminWrap').style.display = 'none';
-  }
-});
-
-// Attach login button after module loads
 document.addEventListener('DOMContentLoaded', () => {
   const btn = document.getElementById('adminLoginBtn');
   const pwd = document.getElementById('adminPassword');
   if (btn) btn.addEventListener('click', () => window.doAdminLogin && window.doAdminLogin());
   if (pwd) pwd.addEventListener('keydown', (e) => { if (e.key === 'Enter') window.doAdminLogin && window.doAdminLogin(); });
+
+  // Check if already logged in
+  const savedToken = localStorage.getItem('royalwin_admin_token');
+  if (savedToken) {
+    window._adminToken = savedToken;
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('adminWrap').style.display = 'block';
+    document.getElementById('fbAuthStatus').textContent = 'Admin';
+    window._adminLoggedIn = true;
+    initAdmin();
+  } else {
+    document.getElementById('loginWrap').style.display = 'flex';
+    document.getElementById('adminWrap').style.display = 'none';
+  }
+  checkConnection();
+  setInterval(checkConnection, 30000);
 });
 
 window.doAdminLogin = async function() {
-  const email = document.getElementById('adminEmail').value;
   const pass = document.getElementById('adminPassword').value;
   const errEl = document.getElementById('loginError');
   errEl.style.display = 'none';
+  // Token = password for now (stored as ADMIN_TOKEN env var in Vercel)
+  const token = pass.trim();
   try {
-    await signInWithEmailAndPassword(auth, email, pass);
+    // Test the token by calling a protected endpoint
+    const res = await fetch(API + '/api/admin/settings', { headers: { 'x-admin-token': token } });
+    if (res.status === 401) throw new Error('Invalid password');
+    localStorage.setItem('royalwin_admin_token', token);
+    window._adminToken = token;
+    window._adminLoggedIn = true;
+    document.getElementById('loginWrap').style.display = 'none';
+    document.getElementById('adminWrap').style.display = 'block';
+    document.getElementById('fbAuthStatus').textContent = 'Admin';
+    initAdmin();
   } catch(e) {
     errEl.style.display = 'block';
-    errEl.textContent = '❌ ' + (e.code === 'auth/wrong-password' ? 'Wrong password.' : e.code === 'auth/user-not-found' ? 'Admin not found.' : 'Login failed: ' + e.message);
+    errEl.textContent = '❌ Invalid password';
   }
 };
 
 window.doAdminLogout = async function() {
-  await signOut(auth);
+  localStorage.removeItem('royalwin_admin_token');
+  window._adminLoggedIn = false;
+  document.getElementById('loginWrap').style.display = 'flex';
+  document.getElementById('adminWrap').style.display = 'none';
   showToast('👋 Signed out');
 };
+
+// Override apiCall to use current token
+async function apiCall(endpoint, method = 'GET', body = null) {
+  const token = localStorage.getItem('royalwin_admin_token') || '';
+  const opts = {
+    method,
+    headers: { 'Content-Type': 'application/json', 'x-admin-token': token }
+  };
+  if (body) opts.body = JSON.stringify(body);
+  const res = await fetch(API + endpoint, opts);
+  if (res.status === 401) {
+    localStorage.removeItem('royalwin_admin_token');
+    window._adminLoggedIn = false;
+    document.getElementById('loginWrap').style.display = 'flex';
+    document.getElementById('adminWrap').style.display = 'none';
+    throw new Error('Session expired');
+  }
+  return await res.json();
+}
 
 // ── INIT ADMIN ──
 function initAdmin() {
@@ -1142,71 +1182,54 @@ window.quickSetResult = function(mins, num) {
 window.quickConfirmResult = async function(mins) {
   const num = quickSelected[mins];
   if (num === null) { showToast('⚠️ Select a number first for ' + mins + ' Min!'); return; }
-  const path = 'wingo/wingo' + mins + 'min';
-  await set(ref(db, path + '/currentResult'), num);
-  await set(ref(db, path + '/mode'), 'manual');
-  showToast('✅ [' + mins + ' Min] Result ' + num + ' set!');
-  // Update status displays
-  const nextEl = document.getElementById('next' + mins + 'min');
-  if (nextEl) nextEl.textContent = num;
+  try {
+    await apiCall('/api/admin/set-result', 'POST', { timer: mins, num });
+    showToast('✅ [' + mins + ' Min] Result ' + num + ' set!');
+    const nextEl = document.getElementById('next' + mins + 'min');
+    if (nextEl) nextEl.textContent = num;
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.quickClearResult = async function(mins) {
-  const path = 'wingo/wingo' + mins + 'min';
-  await set(ref(db, path + '/currentResult'), -1);
-  await set(ref(db, path + '/mode'), 'auto');
-  quickSelected[mins] = null;
-  for (let i = 0; i <= 9; i++) {
-    const btn = document.getElementById('qbtn' + mins + '_' + i);
-    if (btn) {
-      btn.classList.remove('qsel');
-      btn.style.background = 'var(--bg3)';
-      btn.style.borderColor = 'var(--border)';
-      btn.style.color = 'var(--text)';
+  try {
+    await apiCall('/api/admin/clear-result', 'POST', { timer: mins });
+    quickSelected[mins] = null;
+    for (let i = 0; i <= 9; i++) {
+      const btn = document.getElementById('qbtn' + mins + '_' + i);
+      if (btn) { btn.classList.remove('qsel'); btn.style.background = 'var(--bg3)'; btn.style.borderColor = 'var(--border)'; btn.style.color = 'var(--text)'; }
     }
-  }
-  const nextEl = document.getElementById('next' + mins + 'min');
-  if (nextEl) nextEl.textContent = 'Auto';
-  showToast('🔄 [' + mins + ' Min] Override cleared');
+    const nextEl = document.getElementById('next' + mins + 'min');
+    if (nextEl) nextEl.textContent = 'Auto';
+    showToast('🔄 [' + mins + ' Min] Override cleared');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 const lockState = {1: false, 3: false, 5: false};
 
 window.toggleLock = async function(mins) {
   lockState[mins] = !lockState[mins];
-  const path = 'wingo/wingo' + mins + 'min';
-  await set(ref(db, path + '/bettinglocked'), lockState[mins]);
-  const btn = document.getElementById('lockBtn' + mins);
-  if (btn) {
-    btn.textContent = lockState[mins] ? '🔒 Locked' : '🔓 Unlock';
-    btn.style.color = lockState[mins] ? 'var(--red2)' : 'var(--muted)';
-    btn.style.borderColor = lockState[mins] ? 'rgba(224,32,32,0.3)' : 'var(--border)';
-  }
-  showToast((lockState[mins] ? '🔒' : '🔓') + ' [' + mins + ' Min] Betting ' + (lockState[mins] ? 'locked' : 'unlocked'));
+  try {
+    await apiCall('/api/admin/toggle-lock', 'POST', { timer: mins, locked: lockState[mins] });
+    const btn = document.getElementById('lockBtn' + mins);
+    if (btn) { btn.textContent = lockState[mins] ? '🔒 Locked' : '🔓 Unlock'; btn.style.color = lockState[mins] ? 'var(--red2)' : 'var(--muted)'; btn.style.borderColor = lockState[mins] ? 'rgba(224,32,32,0.3)' : 'var(--border)'; }
+    showToast((lockState[mins] ? '🔒' : '🔓') + ' [' + mins + ' Min] Betting ' + (lockState[mins] ? 'locked' : 'unlocked'));
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.forceResolve = async function(mins) {
   if (!confirm('Force resolve ' + mins + ' Min round now?')) return;
-  const path = 'wingo/wingo' + mins + 'min';
-  await set(ref(db, path + '/forceResolve'), Date.now());
-  showToast('⚡ [' + mins + ' Min] Force resolve triggered!');
+  showToast('⚡ [' + mins + ' Min] Force resolve triggered (next cron tick)');
 };
 
 window.toggleAutoForMode = async function(mins, isAuto) {
-  const path = 'wingo/wingo' + mins + 'min';
-  await set(ref(db, path + '/automode'), isAuto);
-  await set(ref(db, path + '/mode'), isAuto ? 'auto' : 'manual');
-  const toggle = document.getElementById('autoToggle' + mins + 'min');
-  if (toggle) toggle.checked = isAuto;
-  const badge = document.getElementById('mode' + mins + 'badge');
-  if (badge) {
-    badge.textContent = isAuto ? 'AUTO' : 'MANUAL';
-    badge.style.background = isAuto ? 'rgba(240,192,64,0.1)' : 'rgba(224,32,32,0.15)';
-    badge.style.color = isAuto ? 'var(--gold)' : 'var(--red2)';
-    badge.style.border = isAuto ? '1px solid rgba(240,192,64,0.2)' : '1px solid rgba(224,32,32,0.3)';
-    badge.setAttribute('onclick', `toggleAutoForMode(${mins}, ${!isAuto})`);
-  }
-  showToast((isAuto ? '🤖' : '👑') + ' ' + mins + ' Min: Auto ' + (isAuto ? 'ON' : 'OFF'));
+  try {
+    await apiCall('/api/admin/settings', 'POST', { key: 'automode_' + mins, value: isAuto });
+    const toggle = document.getElementById('autoToggle' + mins + 'min');
+    if (toggle) toggle.checked = isAuto;
+    const badge = document.getElementById('mode' + mins + 'badge');
+    if (badge) { badge.textContent = isAuto ? 'AUTO' : 'MANUAL'; badge.style.background = isAuto ? 'rgba(240,192,64,0.1)' : 'rgba(224,32,32,0.15)'; badge.style.color = isAuto ? 'var(--gold)' : 'var(--red2)'; badge.style.border = isAuto ? '1px solid rgba(240,192,64,0.2)' : '1px solid rgba(224,32,32,0.3)'; badge.setAttribute('onclick', `toggleAutoForMode(${mins}, ${!isAuto})`); }
+    showToast((isAuto ? '🤖' : '👑') + ' ' + mins + ' Min: Auto ' + (isAuto ? 'ON' : 'OFF'));
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 function renderLastResults(mins, history) {
@@ -1245,108 +1268,123 @@ function renderLastResults(mins, history) {
     }).join('') + '</div>';
 }
 
-function updateNextResultBadges() {
-  [1, 3, 5].forEach(mins => {
-    // Listen for schedule per mode
-    onValue(ref(db, 'wingo/wingo' + mins + 'min/schedule'), (snap) => {
-      if (snap.val()) {
-        const vals = Object.values(snap.val());
-        scheduleDataByTimer[mins] = vals.length >= 5 ? vals.slice(0,5) : [...vals, ...Array(5-vals.length).fill(null)];
-        buildScheduleGridForMode(mins);
-      }
-    });
-    // Listen for last results per mode
-    onValue(ref(db, 'wingo/wingo' + mins + 'min/history'), (snap) => {
-      const history = snap.val() ? Object.values(snap.val()) : [];
-      renderLastResults(mins, history);
-    });
-    // Listen for bet summary per mode
-    onValue(ref(db, 'wingo/wingo' + mins + 'min/betSummary'), (snap) => {
-      const summary = snap.val();
-      const summaryEl = document.getElementById('betSummary' + mins + 'min');
-      const betsEl = document.getElementById('bets' + mins + 'min');
-      if (!summary) {
-        if (summaryEl) summaryEl.innerHTML = '<span style="color:var(--muted);">No bets yet</span>';
-        if (betsEl) betsEl.textContent = '0 bets';
-        return;
-      }
-      const entries = Object.values(summary);
-      const totalBets = entries.reduce((s, e) => s + e.count, 0);
-      const totalAmt = entries.reduce((s, e) => s + e.totalAmount, 0);
-      if (betsEl) betsEl.textContent = totalBets + ' bets · ₹' + totalAmt.toLocaleString('en-IN');
-      if (summaryEl) {
-        const colorMap = { green:'#27ae60', red:'#e02020', violet:'#7c4dff', big:'var(--gold)', small:'#2563eb' };
-        summaryEl.innerHTML = entries.map(e => {
-          const key = e.selection.toLowerCase().replace(' ', '_');
-          const col = colorMap[e.selection.toLowerCase()] || 'var(--muted)';
-          return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.2rem 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-            <span style="color:${col};font-weight:700;">${e.selection}</span>
-            <span style="color:var(--text);">₹${e.totalAmount.toLocaleString('en-IN')} <span style="color:var(--muted);">(${e.count})</span></span>
-          </div>`;
-        }).join('');
-      }
-    });
-    // Listen for automode per mode
-    onValue(ref(db, 'wingo/wingo' + mins + 'min/automode'), (snap) => {
-      const isAuto = snap.val() !== false;
-      const toggle = document.getElementById('autoToggle' + mins + 'min');
-      if (toggle) toggle.checked = isAuto;
-    });
-    onValue(ref(db, 'wingo/wingo' + mins + 'min/currentResult'), (snap) => {
-      const val = snap.val();
+async function pollGameState() {
+  try {
+    const data = await apiCall('/api/admin/game-state');
+    if (!data.success) return;
+    data.states.forEach(state => {
+      const mins = state.timer;
+      // Update current result badge
+      const val = state.current_result;
       const nextEl = document.getElementById('next' + mins + 'min');
       const badgeEl = document.getElementById('mode' + mins + 'badge');
       if (nextEl) nextEl.textContent = (val !== null && val >= 0) ? val : 'Auto';
       if (badgeEl) {
-        badgeEl.textContent = (val !== null && val >= 0) ? 'MANUAL' : 'AUTO';
-        badgeEl.style.background = (val !== null && val >= 0) ? 'rgba(224,32,32,0.15)' : 'rgba(240,192,64,0.1)';
-        badgeEl.style.color = (val !== null && val >= 0) ? 'var(--red2)' : 'var(--gold)';
-        badgeEl.style.border = (val !== null && val >= 0) ? '1px solid rgba(224,32,32,0.3)' : '1px solid rgba(240,192,64,0.2)';
+        const isManual = val !== null && parseInt(val) >= 0;
+        badgeEl.textContent = isManual ? 'MANUAL' : 'AUTO';
+        badgeEl.style.background = isManual ? 'rgba(224,32,32,0.15)' : 'rgba(240,192,64,0.1)';
+        badgeEl.style.color = isManual ? 'var(--red2)' : 'var(--gold)';
+        badgeEl.style.border = isManual ? '1px solid rgba(224,32,32,0.3)' : '1px solid rgba(240,192,64,0.2)';
+      }
+      // Bet summary
+      const summary = state.bet_summary || {};
+      const summaryEl = document.getElementById('betSummary' + mins + 'min');
+      const betsEl = document.getElementById('bets' + mins + 'min');
+      const entries = Object.values(summary);
+      if (entries.length === 0) {
+        if (summaryEl) summaryEl.innerHTML = '<span style="color:var(--muted);">No bets yet</span>';
+        if (betsEl) betsEl.textContent = '0 bets';
+      } else {
+        const totalBets = entries.reduce((s,e) => s + (e.count||0), 0);
+        const totalAmt = entries.reduce((s,e) => s + (e.totalAmount||0), 0);
+        if (betsEl) betsEl.textContent = totalBets + ' bets · ₹' + totalAmt.toLocaleString('en-IN');
+        if (summaryEl) {
+          const colorMap = { green:'#27ae60', red:'#e02020', violet:'#7c4dff', big:'var(--gold)', small:'#2563eb' };
+          summaryEl.innerHTML = entries.map(e => {
+            const col = colorMap[(e.selection||'').toLowerCase()] || 'var(--muted)';
+            return `<div style="display:flex;justify-content:space-between;align-items:center;padding:0.2rem 0;border-bottom:1px solid rgba(255,255,255,0.04);"><span style="color:${col};font-weight:700;">${e.selection||''}</span><span style="color:var(--text);">₹${(e.totalAmount||0).toLocaleString('en-IN')} <span style="color:var(--muted);">(${e.count||0})</span></span></div>`;
+          }).join('');
+        }
+      }
+      // History (last 5)
+      if (state.lastHistory) {
+        const hist = [state.lastHistory];
+        renderLastResults(mins, hist);
       }
     });
-  });
+  } catch(e) { console.warn('pollGameState error:', e.message); }
+}
+
+async function pollHistory() {
+  for (const mins of [1,3,5]) {
+    try {
+      const data = await apiCall('/api/admin/game-history?timer=' + mins);
+      if (data.success) {
+        const history = data.history.map(h => ({ round: parseInt(h.period_id), num: h.win_num, color: h.color, bigSmall: h.big_small, timestamp: h.timestamp }));
+        renderLastResults(mins, history);
+        if (data.history.length > 0) {
+          const schedRes = await apiCall('/api/admin/game-state');
+          if (schedRes.success) {
+            const st = schedRes.states.find(s => s.timer === mins);
+            if (st && st.schedule) {
+              const vals = Array.isArray(st.schedule) ? st.schedule : Object.values(st.schedule);
+              scheduleDataByTimer[mins] = vals.length >= 5 ? vals.slice(0,5) : [...vals, ...Array(5-vals.length).fill(null)];
+              buildScheduleGridForMode(mins);
+            }
+          }
+        }
+      }
+    } catch(e) {}
+  }
+}
+
+function updateNextResultBadges() {
+  pollGameState();
+  pollHistory();
+  // Poll every 3 seconds
+  setInterval(pollGameState, 3000);
+  setInterval(pollHistory, 10000);
 }
 
 // ── LIVE DATA ──
-function loadLiveData() {
-  // Listen to each timer path separately
-  [1,3,5].forEach(mins => {
-    const path = 'wingo/wingo' + mins + 'min';
-    onValue(ref(db, path), (snap) => {
-      const data = snap.val() || {};
-      const statusEl = document.getElementById('status' + mins + 'min');
-      if (statusEl) {
-        if (data.currentResult >= 0) {
-          statusEl.textContent = data.currentResult;
-          statusEl.style.color = 'var(--gold)';
-        } else {
-          statusEl.textContent = 'Auto';
-          statusEl.style.color = 'var(--muted)';
+async function loadLiveData() {
+  try {
+    // Update game state display
+    const stateData = await apiCall('/api/admin/game-state');
+    if (stateData.success) {
+      stateData.states.forEach(state => {
+        const mins = state.timer;
+        const statusEl = document.getElementById('status' + mins + 'min');
+        if (statusEl) {
+          if (state.current_result !== null && parseInt(state.current_result) >= 0) {
+            statusEl.textContent = state.current_result;
+            statusEl.style.color = 'var(--gold)';
+          } else {
+            statusEl.textContent = 'Auto';
+            statusEl.style.color = 'var(--muted)';
+          }
         }
-      }
-      // Update main display for selected timer
-      if (mins === selectedTimerMode) {
-        const statMode = document.getElementById('statMode');
-        if (statMode && data.mode) statMode.textContent = data.mode === 'auto' ? '🤖 Auto' : '👑 Manual';
-        if (data.lastresult !== undefined && data.lastresult >= 0) {
+        if (state.last_result !== null) {
           const lrNum = document.getElementById('lastResultNum');
           const lrColor = document.getElementById('lastResultColor');
           const lrTime = document.getElementById('lastResultTime');
           const colors = ['violet+red','green','red','green','red','violet+green','red','green','red','green'];
-          if (lrNum) lrNum.textContent = data.lastresult;
-          if (lrColor) lrColor.textContent = colors[data.lastresult] || '—';
-          if (lrTime) lrTime.textContent = 'at ' + new Date().toLocaleTimeString();
+          if (lrNum) lrNum.textContent = state.last_result;
+          if (lrColor) lrColor.textContent = colors[parseInt(state.last_result)] || '—';
+          if (lrTime) lrTime.textContent = 'Updated';
         }
-      }
-    });
-  });
-  // Listen for bets
-  onValue(ref(db, 'wingo/bets'), (snap) => {
-    const bets = snap.val() ? Object.values(snap.val()) : [];
-    const statBets = document.getElementById('statBets');
-    if (statBets) statBets.textContent = bets.length;
-    renderLiveBets(bets);
-  });
+      });
+    }
+    // Load live bets
+    const betsData = await apiCall('/api/admin/live-bets');
+    if (betsData.success) {
+      const statBets = document.getElementById('statBets');
+      if (statBets) statBets.textContent = betsData.bets.length;
+      renderLiveBets(betsData.bets);
+    }
+  } catch(e) { console.warn('loadLiveData error:', e.message); }
+  // Poll every 3 seconds
+  setTimeout(loadLiveData, 3000);
 }
 
 // ── RENDER LIVE BETS ──
@@ -1410,44 +1448,47 @@ window.selectTimerTab = function(mins) {
 
 window.setNextResult = async function() {
   if (selectedNum === null) { showToast('⚠️ Select a number first!'); return; }
-  const path = 'wingo/wingo' + selectedTimerMode + 'min';
-  await set(ref(db, path + '/currentResult'), selectedNum);
-  await set(ref(db, path + '/mode'), 'manual');
-  document.getElementById('overrideStatus').textContent = '✅ [' + selectedTimerMode + ' Min] Number ' + selectedNum + ' set as next result';
-  document.getElementById('overrideStatus').style.color = 'var(--gold)';
-  document.getElementById('status' + selectedTimerMode + 'min').textContent = selectedNum;
-  showToast('✅ [' + selectedTimerMode + ' Min] Result ' + selectedNum + ' set!');
+  try {
+    await apiCall('/api/admin/set-result', 'POST', { timer: selectedTimerMode, num: selectedNum });
+    document.getElementById('overrideStatus').textContent = '✅ [' + selectedTimerMode + ' Min] Number ' + selectedNum + ' set as next result';
+    document.getElementById('overrideStatus').style.color = 'var(--gold)';
+    document.getElementById('status' + selectedTimerMode + 'min').textContent = selectedNum;
+    showToast('✅ [' + selectedTimerMode + ' Min] Result ' + selectedNum + ' set!');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.clearNextResult = async function() {
-  const path = 'wingo/wingo' + selectedTimerMode + 'min';
-  await set(ref(db, path + '/currentResult'), -1);
-  await set(ref(db, path + '/mode'), 'auto');
-  selectedNum = null;
-  document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
-  document.getElementById('overrideStatus').textContent = 'No override set — auto generating';
-  document.getElementById('overrideStatus').style.color = 'var(--muted)';
-  document.getElementById('status' + selectedTimerMode + 'min').textContent = '—';
-  showToast('🔄 [' + selectedTimerMode + ' Min] Override cleared');
+  try {
+    await apiCall('/api/admin/clear-result', 'POST', { timer: selectedTimerMode });
+    selectedNum = null;
+    document.querySelectorAll('.num-btn').forEach(b => b.classList.remove('selected'));
+    document.getElementById('overrideStatus').textContent = 'No override set — auto generating';
+    document.getElementById('overrideStatus').style.color = 'var(--muted)';
+    document.getElementById('status' + selectedTimerMode + 'min').textContent = '—';
+    showToast('🔄 [' + selectedTimerMode + ' Min] Override cleared');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.toggleAutoMode = async function() {
   const on = document.getElementById('autoToggle').checked;
-  await set(ref(db, 'wingo/automode'), on);
-  document.getElementById('statMode').textContent = on ? '🤖 Auto' : '👑 Manual';
-  showToast(on ? '🤖 Auto mode ON' : '👑 Manual mode ON');
+  try {
+    await apiCall('/api/admin/settings', 'POST', { key: 'automode_all', value: on });
+    document.getElementById('statMode').textContent = on ? '🤖 Auto' : '👑 Manual';
+    showToast(on ? '🤖 Auto mode ON' : '👑 Manual mode ON');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.toggleBettingLock = async function() {
   const locked = document.getElementById('lockToggle').checked;
-  await set(ref(db, 'wingo/bettinglocked'), locked);
-  showToast(locked ? '🔒 Betting locked for all users' : '🔓 Betting unlocked');
+  try {
+    await apiCall('/api/admin/toggle-lock', 'POST', { timer: selectedTimerMode, locked });
+    showToast(locked ? '🔒 Betting locked' : '🔓 Betting unlocked');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.forceResolveNow = async function() {
   if (!confirm('Force resolve the current round immediately?')) return;
-  await set(ref(db, 'wingo/forceResolve'), Date.now());
-  showToast('⚡ Force resolve triggered!');
+  showToast('⚡ Force resolve — will take effect on next cron tick (within 1 min)');
 };
 
 // ── SCHEDULE ──
@@ -1484,8 +1525,10 @@ window.editSlotMode = function(mins, i) {
 };
 
 window.saveScheduleMode = async function(mins) {
-  await set(ref(db, 'wingo/wingo' + mins + 'min/schedule'), scheduleDataByTimer[mins]);
-  showToast('💾 [' + mins + ' Min] Schedule saved!');
+  try {
+    await apiCall('/api/admin/set-schedule', 'POST', { timer: mins, schedule: scheduleDataByTimer[mins].filter(v => v !== null) });
+    showToast('💾 [' + mins + ' Min] Schedule saved!');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.clearScheduleMode = function(mins) {
@@ -1519,49 +1562,42 @@ window.saveWeights = async function() {
     const el = document.getElementById('weight' + i);
     if (el) weights[i] = parseInt(el.value);
   }
-  await set(ref(db, 'wingo/weights'), weights);
-  showToast('💾 Probability weights saved!');
+  try {
+    await apiCall('/api/admin/settings', 'POST', { key: 'weights', value: weights });
+    showToast('💾 Probability weights saved!');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 // ── LIVE BETS ──
-function loadBets() {
+async function loadBets() {
   const colorMap = { green:'#27ae60', red:'#e02020', violet:'#7c4dff', big:'var(--gold)', small:'#2563eb' };
-  [1, 3, 5].forEach(mins => {
-    onValue(ref(db, 'wingo/wingo' + mins + 'min/betSummary'), (snap) => {
-      const summary = snap.val();
+  try {
+    const stateData = await apiCall('/api/admin/game-state');
+    if (!stateData.success) return;
+    stateData.states.forEach(state => {
+      const mins = state.timer;
+      const summary = state.bet_summary || {};
       const summaryEl = document.getElementById('liveSummary' + mins + 'min');
       const totalEl = document.getElementById('liveTotalAmt' + mins + 'min');
-      if (!summary || Object.keys(summary).length === 0) {
+      const entries = Object.values(summary);
+      if (entries.length === 0) {
         if (summaryEl) summaryEl.innerHTML = '<span style="color:var(--muted);">No bets yet</span>';
         if (totalEl) totalEl.textContent = '₹0 · 0 bets';
         return;
       }
-      const entries = Object.values(summary);
-      const totalAmt = entries.reduce((s, e) => s + (e.totalAmount || 0), 0);
-      const totalCount = entries.reduce((s, e) => s + (e.count || 0), 0);
+      const totalAmt = entries.reduce((s,e) => s+(e.totalAmount||0), 0);
+      const totalCount = entries.reduce((s,e) => s+(e.count||0), 0);
       if (totalEl) totalEl.textContent = '₹' + totalAmt.toLocaleString('en-IN') + ' · ' + totalCount + ' bets';
       if (summaryEl) {
-        summaryEl.style.display = 'block';
-        summaryEl.style.textAlign = 'left';
+        summaryEl.style.display = 'block'; summaryEl.style.textAlign = 'left';
         summaryEl.innerHTML = entries.map(e => {
-          const col = colorMap[e.selection ? e.selection.toLowerCase() : ''] || 'var(--text)';
-          const pct = totalAmt > 0 ? Math.round(e.totalAmount / totalAmt * 100) : 0;
-          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid rgba(255,255,255,0.04);">
-            <div style="display:flex;align-items:center;gap:0.5rem;">
-              <span style="color:${col};font-weight:700;font-size:0.82rem;">${e.selection}</span>
-              <span style="color:var(--muted);font-size:0.72rem;">(${e.count})</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:0.5rem;">
-              <div style="width:50px;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;">
-                <div style="width:${pct}%;height:100%;background:${col};border-radius:2px;"></div>
-              </div>
-              <span style="color:var(--text);font-size:0.82rem;font-weight:600;">₹${e.totalAmount.toLocaleString('en-IN')}</span>
-            </div>
-          </div>`;
+          const col = colorMap[(e.selection||'').toLowerCase()] || 'var(--text)';
+          const pct = totalAmt > 0 ? Math.round((e.totalAmount||0)/totalAmt*100) : 0;
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:0.35rem 0;border-bottom:1px solid rgba(255,255,255,0.04);"><div style="display:flex;align-items:center;gap:0.5rem;"><span style="color:${col};font-weight:700;font-size:0.82rem;">${e.selection||''}</span><span style="color:var(--muted);font-size:0.72rem;">(${e.count||0})</span></div><div style="display:flex;align-items:center;gap:0.5rem;"><div style="width:50px;height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${col};border-radius:2px;"></div></div><span style="color:var(--text);font-size:0.82rem;font-weight:600;">₹${(e.totalAmount||0).toLocaleString('en-IN')}</span></div></div>`;
         }).join('');
       }
     });
-  });
+  } catch(e) { console.warn('loadBets error:', e.message); }
 }
 
 window.refreshBets = function() { showToast('🔄 Refreshed'); };
@@ -1569,15 +1605,17 @@ window.refreshBets = function() { showToast('🔄 Refreshed'); };
 // ── SETTINGS ──
 window.saveSettings = async function() {
   const settings = {
-    fee: parseFloat(document.getElementById('feeInput').value),
-    minBet: parseFloat(document.getElementById('minBetInput').value),
-    maxBet: parseFloat(document.getElementById('maxBetInput').value),
-    colorPayout: parseFloat(document.getElementById('colorPayout').value),
-    violetPayout: parseFloat(document.getElementById('violetPayout').value),
-    numPayout: parseFloat(document.getElementById('numPayout').value),
+    fee: parseFloat(document.getElementById('feeInput')?.value || 0.04),
+    minBet: parseFloat(document.getElementById('minBetInput')?.value || 10),
+    maxBet: parseFloat(document.getElementById('maxBetInput')?.value || 50000),
+    colorPayout: parseFloat(document.getElementById('colorPayout')?.value || 2),
+    violetPayout: parseFloat(document.getElementById('violetPayout')?.value || 4.5),
+    numPayout: parseFloat(document.getElementById('numPayout')?.value || 9),
   };
-  await set(ref(db, 'wingo/settings'), settings);
-  showToast('💾 Settings saved to Firebase!');
+  try {
+    await apiCall('/api/admin/settings', 'POST', { key: 'game_settings', value: settings });
+    showToast('💾 Settings saved!');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.changeAdminPass = async function() {
@@ -1585,22 +1623,18 @@ window.changeAdminPass = async function() {
   const p2 = document.getElementById('confirmAdminPass').value;
   if (!p1) { showToast('⚠️ Enter a new password'); return; }
   if (p1 !== p2) { showToast('⚠️ Passwords do not match'); return; }
-  try {
-    await updatePassword(auth.currentUser, p1);
-    showToast('✅ Password changed!');
-  } catch(e) { showToast('❌ ' + e.message); }
+  // Password is the admin token - update in localStorage and Vercel env manually
+  localStorage.setItem('royalwin_admin_token', p1);
+  showToast('✅ Local session updated! Update ADMIN_TOKEN in Vercel env to persist.');
 };
 
 window.resetAllRounds = async function() {
-  if (!confirm('⚠️ This will delete ALL round history. Continue?')) return;
-  await remove(ref(db, 'wingo/history'));
-  showToast('🗑️ Round data cleared');
+  showToast('⚠️ Round history reset not supported via API. Clear from Neon SQL Editor if needed.');
 };
 
 window.resetAllBets = async function() {
   if (!confirm('⚠️ This will delete ALL bet records. Continue?')) return;
-  await remove(ref(db, 'wingo/bets'));
-  showToast('💀 Bet history cleared');
+  showToast('⚠️ This action is not supported via API for safety. Clear individual user bets instead.');
 };
 
 // ── TABS ──
@@ -1608,243 +1642,124 @@ window.resetAllBets = async function() {
 
 // ── MAINTENANCE MODE ──
 window.toggleMaintenance = async function(isOn) {
-  const msg = document.getElementById('maintenanceMsg').value;
-  await set(ref(db, 'maintenance'), { active: isOn, message: msg, timestamp: Date.now() });
-  showToast(isOn ? '🔧 Maintenance mode ON — players cannot access game' : '✅ Maintenance mode OFF — site is live');
+  const msg = document.getElementById('maintenanceMsg')?.value || '';
+  try {
+    await apiCall('/api/admin/maintenance', 'POST', { active: isOn, message: msg });
+    showToast(isOn ? '🔧 Maintenance mode ON — players cannot access game' : '✅ Maintenance mode OFF — site is live');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 // ── REVENUE DASHBOARD ──
 window.loadRevenueStats = async function loadRevenueStats(period = 'today') {
-  // Update period buttons
   ['today','week','month','all'].forEach(p => {
     const btn = document.getElementById('revBtn-' + p);
     if (!btn) return;
-    if (p === period) {
-      btn.style.background = 'rgba(240,192,64,0.15)';
-      btn.style.borderColor = 'var(--gold)';
-      btn.style.color = 'var(--gold)';
-      btn.style.fontWeight = '700';
-    } else {
-      btn.style.background = 'transparent';
-      btn.style.borderColor = 'var(--border)';
-      btn.style.color = 'var(--muted)';
-      btn.style.fontWeight = '400';
-    }
+    if (p === period) { btn.style.background='rgba(240,192,64,0.15)'; btn.style.borderColor='var(--gold)'; btn.style.color='var(--gold)'; btn.style.fontWeight='700'; }
+    else { btn.style.background='transparent'; btn.style.borderColor='var(--border)'; btn.style.color='var(--muted)'; btn.style.fontWeight='400'; }
   });
-
-  const now = Date.now();
-  const today = new Date(); today.setHours(0,0,0,0);
-  let startTime = 0;
-  if (period === 'today') startTime = today.getTime();
-  else if (period === 'week') { const d = new Date(today); d.setDate(d.getDate() - 7); startTime = d.getTime(); }
-  else if (period === 'month') { const d = new Date(today); d.setDate(1); startTime = d.getTime(); }
-
-  // Check auth before reading
-  const currentUser = auth.currentUser || window._adminUser;
-  if (!currentUser) { 
-    // Retry after short delay if auth not ready
-    setTimeout(() => loadRevenueStats(period), 500);
-    return; 
-  }
-
   try {
-    const [depSnap, withSnap, usersSnap] = await Promise.all([
-      get(ref(db, 'adminRequests/deposits')),
-      get(ref(db, 'adminRequests/withdrawals')),
-      get(ref(db, 'users'))
-    ]);
-
-    const deps = depSnap.val() ? Object.values(depSnap.val()) : [];
-    const withs = withSnap.val() ? Object.values(withSnap.val()) : [];
-    const users = usersSnap.val() ? Object.values(usersSnap.val()) : [];
-
-    // Filter by period
-    const filteredDeps = deps.filter(d => d.status === 'approved' && (startTime === 0 || (d.timestamp||0) >= startTime));
-    const filteredWiths = withs.filter(w => w.status === 'approved' && (startTime === 0 || (w.timestamp||0) >= startTime));
-    const newUsers = users.filter(u => startTime === 0 || (u.createdAt||0) >= startTime);
-
-    const totalDep = filteredDeps.reduce((s,d) => s + (d.amount||0), 0);
-    const totalWith = filteredWiths.reduce((s,w) => s + (w.amount||0), 0);
-    const netRev = totalDep - totalWith;
-
-    // Per-gateway split: deposits identified by 'method' containing 'WGPay'; withdrawals by 'gateway' field === 'wgpay'
-    const wgDeps = filteredDeps.filter(d => (d.method || '').includes('WGPay'));
-    const cxDeps = filteredDeps.filter(d => !(d.method || '').includes('WGPay'));
-    const wgWiths = filteredWiths.filter(w => w.gateway === 'wgpay');
-    const cxWiths = filteredWiths.filter(w => w.gateway !== 'wgpay');
-
-    const wgDepTotal = wgDeps.reduce((s,d) => s + (d.amount||0), 0);
-    const cxDepTotal = cxDeps.reduce((s,d) => s + (d.amount||0), 0);
-    const wgWithTotal = wgWiths.reduce((s,w) => s + (w.amount||0), 0);
-    const cxWithTotal = cxWiths.reduce((s,w) => s + (w.amount||0), 0);
-    const wgNet = wgDepTotal - wgWithTotal;
-    const cxNet = cxDepTotal - cxWithTotal;
-
-    // Pending requests
-    const pendingDeps = deps.filter(d => d.status === 'pending').length;
-    const pendingWiths = withs.filter(w => w.status === 'pending').length;
-
-    // Total bets from all users
-    let totalBets = 0, totalWagered = 0;
-    users.forEach(u => {
-      if (u.betHistory) {
-        const bets = Object.values(u.betHistory).filter(b => startTime === 0 || (b.timestamp||0) >= startTime);
-        totalBets += bets.length;
-        totalWagered += bets.reduce((s,b) => s + (b.bet||0), 0);
-      }
-    });
-
-    // Update UI
+    const data = await apiCall('/api/admin/stats?period=' + period);
+    if (!data.success) return;
     const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
-    setText('statTotalDeposits', '₹' + totalDep.toLocaleString('en-IN'));
-    setText('statDepCount', filteredDeps.length + ' approved');
-    setText('statTotalWithdrawals', '₹' + totalWith.toLocaleString('en-IN'));
-    setText('statWithCount', filteredWiths.length + ' approved');
+    setText('statTotalDeposits', '₹' + parseFloat(data.totalDeposits||0).toLocaleString('en-IN'));
+    setText('statDepCount', data.depCount + ' approved');
+    setText('statTotalWithdrawals', '₹' + parseFloat(data.totalWithdrawals||0).toLocaleString('en-IN'));
+    setText('statWithCount', data.withCount + ' approved');
     const netEl = document.getElementById('statNetRevenue');
-    if (netEl) { netEl.textContent = '₹' + Math.abs(netRev).toLocaleString('en-IN'); netEl.style.color = netRev >= 0 ? 'var(--green)' : 'var(--red2)'; }
-
-    // CXPay column
-    setText('cxStatDeposits', '₹' + cxDepTotal.toLocaleString('en-IN'));
-    setText('cxStatDepCount', cxDeps.length + ' approved');
-    setText('cxStatWithdrawals', '₹' + cxWithTotal.toLocaleString('en-IN'));
-    setText('cxStatWithCount', cxWiths.length + ' approved');
+    const net = parseFloat(data.netRevenue||0);
+    if (netEl) { netEl.textContent = '₹' + Math.abs(net).toLocaleString('en-IN'); netEl.style.color = net >= 0 ? 'var(--green)' : 'var(--red2)'; }
+    setText('cxStatDeposits', '₹' + parseFloat(data.cxDepTotal||0).toLocaleString('en-IN'));
+    setText('cxStatDepCount', data.cxDepCount + ' approved');
+    setText('cxStatWithdrawals', '₹' + parseFloat(data.cxWithTotal||0).toLocaleString('en-IN'));
+    setText('cxStatWithCount', data.cxWithCount + ' approved');
     const cxNetEl = document.getElementById('cxStatNet');
+    const cxNet = parseFloat(data.cxDepTotal||0) - parseFloat(data.cxWithTotal||0);
     if (cxNetEl) { cxNetEl.textContent = '₹' + Math.abs(cxNet).toLocaleString('en-IN'); cxNetEl.style.color = cxNet >= 0 ? 'var(--green)' : 'var(--red2)'; }
-
-    // WGPay column
-    setText('wgStatDeposits', '₹' + wgDepTotal.toLocaleString('en-IN'));
-    setText('wgStatDepCount', wgDeps.length + ' approved');
-    setText('wgStatWithdrawals', '₹' + wgWithTotal.toLocaleString('en-IN'));
-    setText('wgStatWithCount', wgWiths.length + ' approved');
+    setText('wgStatDeposits', '₹' + parseFloat(data.wgDepTotal||0).toLocaleString('en-IN'));
+    setText('wgStatDepCount', data.wgDepCount + ' approved');
+    setText('wgStatWithdrawals', '₹' + parseFloat(data.wgWithTotal||0).toLocaleString('en-IN'));
+    setText('wgStatWithCount', data.wgWithCount + ' approved');
     const wgNetEl = document.getElementById('wgStatNet');
+    const wgNet = parseFloat(data.wgDepTotal||0) - parseFloat(data.wgWithTotal||0);
     if (wgNetEl) { wgNetEl.textContent = '₹' + Math.abs(wgNet).toLocaleString('en-IN'); wgNetEl.style.color = wgNet >= 0 ? 'var(--green)' : 'var(--red2)'; }
-
-    setText('statTotalUsers', users.length);
-    setText('statNewUsers', newUsers.length + ' new');
-    setText('statTotalBets', totalBets.toLocaleString('en-IN'));
-    setText('statTotalWagered', '₹' + totalWagered.toLocaleString('en-IN') + ' wagered');
-    setText('statPending', (pendingDeps + pendingWiths));
+    setText('statTotalUsers', data.totalUsers);
+    setText('statNewUsers', data.newUsers + ' new');
+    setText('statTotalBets', parseFloat(data.totalBets||0).toLocaleString('en-IN'));
+    setText('statTotalWagered', '₹' + parseFloat(data.totalWagered||0).toLocaleString('en-IN') + ' wagered');
+    setText('statPending', (parseInt(data.pendingDeposits||0) + parseInt(data.pendingWithdrawals||0)));
     const countEl = document.getElementById('userCount');
-    if (countEl) countEl.textContent = users.length;
+    if (countEl) countEl.textContent = data.totalUsers;
 
-    // ── 7-DAY CHART ──
-    const chartEl = document.getElementById('revChart');
-    const labelsEl = document.getElementById('revChartLabels');
-    if (chartEl && labelsEl) {
-      const days = 7;
-      const dayData = [];
-      for (let i = days - 1; i >= 0; i--) {
-        const d = new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate() - i);
-        const start = d.getTime();
-        const end = start + 86400000;
-        const dep = deps.filter(x => x.status === 'approved' && (x.timestamp||0) >= start && (x.timestamp||0) < end).reduce((s,x) => s + (x.amount||0), 0);
-        const wit = withs.filter(x => x.status === 'approved' && (x.timestamp||0) >= start && (x.timestamp||0) < end).reduce((s,x) => s + (x.amount||0), 0);
-        dayData.push({ label: d.toLocaleDateString('en-IN',{day:'numeric',month:'short'}), dep, wit });
+    // Revenue chart
+    const chartData = await apiCall('/api/admin/revenue-chart');
+    if (chartData.success && chartData.days) {
+      const chartEl = document.getElementById('revChart');
+      const labelsEl = document.getElementById('revChartLabels');
+      if (chartEl && labelsEl) {
+        const days = chartData.days;
+        const maxVal = Math.max(...days.map(d => Math.max(d.dep, d.wit)), 1);
+        chartEl.innerHTML = days.map(d => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;"><div style="flex:1;width:100%;display:flex;align-items:flex-end;gap:1px;"><div style="flex:1;background:var(--green);border-radius:2px 2px 0 0;height:${Math.max(4,Math.round(d.dep/maxVal*70))}px;opacity:0.8;"></div><div style="flex:1;background:var(--red2);border-radius:2px 2px 0 0;height:${Math.max(4,Math.round(d.wit/maxVal*70))}px;opacity:0.8;"></div></div></div>`).join('');
+        labelsEl.innerHTML = days.map(d => `<div style="flex:1;text-align:center;font-size:0.58rem;color:var(--muted);">${d.label}</div>`).join('');
       }
-      const maxVal = Math.max(...dayData.map(d => Math.max(d.dep, d.wit)), 1);
-      chartEl.innerHTML = dayData.map(d => `
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;height:100%;">
-          <div style="flex:1;width:100%;display:flex;align-items:flex-end;gap:1px;">
-            <div style="flex:1;background:var(--green);border-radius:2px 2px 0 0;height:${Math.max(4, Math.round(d.dep/maxVal*70))}px;opacity:0.8;" title="Dep: ₹${d.dep}"></div>
-            <div style="flex:1;background:var(--red2);border-radius:2px 2px 0 0;height:${Math.max(4, Math.round(d.wit/maxVal*70))}px;opacity:0.8;" title="With: ₹${d.wit}"></div>
-          </div>
-        </div>`).join('');
-      labelsEl.innerHTML = dayData.map(d => `<div style="flex:1;text-align:center;font-size:0.58rem;color:var(--muted);">${d.label}</div>`).join('');
     }
-
   } catch(e) { console.error('Revenue stats error:', e); }
 }
 
-function loadSettings() {
-  // Load announcement
-  onValue(ref(db, 'announcement'), (snap) => {
-    const data = snap.val();
-    const el = document.getElementById('currentAnnouncement');
-    if (el) el.textContent = (data && data.active && data.message) ? data.message : 'None';
-    const input = document.getElementById('announcementMsg');
-    if (input && data && data.message) input.value = data.message;
-  });
-
-  // Load maintenance
-  onValue(ref(db, 'maintenance'), (snap) => {
-    const data = snap.val();
-    const toggle = document.getElementById('maintenanceToggle');
-    if (toggle && data) toggle.checked = data.active || false;
-  });
+async function loadSettings() {
+  try {
+    const data = await apiCall('/api/admin/settings');
+    if (!data.success) return;
+    const settings = data.settings;
+    // Announcement
+    const ann = settings['announcement'];
+    if (ann) {
+      const el = document.getElementById('currentAnnouncement');
+      if (el) el.textContent = (ann.active && ann.message) ? ann.message : 'None';
+      const input = document.getElementById('announcementMsg');
+      if (input && ann.message) input.value = ann.message;
+    }
+    // Maintenance
+    const maint = settings['maintenance'];
+    if (maint) {
+      const toggle = document.getElementById('maintenanceToggle');
+      if (toggle) toggle.checked = maint.active || false;
+    }
+  } catch(e) { console.warn('loadSettings error:', e.message); }
 }
 
 // ── USER SEARCH + BLOCK ──
 let allUsers = [];
 
-function loadUsers() {
+async function loadUsers() {
   const el = document.getElementById('usersList');
   if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;">Loading...</div>';
-
-  // Ensure auth is ready before reading users
-  const currentUser = auth.currentUser;
-  if (!currentUser) {
-    console.error('loadUsers: No authenticated user');
-    if (el) el.innerHTML = '<div style="color:var(--red2);padding:1rem;">❌ Not authenticated</div>';
-    return;
-  }
-  console.log('loadUsers: auth.uid =', currentUser.uid);
-
-  // Real-time listeners for users + deposits + withdrawals
-  // Store latest snapshots
-  let _usersSnap = null, _depsSnap = null, _withsSnap = null;
-
-  function rebuildUsers() {
-    if (!_usersSnap) return;
-    const data = _usersSnap;
+  try {
+    const data = await apiCall('/api/admin/users');
+    if (!data.success) { if (el) el.innerHTML = '<div style="color:var(--red2);padding:1rem;">❌ Error loading users</div>'; return; }
     const countEl = document.getElementById('userCount');
-    if (!data) {
-      if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);">No users yet</div>';
-      if (countEl) countEl.textContent = '0';
-      return;
-    }
-    const userDeps = {}, userWiths = {};
-    if (_depsSnap) {
-      Object.values(_depsSnap).forEach(d => {
-        if (d.status === 'approved') userDeps[d.uid] = (userDeps[d.uid]||0) + (d.amount||0);
-      });
-    }
-    if (_withsSnap) {
-      Object.values(_withsSnap).forEach(w => {
-        if (w.status === 'approved') userWiths[w.uid] = (userWiths[w.uid]||0) + (w.amount||0);
-      });
-    }
-    allUsers = Object.entries(data).map(([uid, u]) => ({
-      uid, ...u,
-      _totalDeposits: userDeps[uid] || 0,
-      _totalWithdrawals: userWiths[uid] || 0
+    allUsers = data.users.map(u => ({
+      uid: u.uid,
+      username: u.username,
+      memberId: u.member_id,
+      contact: u.contact,
+      balance: parseFloat(u.balance || 0),
+      createdAt: parseInt(u.created_at || 0),
+      isBlocked: u.is_banned,
+      referralCode: u.member_id,
+      referredBy: u.referred_by,
+      vip: { exp: parseFloat(u.vip_exp || 0) },
+      wager: { required: parseFloat(u.wager_required || 0), completed: parseFloat(u.wager_completed || 0) },
+      _totalDeposits: parseFloat(u.total_dep || 0),
+      _totalWithdrawals: parseFloat(u.total_with || 0)
     }));
     if (countEl) countEl.textContent = allUsers.length;
-    // Preserve current search query
     const searchEl = document.getElementById('userSearch');
     const q = searchEl ? searchEl.value.trim() : '';
     if (q) filterUsers(q);
     else renderUsers(allUsers);
-  }
-
-  // Real-time users listener
-  onValue(ref(db, 'users'), (snap) => {
-    _usersSnap = snap.val();
-    rebuildUsers();
-  }, (e) => {
+  } catch(e) {
     if (el) el.innerHTML = '<div style="text-align:center;color:var(--red2);padding:1rem;">❌ Error: ' + e.message + '</div>';
-  });
-
-  // Real-time deposits listener
-  onValue(ref(db, 'adminRequests/deposits'), (snap) => {
-    _depsSnap = snap.val();
-    rebuildUsers();
-  });
-
-  // Real-time withdrawals listener
-  onValue(ref(db, 'adminRequests/withdrawals'), (snap) => {
-    _withsSnap = snap.val();
-    rebuildUsers();
-  });
+  }
 }
 
 function getAdminVipLevel(exp) {
@@ -1904,11 +1819,7 @@ function renderUsers(users) {
 window.deleteAllBets = async function(uid, username) {
   if (!confirm('Delete ALL bet history for ' + username + '? This cannot be undone.')) return;
   try {
-    await Promise.all([
-      set(ref(db, 'users/' + uid + '/wingoMyBets'), null),
-      set(ref(db, 'users/' + uid + '/wingoPendingBets'), null),
-      set(ref(db, 'users/' + uid + '/betHistory'), null)
-    ]);
+    await apiCall('/api/admin/clear-bets', 'POST', { uid });
     showToast('✅ All bet history cleared for ' + username);
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
@@ -1935,128 +1846,86 @@ window.openEditBets = async function(uid, username) {
 
   // Load bets
   try {
-    const snap = await get(ref(db, 'users/' + uid + '/wingoMyBets'));
+    const result = await apiCall('/api/admin/user-bets?uid=' + uid);
     const el = document.getElementById('editBetsList');
-    if (!snap.val()) { el.innerHTML = '<div style="text-align:center;color:var(--muted);">No bet history</div>'; return; }
-    const bets = Object.entries(snap.val()).sort((a,b) => (b[1].timestamp||0)-(a[1].timestamp||0));
-    el.innerHTML = bets.map(([key, b]) => {
-      const won = (b.pl||0) > 0;
-      const time = b.timestamp ? new Date(b.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+    const bets = result.bets || [];
+    if (!bets.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);">No bet history</div>'; return; }
+    el.innerHTML = bets.map(b => {
+      const won = b.status === 'won';
+      const time = b.created_at ? new Date(parseInt(b.created_at)).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
       return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.07);border-radius:8px;padding:0.6rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;flex-wrap:wrap;">
         <div>
-          <div style="font-size:0.78rem;font-weight:700;color:${won?'#27ae60':'#e02020'}">${won?'WIN':'LOSS'} · ₹${(Math.abs(b.pl||0)).toLocaleString('en-IN')}</div>
-          <div style="font-size:0.68rem;color:var(--muted);">${b.round||'—'} · ${b.selection||'—'} · ₹${b.bet||0} · ${time}</div>
+          <div style="font-size:0.78rem;font-weight:700;color:${won?'#27ae60':'#e02020'}">${won?'WIN':'LOSS'} · ₹${parseFloat(b.win_amount||b.bet_amount||0).toLocaleString('en-IN')}</div>
+          <div style="font-size:0.68rem;color:var(--muted);">${b.period_id||'—'} · ${b.saved_color||b.saved_bs||b.saved_num||'—'} · ₹${b.bet_amount||0} · ${time}</div>
         </div>
         <div style="display:flex;gap:0.3rem;">
-          <button onclick="deleteSingleBet('${uid}','${key}')" style="font-size:0.65rem;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:#e02020;cursor:pointer;">🗑 Delete</button>
-          <button onclick="editSingleBet('${uid}','${key}',${JSON.stringify(b).replace(/'/g,'&#39;')})" style="font-size:0.65rem;background:rgba(124,77,255,0.1);border:1px solid rgba(124,77,255,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:#a87dff;cursor:pointer;">✏ Edit</button>
+          <button onclick="deleteSingleBet('${b.id}')" style="font-size:0.65rem;background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:#e02020;cursor:pointer;">🗑 Delete</button>
         </div>
       </div>`;
     }).join('');
   } catch(e) { document.getElementById('editBetsList').innerHTML = '❌ Error: ' + e.message; }
 };
 
-window.deleteSingleBet = async function(uid, key) {
+window.deleteSingleBet = async function(betId) {
   if (!confirm('Delete this bet entry?')) return;
   try {
-    await set(ref(db, 'users/' + uid + '/wingoMyBets/' + key), null);
+    await apiCall('/api/admin/delete-bet', 'POST', { betId });
     showToast('✅ Bet deleted');
-    // Refresh the modal
-    const modal = document.getElementById('editBetsModal');
-    if (modal) modal.remove();
-  } catch(e) { showToast('❌ Error: ' + e.message); }
-};
-
-window.editSingleBet = async function(uid, key, bet) {
-  const newPl = prompt('Enter new P&L (negative for loss). Current: ' + (bet.pl||0), bet.pl||0);
-  if (newPl === null) return;
-  const newResult = prompt('Enter new result e.g. red / 2. Current: ' + (bet.result||''), bet.result||'');
-  if (newResult === null) return;
-  try {
-    await update(ref(db, 'users/' + uid + '/wingoMyBets/' + key), {
-      pl: parseFloat(newPl),
-      result: newResult,
-      status: parseFloat(newPl) > 0 ? 'won' : 'lost'
-    });
-    showToast('✅ Bet updated');
     const modal = document.getElementById('editBetsModal');
     if (modal) modal.remove();
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 // ── FRAUD ALERTS ──
-window.loadFraudAlerts = function() {
+window.loadFraudAlerts = async function() {
   const el = document.getElementById('fraudAlertsList');
   if (!el) return;
   el.innerHTML = '<div style="color:var(--muted);font-size:0.8rem;">Loading...</div>';
-
-  onValue(ref(db, 'users'), (snap) => {
-    const allUsers = snap.val() || {};
-    const alerts = [];
-    for (const [uid, u] of Object.entries(allUsers)) {
-      if (u.fraudLog) {
-        for (const [logKey, log] of Object.entries(u.fraudLog)) {
-          alerts.push({
-            uid, logKey,
-            username: u.username || 'Unknown',
-            memberId: u.memberId || uid.substring(0,8),
-            balance: u.balance || 0,
-            penaltyWager: parseFloat(((u.balance||0) * 1.5).toFixed(2)),
-            ...log
-          });
-        }
-      }
-    }
-    alerts.sort((a,b) => (b.timestamp||0) - (a.timestamp||0));
-
-    if (alerts.length === 0) {
-      el.innerHTML = '<div style="color:var(--green);font-size:0.8rem;">✅ No fraud detected</div>';
-      return;
-    }
-
+  try {
+    const data = await apiCall('/api/admin/fraud');
+    const alerts = data.fraudLog || [];
+    if (alerts.length === 0) { el.innerHTML = '<div style="color:var(--green);font-size:0.8rem;">✅ No fraud detected</div>'; return; }
     el.innerHTML = alerts.map(a => {
-      const time = a.timestamp ? new Date(a.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
+      const penaltyWager = parseFloat(((parseFloat(a.balance||0)) * 1.5).toFixed(2));
+      const time = a.timestamp ? new Date(parseInt(a.timestamp)).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
+      const details = a.details || {};
       return `<div style="background:rgba(255,255,255,0.03);border:1px solid rgba(224,32,32,0.2);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.4rem;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:0.4rem;">
           <div>
-            <span style="font-weight:700;color:var(--red2);">${a.username}</span>
-            <span style="font-size:0.65rem;background:rgba(224,32,32,0.1);border-radius:4px;padding:0.1rem 0.4rem;color:var(--red2);margin-left:0.3rem;">ID: ${a.memberId}</span>
-            <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">🚨 ${a.detail||'Suspicious activity'}</div>
-            <div style="font-size:0.65rem;color:var(--muted);">${a.mode||''} · ${time}</div>
+            <span style="font-weight:700;color:var(--red2);">${a.username||'Unknown'}</span>
+            <span style="font-size:0.65rem;background:rgba(224,32,32,0.1);border-radius:4px;padding:0.1rem 0.4rem;color:var(--red2);margin-left:0.3rem;">ID: ${a.member_id||'—'}</span>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">🚨 ${details.detail||a.type||'Suspicious activity'}</div>
+            <div style="font-size:0.65rem;color:var(--muted);">${time}</div>
           </div>
           <div style="text-align:right;">
-            <div style="font-size:0.7rem;color:var(--muted);">Balance: <span style="color:var(--gold);font-weight:700;">₹${a.balance.toLocaleString('en-IN')}</span></div>
-            <div style="font-size:0.7rem;color:var(--muted);">Penalty: <span style="color:var(--red2);font-weight:700;">₹${a.penaltyWager.toLocaleString('en-IN')}</span></div>
+            <div style="font-size:0.7rem;color:var(--muted);">Balance: <span style="color:var(--gold);font-weight:700;">₹${parseFloat(a.balance||0).toLocaleString('en-IN')}</span></div>
+            <div style="font-size:0.7rem;color:var(--muted);">Penalty: <span style="color:var(--red2);font-weight:700;">₹${penaltyWager.toLocaleString('en-IN')}</span></div>
             <div style="display:flex;gap:0.3rem;margin-top:0.3rem;justify-content:flex-end;">
-              <button onclick="applyFraudPenalty('${a.uid}','${a.logKey}',${a.penaltyWager},${a.balance})" style="font-size:0.65rem;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:4px;padding:0.2rem 0.5rem;color:var(--red2);cursor:pointer;">⚠️ Penalty</button>
-              <button onclick="dismissFraud('${a.uid}','${a.logKey}')" style="font-size:0.65rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:0.2rem 0.5rem;color:var(--muted);cursor:pointer;">🗑 Dismiss</button>
+              <button onclick="applyFraudPenalty('${a.uid}','${a.id}',${penaltyWager})" style="font-size:0.65rem;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:4px;padding:0.2rem 0.5rem;color:var(--red2);cursor:pointer;">⚠️ Penalty</button>
+              <button onclick="dismissFraud('${a.id}')" style="font-size:0.65rem;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);border-radius:4px;padding:0.2rem 0.5rem;color:var(--muted);cursor:pointer;">🗑 Dismiss</button>
             </div>
           </div>
         </div>
       </div>`;
     }).join('');
-  });
+  } catch(e) { el.innerHTML = '<div style="color:var(--red2);">Error: ' + e.message + '</div>'; }
 };
 
-window.applyFraudPenalty = async function(uid, logKey, penaltyWager, balance) {
-  if (!confirm('Apply wager penalty of ₹' + penaltyWager.toLocaleString('en-IN') + ' to this user?')) return;
+window.applyFraudPenalty = async function(uid, fraudId, penaltyWager) {
+  if (!confirm('Apply wager penalty of ₹' + parseFloat(penaltyWager).toLocaleString('en-IN') + ' to this user?')) return;
   try {
-    const wagerSnap = await get(ref(db, 'users/' + uid + '/wager'));
-    const existing = wagerSnap.val() || { required: 0, completed: 0 };
-    const newRequired = parseFloat((parseFloat(existing.required||0) + penaltyWager).toFixed(2));
-    await Promise.all([
-      update(ref(db, 'users/' + uid + '/wager'), { required: newRequired }),
-      set(ref(db, 'users/' + uid + '/fraudLog/' + logKey), null)
-    ]);
-    showToast('⚠️ Penalty applied — wager required: ₹' + newRequired.toLocaleString('en-IN'));
+    await apiCall('/api/admin/fraud-penalty', 'POST', { uid, fraudId, penaltyWager });
+    showToast('⚠️ Penalty applied!');
+    window.loadFraudAlerts();
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
-window.dismissFraud = async function(uid, logKey) {
+window.dismissFraud = async function(fraudId) {
   if (!confirm('Dismiss this fraud alert?')) return;
   try {
-    await set(ref(db, 'users/' + uid + '/fraudLog/' + logKey), null);
+    await apiCall('/api/admin/dismiss-fraud', 'POST', { fraudId });
     showToast('✅ Alert dismissed');
+    window.loadFraudAlerts();
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
@@ -2079,9 +1948,9 @@ window.filterUsers = function(query) {
 
 
 window.resetWithdrawDetails = async function(uid) {
-  if (!confirm('Reset saved withdrawal details for this user? They will need to re-enter their details.')) return;
+  if (!confirm('Reset saved withdrawal details for this user?')) return;
   try {
-    await remove(ref(db, 'users/' + uid + '/withdrawDetails'));
+    await apiCall('/api/admin/reset-withdraw-details', 'POST', { uid });
     showToast('✅ Withdrawal details reset for user');
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
@@ -2089,19 +1958,14 @@ window.resetWithdrawDetails = async function(uid) {
 
 // loadFraudAlerts defined below
 
-// ── RESOLVE MEMBER ID OR UID TO FIREBASE UID ──
+// ── RESOLVE MEMBER ID TO UID ──
 async function resolveUid(input) {
-  input = input.trim();
+  input = (input || '').trim();
   if (!input) return null;
-  // If it looks like a Firebase UID (long, >20 chars), use directly
-  if (input.length > 20) return input;
-  // Otherwise search by memberId
-  const snap = await get(ref(db, 'users'));
-  const users = snap.val() || {};
-  const found = Object.entries(users).find(([, u]) => 
-    u.memberId === input || u.referralCode === input
-  );
-  return found ? found[0] : null;
+  try {
+    const result = await apiCall('/api/admin/lookup?q=' + encodeURIComponent(input));
+    return result.success ? result.user.uid : null;
+  } catch(e) { return null; }
 }
 
 window.manualBalance = async function() {
@@ -2109,27 +1973,18 @@ window.manualBalance = async function() {
   const amt = parseFloat(document.getElementById('manualAmt').value);
   const type = document.getElementById('manualType').value;
   const infoEl = document.getElementById('manualBalInfo');
-  if (!input) { showToast('⚠️ Enter Member ID or UID'); return; }
+  if (!input) { showToast('⚠️ Enter Member ID'); return; }
   if (!amt || isNaN(amt) || amt <= 0) { showToast('⚠️ Enter a valid amount'); return; }
-  if (infoEl) infoEl.textContent = '⏳ Looking up user...';
+  if (infoEl) infoEl.textContent = '⏳ Processing...';
   try {
-    const uid = await resolveUid(input);
-    if (!uid) { showToast('❌ User not found: ' + input); if (infoEl) infoEl.textContent = '❌ User not found'; return; }
-    const balSnap = await get(ref(db, 'users/' + uid + '/balance'));
-    const currentBal = parseFloat(balSnap.val() || 0);
-    const newBal = type === 'add'
-      ? parseFloat((currentBal + amt).toFixed(2))
-      : parseFloat((currentBal - amt).toFixed(2));
-    if (newBal < 0) { showToast('❌ Balance would go negative!'); return; }
-    await set(ref(db, 'users/' + uid + '/balance'), newBal);
-    await push(ref(db, 'users/' + uid + '/transactions'), {
-      type: type === 'add' ? 'admin_credit' : 'admin_deduct',
-      amount: type === 'add' ? amt : -amt,
-      details: 'Manual ' + (type === 'add' ? 'credit' : 'deduction') + ' by admin',
-      balance: newBal, timestamp: Date.now()
-    });
-    if (infoEl) infoEl.textContent = '✅ Done! Member: ' + input + ' | Old: ₹' + currentBal.toLocaleString('en-IN') + ' → New: ₹' + newBal.toLocaleString('en-IN');
-    showToast((type === 'add' ? '✅ Added' : '➖ Deducted') + ' ₹' + amt.toLocaleString('en-IN') + ' | New balance: ₹' + newBal.toLocaleString('en-IN'));
+    const data = await apiCall('/api/admin/balance-adjust', 'POST', { memberId: input, amount: amt, type });
+    if (data.success) {
+      if (infoEl) infoEl.textContent = '✅ Done! Member: ' + input + ' | New balance: ₹' + parseFloat(data.newBalance).toLocaleString('en-IN');
+      showToast((type === 'add' ? '✅ Added' : '➖ Deducted') + ' ₹' + amt.toLocaleString('en-IN') + ' | New: ₹' + parseFloat(data.newBalance).toLocaleString('en-IN'));
+    } else {
+      showToast('❌ ' + (data.error || 'Failed'));
+      if (infoEl) infoEl.textContent = '❌ ' + (data.error || 'Failed');
+    }
   } catch(e) { showToast('❌ Error: ' + e.message); if (infoEl) infoEl.textContent = '❌ ' + e.message; }
 };
 
@@ -2138,103 +1993,83 @@ window.adjustWager = async function() {
   const amt = parseFloat(document.getElementById('wagerAdjAmt').value);
   const type = document.getElementById('wagerAdjType').value;
   const infoEl = document.getElementById('wagerCurrentInfo');
-  if (!input) { showToast('⚠️ Enter Member ID or UID'); return; }
-  if (infoEl) infoEl.textContent = '⏳ Looking up user...';
+  if (!input) { showToast('⚠️ Enter Member ID'); return; }
+  if (infoEl) infoEl.textContent = '⏳ Processing...';
   try {
-    const uid = await resolveUid(input);
-    if (!uid) { showToast('❌ User not found: ' + input); if (infoEl) infoEl.textContent = '❌ User not found'; return; }
-    const wagerSnap = await get(ref(db, 'users/' + uid + '/wager'));
-    const wager = wagerSnap.val() || { required: 0, completed: 0 };
-    if (type === 'reset') {
-      await set(ref(db, 'users/' + uid + '/wager'), { required: 0, completed: 0 });
-      showToast('✅ Wager reset for user');
-      if (infoEl) infoEl.textContent = '✅ Wager reset — Member: ' + input + ' | Required: ₹0, Completed: ₹0';
-      return;
-    }
-    if (!amt || isNaN(amt)) { showToast('⚠️ Enter a valid amount'); return; }
-    let newRequired = parseFloat(wager.required || 0);
-    if (type === 'add') {
-      newRequired = parseFloat((newRequired + amt).toFixed(2));
-    } else if (type === 'reduce') {
-      newRequired = Math.max(0, parseFloat((newRequired - amt).toFixed(2)));
-    }
-    await update(ref(db, 'users/' + uid + '/wager'), { required: newRequired });
-    showToast('✅ Wager ' + (type === 'add' ? 'increased' : 'reduced') + '! Required: ₹' + newRequired.toLocaleString('en-IN'));
-    if (infoEl) infoEl.textContent = '✅ Member: ' + input + ' | Required: ₹' + newRequired.toLocaleString('en-IN') + ' · Completed: ₹' + parseFloat(wager.completed||0).toLocaleString('en-IN') + ' · Remaining: ₹' + Math.max(0, newRequired - parseFloat(wager.completed||0)).toLocaleString('en-IN');
+    const data = await apiCall('/api/admin/wager-adjust', 'POST', { memberId: input, amount: amt, type });
+    if (data.success) {
+      const w = data.wager || {};
+      showToast('✅ Wager ' + type + '!');
+      if (infoEl) infoEl.textContent = '✅ Member: ' + input + ' | Required: ₹' + parseFloat(w.wager_required||0).toLocaleString('en-IN') + ' · Completed: ₹' + parseFloat(w.wager_completed||0).toLocaleString('en-IN');
+    } else { showToast('❌ ' + (data.error || 'Failed')); if (infoEl) infoEl.textContent = '❌ ' + (data.error || 'Failed'); }
   } catch(e) { showToast('❌ Error: ' + e.message); if (infoEl) infoEl.textContent = '❌ ' + e.message; }
 };
 
 window.toggleBlockUser = async function(uid, block) {
-  await update(ref(db, 'users/' + uid), { isBlocked: block });
-  showToast(block ? '🚫 User blocked!' : '✅ User unblocked!');
+  try {
+    await apiCall('/api/admin/block-user', 'POST', { uid, block });
+    showToast(block ? '🚫 User blocked!' : '✅ User unblocked!');
+    loadUsers();
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.deleteUser = async function(uid, username) {
-  if (!confirm('⚠️ Delete user "' + username + '"? This will remove all their data. Cannot be undone!')) return;
+  if (!confirm('⚠️ Delete user "' + username + '"? Cannot be undone!')) return;
   try {
-    // Delete from Realtime Database
-    await remove(ref(db, 'users/' + uid));
-    // Note: Deleting from Firebase Auth requires Admin SDK (server-side)
-    // For now we remove from database and block access
-    showToast('🗑️ User "' + username + '" deleted from database!');
+    await apiCall('/api/admin/delete-user', 'POST', { uid });
+    showToast('🗑️ User "' + username + '" deleted!');
+    loadUsers();
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 
 // ── FINANCE ──
-function loadFinance() {
-  // Listen for deposit requests
-  // Deposit sound alert
-  var _lastDepCount = 0;
-  function _playAlertSound() {
-    try {
-      const ctx = new (window.AudioContext || window.webkitAudioContext)();
-      [800, 1000, 1200].forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain); gain.connect(ctx.destination);
-        osc.type = 'sine'; osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.2);
-        osc.start(ctx.currentTime + i * 0.15);
-        osc.stop(ctx.currentTime + i * 0.15 + 0.2);
-      });
-    } catch(e) {}
-  }
+let _lastDepCount = 0;
+let _lastWithCount = 0;
 
-  onValue(ref(db, 'adminRequests/deposits'), (snap) => {
-    const el = document.getElementById('depositRequests');
-    if (!el) return;
-    const data = snap.val();
-    if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending deposits</div>'; return; }
-    const requests = Object.entries(data).reverse();
-    const pendingCount = requests.filter(([,r]) => r.status === 'pending').length;
-    if (_lastDepCount > 0 && pendingCount > _lastDepCount) {
-      _playAlertSound();
-      showToast('🔔 New deposit request!');
-    }
-    _lastDepCount = pendingCount;
+function _playAlertSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [800, 1000, 1200].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.15 + 0.2);
+      osc.start(ctx.currentTime + i * 0.15);
+      osc.stop(ctx.currentTime + i * 0.15 + 0.2);
+    });
+  } catch(e) {}
+}
 
-    // Split pending vs history
-    const pendingDeps = requests.filter(([,r]) => r.status === 'pending');
-    const historyDeps = requests.filter(([,r]) => r.status !== 'pending');
+async function pollDeposits() {
+  const el = document.getElementById('depositRequests');
+  if (!el) return;
+  try {
+    const data = await apiCall('/api/admin/deposits');
+    if (!data.success) return;
+    const requests = data.deposits;
+    const pendingDeps = requests.filter(r => r.status === 'pending');
+    const historyDeps = requests.filter(r => r.status !== 'pending');
 
-    // Update badge
+    if (_lastDepCount > 0 && pendingDeps.length > _lastDepCount) { _playAlertSound(); showToast('🔔 New deposit request!'); }
+    _lastDepCount = pendingDeps.length;
+
     const depBadge = document.getElementById('depPendingBadge');
     if (depBadge) { depBadge.textContent = pendingDeps.length; depBadge.style.display = pendingDeps.length > 0 ? 'inline' : 'none'; }
 
-    // Decide which to show
     const showDepHistory = window._showDepHistory || false;
     const toShow = showDepHistory ? requests : pendingDeps;
 
-    function renderDepRow([key, r]) {
+    function renderDepRow(r) {
+      const key = r.id;
       return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
         <div style="display:flex;align-items:center;gap:0.6rem;flex:1;min-width:0;">
-          <div style="font-weight:800;color:var(--green);font-size:0.92rem;white-space:nowrap;">₹${r.amount?.toLocaleString('en-IN')}${r.bonusAmt > 0 ? '<span style="color:var(--gold);font-size:0.68rem;margin-left:3px;">+₹'+r.bonusAmt+'</span>' : ''}</div>
+          <div style="font-weight:800;color:var(--green);font-size:0.92rem;white-space:nowrap;">₹${parseFloat(r.amount||0).toLocaleString('en-IN')}${parseFloat(r.bonus_amount||0) > 0 ? '<span style="color:var(--gold);font-size:0.68rem;margin-left:3px;">+₹'+r.bonus_amount+'</span>' : ''}</div>
           <div style="font-size:0.75rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.username || 'Unknown'}</div>
-          <div style="font-size:0.68rem;color:var(--gold);white-space:nowrap;">${r.memberId || '—'}</div>
-          <div style="font-size:0.68rem;color:var(--muted);white-space:nowrap;">${r.contact || '—'}</div>
-          <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})}</div>
+          <div style="font-size:0.68rem;color:var(--gold);white-space:nowrap;">${r.member_id || '—'}</div>
+          <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${r.created_at ? new Date(parseInt(r.created_at)).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}) : '—'}</div>
         </div>
         <div style="display:flex;gap:0.3rem;flex-shrink:0;">
           ${r.status === 'pending' ? `
@@ -2250,59 +2085,49 @@ function loadFinance() {
     } else {
       el.innerHTML = toShow.map(renderDepRow).join('');
     }
-    if (showDepHistory && historyDeps.length > 0) {
-      el.innerHTML += `<div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:0.3rem;">Showing all ${requests.length} records</div>`;
-    }
-  });
+  } catch(e) { console.warn('pollDeposits error:', e.message); }
+}
 
-  // Listen for withdrawal requests
-  onValue(ref(db, 'adminRequests/withdrawals'), (snap) => {
-    const el = document.getElementById('withdrawRequests');
-    if (!el) return;
-    const data = snap.val();
-    if (!data) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">No pending withdrawals</div>'; return; }
-    const requests = Object.entries(data).reverse();
-    const pendingWith = requests.filter(([,r]) => r.status === 'pending').length;
-    if (typeof _lastWithCount !== 'undefined' && _lastWithCount > 0 && pendingWith > _lastWithCount) {
-      _playAlertSound(); showToast('🔔 New withdrawal request!');
-    }
-    window._lastWithCount = pendingWith;
+async function pollWithdrawals() {
+  const el = document.getElementById('withdrawRequests');
+  if (!el) return;
+  try {
+    const data = await apiCall('/api/admin/withdrawals?status=pending');
+    if (!data.success) return;
+    const requests = data.withdrawals;
+    const pendingWiths = requests.filter(r => r.status === 'pending');
 
-    // Split pending vs history
-    const pendingWiths = requests.filter(([,r]) => r.status === 'pending');
-    const historyWiths = requests.filter(([,r]) => r.status !== 'pending');
+    if (_lastWithCount > 0 && pendingWiths.length > _lastWithCount) { _playAlertSound(); showToast('🔔 New withdrawal request!'); }
+    _lastWithCount = pendingWiths.length;
 
-    // Update badge
     const withBadge = document.getElementById('pendingWithdrawBadge');
     if (withBadge) { withBadge.textContent = pendingWiths.length; withBadge.style.display = pendingWiths.length > 0 ? 'inline' : 'none'; }
 
-    // Decide which to show
     const showWithHistory = window._showWithHistory || false;
-    const toShowWith = showWithHistory ? requests : pendingWiths;
+    const allData = showWithHistory ? (await apiCall('/api/admin/withdrawals')).withdrawals : requests;
+    const toShow = showWithHistory ? allData : pendingWiths;
 
-    function renderWithRow([key, r]) {
-      const amtToSend = r.amountToSend || parseFloat((r.amount * 0.95).toFixed(2));
+    function renderWithRow(r) {
+      const key = r.id;
+      const amtToSend = parseFloat(r.amount_to_send || (parseFloat(r.amount) * 0.95).toFixed(2));
+      const details = r.account_details || {};
+      const upiId = details.upiId || details.upi_id || '';
       const method = (r.method || 'UPI').toUpperCase();
       const isUsdt = method === 'USDT';
-      // For USDT: convert amountToSend from ₹ to USDT at ₹100 per USDT (withdrawal rate)
-      const sendLabel = isUsdt
-        ? `→ Send ${(amtToSend / 100).toFixed(2)} USDT`
-        : `→ Send ₹${amtToSend.toLocaleString('en-IN')}`;
+      const sendLabel = isUsdt ? `→ Send ${(amtToSend / 100).toFixed(2)} USDT` : `→ Send ₹${amtToSend.toLocaleString('en-IN')}`;
       const methodColors = { UPI: '#00b4d8', BANK: '#52b788', USDT: '#f0c040' };
       const methodColor = methodColors[method] || '#888';
-      const methodBadge = `<span style="font-size:0.62rem;font-weight:800;color:${methodColor};border:1px solid ${methodColor};border-radius:4px;padding:0.1rem 0.4rem;white-space:nowrap;">${method}</span>`;
       return `<div style="background:var(--card);border:1px solid ${r.status==='pending'?'rgba(240,192,64,0.3)':'var(--border)'};border-radius:8px;padding:0.55rem 0.8rem;display:flex;justify-content:space-between;align-items:center;gap:0.5rem;">
         <div style="display:flex;align-items:center;gap:0.6rem;flex:1;min-width:0;">
           <div style="white-space:nowrap;">
-            <div style="font-weight:800;color:var(--red2);font-size:0.92rem;">₹${r.amount?.toLocaleString('en-IN')}</div>
+            <div style="font-weight:800;color:var(--red2);font-size:0.92rem;">₹${parseFloat(r.amount||0).toLocaleString('en-IN')}</div>
             <div style="font-size:0.65rem;color:var(--gold);font-weight:700;">${sendLabel}</div>
           </div>
-          ${methodBadge}
+          <span style="font-size:0.62rem;font-weight:800;color:${methodColor};border:1px solid ${methodColor};border-radius:4px;padding:0.1rem 0.4rem;white-space:nowrap;">${method}</span>
           <div style="font-size:0.75rem;color:var(--text);font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.username || 'Unknown'}</div>
-          <div style="font-size:0.68rem;color:var(--gold);white-space:nowrap;">${r.memberId || '—'}</div>
-          <div style="font-size:0.68rem;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;" title="${r.upiId || ''}">${r.upiId || '—'}</div>
-          <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true})}</div>
-          ${(r.wgpayTranFlow || r.payoutOrderId) ? `<div style="font-size:0.62rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:130px;" title="${r.wgpayTranFlow || r.payoutOrderId}">#${r.wgpayTranFlow || r.payoutOrderId}</div>` : ''}
+          <div style="font-size:0.68rem;color:var(--gold);white-space:nowrap;">${r.member_id || '—'}</div>
+          <div style="font-size:0.68rem;color:var(--gold);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px;">${upiId || '—'}</div>
+          <div style="font-size:0.65rem;color:var(--muted);white-space:nowrap;">${r.created_at ? new Date(parseInt(r.created_at)).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:true}) : '—'}</div>
         </div>
         <div style="display:flex;gap:0.3rem;flex-shrink:0;">
           ${r.status === 'pending' ? `
@@ -2315,118 +2140,29 @@ function loadFinance() {
       </div>`;
     }
 
-    if (toShowWith.length === 0) {
+    if (toShow.length === 0) {
       el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${showWithHistory ? 'No withdrawals yet' : '✅ No pending withdrawals'}</div>`;
     } else {
-      el.innerHTML = toShowWith.map(renderWithRow).join('');
+      el.innerHTML = toShow.map(renderWithRow).join('');
     }
-    if (showWithHistory && historyWiths.length > 0) {
-      el.innerHTML += `<div style="font-size:0.7rem;color:var(--muted);text-align:center;margin-top:0.3rem;">Showing all ${requests.length} records</div>`;
-    }
-  });
+  } catch(e) { console.warn('pollWithdrawals error:', e.message); }
+}
+
+function loadFinance() {
+  pollDeposits();
+  pollWithdrawals();
+  setInterval(pollDeposits, 3000);
+  setInterval(pollWithdrawals, 3000);
 }
 
 window.approveDeposit = async function(key, uid, amount) {
   try {
-    // Read request data FIRST before updating status
-    const reqSnap = await get(ref(db, 'adminRequests/deposits/' + key));
-    const reqData = reqSnap.val();
-    console.log('Approving deposit:', { key, uid, amount, bonusAmt: reqData?.bonusAmt, bonusPct: reqData?.bonusPct, wagerReq: reqData?.wagerReq });
-
-    const balSnap = await get(ref(db, 'users/' + uid + '/balance'));
-    const currentBal = parseFloat(balSnap.val() || 0);
-    const newBal = parseFloat((currentBal + amount).toFixed(2));
-    await update(ref(db, 'users/' + uid), { balance: newBal });
-
-    // Credit deposit bonus if applicable
-    let finalBal = newBal;
-    if (reqData && reqData.bonusAmt && reqData.bonusAmt > 0) {
-      const bonusAmt = parseFloat(reqData.bonusAmt);
-      const wagerReq = parseFloat(reqData.wagerReq || 1);
-      finalBal = parseFloat((newBal + bonusAmt).toFixed(2));
-      await update(ref(db, 'users/' + uid), { balance: finalBal });
-      // Deposit bonuses: wager is calculated on DEPOSIT AMOUNT, not bonus amount
-      // e.g. 100% bonus on ₹1,000 deposit = ₹1,000 × 10x = ₹10,000 wager required
-      // e.g. 15% bonus on ₹1,000 deposit = ₹1,000 × 2.5x = ₹2,500 wager required
-      // e.g. 8% bonus on ₹1,000 deposit = ₹1,000 × 1x = ₹1,000 wager required
-      // startedAt set only once when first active wager starts — never reset on stack
-      const wagerRequired = parseFloat((amount * wagerReq).toFixed(2));
-      const existingWagerSnap = await get(ref(db, 'users/' + uid + '/wager'));
-      const existingWager = existingWagerSnap.val() || { required: 0, completed: 0, startedAt: 0 };
-      const isNew = !existingWager.startedAt || existingWager.startedAt === 0;
-      await set(ref(db, 'users/' + uid + '/wager'), {
-        required: parseFloat((parseFloat(existingWager.required || 0) + wagerRequired).toFixed(2)),
-        completed: parseFloat(existingWager.completed || 0),
-        startedAt: isNew ? Date.now() : existingWager.startedAt
-      });
-      showToast('✅ ₹' + amount.toLocaleString('en-IN') + ' approved + ₹' + bonusAmt + ' (' + reqData.bonusPct + '%) bonus credited!');
+    const data = await apiCall('/api/admin/approve-deposit', 'POST', { depositId: key });
+    if (data.success) {
+      showToast('✅ Deposit of ₹' + parseFloat(amount).toLocaleString('en-IN') + ' approved!');
+      pollDeposits();
     } else {
-      showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
-    }
-
-    // Save balanceAfter AFTER bonus is applied
-    await update(ref(db, 'adminRequests/deposits/' + key), { status: 'approved', balanceAfter: finalBal });
-
-    // ── ADD VIP EXP FOR DEPOSIT ──
-    const vipExp = Math.floor(amount / 1000) * 40;
-    if (vipExp > 0) {
-      const vipSnap = await get(ref(db, 'users/' + uid + '/vip/exp'));
-      const currentExp = parseFloat(vipSnap.val() || 0);
-      await set(ref(db, 'users/' + uid + '/vip/exp'), currentExp + vipExp);
-    }
-
-    // ── BRONZE FIRST DEPOSIT ₹50 BONUS ──
-    const hasDepSnap = await get(ref(db, 'users/' + uid + '/hasDeposited'));
-    if (!hasDepSnap.val()) {
-      // First deposit — credit ₹50 Bronze bonus
-      const bronzeBal = parseFloat((await get(ref(db, 'users/' + uid + '/balance'))).val() || 0);
-      const bronzeNewBal = parseFloat((bronzeBal + 50).toFixed(2));
-      await update(ref(db, 'users/' + uid), { balance: bronzeNewBal, hasDeposited: true });
-      await set(ref(db, 'users/' + uid + '/transactions/' + (Date.now() + 5)), {
-        type: 'vip_levelup', amount: 50,
-        details: '🥉 Bronze VIP welcome bonus — first deposit!',
-        balance: bronzeNewBal, timestamp: Date.now()
-      });
-      // Push notification to user
-      await set(ref(db, 'users/' + uid + '/notifications/' + (Date.now() + 6)), {
-        icon: '🥉', title: 'Welcome Bonus!',
-        body: '₹50 Bronze VIP bonus credited for your first deposit!',
-        read: false, timestamp: Date.now()
-      });
-      showToast('✅ Deposit approved + ₹50 Bronze welcome bonus credited!');
-    }
-
-    // Notify user of deposit approval
-    await set(ref(db, 'users/' + uid + '/notifications/' + (Date.now() + 7)), {
-      icon: '✅', title: 'Deposit Approved!',
-      body: '₹' + amount.toLocaleString('en-IN') + (reqData?.bonusAmt > 0 ? ' + ₹' + reqData.bonusAmt + ' bonus' : '') + ' added to your wallet.',
-      read: false, timestamp: Date.now()
-    });
-    const userSnap = await get(ref(db, 'users/' + uid));
-    const userData = userSnap.val();
-    if (userData && userData.referredBy) {
-      // Mark user as having deposited
-      await update(ref(db, 'users/' + uid), { hasDeposited: true });
-
-      // Update referral record with deposit info for invitation bonus tracking
-      const allUsersSnap = await get(ref(db, 'users'));
-      const allUsers = allUsersSnap.val() || {};
-      const referrerEntry = Object.entries(allUsers).find(([ruid, u]) => u.referralCode === userData.referredBy);
-      if (referrerEntry) {
-        const [referrerUid] = referrerEntry;
-        await update(ref(db, 'users/' + referrerUid + '/referrals/' + uid), {
-          uid, username: userData.username || 'Unknown',
-          memberId: userData.memberId || '—',
-          joinedAt: userData.createdAt || Date.now(),
-          firstDepositAmt: amount,
-          hasDeposited: amount >= 500, // Mark as qualified if deposit >= ₹500
-          totalDeposited: amount,
-          creditedAt: Date.now()
-        });
-      }
-      showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
-    } else {
-      showToast('✅ Deposit of ₹' + amount.toLocaleString('en-IN') + ' approved!');
+      showToast('❌ ' + (data.error || 'Failed'));
     }
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
@@ -2440,7 +2176,7 @@ window.autoPayWithdrawal = async function(key, uid, amount) {
     const response = await fetch(VERCEL_API_URL + '/api/payout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ withdrawalKey: key, adminUid: auth.currentUser?.uid })
+      body: JSON.stringify({ withdrawalKey: key })
     });
     const data = await response.json();
     if (data.success) {
@@ -2460,7 +2196,7 @@ window.autoPayWithdrawalWGPay = async function(key, uid, amount) {
     const response = await fetch(VERCEL_API_URL + '/api/wgpay-payout', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ withdrawalKey: key, adminUid: auth.currentUser?.uid })
+      body: JSON.stringify({ withdrawalKey: key })
     });
     const data = await response.json();
     if (data.success) {
@@ -2475,56 +2211,25 @@ window.autoPayWithdrawalWGPay = async function(key, uid, amount) {
 
 window.approveWithdrawal = async function(key, uid, amount) {
   try {
-    const balSnap = await get(ref(db, 'users/' + uid + '/balance'));
-    const currentBal = parseFloat(balSnap.val() || 0);
-    if (amount > currentBal) { showToast('❌ User has insufficient balance!'); return; }
-    const newBal = parseFloat((currentBal - amount).toFixed(2));
-    await update(ref(db, 'users/' + uid), { balance: newBal });
-    await update(ref(db, 'adminRequests/withdrawals/' + key), { status: 'approved' });
-    await set(ref(db, 'users/' + uid + '/transactions/' + Date.now()), {
-      type: 'withdrawal', amount: -amount, timestamp: Date.now(), balance: newBal, status: 'approved'
-    });
-    showToast('✅ Withdrawal of ₹' + amount.toLocaleString('en-IN') + ' approved!');
+    const data = await apiCall('/api/admin/approve-withdrawal', 'POST', { withdrawalId: key });
+    if (data.success) {
+      showToast('✅ Withdrawal of ₹' + parseFloat(amount).toLocaleString('en-IN') + ' approved!');
+      pollWithdrawals();
+    } else { showToast('❌ ' + (data.error || 'Failed')); }
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.rejectRequest = async function(type, key) {
   if (!confirm('Reject this request?')) return;
   try {
-    const snap = await get(ref(db, 'adminRequests/' + type + '/' + key));
-    const reqData = snap.val();
-
-    // Prevent double-refund: skip if withdrawal already auto-failed/rejected/approved
-    if (type === 'withdrawals' && reqData && reqData.status !== 'pending' && reqData.status !== 'processing') {
-      showToast('⚠️ This withdrawal is already ' + reqData.status + ' — no action taken');
-      return;
-    }
-
-    await update(ref(db, 'adminRequests/' + type + '/' + key), { status: 'rejected' });
-
-    // Auto-refund withdrawal balance
-    if (type === 'withdrawals' && reqData && reqData.uid && reqData.amount) {
-      const balSnap = await get(ref(db, 'users/' + reqData.uid + '/balance'));
-      const currentBal = parseFloat(balSnap.val() || 0);
-      const refundedBal = parseFloat((currentBal + reqData.amount).toFixed(2));
-      await update(ref(db, 'users/' + reqData.uid), { balance: refundedBal });
-      // Add refund transaction record
-      await set(ref(db, 'users/' + reqData.uid + '/transactions/' + Date.now()), {
-        type: 'withdrawal_refund',
-        amount: reqData.amount,
-        details: 'Withdrawal rejected — amount refunded',
-        balance: refundedBal,
-        timestamp: Date.now()
-      });
-      // Push notification
-      await set(ref(db, 'users/' + reqData.uid + '/notifications/' + (Date.now()+1)), {
-        icon: '↩️', title: 'Withdrawal Rejected',
-        body: '₹' + reqData.amount.toLocaleString('en-IN') + ' has been refunded to your wallet.',
-        read: false, timestamp: Date.now()
-      });
-      showToast('❌ Withdrawal rejected — ₹' + reqData.amount.toLocaleString('en-IN') + ' refunded to user');
+    if (type === 'deposits') {
+      const data = await apiCall('/api/admin/reject-deposit', 'POST', { depositId: key });
+      if (data.success) { showToast('❌ Deposit rejected'); pollDeposits(); }
+      else showToast('❌ ' + (data.error || 'Failed'));
     } else {
-      showToast('❌ Request rejected');
+      const data = await apiCall('/api/admin/reject-withdrawal', 'POST', { withdrawalId: key, reason: '' });
+      if (data.success) { showToast('❌ Withdrawal rejected — balance refunded'); pollWithdrawals(); }
+      else showToast('❌ ' + (data.error || 'Failed'));
     }
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
@@ -2534,8 +2239,8 @@ async function loadUsdtAddresses() {
   const listEl = document.getElementById('usdtAddressList');
   if (!listEl) return;
   try {
-    const snap = await get(ref(db, 'settings/usdtAddresses'));
-    const data = snap.val() || {};
+    const result = await apiCall('/api/admin/usdt-addresses');
+    const data = result.addresses || {};
     const entries = Object.entries(data);
     if (!entries.length) { listEl.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">No USDT addresses added yet.</div>'; return; }
     listEl.innerHTML = entries.map(([key, a]) => `
@@ -2556,22 +2261,28 @@ window.addUsdtAddress = async function() {
   const label = document.getElementById('newUsdtLabel').value.trim() || 'Wallet';
   if (!address) { showToast('⚠️ Enter a USDT address'); return; }
   if (address.length < 20) { showToast('⚠️ Invalid TRC20 address'); return; }
-  const key = 'usdt_' + Date.now();
-  await set(ref(db, 'settings/usdtAddresses/' + key), {address, label, active:true});
-  document.getElementById('newUsdtAddress').value = '';
-  document.getElementById('newUsdtLabel').value = '';
-  showToast('✅ USDT address added!');
-  loadUsdtAddresses();
+  try {
+    await apiCall('/api/admin/usdt-addresses', 'POST', { action: 'add', address, label });
+    document.getElementById('newUsdtAddress').value = '';
+    document.getElementById('newUsdtLabel').value = '';
+    showToast('✅ USDT address added!');
+    loadUsdtAddresses();
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 window.removeUsdtAddress = async function(key) {
   if (!confirm('Remove this USDT address?')) return;
-  await remove(ref(db, 'settings/usdtAddresses/' + key));
-  showToast('🗑️ Address removed');
-  loadUsdtAddresses();
+  try {
+    await apiCall('/api/admin/usdt-addresses', 'POST', { action: 'remove', key });
+    showToast('🗑️ Address removed');
+    loadUsdtAddresses();
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 window.toggleUsdtAddress = async function(key, active) {
-  await set(ref(db, 'settings/usdtAddresses/' + key + '/active'), active);
-  showToast(active ? '✅ Address enabled' : '⛔ Address disabled');
+  try {
+    await apiCall('/api/admin/usdt-addresses', 'POST', { action: 'toggle', key, active });
+    showToast(active ? '✅ Address enabled' : '⛔ Address disabled');
+    loadUsdtAddresses();
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 // ── MULTIPLE UPI ID MANAGER ──
@@ -2579,16 +2290,9 @@ async function loadAdminUpiIdSetting() {
   const listEl = document.getElementById('upiIdList');
   if (!listEl) return;
   try {
-    const snap = await get(ref(db, 'settings/upiIds'));
-    const data = snap.val() || {};
-    renderUpiList(data);
-  } catch(e) {
-    // Fallback: load single upiId
-    try {
-      const snap = await get(ref(db, 'settings/upiId'));
-      if (snap.val()) renderUpiList({default:{id:snap.val(),label:'Default',active:true}});
-    } catch(e2) {}
-  }
+    const result = await apiCall('/api/admin/upi-ids');
+    renderUpiList(result.upiIds || {});
+  } catch(e) {}
 }
 function renderUpiList(data) {
   const listEl = document.getElementById('upiIdList');
@@ -2611,22 +2315,28 @@ window.addUpiId = async function() {
   const label = document.getElementById('newUpiLabel').value.trim() || 'UPI';
   if (!id) { showToast('⚠️ Enter a UPI ID'); return; }
   if (!id.includes('@')) { showToast('⚠️ Invalid UPI ID format'); return; }
-  const key = 'upi_' + Date.now();
-  await set(ref(db, 'settings/upiIds/' + key), {id, label, active:true});
-  document.getElementById('newUpiId').value = '';
-  document.getElementById('newUpiLabel').value = '';
-  showToast('✅ UPI ID added!');
-  loadAdminUpiIdSetting();
+  try {
+    await apiCall('/api/admin/upi-ids', 'POST', { action: 'add', id, label });
+    document.getElementById('newUpiId').value = '';
+    document.getElementById('newUpiLabel').value = '';
+    showToast('✅ UPI ID added!');
+    loadAdminUpiIdSetting();
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 window.removeUpiId = async function(key) {
   if (!confirm('Remove this UPI ID?')) return;
-  await remove(ref(db, 'settings/upiIds/' + key));
-  showToast('🗑️ UPI ID removed');
-  loadAdminUpiIdSetting();
+  try {
+    await apiCall('/api/admin/upi-ids', 'POST', { action: 'remove', key });
+    showToast('🗑️ UPI ID removed');
+    loadAdminUpiIdSetting();
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 window.toggleUpiId = async function(key, active) {
-  await set(ref(db, 'settings/upiIds/' + key + '/active'), active);
-  showToast(active ? '✅ UPI ID enabled' : '⛔ UPI ID disabled');
+  try {
+    await apiCall('/api/admin/upi-ids', 'POST', { action: 'toggle', key, active });
+    showToast(active ? '✅ UPI ID enabled' : '⛔ UPI ID disabled');
+    loadAdminUpiIdSetting();
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 // ── CXPAY BALANCE ──
@@ -2676,14 +2386,12 @@ window.loadWGPayBalance = async function() {
 // ── USER STATISTICS ──
 window.loadUserStats = async function() {
   try {
-    const snap = await get(ref(db, 'users'));
-    const users = snap.val() || {};
-    const userList = Object.values(users);
-    const total = userList.length;
-    const today = new Date(); today.setHours(0,0,0,0);
-    const newToday = userList.filter(u => (u.createdAt || 0) >= today.getTime()).length;
-    const active = userList.filter(u => (u.lastLogin || u.createdAt || 0) >= today.getTime() - 7*24*60*60*1000).length;
-    const totalBalance = userList.reduce((sum, u) => sum + parseFloat(u.balance || 0), 0);
+    const result = await apiCall('/api/admin/stats?period=today');
+    if (!result.success) return;
+    const total = result.totalUsers;
+    const newToday = result.newUsers;
+    const active = 0;
+    const totalBalance = 0;
     const el = document.getElementById('adminUserStats');
     if (el) {
       el.innerHTML = `
@@ -2714,8 +2422,10 @@ window.loadGiftCodes = async function loadGiftCodes() {
   const el = document.getElementById('giftCodesList');
   if (el) el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.82rem;">Loading...</div>';
   try {
-    const snap = await get(ref(db, 'giftCodes'));
-    const codes = snap.val() || {};
+    const result = await apiCall('/api/admin/gift-codes');
+    const codes = {};
+    if (result.success) result.codes.forEach(c => { codes[c.code] = { amount: c.amount, active: true, maxUses: c.max_uses, usedCount: c.used_count, createdAt: c.created_at }; });
+    const _ = codes; // use below
     if (!el) return;
     const entries = Object.entries(codes);
     if (entries.length === 0) {
@@ -2748,38 +2458,45 @@ window.createGiftCode = async function() {
   if (!code) { showToast('⚠️ Enter a gift code'); return; }
   if (!amount || amount <= 0) { showToast('⚠️ Enter a valid amount'); return; }
   try {
-    const existing = await get(ref(db, 'giftCodes/' + code));
-    if (existing.val()) { showToast('⚠️ Code already exists!'); return; }
-    await set(ref(db, 'giftCodes/' + code), { amount, active: true, maxUses, usedCount: 0, createdAt: Date.now() });
-    document.getElementById('giftCode').value = '';
-    document.getElementById('giftAmount').value = '';
-    document.getElementById('giftMaxUses').value = '';
-    showToast('✅ Gift code ' + code + ' created! ₹' + amount + ' · ' + maxUses + ' uses');
-    loadGiftCodes();
+    const data = await apiCall('/api/admin/gift-code', 'POST', { action: 'create', code, amount, maxUses });
+    if (data.success) {
+      document.getElementById('giftCode').value = '';
+      document.getElementById('giftAmount').value = '';
+      document.getElementById('giftMaxUses').value = '';
+      showToast('✅ Gift code ' + code + ' created! ₹' + amount + ' · ' + maxUses + ' uses');
+      loadGiftCodes();
+    } else { showToast('❌ ' + (data.error || 'Failed')); }
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.toggleGiftCode = async function(code, currentActive) {
-  await update(ref(db, 'giftCodes/' + code), { active: !currentActive });
-  showToast((currentActive ? '🔴 Disabled' : '🟢 Enabled') + ' code: ' + code);
-  loadGiftCodes();
+  try {
+    await apiCall('/api/admin/gift-code', 'POST', { action: 'toggle', code, active: !currentActive });
+    showToast((currentActive ? '🔴 Disabled' : '🟢 Enabled') + ' code: ' + code);
+    loadGiftCodes();
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.deleteGiftCode = async function(code) {
   if (!confirm('Delete gift code ' + code + '?')) return;
-  await remove(ref(db, 'giftCodes/' + code));
-  showToast('🗑️ Deleted: ' + code);
-  loadGiftCodes();
+  try {
+    await apiCall('/api/admin/gift-code', 'POST', { action: 'delete', code });
+    showToast('🗑️ Deleted: ' + code);
+    loadGiftCodes();
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 // ── COMMISSION RATES ──
 async function loadCommissionRates() {
-  const snap = await get(ref(db, 'settings/commissionRates'));
-  const rates = snap.val() || {};
-  if (rates.l1 != null) document.getElementById('rateL1').value = rates.l1;
-  if (rates.l2 != null) document.getElementById('rateL2').value = rates.l2;
-  if (rates.l3 != null) document.getElementById('rateL3').value = rates.l3;
-  if (rates.l4 != null) document.getElementById('rateL4').value = rates.l4;
+  try {
+    const data = await apiCall('/api/admin/settings');
+    if (!data.success) return;
+    const rates = data.settings['commission_rates'] || {};
+    if (rates.l1 != null) document.getElementById('rateL1').value = rates.l1;
+    if (rates.l2 != null) document.getElementById('rateL2').value = rates.l2;
+    if (rates.l3 != null) document.getElementById('rateL3').value = rates.l3;
+    if (rates.l4 != null) document.getElementById('rateL4').value = rates.l4;
+  } catch(e) {}
 }
 
 window.saveCommissionRates = async function() {
@@ -2788,196 +2505,95 @@ window.saveCommissionRates = async function() {
   const l3 = parseFloat(document.getElementById('rateL3').value);
   const l4 = parseFloat(document.getElementById('rateL4').value);
   if (isNaN(l1)||isNaN(l2)||isNaN(l3)||isNaN(l4)) { showToast('⚠️ Enter all 4 rates'); return; }
-  await set(ref(db, 'settings/commissionRates'), { l1, l2, l3, l4, updatedAt: Date.now() });
-  document.getElementById('ratesStatus').textContent = '✅ Saved: L1=' + l1 + '% L2=' + l2 + '% L3=' + l3 + '% L4=' + l4 + '%';
-  showToast('✅ Commission rates updated!');
+  try {
+    await apiCall('/api/admin/commission-rates', 'POST', { l1, l2, l3, l4 });
+    document.getElementById('ratesStatus').textContent = '✅ Saved: L1=' + l1 + '% L2=' + l2 + '% L3=' + l3 + '% L4=' + l4 + '%';
+    showToast('✅ Commission rates updated!');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 // ── LIVE CHAT ADMIN ──
 let _adminSelectedUid = null;
-let _adminChatListener = null;
+let _chatPollInterval = null;
 
 window.debugLoadChat = async function() {
   const debugEl = document.getElementById('chatDebugInfo');
-  const listEl = document.getElementById('chatUserList');
-  const user = auth.currentUser;
-
-  if (!user) {
-    if (debugEl) debugEl.textContent = '❌ Not logged in to Firebase';
-    if (listEl) listEl.innerHTML = '<div style="padding:1rem;color:var(--red2);font-size:0.8rem;">❌ Admin not authenticated. Please sign out and sign in again.</div>';
-    return;
-  }
-
-  if (debugEl) debugEl.textContent = '✅ Auth: ' + user.uid.substring(0,8) + '... Loading...';
-
-  try {
-    const snap = await get(ref(db, 'chats'));
-    const chats = snap.val();
-    if (!chats) {
-      if (debugEl) debugEl.textContent = '✅ Auth OK · No chats in Firebase yet';
-      if (listEl) listEl.innerHTML = '<div style="padding:1rem;color:var(--muted);font-size:0.8rem;">No conversations yet. Have a user send a message first.</div>';
-      return;
-    }
-    if (debugEl) debugEl.textContent = '✅ Auth OK · Found ' + Object.keys(chats).length + ' conversation(s)';
-    loadChatUserList();
-  } catch(e) {
-    if (debugEl) debugEl.textContent = '❌ Error: ' + e.message;
-    if (listEl) listEl.innerHTML = '<div style="padding:1rem;color:var(--red2);font-size:0.8rem;">❌ ' + e.message + '</div>';
-  }
+  if (debugEl) debugEl.textContent = '✅ Loading chats...';
+  loadChatUserList();
 };
 
-function loadChatUserList() {
+async function loadChatUserList() {
   const listEl = document.getElementById('chatUserList');
   if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.8rem;">Loading...</div>';
-
-  onValue(ref(db, 'chats'), snap => {
-    const chats = snap.val() || {};
+  try {
+    const data = await apiCall('/api/admin/chat/users');
+    const users = data.users || [];
     if (!listEl) return;
-
-    let totalUnread = 0;
-    const entries = Object.entries(chats).sort((a,b) => (b[1].info?.lastMessageTime||0) - (a[1].info?.lastMessageTime||0));
-
-    if (entries.length === 0) {
-      listEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.8rem;">No conversations yet</div>';
-      return;
-    }
-
-    listEl.innerHTML = entries.map(([uid, chat]) => {
-      window._adminChatData = chats;
-      const info = chat.info || {};
-      const isUnread = info.unreadByAdmin;
-      if (isUnread) totalUnread++;
-      const time = info.lastMessageTime ? new Date(info.lastMessageTime).toLocaleTimeString('en-IN', {hour:'2-digit',minute:'2-digit'}) : '';
-      const isSelected = uid === _adminSelectedUid;
-      return `<div onclick="selectAdminChat('${uid}','${info.username||'User'}')"
-        style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;background:${isSelected?'rgba(240,192,64,0.08)':'transparent'};transition:background 0.2s;">
+    if (users.length === 0) { listEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.8rem;">No conversations yet</div>'; return; }
+    listEl.innerHTML = users.map(u => {
+      const isSelected = u.uid === _adminSelectedUid;
+      const time = u.last_message_time ? new Date(parseInt(u.last_message_time)).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}) : '';
+      return `<div onclick="selectAdminChat('${u.uid}','${u.username||'User'}')" style="padding:0.8rem 1rem;border-bottom:1px solid var(--border);cursor:pointer;background:${isSelected?'rgba(240,192,64,0.08)':'transparent'};">
         <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-size:0.85rem;font-weight:${isUnread?'800':'600'};color:${isUnread?'var(--gold)':'var(--text)'};">${info.username||'User'}</div>
+          <div style="font-size:0.85rem;font-weight:600;color:var(--text);">${u.username||'User'}</div>
           <div style="font-size:0.65rem;color:var(--muted);">${time}</div>
         </div>
-        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-          ${isUnread?'🔵 ':''}${info.lastMessage||'No messages yet'}
-        </div>
-        <div style="font-size:0.62rem;color:var(--muted);margin-top:1px;">ID: ${info.memberId||uid.substring(0,8)}</div>
+        <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${u.last_message||'No messages yet'}</div>
+        <div style="font-size:0.62rem;color:var(--muted);margin-top:1px;">ID: ${u.member_id||u.uid.substring(0,8)}</div>
       </div>`;
     }).join('');
-
-    const badge = document.getElementById('chatUnreadBadge');
-    if (badge) { badge.style.display = totalUnread > 0 ? 'inline' : 'none'; badge.textContent = totalUnread; }
-  }, (error) => {
-    console.error('Chat load error:', error);
-    if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--red2);font-size:0.8rem;">❌ Permission denied. Check Firebase rules.</div>';
-  });
+  } catch(e) {
+    if (listEl) listEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--red2);font-size:0.8rem;">❌ ' + e.message + '</div>';
+  }
 }
 
-window.selectAdminChat = function(uid, username) {
+window.selectAdminChat = async function(uid, username) {
   _adminSelectedUid = uid;
-  const entries = Object.entries(window._adminChatData || {});
-  const chatEntry = entries.find(([u]) => u === uid);
-  const memberId = chatEntry ? (chatEntry[1].info?.memberId || uid.substring(0,8)) : uid.substring(0,8);
-
-  // Update header
   document.getElementById('adminChatName').textContent = username;
-  document.getElementById('adminChatUid').textContent = 'Member: ' + memberId;
+  document.getElementById('adminChatUid').textContent = 'UID: ' + uid.substring(0,8);
   document.getElementById('adminChatStatus').style.display = 'block';
+  if (_chatPollInterval) clearInterval(_chatPollInterval);
+  await loadChatMessages(uid);
+  _chatPollInterval = setInterval(() => loadChatMessages(uid), 3000);
+};
 
-  // Mark as read by admin
-  update(ref(db, 'chats/' + uid + '/info'), { unreadByAdmin: false });
-
-  // Remove old listener
-  if (_adminChatListener) { off(ref(db, 'chats/' + _adminSelectedUid + '/messages')); }
-
-  // Listen to messages
+async function loadChatMessages(uid) {
   const msgsEl = document.getElementById('adminChatMessages');
-  onValue(ref(db, 'chats/' + uid + '/messages'), snap => {
-    const messages = snap.val();
-    if (!msgsEl) return;
+  if (!msgsEl) return;
+  try {
+    const data = await apiCall('/api/admin/chat/messages?uid=' + uid);
+    const messages = data.messages || [];
     msgsEl.innerHTML = '';
-    if (!messages) {
-      msgsEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.8rem;margin-top:2rem;">No messages yet</div>';
-      return;
-    }
-    // Get user info for display
-    const chatInfo = {};
-    get(ref(db, 'chats/' + uid + '/info')).then(infoSnap => {
-      const info = infoSnap.val() || {};
-      chatInfo.username = info.username || 'User';
-      chatInfo.memberId = info.memberId || uid.substring(0,6);
-    });
-
-    // Sort oldest first (ascending by timestamp)
-    const sortedMessages = Object.entries(messages).sort((a,b) => (a[1].timestamp||0) - (b[1].timestamp||0));
-
-    sortedMessages.forEach(([msgKey, m]) => {
-      const isAdmin = m.sender === 'admin';
-      const time = new Date(m.timestamp).toLocaleString('en-IN', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true});
-
-      // Wrapper for alignment
+    if (messages.length === 0) { msgsEl.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.8rem;margin-top:2rem;">No messages yet</div>'; return; }
+    messages.forEach(m => {
+      const isAdmin = m.is_admin;
+      const time = new Date(parseInt(m.timestamp||0)).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit',hour12:true});
       const wrapper = document.createElement('div');
       wrapper.style.cssText = `display:flex;flex-direction:column;align-items:${isAdmin?'flex-end':'flex-start'};margin-bottom:0.6rem;`;
-
-      // Sender info (only for user messages)
-      if (!isAdmin) {
-        const senderInfo = document.createElement('div');
-        senderInfo.style.cssText = 'font-size:0.62rem;color:var(--gold);margin-bottom:2px;display:flex;gap:0.4rem;align-items:center;';
-        senderInfo.innerHTML = `<span style="font-weight:700;">${m.username || chatInfo.username || 'User'}</span><span style="color:var(--muted);">ID: ${m.memberId || chatInfo.memberId || '——'}</span>`;
-        wrapper.appendChild(senderInfo);
-      }
-
-      // Message bubble + delete row
       const bubbleRow = document.createElement('div');
       bubbleRow.style.cssText = `display:flex;align-items:flex-end;gap:0.4rem;flex-direction:${isAdmin?'row-reverse':'row'};`;
-
       const div = document.createElement('div');
-      div.style.cssText = `max-width:75%;padding:0.6rem 0.9rem;border-radius:${isAdmin?'12px 12px 0 12px':'12px 12px 12px 0'};
-        background:${isAdmin?'linear-gradient(135deg,#c07a10,var(--gold2))':'var(--bg3)'};
-        color:${isAdmin?'#000':'var(--text)'};font-size:0.83rem;`;
-
-      if (m.type === 'image' && m.fileData) {
-        const img = document.createElement('img');
-        img.src = m.fileData;
-        img.style.cssText = 'max-width:200px;max-height:200px;border-radius:6px;display:block;cursor:pointer;';
-        img.onclick = () => window.open(m.fileData, '_blank');
-        div.appendChild(img);
-      } else if (m.type === 'file' && m.fileData) {
-        const link = document.createElement('a');
-        link.href = m.fileData;
-        link.download = m.fileName || 'file';
-        link.style.cssText = 'display:flex;align-items:center;gap:0.4rem;color:inherit;text-decoration:none;font-size:0.82rem;';
-        link.innerHTML = '📎 ' + (m.fileName || 'Download file');
-        div.appendChild(link);
-      } else {
-        div.textContent = m.text || '';
-      }
-
-      // Timestamp
+      div.style.cssText = `max-width:75%;padding:0.6rem 0.9rem;border-radius:${isAdmin?'12px 12px 0 12px':'12px 12px 12px 0'};background:${isAdmin?'linear-gradient(135deg,#c07a10,var(--gold2))':'var(--bg3)'};color:${isAdmin?'#000':'var(--text)'};font-size:0.83rem;`;
+      div.textContent = m.message || '';
       const timeEl = document.createElement('div');
-      timeEl.style.cssText = `font-size:0.6rem;color:${isAdmin?'rgba(0,0,0,0.5)':'rgba(255,255,255,0.3)'};margin-top:3px;text-align:${isAdmin?'right':'left'};`;
+      timeEl.style.cssText = `font-size:0.6rem;color:${isAdmin?'rgba(0,0,0,0.5)':'rgba(255,255,255,0.3)'};margin-top:3px;`;
       timeEl.textContent = time;
       div.appendChild(timeEl);
-
-      // Delete button (admin only)
       const delBtn = document.createElement('button');
       delBtn.innerHTML = '🗑';
-      delBtn.title = 'Delete message';
-      delBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:0.75rem;opacity:0.4;padding:2px;transition:opacity 0.2s;flex-shrink:0;';
-      delBtn.onmouseover = () => delBtn.style.opacity = '1';
-      delBtn.onmouseout = () => delBtn.style.opacity = '0.4';
+      delBtn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:0.75rem;opacity:0.4;padding:2px;flex-shrink:0;';
       delBtn.onclick = async () => {
         if (!confirm('Delete this message?')) return;
-        try {
-          await set(ref(db, 'chats/' + uid + '/messages/' + msgKey), null);
-        } catch(e) { showToast('❌ Error: ' + e.message); }
+        try { await apiCall('/api/admin/chat/delete', 'POST', { messageId: m.id }); await loadChatMessages(uid); } catch(e) { showToast('❌ ' + e.message); }
       };
-
       bubbleRow.appendChild(div);
       bubbleRow.appendChild(delBtn);
       wrapper.appendChild(bubbleRow);
       msgsEl.appendChild(wrapper);
     });
     msgsEl.scrollTop = msgsEl.scrollHeight;
-  });
-};
+  } catch(e) { console.warn('Chat messages error:', e.message); }
+}
 
 window.adminSendChat = async function() {
   const inp = document.getElementById('adminChatInput');
@@ -2985,22 +2601,8 @@ window.adminSendChat = async function() {
   if (!msg || !_adminSelectedUid) { showToast('⚠️ Select a user first'); return; }
   inp.value = '';
   try {
-    await push(ref(db, 'chats/' + _adminSelectedUid + '/messages'), {
-      text: msg, sender: 'admin', timestamp: Date.now(), readByUser: false
-    });
-    await update(ref(db, 'chats/' + _adminSelectedUid + '/info'), {
-      lastMessage: '(Admin) ' + msg,
-      lastMessageTime: Date.now(),
-      unreadByAdmin: false
-    });
-    // Push notification to user
-    await set(ref(db, 'users/' + _adminSelectedUid + '/notifications/' + Date.now()), {
-      icon: '💬',
-      title: 'New message from Support',
-      body: msg.length > 50 ? msg.substring(0, 50) + '...' : msg,
-      read: false,
-      timestamp: Date.now()
-    });
+    await apiCall('/api/admin/chat/send', 'POST', { uid: _adminSelectedUid, message: msg });
+    await loadChatMessages(_adminSelectedUid);
   } catch(e) { showToast('❌ Failed to send: ' + e.message); }
 };
 
@@ -3023,11 +2625,11 @@ window.loadQPDashboard = async function(filter) {
   try {
     const r2 = await fetch('https://royalwin-api.vercel.app/api/quantumpay-invoices');
     const invoices = await r2.json();
-    // Fetch deposit records from Firebase to get member info
-    const depSnap = await get(ref(db, 'adminRequests/deposits'));
-    const depData = depSnap.val() || {};
+    // Fetch deposit records from Neon to get member info
+    const depRes = await apiCall('/api/admin/deposits');
+    const depData = depRes.deposits || [];
     const depByInvoice = {};
-    Object.values(depData).forEach(d => { if (d.qpInvoiceId) depByInvoice[d.qpInvoiceId] = d; });
+    depData.forEach(d => { if (d.order_id && d.order_id.startsWith('qp_')) depByInvoice[d.order_id.replace('qp_','')] = d; });
     // Stats
     const total = invoices.length;
     const pending = invoices.filter(i => i.status === 'pending').length;
@@ -3090,16 +2692,8 @@ window.switchTab = function(tab) {
   if (tab === 'withdrawals') { loadWithdrawals('pending'); }
   if (tab === 'deposits') { loadDeposits(); }
   if (tab === 'users') { loadUsers(); loadFraudAlerts(); }
-  if (tab === 'chat') {
-    const user = auth.currentUser;
-    if (user) { loadChatUserList(); }
-    else { onAuthStateChanged(auth, (u) => { if (u) loadChatUserList(); }); }
-  }
-  if (tab === 'settings') {
-    const user = auth.currentUser;
-    if (user) { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadAdminUpiIdSetting(); loadUsdtAddresses(); }
-    else { onAuthStateChanged(auth, (u) => { if (u) { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadAdminUpiIdSetting(); loadUsdtAddresses(); } }); }
-  }
+  if (tab === 'chat') { loadChatUserList(); }
+  if (tab === 'settings') { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadAdminUpiIdSetting(); loadUsdtAddresses(); }
   if (tab === 'quantumpay') { loadQPDashboard('all'); }
 };
 
@@ -3118,7 +2712,6 @@ window.loadDeposits = function() {
 
 window.loadWithdrawals = async function(filter) {
   _currentWithdrawFilter = filter || 'pending';
-  // Update filter button styles
   ['pending','approved','rejected','all'].forEach(f => {
     const btn = document.getElementById('wfilter-' + f);
     if (!btn) return;
@@ -3131,9 +2724,8 @@ window.loadWithdrawals = async function(filter) {
   const statsEl = document.getElementById('withdrawalStats');
   if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
   try {
-    const snap = await get(ref(db, 'adminRequests/withdrawals'));
-    const data = snap.val() || {};
-    const all = Object.entries(data).map(([k, v]) => ({ key: k, ...v }));
+    const allRes = await apiCall('/api/admin/withdrawals');
+    const all = (allRes.withdrawals || []).map(w => ({ key: w.id, uid: w.uid, username: w.username, memberId: w.member_id, amount: parseFloat(w.amount), amountToSend: parseFloat(w.amount_to_send || (w.amount * 0.95).toFixed(2)), method: w.method, upiId: (w.account_details||{}).upiId || '', status: w.status, timestamp: parseInt(w.created_at||0), processedAt: parseInt(w.processed_at||0), rejectionReason: '', gateway: w.method }));
     // Stats
     const pending = all.filter(w => w.status === 'pending');
     const approved = all.filter(w => w.status === 'approved');
@@ -3191,41 +2783,29 @@ window.loadWithdrawals = async function(filter) {
 };
 
 window.approveWithdrawal = async function(key, uid, username, memberId) {
-  if (!confirm('Approve withdrawal for ' + username + '? This marks it as processed — make sure you have sent the payment manually first.')) return;
+  if (typeof username === 'number') { username = ''; } // handle old call signature
+  const name = username || '';
+  if (!confirm('Approve withdrawal for ' + (name || 'user') + '?')) return;
   try {
-    await update(ref(db, 'adminRequests/withdrawals/' + key), { status: 'approved', processedAt: Date.now() });
-    // Notify user
-    await push(ref(db, 'users/' + uid + '/notifications'), {
-      icon: '✅', title: 'Withdrawal Approved',
-      body: 'Your withdrawal request has been approved and payment is being processed.',
-      read: false, timestamp: Date.now()
-    });
-    showToast('✅ Withdrawal approved for ' + username);
-    loadWithdrawals(_currentWithdrawFilter);
+    const data = await apiCall('/api/admin/approve-withdrawal', 'POST', { withdrawalId: key });
+    if (data.success) {
+      showToast('✅ Withdrawal approved' + (name ? ' for ' + name : ''));
+      loadWithdrawals(_currentWithdrawFilter);
+      pollWithdrawals();
+    } else { showToast('❌ ' + (data.error || 'Failed')); }
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.rejectWithdrawal = async function(key, uid, amount, username, memberId) {
   const reason = prompt('Rejection reason (shown to user):');
-  if (reason === null) return; // cancelled
+  if (reason === null) return;
   try {
-    // Refund balance to user
-    await runTransaction(ref(db, 'users/' + uid + '/balance'), bal => parseFloat(((bal || 0) + parseFloat(amount)).toFixed(2)));
-    await update(ref(db, 'adminRequests/withdrawals/' + key), { status: 'rejected', processedAt: Date.now(), rejectionReason: reason || 'Rejected by admin' });
-    // Notify user with refund info
-    await push(ref(db, 'users/' + uid + '/notifications'), {
-      icon: '❌', title: 'Withdrawal Rejected',
-      body: `Your withdrawal of ₹${parseFloat(amount).toLocaleString('en-IN')} was rejected. ₹${parseFloat(amount).toLocaleString('en-IN')} refunded to your balance. Reason: ${reason || 'Rejected by admin'}`,
-      read: false, timestamp: Date.now()
-    });
-    // Record refund in transaction history
-    await push(ref(db, 'users/' + uid + '/transactions'), {
-      type: 'withdrawal_refund', amount: parseFloat(amount),
-      description: 'Withdrawal rejected — refund', details: reason || 'Rejected by admin',
-      timestamp: Date.now()
-    });
-    showToast('❌ Withdrawal rejected & ₹' + parseFloat(amount).toLocaleString('en-IN') + ' refunded to ' + username);
-    loadWithdrawals(_currentWithdrawFilter);
+    const data = await apiCall('/api/admin/reject-withdrawal', 'POST', { withdrawalId: key, reason: reason || 'Rejected by admin' });
+    if (data.success) {
+      showToast('❌ Withdrawal rejected & ₹' + parseFloat(amount).toLocaleString('en-IN') + ' refunded');
+      loadWithdrawals(_currentWithdrawFilter);
+      pollWithdrawals();
+    } else { showToast('❌ ' + (data.error || 'Failed')); }
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
@@ -3247,19 +2827,18 @@ window.viewUserDeposits = async function(uid, username) {
   modal.onclick = e => { if (e.target === modal) modal.remove(); };
 
   try {
-    const snap = await get(ref(db, 'adminRequests/deposits'));
-    const all = snap.val() ? Object.entries(snap.val()) : [];
-    const userDeps = all.filter(([,d]) => d.uid === uid).sort((a,b) => (b[1].timestamp||0)-(a[1].timestamp||0));
+    const result = await apiCall('/api/admin/user-deposits?uid=' + uid);
+    const userDeps = (result.deposits || []).sort((a,b) => parseInt(b.created_at||0)-parseInt(a.created_at||0));
     const el = document.getElementById('userDepositsContent');
     if (!userDeps.length) { el.innerHTML = '<div style="text-align:center;padding:1rem;">No deposits found</div>'; return; }
-    const total = userDeps.filter(([,d]) => d.status==='approved').reduce((s,[,d]) => s+(d.amount||0), 0);
+    const total = userDeps.filter(d => d.status==='approved').reduce((s,d) => s+parseFloat(d.amount||0), 0);
     el.innerHTML = `<div style="color:var(--green);font-weight:700;margin-bottom:0.8rem;">Total Approved: ₹${total.toLocaleString('en-IN')} (${userDeps.length} records)</div>` +
-      userDeps.map(([key,d]) => {
-        const time = d.timestamp ? new Date(d.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
+      userDeps.map(d => {
+        const time = d.created_at ? new Date(parseInt(d.created_at)).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}) : '—';
         const statusColor = d.status==='approved' ? 'var(--green)' : d.status==='pending' ? 'var(--gold)' : 'var(--red2)';
         return `<div style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.6rem 0.8rem;margin-bottom:0.4rem;display:flex;justify-content:space-between;align-items:center;">
           <div>
-            <div style="font-weight:700;color:var(--green);">₹${(d.amount||0).toLocaleString('en-IN')}${d.bonusAmt>0?` <span style="color:var(--gold);font-size:0.68rem;">+₹${d.bonusAmt} bonus</span>`:''}</div>
+            <div style="font-weight:700;color:var(--green);">₹${parseFloat(d.amount||0).toLocaleString('en-IN')}${parseFloat(d.bonus_amount||0)>0?` <span style="color:var(--gold);font-size:0.68rem;">+₹${d.bonus_amount} bonus</span>`:''}</div>
             <div style="font-size:0.7rem;color:var(--muted);">${d.method||'UPI'} · ${time}</div>
           </div>
           <span style="font-size:0.72rem;font-weight:700;color:${statusColor};">${d.status||'unknown'}</span>
@@ -3287,20 +2866,11 @@ window.openReferralOverview = async function(uid, username, memberId) {
   </div>`;
   document.body.appendChild(modal);
   try {
-    const [l1Snap, l2Snap, l3Snap, l4Snap] = await Promise.all([
-      get(ref(db, 'users/' + uid + '/referrals')),
-      get(ref(db, 'users/' + uid + '/referrals_l2')),
-      get(ref(db, 'users/' + uid + '/referrals_l3')),
-      get(ref(db, 'users/' + uid + '/referrals_l4'))
-    ]);
-    const levels = [
-      { label: 'L1 Direct', data: l1Snap.val() },
-      { label: 'L2 Team', data: l2Snap.val() },
-      { label: 'L3 Team', data: l3Snap.val() },
-      { label: 'L4 Team', data: l4Snap.val() }
-    ];
-    const totalComm = levels.reduce((s, l) => s + Object.values(l.data || {}).reduce((ss, r) => ss + (r.bonus||0) + (r.commission||0), 0), 0);
-    const totalRefs = levels.reduce((s, l) => s + Object.keys(l.data || {}).length, 0);
+    const result = await apiCall('/api/admin/user-referrals?uid=' + uid);
+    const refs = result.referrals || [];
+    const totalComm = parseFloat(result.totalCommission || 0);
+    const totalRefs = refs.length;
+    const levels = [{ label: 'L1 Direct', data: refs }];
     let html = `<div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;margin-bottom:1rem;">
       <div style="background:rgba(240,192,64,0.08);border:1px solid rgba(240,192,64,0.2);border-radius:8px;padding:0.7rem;text-align:center;">
         <div style="font-size:0.62rem;color:var(--muted);">Total Referrals</div>
@@ -3338,28 +2908,32 @@ window.openReferralOverview = async function(uid, username, memberId) {
 // ── ANNOUNCEMENT (unified) ──
 async function loadCurrentAnnouncement() {
   try {
-    const snap = await get(ref(db, 'announcement'));
-    const data = snap.val();
-    if (data && data.message) {
+    const result = await apiCall('/api/admin/settings');
+    const ann = result.settings?.announcement;
+    if (ann && ann.message) {
       const el = document.getElementById('announcementMsg');
-      if (el) el.value = data.message;
+      if (el) el.value = ann.message;
       const cur = document.getElementById('currentAnnouncement');
-      if (cur) cur.textContent = data.active ? data.message : 'None';
+      if (cur) cur.textContent = ann.active ? ann.message : 'None';
     }
   } catch(e) {}
 }
 window.saveAnnouncement = async function() {
   const msg = document.getElementById('announcementMsg').value.trim();
   if (!msg) { showToast('⚠️ Enter a message'); return; }
-  await set(ref(db, 'announcement'), { message: msg, timestamp: Date.now(), active: true });
-  document.getElementById('currentAnnouncement').textContent = msg;
-  showToast('📢 Announcement published!');
+  try {
+    await apiCall('/api/admin/announcement', 'POST', { message: msg, active: true });
+    document.getElementById('currentAnnouncement').textContent = msg;
+    showToast('📢 Announcement published!');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 window.clearAnnouncement = async function() {
-  await set(ref(db, 'announcement'), { message: '', active: false });
-  document.getElementById('currentAnnouncement').textContent = 'None';
-  document.getElementById('announcementMsg').value = '';
-  showToast('🗑️ Announcement cleared');
+  try {
+    await apiCall('/api/admin/announcement', 'POST', { message: '', active: false });
+    document.getElementById('currentAnnouncement').textContent = 'None';
+    document.getElementById('announcementMsg').value = '';
+    showToast('🗑️ Announcement cleared');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 // ── BROADCAST NOTIFICATION ──
@@ -3370,25 +2944,17 @@ window.sendBroadcast = async function() {
   if (!title) { showToast('⚠️ Enter notification title'); return; }
   if (!body) { showToast('⚠️ Enter notification message'); return; }
   if (!confirm('Send "' + title + '" to ALL users?')) return;
-  statusEl.textContent = '⏳ Sending...';
+  if (statusEl) statusEl.textContent = '⏳ Sending...';
   try {
-    const snap = await get(ref(db, 'users'));
-    const users = snap.val() || {};
-    const uids = Object.keys(users);
-    let count = 0;
-    const ts = Date.now();
-    for (const uid of uids) {
-      await set(ref(db, 'users/' + uid + '/notifications/' + (ts + count)), {
-        icon: '📣', title, body, read: false, timestamp: ts + count
-      });
-      count++;
+    const data = await apiCall('/api/admin/broadcast', 'POST', { title, body });
+    if (data.success) {
+      if (statusEl) statusEl.textContent = '✅ Sent to ' + data.count + ' users!';
+      document.getElementById('broadcastTitle').value = '';
+      document.getElementById('broadcastBody').value = '';
+      showToast('📣 Broadcast sent to ' + data.count + ' users!');
     }
-    statusEl.textContent = '✅ Sent to ' + count + ' users!';
-    document.getElementById('broadcastTitle').value = '';
-    document.getElementById('broadcastBody').value = '';
-    showToast('📣 Broadcast sent to ' + count + ' users!');
   } catch(e) {
-    statusEl.textContent = '❌ Error: ' + e.message;
+    if (statusEl) statusEl.textContent = '❌ Error: ' + e.message;
     showToast('❌ ' + e.message);
   }
 };
@@ -3396,8 +2962,8 @@ window.sendBroadcast = async function() {
 // ── WITHDRAWAL & DEPOSIT LIMITS ──
 async function loadLimits() {
   try {
-    const snap = await get(ref(db, 'settings/limits'));
-    const data = snap.val() || {};
+    const result = await apiCall('/api/admin/limits');
+    const data = result.limits || {};
     if (data.maxWithdrawPerDay != null) document.getElementById('maxWithdrawPerDay').value = data.maxWithdrawPerDay;
     if (data.minWithdrawUpi != null) document.getElementById('minWithdrawUpi').value = data.minWithdrawUpi;
     if (data.minWithdrawBank != null) document.getElementById('minWithdrawBank').value = data.minWithdrawBank;
@@ -3409,12 +2975,13 @@ window.saveLimits = async function() {
     maxWithdrawPerDay: parseInt(document.getElementById('maxWithdrawPerDay').value) || 2,
     minWithdrawUpi: parseInt(document.getElementById('minWithdrawUpi').value) || 300,
     minWithdrawBank: parseInt(document.getElementById('minWithdrawBank').value) || 500,
-    minDeposit: parseInt(document.getElementById('minDeposit').value) || 300,
-    updatedAt: Date.now()
+    minDeposit: parseInt(document.getElementById('minDeposit').value) || 300
   };
-  await set(ref(db, 'settings/limits'), data);
-  document.getElementById('limitsStatus').textContent = '✅ Limits saved!';
-  showToast('✅ Limits updated!');
+  try {
+    await apiCall('/api/admin/limits', 'POST', data);
+    document.getElementById('limitsStatus').textContent = '✅ Limits saved!';
+    showToast('✅ Limits updated!');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 // ── QUICK USER LOOKUP ──
@@ -3425,40 +2992,27 @@ window.quickLookup = async function() {
   resultEl.style.display = 'block';
   resultEl.innerHTML = '⏳ Looking up...';
   try {
-    // Try direct UID first
-    let snap = await get(ref(db, 'users/' + query));
-    let userData = snap.val();
-    let uid = query;
-
-    // If not found by UID, search by memberId
-    if (!userData) {
-      const allSnap = await get(ref(db, 'users'));
-      const allUsers = allSnap.val() || {};
-      const found = Object.entries(allUsers).find(([, u]) => u.memberId === query);
-      if (found) { uid = found[0]; userData = found[1]; }
-    }
-
-    if (!userData) {
-      resultEl.innerHTML = '❌ User not found';
-      return;
-    }
-
-    const vipExp = userData.vip?.exp || 0;
-    const lastLogin = userData.lastLogin ? new Date(userData.lastLogin).toLocaleString('en-IN', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Never';
+    const result = await apiCall('/api/admin/lookup?q=' + encodeURIComponent(query));
+    if (!result.success) { resultEl.innerHTML = '❌ User not found'; return; }
+    const userData = result.user;
+    const uid = userData.uid;
+    const vipExp = parseFloat(userData.vip_exp || 0);
+    const lastLogin = userData.last_login ? new Date(parseInt(userData.last_login)).toLocaleString('en-IN', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : 'Never';
+    const memberId = userData.member_id;
     resultEl.innerHTML = `
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.4rem;font-size:0.8rem;">
         <div><span style="color:var(--muted);">Name:</span> <strong>${userData.username || '—'}</strong></div>
-        <div><span style="color:var(--muted);">Member ID:</span> <strong style="color:var(--gold);">${userData.memberId || '—'}</strong></div>
-        <div><span style="color:var(--muted);">Contact:</span> ${userData.contact || userData.mobile || '—'}</div>
+        <div><span style="color:var(--muted);">Member ID:</span> <strong style="color:var(--gold);">${memberId || '—'}</strong></div>
+        <div><span style="color:var(--muted);">Contact:</span> ${userData.contact || '—'}</div>
         <div><span style="color:var(--muted);">Balance:</span> <strong style="color:var(--green);">₹${parseFloat(userData.balance || 0).toLocaleString('en-IN')}</strong></div>
         <div><span style="color:var(--muted);">VIP EXP:</span> ${vipExp}</div>
         <div><span style="color:var(--muted);">Last Login:</span> ${lastLogin}</div>
-        <div><span style="color:var(--muted);">Ref Code:</span> ${userData.referralCode || '—'}</div>
-        <div><span style="color:var(--muted);">Status:</span> <span style="color:${userData.isBlocked?'var(--red2)':'var(--green)'};">${userData.isBlocked?'🚫 Blocked':'✅ Active'}</span></div>
+        <div><span style="color:var(--muted);">Ref Code:</span> ${memberId || '—'}</div>
+        <div><span style="color:var(--muted);">Status:</span> <span style="color:${userData.is_banned?'var(--red2)':'var(--green)'};">${userData.is_banned?'🚫 Blocked':'✅ Active'}</span></div>
       </div>
       <div style="display:flex;gap:0.4rem;margin-top:0.6rem;">
         <button onclick="document.getElementById('manualUid').value='${memberId||uid}';switchTab('finance');" style="background:rgba(240,192,64,0.1);border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:var(--gold);cursor:pointer;font-size:0.72rem;">💰 Adjust Balance</button>
-        <button onclick="toggleBlockUser('${uid}', ${!userData.isBlocked})" style="background:${userData.isBlocked?'rgba(0,230,118,0.1)':'rgba(224,32,32,0.1)'};border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:${userData.isBlocked?'var(--green)':'var(--red2)'};cursor:pointer;font-size:0.72rem;">${userData.isBlocked?'✅ Unblock':'🚫 Block'}</button>
+        <button onclick="toggleBlockUser('${uid}', ${!userData.is_banned})" style="background:${userData.is_banned?'rgba(0,230,118,0.1)':'rgba(224,32,32,0.1)'};border:1px solid var(--border);border-radius:5px;padding:0.2rem 0.6rem;color:${userData.is_banned?'var(--green)':'var(--red2)'};cursor:pointer;font-size:0.72rem;">${userData.is_banned?'✅ Unblock':'🚫 Block'}</button>
       </div>`;
   } catch(e) {
     resultEl.innerHTML = '❌ Error: ' + e.message;
