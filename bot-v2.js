@@ -1,16 +1,28 @@
-const admin = require('firebase-admin');
+const { Pool } = require('pg');
 const https = require('https');
 
-admin.initializeApp({
-  credential: admin.credential.cert({
-    projectId: process.env.FIREBASE_PROJECT_ID,
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL,
-    privateKey: (process.env.FIREBASE_PRIVATE_KEY || '').replace(/\\n/g, '\n')
-  }),
-  databaseURL: process.env.FIREBASE_DATABASE_URL
-});
-
-const db = admin.database();
+// ── NEON DATABASE ──
+let _pool;
+function getPool() {
+  if (_pool) return _pool;
+  _pool = new Pool({
+    connectionString: process.env.NEON_DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+    max: 3,
+    idleTimeoutMillis: 10000,
+    connectionTimeoutMillis: 5000,
+  });
+  return _pool;
+}
+async function query(sql, params) {
+  const pool = getPool();
+  const client = await pool.connect();
+  try {
+    return await client.query(sql, params);
+  } finally {
+    client.release();
+  }
+}
 
 let lastPredictedPeriod = null;
 let pendingPrediction = null; // { period, color }
@@ -66,21 +78,29 @@ function colorEmoji(color) {
 
 async function runBot() {
   try {
-    const snap = await db.ref('wingo/wingo5min').once('value');
-    const data = snap.val();
-    if (!data) return;
+    // Get game state for 5min timer from Neon
+    const stateRes = await query(
+      `SELECT last_result, last_period_id FROM game_state WHERE timer = 5`,
+      []
+    );
+    if (stateRes.rows.length === 0) return;
+    const state = stateRes.rows[0];
 
-    const currentPeriod = data.lastProcessedPeriod;
-    const lastResult = data.lastResult;
+    const currentPeriod = state.last_period_id ? parseInt(state.last_period_id) : null;
+    const lastResult = state.last_result !== null ? state.last_result : null;
 
     // Step 1: Resolve pending prediction (silent)
-    if (pendingPrediction && lastResult) {
-      const resultRound = String(lastResult.round);
-      const pendingRound = String(pendingPrediction.period);
-
-      if (resultRound === pendingRound) {
-        let actualColor = lastResult.color.toLowerCase();
-        const num = lastResult.num;
+    if (pendingPrediction && lastResult !== null) {
+      // Get last history entry for 5min to get color
+      const histRes = await query(
+        `SELECT win_num, color FROM game_history
+         WHERE timer = 5 AND period_id = $1 LIMIT 1`,
+        [String(pendingPrediction.period)]
+      );
+      if (histRes.rows.length > 0) {
+        const hist = histRes.rows[0];
+        let actualColor = hist.color.toLowerCase();
+        const num = parseInt(hist.win_num);
         // violet+red (0) = red, violet+green (5) = green
         if (actualColor === 'violet') {
           actualColor = num === 0 ? 'red' : 'green';
@@ -94,7 +114,7 @@ async function runBot() {
           lossStreak++;
         }
 
-        console.log(`Period ${resultRound}: ${isWin ? 'WIN' : 'LOSS'} | streak: ${lossStreak}`);
+        console.log(`Period ${pendingPrediction.period}: ${isWin ? 'WIN' : 'LOSS'} | streak: ${lossStreak}`);
         pendingPrediction = null;
       }
     }
@@ -104,9 +124,6 @@ async function runBot() {
       const color = randomColor();
       const nextPeriod = currentPeriod + 1;
       const multiplier = getMultiplier();
-      const stakeLabel = multiplier === 1
-        ? '1x 🟡 (Base Stake)'
-        : `${multiplier}x 🔺 (Recover Loss)`;
 
       const msg =
         `🎯 <b>RoyalWin 5Min Signal</b>\n` +
@@ -125,7 +142,7 @@ async function runBot() {
     }
 
   } catch (err) {
-    console.error('Bot error:', err);
+    console.error('Bot error:', err.message);
   }
 }
 
