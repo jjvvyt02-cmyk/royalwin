@@ -8438,38 +8438,32 @@ function openUSDTModal() {
   if (window._usdtTimerInterval) clearInterval(window._usdtTimerInterval);
   if (window._usdtPollInterval) clearInterval(window._usdtPollInterval);
 
-  if (window.currentUser && (window.fbDB || fbDB)) {
-    var db = window.fbDB || fbDB;
-    db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value').then(function(hasDepSnap) {
-      var isFirst = !hasDepSnap.val();
-      var bonusPct = 0, bonusAmt = 0, wagerReq = 1;
-      if (selectedBonusOption === 1) { bonusPct = 8;   bonusAmt = Math.round(amt * 0.08);  wagerReq = 1.5; }
-      else if (selectedBonusOption === 2) { bonusPct = 15;  bonusAmt = Math.round(amt * 0.15);  wagerReq = 2.5; }
-      else if (selectedBonusOption === 3 && isFirst) { bonusPct = 100; bonusAmt = Math.round(amt * 1.00);  wagerReq = 10; }
-      else if (!isFirst) { bonusPct = 5; bonusAmt = Math.round(amt * 0.05); wagerReq = 1; }
+  var _rwToken = localStorage.getItem('royalwin_token');
+  if (_rwToken) {
+    (async function() {
+      var bonusPct = 0, bonusOption = null, wagerReq = 1;
+      if (selectedBonusOption === 1) { bonusPct = 8;  bonusOption = '8p';  wagerReq = 1.5; }
+      else if (selectedBonusOption === 2) { bonusPct = 15; bonusOption = '15p'; wagerReq = 2.5; }
+      else if (selectedBonusOption === 3) { bonusPct = 100; bonusOption = '100p'; wagerReq = 10; }
 
-      // Create Firebase deposit record first to get orderId
-      db.ref('adminRequests/deposits').push({
-        amount: amt, status: 'pending',
-        method: bonusPct > 0 ? `USDT TRC20 · ${bonusPct}% bonus (QuantumPay)` : 'USDT TRC20 (QuantumPay)',
-        uid: window.currentUser.uid,
-        memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
-        username: window.userProfile ? window.userProfile.username : 'Unknown',
-        contact: window.userProfile ? (window.userProfile.contact || '') : '',
-        isFirstDeposit: isFirst,
-        bonusPct: bonusPct, bonusAmt: bonusAmt, wagerReq: wagerReq,
-        timestamp: Date.now()
-      }).then(async function(ref) {
-        window._usdtDepositKey = ref.key;
-        const orderId = 'RW' + Date.now() + window.currentUser.uid.substring(0,6);
-        await db.ref('adminRequests/deposits/' + ref.key).update({ orderId: orderId });
+      try {
+        // Create the pending deposit record via REST API (replaces old Firebase adminRequests/deposits push)
+        const depResp = await fetch('https://royalwin-api.vercel.app/api/deposit', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _rwToken },
+          body: JSON.stringify({ amount: amt, gateway: 'quantumpay', bonusOption: bonusOption })
+        });
+        const depData = await depResp.json();
+        if (!depData.success) { if (addrEl) addrEl.textContent = 'Failed to start deposit. Try again.'; return; }
+        window._usdtDepositKey = depData.depositKey;
+        const orderId = depData.depositKey;
 
         // Create QuantumPay invoice
         try {
           const qpResp = await fetch('https://royalwin-api.vercel.app/api/quantumpay-create', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ amount: parseFloat(usdt), ref: orderId, expiryMinutes: 5 })
+            body: JSON.stringify({ amount: parseFloat(usdt), ref: orderId, expiryMinutes: 5, depositKey: depData.depositKey })
           });
           const qpData = await qpResp.json();
           if (qpData.address) {
@@ -8480,7 +8474,6 @@ function openUSDTModal() {
               qrEl.innerHTML = '';
               new QRCode(qrEl, { text: qpData.address, width: 160, height: 160, colorDark: '#000000', colorLight: '#ffffff', correctLevel: QRCode.CorrectLevel.M });
             }
-            await db.ref('adminRequests/deposits/' + ref.key).update({ qpInvoiceId: qpData.id, usdtAddress: qpData.address });
 
             // Poll for payment status every 10 seconds
             window._usdtPollInterval = setInterval(async function() {
@@ -8502,8 +8495,13 @@ function openUSDTModal() {
           console.error('QuantumPay error:', e);
           if (addrEl) addrEl.textContent = 'Failed to connect to payment gateway.';
         }
-      });
-    });
+      } catch(e) {
+        console.error('Deposit creation error:', e);
+        if (addrEl) addrEl.textContent = 'Failed to start deposit. Try again.';
+      }
+    })();
+  } else {
+    if (addrEl) addrEl.textContent = 'Please sign in again.';
   }
 
   window._usdtTimerInterval = setInterval(function() {
