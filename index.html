@@ -5134,13 +5134,36 @@
     }
   }
   let _chatPollInterval = null;
+  let _chatBadgePollInterval = null;
+
+  async function refreshChatBadge() {
+    const token = localStorage.getItem('royalwin_token');
+    const badge = document.getElementById('chatUnreadBadge');
+    if (!token || !badge) return;
+    try {
+      const res = await fetch('https://royalwin-api.vercel.app/api/chat/unread-count', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (data.success && data.unreadCount > 0) {
+        badge.textContent = data.unreadCount > 9 ? '9+' : data.unreadCount;
+        badge.style.display = 'flex';
+      } else {
+        badge.style.display = 'none';
+      }
+    } catch(e) {}
+  }
+  function startChatBadgePolling() {
+    refreshChatBadge();
+    if (_chatBadgePollInterval) clearInterval(_chatBadgePollInterval);
+    _chatBadgePollInterval = setInterval(refreshChatBadge, 20000);
+  }
 
   async function initLiveChat() {
     const user = window.currentUser;
     if (!user) return;
     window._chatInitialized = true;
-    const badge = document.getElementById('chatUnreadBadge');
-    if (badge) { badge.style.display = 'none'; badge.textContent = ''; }
+    const token = localStorage.getItem('royalwin_token');
+    if (token) { try { await fetch('https://royalwin-api.vercel.app/api/chat/mark-read', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token } }); } catch(e) {} }
+    refreshChatBadge();
 
     const msgsEl = document.getElementById('chatMessages');
     if (!msgsEl) return;
@@ -5271,12 +5294,12 @@
   async function openWheel(fromLogin = false) {
     if (!isLoggedIn && !fromLogin) { showPage('login'); showToast('🔐 Please sign in to spin'); return; }
     if (!isLoggedIn) { showToast('🔐 Please sign in first!'); showPage('login'); return; }
-    const db = window.fbDB || fbDB;
-    const user = window.currentUser;
-    if (db && user) {
+    const token = localStorage.getItem('royalwin_token');
+    if (token) {
       try {
-        const snap = await db.ref('users/' + user.uid + '/lastSpinDate').once('value');
-        if (snap.val() === new Date().toDateString()) {
+        const res = await fetch('https://royalwin-api.vercel.app/api/spin-status', { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        if (data.success && data.alreadySpun) {
           if (!fromLogin) showToast('🎡 Already claimed today! Come back tomorrow.');
           return;
         }
@@ -5293,16 +5316,26 @@
 
   async function spinWheel() {
     if (spinning) return;
-    const _spinUser = window.currentUser, _spinDb = window.fbDB;
-    if (_spinUser && _spinDb) {
-      const _depSnap = await _spinDb.ref('users/' + _spinUser.uid + '/hasDeposited').once('value');
-      if (!_depSnap.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
-    }
+    const token = localStorage.getItem('royalwin_token');
+    if (!token) { showToast('🔐 Please sign in first!'); return; }
     spinning = true;
     document.getElementById('spinBtn').disabled = true;
     document.getElementById('wheelResult').style.display = 'none';
-    const winAmt = wheelWeightedPool[Math.floor(Math.random() * wheelWeightedPool.length)];
-    const winIndex = prizeIndexMap[winAmt];
+
+    // Ask the server for the prize FIRST (server picks it authoritatively — client only animates to match)
+    let winAmt, winIndex;
+    try {
+      const res = await fetch('https://royalwin-api.vercel.app/api/claim-bonus', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ type: 'daily_spin' })
+      });
+      const data = await res.json();
+      if (!data.success) { showToast('⚠️ ' + (data.msg || 'Spin failed')); spinning = false; document.getElementById('spinBtn').disabled = false; return; }
+      winAmt = data.reward; winIndex = data.winIndex;
+    } catch(e) {
+      showToast('❌ Spin failed. Try again.'); spinning = false; document.getElementById('spinBtn').disabled = false; return;
+    }
 
     const slices = wheelPrizes.length; // 5
     const arc = (2 * Math.PI) / slices;
@@ -5329,35 +5362,11 @@
       const resultEl = document.getElementById('wheelResult');
       resultEl.innerHTML = '🎉 You won <strong style="color:var(--gold2);">₹' + winAmt + '</strong>!';
       resultEl.style.display = 'block';
-      (async () => {
-        try {
-          const db = window.fbDB || fbDB;
-          const user = window.currentUser;
-          if (db && user) {
-            const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
-            const newBal = parseFloat((parseFloat(balSnap.val() || 0) + winAmt).toFixed(2));
-            await db.ref('users/' + user.uid + '/balance').transaction(() => newBal);
-            await db.ref('users/' + user.uid + '/lastSpinDate').set(new Date().toDateString());
-            updateBalanceDisplay(newBal);
-            await db.ref('users/' + user.uid + '/transactions/' + Date.now()).set({
-              type: 'spin', amount: winAmt, details: '🎡 Daily spin win — ₹' + winAmt,
-              balance: newBal, timestamp: Date.now()
-            });
-            // Add wager requirement — 1x of spin win amount
-            const spinWagerSnap = await db.ref('users/' + user.uid + '/wager').once('value');
-            const spinW = spinWagerSnap.val() || { required: 0, completed: 0, startedAt: 0 };
-            const spinIsNew = !spinW.startedAt || spinW.startedAt === 0;
-            await db.ref('users/' + user.uid + '/wager').set({
-              required: parseFloat((parseFloat(spinW.required || 0) + winAmt).toFixed(2)),
-              completed: parseFloat(spinW.completed || 0),
-              startedAt: spinIsNew ? Date.now() : spinW.startedAt
-            });
-            await pushNotification(user.uid, '🎡', 'Daily Spin Win!', 'You won ₹' + winAmt + ' from the daily spin!');
-            showToast('💰 ₹' + winAmt + ' added to your wallet!');
-            setTimeout(() => closeWheel(), 5000);
-          }
-        } catch(e) { /* wheel error */ }
-      })();
+      fetch('https://royalwin-api.vercel.app/api/user', { headers: { 'Authorization': 'Bearer ' + token } })
+        .then(r => r.json()).then(d => { if (d.success && typeof updateBalanceDisplay === 'function') updateBalanceDisplay(parseFloat(d.user.balance || 0)); })
+        .catch(() => {});
+      showToast('💰 ₹' + winAmt + ' added to your wallet!');
+      setTimeout(() => closeWheel(), 5000);
     }
     requestAnimationFrame(animate);
   }
@@ -5519,6 +5528,20 @@
   const numColors = ['violet-red','#27ae60','#e02020','#27ae60','#e02020','violet-green','#e02020','#27ae60','#e02020','#27ae60'];
   const numBigSmall = ['Small','Small','Small','Small','Small','Big','Big','Big','Big','Big'];
   let cgSettings = { fee: 0.04, minBet: 10, maxBet: 50000, colorPayout: 2, violetPayout: 4.5, numPayout: 9, bigSmallPayout: 2, colorOnVioletPayout: 1.5 };
+
+  async function loadGameSettings() {
+    try {
+      const res = await fetch('https://royalwin-api.vercel.app/api/game-settings');
+      const data = await res.json();
+      if (data.success && data.settings) {
+        const s = data.settings;
+        if (s.fee != null) cgSettings.fee = parseFloat(s.fee) / 100;
+        if (s.minBet != null) cgSettings.minBet = parseFloat(s.minBet);
+        if (s.maxBet != null) cgSettings.maxBet = parseFloat(s.maxBet);
+      }
+    } catch(e) { /* suppressed — falls back to defaults above */ }
+  }
+  loadGameSettings();
   const cgWinColorByNum = {0:'violet-red',1:'green',2:'red',3:'green',4:'red',5:'violet-green',6:'red',7:'green',8:'red',9:'green'};
 
   let cgTimer = 1, cgSeconds = 60, cgInterval = null;
@@ -6679,6 +6702,7 @@
           isLoggedIn = true;
           loadUserProfile(user.uid);
           startNotificationsPolling();
+          startChatBadgePolling();
           checkDepositBonus();
           // ── DAILY LOGIN EXP (2 EXP per day) ──
           (async () => {
