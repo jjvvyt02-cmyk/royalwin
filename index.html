@@ -5635,12 +5635,15 @@
     if (row.status === 'pending') return { ...base, result: '⏳ Waiting...', resultBg: 'rgba(240,192,64,0.3)', pl: null };
 
     const hist = (cgHistoryByTimer[row.timer] || []).find(h => h.round === row.period_id);
-    const winNum = hist ? hist.num : null;
+    // Prefer win_num/win_color already on the bet row (written directly by settlement) —
+    // avoids a race where the popup fires before the separate history list has caught up.
+    const winNum = row.win_num !== null && row.win_num !== undefined ? parseInt(row.win_num) : (hist ? hist.num : null);
+    const winColor = row.win_color != null ? row.win_color : (hist ? hist.color : null);
     const pl = row.status === 'won' ? (winNum != null ? Math.round(computeWinAmount(row, winNum)) : actualBet) : -betAmt;
 
     return {
-      ...base, winNum, winColor: hist ? hist.color : null,
-      result: hist ? (hist.color + ' / ' + hist.num) : (row.status === 'won' ? 'Won' : 'Lost'),
+      ...base, winNum, winColor,
+      result: winColor != null ? (winColor + ' / ' + winNum) : (row.status === 'won' ? 'Won' : 'Lost'),
       resultBg: hist ? hist.histBg : (row.status === 'won' ? '#27ae60' : '#e02020'),
       pl
     };
@@ -5934,9 +5937,9 @@
     }
     const badge = document.getElementById('cgResNumBadge');
     if (badge) {
-      badge.textContent = num !== undefined ? num : '';
+      badge.textContent = (num !== undefined && num !== null) ? num : '';
       badge.style.background = colorMap[color] || '#555';
-      badge.style.display = num !== undefined ? 'inline-flex' : 'none';
+      badge.style.display = (num !== undefined && num !== null) ? 'inline-flex' : 'none';
     }
     const bsTag = document.getElementById('cgResBigSmallTag');
     if (bsTag) bsTag.textContent = (num >= 5) ? 'Big' : 'Small';
