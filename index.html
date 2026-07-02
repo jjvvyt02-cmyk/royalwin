@@ -1876,7 +1876,7 @@
       </div>
       <div class="form-group">
         <label class="form-label">Invitation Code</label>
-        <input class="form-input" type="text" id="inviteCodeInput" value="" placeholder="Enter invitation code">
+        <input class="form-input" type="text" id="inviteCodeInput" value="" placeholder="Enter invitation code *" required>
       </div>
       <div class="checkbox-row">
         <input type="checkbox" id="terms" checked>
@@ -4636,6 +4636,7 @@
       showToast('⚠️ Enter a valid 10-digit Indian mobile number'); return;
     }
     if (!username) { showToast('⚠️ Enter a username'); return; }
+    if (!inviteCode) { showToast('⚠️ Invitation code is required'); return; }
     if (!password || password.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
     const pwErr = validatePassword(password);
     if (pwErr) { showToast('⚠️ ' + pwErr); return; }
