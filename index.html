@@ -3725,14 +3725,11 @@
     el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
 
     try {
-      const res = await fetch('https://royalwin-api.vercel.app/api/transactions', { headers: { 'Authorization': 'Bearer ' + token } });
+      const res = await fetch('https://royalwin-api.vercel.app/api/my-deposits', { headers: { 'Authorization': 'Bearer ' + token } });
       const data = await res.json();
       if (!data.success) return;
-      // Only successful deposits are ever recorded as transactions (credited on approval) —
-      // pending/rejected/cancelled deposits have no transaction row and won't appear here.
-      _depHistData = data.transactions
-        .filter(tx => tx.type === 'deposit')
-        .map(tx => ({ amount: parseFloat(tx.amount), status: 'approved', method: tx.details || 'UPI', timestamp: Number(tx.timestamp) }))
+      _depHistData = data.deposits
+        .map(d => ({ amount: parseFloat(d.amount), status: d.status, method: d.method || 'UPI', orderId: d.order_id, bonusPct: null, timestamp: Number(d.created_at) }))
         .sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
       _renderDepositHistory();
     } catch(e) {}
@@ -3802,19 +3799,11 @@
     el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
 
     try {
-      const res = await fetch('https://royalwin-api.vercel.app/api/transactions', { headers: { 'Authorization': 'Bearer ' + token } });
+      const res = await fetch('https://royalwin-api.vercel.app/api/my-withdrawals', { headers: { 'Authorization': 'Bearer ' + token } });
       const data = await res.json();
       if (!data.success) return;
-      // No shared ID links a withdrawal_request to its later withdrawal_refund (if rejected),
-      // so a rejected withdrawal shows as two separate rows rather than one row that updates status.
-      _withHistData = data.transactions
-        .filter(tx => tx.type === 'withdrawal_request' || tx.type === 'withdrawal_refund')
-        .map(tx => ({
-          amount: Math.abs(parseFloat(tx.amount)),
-          status: tx.type === 'withdrawal_refund' ? 'rejected' : 'processing',
-          method: tx.details || 'UPI',
-          timestamp: Number(tx.timestamp)
-        }))
+      _withHistData = data.withdrawals
+        .map(w => ({ amount: parseFloat(w.amount), status: w.status, method: w.method || 'UPI', timestamp: Number(w.created_at) }))
         .sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
       _renderWithdrawHistory();
     } catch(e) {}
@@ -4114,68 +4103,73 @@
 
   var _walDepPage = 1, _walDepData = [];
   async function loadDepositHistory(page) {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
+    const token = localStorage.getItem('royalwin_token');
     const el = document.getElementById('depositHistoryRows');
-    if (!user || !db || !el) return;
-    if (page) { _walDepPage = page; }
-    else if (!_walDepData.length) {
-      el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
+    const elPanel = document.getElementById('depositHistoryRowsPanel');
+    if (!token) return;
+    if (page) { _walDepPage = page; } else if (!_walDepData.length) {
+      if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
+      if (elPanel) elPanel.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
       try {
-        const snap = await db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).once('value');
-        const data = snap.val();
-        _walDepData = data ? Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0)) : [];
-      } catch(e) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Failed to load</div>'; return; }
+        const res = await fetch('https://royalwin-api.vercel.app/api/my-deposits', { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        _walDepData = (data.success ? data.deposits : []).sort((a,b) => (b.created_at||0)-(a.created_at||0));
+      } catch(e) {
+        const msg = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Failed to load</div>';
+        if (el) el.innerHTML = msg; if (elPanel) elPanel.innerHTML = msg;
+        return;
+      }
     }
-    if (!_walDepData.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No deposits yet</div>'; return; }
+    const targets = [el, elPanel].filter(Boolean);
+    if (!_walDepData.length) {
+      const msg = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No deposits yet</div>';
+      targets.forEach(t => t.innerHTML = msg);
+      return;
+    }
     const PER_PAGE = 5, MAX_PAGES = 10;
     const limited = _walDepData.slice(0, PER_PAGE * MAX_PAGES);
     const totalPages = Math.min(Math.ceil(limited.length / PER_PAGE), MAX_PAGES);
     if (_walDepPage > totalPages) _walDepPage = 1;
     const pageItems = limited.slice((_walDepPage-1)*PER_PAGE, _walDepPage*PER_PAGE);
-    el.innerHTML = pageItems.map(r => {
-      const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+    const html = pageItems.map(r => {
+      const time = r.created_at ? new Date(Number(r.created_at)).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
       let statusColor, statusText, statusIcon;
       switch(r.status) {
         case 'approved':   statusColor='var(--green)'; statusIcon='✅'; statusText='Success'; break;
         case 'rejected':   statusColor='var(--red2)';  statusIcon='❌'; statusText='Rejected'; break;
         case 'cancelled':  statusColor='var(--muted)'; statusIcon='🚫'; statusText='Cancelled'; break;
         case 'processing': statusColor='var(--gold)';  statusIcon='⚙️'; statusText='Processing'; break;
-        default:           statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
+        default:            statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
       }
-      const bonusText = r.bonusPct ? `<span style="font-size:0.7rem;color:var(--gold);margin-left:0.3rem;">+${r.bonusPct}%</span>` : '';
-      const orderId = r.orderId || '';
+      const bonusText = r.bonus_amount > 0 ? `<span style="font-size:0.7rem;color:var(--gold);margin-left:0.3rem;">+₹${parseFloat(r.bonus_amount).toLocaleString('en-IN')} bonus</span>` : '';
+      const orderId = r.order_id || '';
       return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
         <div>
-          <div style="font-weight:700;color:var(--green);">+₹${(r.amount||0).toLocaleString('en-IN')}${bonusText}</div>
+          <div style="font-weight:700;color:var(--green);">+₹${parseFloat(r.amount||0).toLocaleString('en-IN')}${bonusText}</div>
           <div style="font-size:0.7rem;color:var(--muted);">${r.method||'UPI'} · ${time}</div>
           ${orderId ? `<div style="font-size:0.65rem;color:var(--muted);opacity:0.75;">#${orderId}</div>` : ''}
         </div>
         <div style="font-size:0.75rem;font-weight:700;color:${statusColor};">${statusIcon} ${statusText}</div>
       </div>`;
-    }).join('');
-    if (totalPages > 1) {
-      el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.7rem;">
+    }).join('') + (totalPages > 1 ? `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.7rem;">
         <button onclick="loadDepositHistory(${_walDepPage-1})" ${_walDepPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walDepPage<=1?'opacity:0.4;':''}">&lt;</button>
         <span style="color:var(--muted);font-size:0.75rem;">Page ${_walDepPage} / ${totalPages}</span>
         <button onclick="loadDepositHistory(${_walDepPage+1})" ${_walDepPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walDepPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
-      </div>`;
-    }
+      </div>` : '');
+    targets.forEach(t => t.innerHTML = html);
   }
 
   var _walWithPage = 1, _walWithData = [];
   async function loadWithdrawHistory(page) {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
+    const token = localStorage.getItem('royalwin_token');
     const el = document.getElementById('withdrawHistoryRows');
-    if (!user || !db || !el) return;
-    if (page) { _walWithPage = page; }
-    else if (!_walWithData.length) {
+    if (!token || !el) return;
+    if (page) { _walWithPage = page; } else if (!_walWithData.length) {
       el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
       try {
-        const snap = await db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(user.uid).once('value');
-        const data = snap.val();
-        _walWithData = data ? Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0)) : [];
+        const res = await fetch('https://royalwin-api.vercel.app/api/my-withdrawals', { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        _walWithData = (data.success ? data.withdrawals : []).sort((a,b) => (b.created_at||0)-(a.created_at||0));
       } catch(e) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Failed to load</div>'; return; }
     }
     if (!_walWithData.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No withdrawals yet</div>'; return; }
@@ -4185,7 +4179,7 @@
     if (_walWithPage > totalPages) _walWithPage = 1;
     const pageItems = limited.slice((_walWithPage-1)*PER_PAGE, _walWithPage*PER_PAGE);
     el.innerHTML = pageItems.map(r => {
-      const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+      const time = r.created_at ? new Date(Number(r.created_at)).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
       let statusColor, statusText, statusIcon;
       switch(r.status) {
         case 'approved':    statusColor='var(--green)'; statusIcon='✅'; statusText='Success'; break;
@@ -4194,12 +4188,12 @@
         case 'processing':  statusColor='var(--gold)';  statusIcon='⚙️'; statusText='Processing'; break;
         default:            statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
       }
-      const orderId = r.wgpayTranFlow || r.payoutOrderId || '';
+      let accountDetails = {};
+      try { accountDetails = typeof r.account_details === 'string' ? JSON.parse(r.account_details) : (r.account_details || {}); } catch(e) {}
       return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
         <div>
-          <div style="font-weight:700;color:var(--red2);">-₹${(r.amount||0).toLocaleString('en-IN')}</div>
+          <div style="font-weight:700;color:var(--red2);">-₹${parseFloat(r.amount||0).toLocaleString('en-IN')}</div>
           <div style="font-size:0.7rem;color:var(--muted);">${r.method||'UPI'} · ${time}</div>
-          ${orderId ? `<div style="font-size:0.65rem;color:var(--muted);opacity:0.75;">#${orderId}</div>` : ''}
           ${r.status==='processing'?'<div style="font-size:0.67rem;color:var(--gold);">Expected within 24 hours</div>':''}
           ${r.status==='failed'||r.status==='rejected'?'<div style="font-size:0.67rem;color:var(--red2);">Amount refunded</div>':''}
         </div>
@@ -4216,16 +4210,15 @@
   }
 
   async function refreshWalletBalance() {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) return;
+    const token = localStorage.getItem('royalwin_token');
+    if (!token) return;
     const btn = document.querySelector('[onclick="refreshWalletBalance()"]');
     if (btn) btn.style.animation = 'spin 0.6s linear';
     try {
-      const snap = await db.ref('users/' + user.uid + '/balance').once('value');
-      const bal = parseFloat(snap.val() || 0);
-      updateBalanceDisplay(bal);
-      showToast('✅ Balance updated!');
+      const res = await fetch('https://royalwin-api.vercel.app/api/user', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (data.success) { updateBalanceDisplay(parseFloat(data.user.balance || 0)); showToast('✅ Balance updated!'); }
+      else showToast('❌ Failed to refresh');
     } catch(e) { showToast('❌ Failed to refresh'); }
     if (btn) setTimeout(() => btn.style.animation = '', 600);
   }
@@ -7118,12 +7111,8 @@
     
     <div class="wallet-panel" id="panel-history">
       <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:0.95rem;margin-bottom:1rem;">📋 Deposit History</div>
-      <div id="depositHistoryRows">
+      <div id="depositHistoryRowsPanel">
         <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;"><span data-t="common.loading">Loading...</span></div>
-      </div>
-        <div class="tx-row"><div>⬇️ Deposit — Card</div><div class="tx-deposit">+₹2,000</div><div style="color:var(--muted);">8 May 2026</div><div><span class="badge badge-success">Success</span></div></div>
-        <div class="tx-row"><div>⬆️ Withdraw — Bank</div><div class="tx-withdraw">-₹1,500</div><div style="color:var(--muted);">5 May 2026</div><div><span class="badge badge-pending">Pending</span></div></div>
-        <div class="tx-row"><div>⬇️ Deposit — UPI</div><div class="tx-deposit">+₹500</div><div style="color:var(--muted);">2 May 2026</div><div><span class="badge badge-failed">Failed</span></div></div>
       </div>
     </div>
   </div>
@@ -9257,28 +9246,25 @@ window.loadInvitationBonusPage = function() {
 }
 </script>
 <script>
-window.loadActivityAwardPage = function() {
-  var db = window.fbDB || firebase.database();
-  var user = window.currentUser || firebase.auth().currentUser;
-  if (!db || !user) { setTimeout(window.loadActivityAwardPage, 500); return; }
-  var todayKey = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
-  var utcKey = new Date().toISOString().split('T')[0];
+window.loadActivityAwardPage = async function() {
+  var token = localStorage.getItem('royalwin_token');
+  if (!token) { setTimeout(window.loadActivityAwardPage, 500); return; }
   var TASKS = [{id:1,target:2000,reward:25},{id:2,target:5000,reward:85},
     {id:3,target:10000,reward:215},{id:4,target:50000,reward:1015},{id:5,target:100000,reward:2015}];
 
-  // Clear existing listener
-  if (window._activityListener) {
-    try { firebase.database().ref('users/'+user.uid+'/dailyBets/'+todayKey).off('value', window._activityListener); } catch(e) {}
-  }
   if (window._activityTimer) clearInterval(window._activityTimer);
 
-  function renderActivity(bets) {
-    var betEl = document.getElementById('activityTodayBets');
-    if (betEl) betEl.textContent = '₹'+bets.toLocaleString('en-IN');
-    db.ref('users/'+user.uid+'/claimedActivityTasks/'+todayKey).once('value').then(function(cs) {
-      var claimed = cs.val()||{};
+  async function renderActivity() {
+    try {
+      var res = await fetch('https://royalwin-api.vercel.app/api/activity-status', { headers: { 'Authorization': 'Bearer ' + token } });
+      var data = await res.json();
+      if (!data.success) return;
+      var bets = data.todayBets || 0;
+      var claimed = data.claimedTasks || [];
+      var betEl = document.getElementById('activityTodayBets');
+      if (betEl) betEl.textContent = '₹'+bets.toLocaleString('en-IN');
       TASKS.forEach(function(t) {
-        var isClaimed = claimed['task'+t.id];
+        var isClaimed = claimed.indexOf(t.id) !== -1;
         var done = bets >= t.target;
         var canClaim = done && !isClaimed;
         var prog = Math.min(bets, t.target);
@@ -9292,47 +9278,16 @@ window.loadActivityAwardPage = function() {
         if (statusEl) { statusEl.textContent = isClaimed?'Claimed':done?'Complete!':'Unfinished'; statusEl.style.color = (done||isClaimed)?'var(--green)':'var(--muted)'; }
         if (btnEl) {
           if (isClaimed) btnEl.innerHTML = '<span style="color:var(--green);font-size:0.8rem;font-weight:700;">✅ Claimed</span>';
-          else if (canClaim) btnEl.innerHTML = '<button onclick="window.claimActivityTask('+t.id+','+t.reward+')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.4rem 0.9rem;color:#000;font-weight:800;font-size:0.8rem;cursor:pointer;">Claim</button>';
+          else if (canClaim) btnEl.innerHTML = '<button onclick="window.claimActivityTask('+t.id+')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.4rem 0.9rem;color:#000;font-weight:800;font-size:0.8rem;cursor:pointer;">Claim</button>';
           else btnEl.innerHTML = '<button style="background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:0.4rem 0.9rem;color:var(--muted);font-size:0.8rem;cursor:default;">To complete</button>';
         }
       });
-    });
+    } catch(e) {}
   }
 
-  // Read both UTC and IST keys immediately on page load
-  db.ref('users/'+user.uid+'/dailyBets').once('value').then(function(allSnap) {
-    var allBets = allSnap.val() || {};
-    // Sum all values for today (both UTC and IST keys)
-    var total = 0;
-    Object.entries(allBets).forEach(function([key, val]) {
-      if (key === todayKey || key === utcKey) {
-        total += parseFloat(val || 0);
-      }
-    });
-    // Remove double-count if keys are same
-    if (todayKey === utcKey) total = parseFloat(allBets[todayKey] || 0);
-    renderActivity(total);
-  });
-
-  // Live listener on IST key for real-time updates
-  db.ref('users/'+user.uid+'/dailyBets/'+utcKey).once('value').then(function(utcSnap) {
-    var utcBets = parseFloat(utcSnap.val() || 0);
-    window._activityListener = db.ref('users/'+user.uid+'/dailyBets/'+todayKey).on('value', function(snap) {
-      var istBets = parseFloat(snap.val() || 0);
-      var total = todayKey === utcKey ? istBets : istBets + utcBets;
-      renderActivity(total);
-    });
-  });
-
-  // Auto-refresh every 1 hour as fallback
-  window._activityTimer = setInterval(function() {
-    var currentUser = firebase.auth().currentUser;
-    if (!currentUser) return;
-    var key = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
-    db.ref('users/'+currentUser.uid+'/dailyBets/'+key).once('value').then(function(snap) {
-      renderActivity(parseFloat(snap.val()||0));
-    });
-  }, 60 * 60 * 1000);
+  renderActivity();
+  // Refresh every 15 seconds while page is open (bets update server-side as they're placed)
+  window._activityTimer = setInterval(renderActivity, 15000);
 }
 </script>
 
@@ -9390,34 +9345,21 @@ window.claimInviteTier = async function(tierNum, reward) {
     showToast('❌ Claim failed. Please try again.');
   }
 };
-window.claimActivityTask = function(taskId, reward) {
-  var user = window.currentUser, db = window.fbDB;
-  if (!user || !db) { showToast('🔐 Please sign in first'); return; }
-  var todayKey = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
-  db.ref('users/'+user.uid+'/claimedActivityTasks/'+todayKey+'/task'+taskId).once('value').then(function(snap) {
-    if (snap.val()) { showToast('⚠️ Already claimed today!'); return; }
-    db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
-      var newBal = parseFloat(((balSnap.val()||0)+reward).toFixed(2));
-      var updates = {}; updates['users/'+user.uid+'/claimedActivityTasks/'+todayKey+'/task'+taskId]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
-      db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
-        var w = wSnap.val()||{required:0,completed:0,startedAt:0};
-        var isNew = !w.startedAt || w.startedAt === 0;
-        var newWager = {
-          required: parseFloat((parseFloat(w.required||0)+reward).toFixed(2)),
-          completed: parseFloat(w.completed||0),
-          startedAt: isNew ? Date.now() : w.startedAt
-        };
-        db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
-          db.ref().update(updates).then(function() {
-            db.ref('users/'+user.uid+'/transactions').push({type:'activity_award',amount:reward,details:'Activity Award Task '+taskId+' (1x wager)',balance:newBal,timestamp:Date.now()});
-            if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-            showToast('🎯 Task '+taskId+' reward! +₹'+reward+' credited! (1x wager required)');
-            if (typeof window.loadActivityAwardPage==='function') window.loadActivityAwardPage();
-          }).catch(function(e) { showToast('❌ '+e.message); });
-        }).catch(function(e) { showToast('❌ '+e.message); });
-      });
+window.claimActivityTask = async function(taskId) {
+  var token = localStorage.getItem('royalwin_token');
+  if (!token) { showToast('🔐 Please sign in first'); return; }
+  try {
+    var res = await fetch('https://royalwin-api.vercel.app/api/claim-bonus', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ type: 'activity_award', taskId: taskId })
     });
-  });
+    var data = await res.json();
+    if (!data.success) { showToast('⚠️ ' + (data.msg || 'Claim failed')); return; }
+    if (typeof updateBalanceDisplay === 'function') updateBalanceDisplay(data.balance);
+    showToast('🎯 Task '+taskId+' reward! +₹'+data.reward+' credited! (1x wager required)');
+    if (typeof window.loadActivityAwardPage === 'function') window.loadActivityAwardPage();
+  } catch(e) { showToast('❌ Claim failed. Try again.'); }
 };
 </script>
 </body>
