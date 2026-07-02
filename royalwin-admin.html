@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RoyalWin — Admin Panel [DEBUG-BUILD-1]</title>
+<title>RoyalWin — Admin Panel [DEBUG-BUILD-2]</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -964,7 +964,7 @@
 </div>
 
 <script>
-console.log('%c[DEBUG-BUILD-1] admin.html script started executing', 'background:orange;color:black;font-size:16px;padding:4px;');
+console.log('%c[DEBUG-BUILD-2] admin.html script started executing', 'background:orange;color:black;font-size:16px;padding:4px;');
 // ── NEON ADMIN CONFIG ──
 const API = 'https://royalwin-api.vercel.app';
 const ADMIN_TOKEN = localStorage.getItem('royalwin_admin_token') || '';
@@ -1234,6 +1234,7 @@ window.toggleAutoForMode = async function(mins, isAuto) {
 };
 
 function renderLastResults(mins, history) {
+  console.log('[DEBUG] renderLastResults(' + mins + ') raw history:', JSON.parse(JSON.stringify(history || [])));
   const el = document.getElementById('lastResults' + mins + 'min');
   if (!el) { console.warn('renderLastResults: element lastResults' + mins + 'min not found in DOM'); return; }
   if (!history || history.length === 0) {
@@ -1241,7 +1242,6 @@ function renderLastResults(mins, history) {
     return;
   }
   const colorMap = { 'violet': '#7c4dff', 'red': '#e02020', 'green': '#27ae60' };
-  // Sort by round (or timestamp as fallback) descending, then deduplicate by round number.
   // This mirrors the exact logic index.html's loadAllHistory() already uses correctly -
   // without deduplication, a round that got written multiple times (e.g. from the historical
   // race condition in game-engine.js, now fixed at the source) would show as the same
@@ -1256,6 +1256,7 @@ function renderLastResults(mins, history) {
       seen.add(h.round);
       return true;
     });
+  console.log('[DEBUG] renderLastResults(' + mins + ') deduped count:', deduped.length, deduped);
   // Compact horizontal chips
   el.innerHTML = '<div style="display:flex;gap:0.3rem;flex-wrap:wrap;">' +
     deduped.slice(0, 5).map(h => {
