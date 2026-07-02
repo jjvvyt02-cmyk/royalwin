@@ -2473,11 +2473,11 @@
       }
     }
 
-    if (name === 'bethistory') renderBetHistory(currentBetFilter);
+    if (name === 'bethistory') loadBetHistoryData();
     if (name === 'history') loadTransactionHistory();
-    if (name === 'profile') renderBetHistory(currentBetFilter || 'all');
+    if (name === 'profile') loadBetHistoryData();
     if (name === 'profile') { _showPageInternal('profile'); updateMobileNav('account'); loadProfileStats(); return; }
-    if (name === 'gamestats') { _showPageInternal('gamestats'); updateMobileNav('account'); renderBetHistory('all'); loadGameStats('today'); return; }
+    if (name === 'gamestats') { _showPageInternal('gamestats'); updateMobileNav('account'); loadBetHistoryData().then(() => loadGameStats('today')); return; }
     if (name === 'support') setTimeout(initLiveChat, 300);
     if (name === 'deposithistory') loadDepositHistoryPage();
     if (name === 'withdrawhistory') loadWithdrawHistoryPage();
@@ -2499,11 +2499,10 @@
     if (!contact) { showToast('⚠️ Enter your mobile or email'); return; }
     if (!password) { showToast('⚠️ Enter your password'); return; }
 
-    const isEmail = contact.includes('@');
-    const email = isEmail ? contact : contact.replace(/\s/g,'') + '@royalwin.app';
+    const cleanContact = contact.replace(/\s/g,'');
 
     // Check if account is locked
-    const lockKey = 'login_lock_' + email;
+    const lockKey = 'login_lock_' + cleanContact;
     const lockData = JSON.parse(localStorage.getItem(lockKey) || '{}');
     if (lockData.lockedUntil && Date.now() < lockData.lockedUntil) {
       const remaining = Math.ceil((lockData.lockedUntil - Date.now()) / 3600000);
@@ -2513,17 +2512,14 @@
 
     try {
       showToast('⏳ Signing in...');
-      await firebase.auth().signInWithEmailAndPassword(email, password);
-      // Clear failed attempts on success
-      localStorage.removeItem(lockKey);
-      showToast('✅ Welcome back!');
-      showPage('home');
-    } catch(e) {
-      const msg = e.code === 'auth/user-not-found' ? 'Account not found. Please register.' :
-                  e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential' ? 'Wrong password. Please try again.' : e.message;
-
-      // Track failed attempts
-      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+      const res = await fetch('https://royalwin-api.vercel.app/api/login', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contact: cleanContact, password })
+      });
+      const data = await res.json();
+      if (!data.success) {
+        if (res.status === 403) { showToast('❌ ' + data.msg); return; }
+        // Track failed attempts
         const attempts = (lockData.attempts || 0) + 1;
         if (attempts >= 5) {
           const lockedUntil = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
@@ -2532,11 +2528,18 @@
           return;
         } else {
           localStorage.setItem(lockKey, JSON.stringify({ attempts, lockedUntil: null }));
-          showToast('❌ ' + msg + ' (' + (5 - attempts) + ' attempts remaining)');
+          showToast('❌ ' + (data.msg || 'Invalid credentials') + ' (' + (5 - attempts) + ' attempts remaining)');
           return;
         }
       }
-      showToast('❌ ' + msg);
+      // Clear failed attempts on success
+      localStorage.removeItem(lockKey);
+      localStorage.setItem('royalwin_token', data.token);
+      showToast('✅ Welcome back!');
+      if (typeof onAuthChange === 'function') onAuthChange(data.user);
+      showPage('home');
+    } catch(e) {
+      showToast('❌ ' + (e.message || 'Login failed. Please try again.'));
     }
   }
   function showGiftsModal() {
@@ -2571,59 +2574,29 @@
     const statusEl = document.getElementById('giftRedeemStatus');
 
     if (!code) { showToast('⚠️ Enter a gift code'); return; }
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) { showToast('🔐 Please sign in'); return; }
+    const token = localStorage.getItem('royalwin_token');
+    if (!token) { showToast('🔐 Please sign in'); return; }
     if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = 'var(--muted)'; statusEl.textContent = '⏳ Checking code...'; }
 
     try {
-      const codeSnap = await db.ref('giftCodes/' + code).once('value');
-      const giftData = codeSnap.val();
-      if (!giftData) {
-        if (statusEl) { statusEl.style.color = 'var(--red2)'; statusEl.textContent = '❌ Invalid gift code. Please check and try again.'; }
-        showToast('❌ Invalid gift code');
-        return;
-      }
-      if (!giftData.active) {
-        if (statusEl) { statusEl.style.color = 'var(--red2)'; statusEl.textContent = '❌ This code has expired or been disabled.'; }
-        showToast('❌ This code has expired');
-        return;
-      }
-      const redeemedSnap = await db.ref('users/' + user.uid + '/redeemedGifts/' + code).once('value');
-      if (redeemedSnap.val()) {
-        if (statusEl) {
-          statusEl.style.color = '#f39c12';
-          statusEl.textContent = '⚠️ You have already redeemed this code! Each code can only be used once per account.';
-        }
-        showToast('⚠️ You already redeemed this code!');
-        return;
-      }
-      if (giftData.maxUses && (giftData.usedCount || 0) >= giftData.maxUses) {
-        if (statusEl) { statusEl.style.color = 'var(--red2)'; statusEl.textContent = '❌ This code has reached its maximum usage limit.'; }
-        showToast('❌ This code has reached its limit');
-        return;
-      }
-      const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
-      const newBal = parseFloat(((balSnap.val() || 0) + giftData.amount).toFixed(2));
-      await db.ref('users/' + user.uid + '/balance').transaction(() => newBal);
-      updateBalanceDisplay(newBal);
-      await db.ref('users/' + user.uid + '/redeemedGifts/' + code).set({ code, amount: giftData.amount, redeemedAt: Date.now() });
-      await db.ref('giftCodes/' + code + '/usedCount').set((giftData.usedCount || 0) + 1);
-      await db.ref('users/' + user.uid + '/transactions').push({
-        type: 'gift', amount: giftData.amount,
-        details: 'Gift code: ' + code,
-        balance: newBal, timestamp: Date.now()
+      const res = await fetch('https://royalwin-api.vercel.app/api/claim-bonus', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ type: 'gift_code', code })
       });
-
+      const data = await res.json();
+      if (!data.success) {
+        if (statusEl) { statusEl.style.color = 'var(--red2)'; statusEl.textContent = '❌ ' + (data.msg || 'Invalid gift code'); }
+        showToast('❌ ' + (data.msg || 'Invalid gift code'));
+        return;
+      }
+      updateBalanceDisplay(data.balance);
       if (input) input.value = '';
-      if (statusEl) { statusEl.style.color = 'var(--green)'; statusEl.textContent = '✅ Code redeemed! ₹' + giftData.amount + ' added to your wallet.'; }
-      showToast('🎁 Gift redeemed! +₹' + giftData.amount + ' added to wallet');
+      if (statusEl) { statusEl.style.color = 'var(--green)'; statusEl.textContent = '✅ Code redeemed! ₹' + data.reward + ' added to your wallet.'; }
+      showToast('🎁 Gift redeemed! +₹' + data.reward + ' added to wallet');
       loadGiftHistory();
-
     } catch(e) {
-      if (statusEl) { statusEl.style.color = 'var(--red2)'; statusEl.textContent = '❌ Error: ' + e.message; }
-      showToast('❌ Redemption failed: ' + e.message);
-      // console.warn('redeemGiftCode error:', e);
+      if (statusEl) { statusEl.style.color = 'var(--red2)'; statusEl.textContent = '❌ Redemption failed. Please try again.'; }
+      showToast('❌ Redemption failed. Please try again.');
     }
   }
   window._currentLang = localStorage.getItem('royalwin_lang') || 'en';
@@ -2768,7 +2741,7 @@
   }
   document.addEventListener('DOMContentLoaded', () => {
     if (window._currentLang === 'hi') applyTranslations('hi');
-    // Don't show desktopHome by default — let onAuthStateChanged decide
+    // Don't show desktopHome by default — let onAuthChange decide
     // This prevents the guest hero flashing on page load for logged-in users
   });
   window.addEventListener('popstate', (event) => {
@@ -2867,24 +2840,18 @@
     window.addEventListener('online', hideOfflineBanner);
     if (!navigator.onLine) showOfflineBanner();
   })();
-  // Waits until Firebase has actually been initialized (window._firebaseReady set inside initFirebase())
-  // before resolving. Needed because handlePageRoute() and handleReferralLink() below run immediately
-  // at script-parse-time, which can be BEFORE the page 'load' event fires initFirebase() - calling
-  // firebase.auth() before initializeApp() crashes the entire script with an uncaught error,
-  // which silently stops every later script block from running (including the loader-hiding logic).
-  function waitForFirebase(callback) {
-    if (window._firebaseReady && typeof firebase !== 'undefined') { callback(); return; }
-    let attempts = 0;
-    const check = setInterval(() => {
-      attempts++;
-      if (window._firebaseReady && typeof firebase !== 'undefined') {
-        clearInterval(check);
-        callback();
-      } else if (attempts > 50) { // ~10 seconds max wait
-        clearInterval(check);
-        console.error('Firebase never became ready - skipping deferred init logic');
-      }
-    }, 200);
+  async function restoreSession() {
+    const token = localStorage.getItem('royalwin_token');
+    if (!token) return null;
+    try {
+      const res = await fetch('https://royalwin-api.vercel.app/api/user', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      if (data.success) return data.user;
+    } catch(e) {}
+    localStorage.removeItem('royalwin_token');
+    return null;
   }
   (function handlePageRoute() {
     const params = new URLSearchParams(window.location.search);
@@ -2895,15 +2862,12 @@
     if (guestPages.includes(page)) {
       setTimeout(() => showPage(page), 300);
     } else {
-      waitForFirebase(() => {
-        const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
-          unsubscribe();
-          if (user) {
-            setTimeout(() => showPage(page), 100);
-          } else {
-            setTimeout(() => showPage('login'), 100);
-          }
-        });
+      restoreSession().then((user) => {
+        if (user) {
+          setTimeout(() => showPage(page), 100);
+        } else {
+          setTimeout(() => showPage('login'), 100);
+        }
       });
     }
   })();
@@ -2913,30 +2877,27 @@
     if (!code) return;
     window._referralCode = code;
     try { localStorage.setItem('royalwin_referralCode', code); } catch(e) {}
-    waitForFirebase(() => {
-      const unsubscribe = firebase.auth().onAuthStateChanged((user) => {
-        unsubscribe(); // only need it once
-
-        if (user) {
-          showPage('home');
-        } else {
-          setTimeout(() => {
-            const codeInput = document.getElementById('inviteCodeInput');
-            const codeDisplay = document.getElementById('inviteCodeDisplay');
-            const invitePill = document.getElementById('invitePill');
-            if (codeInput) codeInput.value = code;
-            if (codeDisplay) codeDisplay.textContent = code;
-            if (invitePill) invitePill.style.display = 'flex';
-            showPage('register');
-          }, 100);
-        }
-      });
+    restoreSession().then((user) => {
+      if (user) {
+        showPage('home');
+      } else {
+        setTimeout(() => {
+          const codeInput = document.getElementById('inviteCodeInput');
+          const codeDisplay = document.getElementById('inviteCodeDisplay');
+          const invitePill = document.getElementById('invitePill');
+          if (codeInput) codeInput.value = code;
+          if (codeDisplay) codeDisplay.textContent = code;
+          if (invitePill) invitePill.style.display = 'flex';
+          showPage('register');
+        }, 100);
+      }
     });
   })();
 
   async function logout() {
     showToast('👋 Signed out. See you soon!');
-    await firebase.auth().signOut();
+    localStorage.removeItem('royalwin_token');
+    if (typeof onAuthChange === 'function') onAuthChange(null);
   }
 
   function loginPrompt() {
@@ -2995,23 +2956,15 @@
   }
 
   async function loadVipPage() {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) {
-      updateVipUI(0, { weeklyClaimedAt: 0, monthlyClaimedAt: 0 });
-      return;
-    }
     try {
-      const snap = await db.ref('users/' + user.uid + '/vip').once('value');
-      const vipData = snap.val() || { exp: 0, weeklyClaimedAt: 0, monthlyClaimedAt: 0, levelupClaimed: [] };
-      updateVipUI(vipData.exp || 0, vipData);
+      const token = localStorage.getItem('royalwin_token');
+      if (!token) { updateVipUI(0, {}); return; }
+      const res = await fetch('https://royalwin-api.vercel.app/api/user', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      updateVipUI(data.success ? parseFloat(data.user.vip_exp || 0) : 0, {});
     } catch(e) {
-      // console.warn('VIP load error:', e);
-      updateVipUI(0, { weeklyClaimedAt: 0, monthlyClaimedAt: 0 });
+      updateVipUI(0, {});
     }
-    db.ref('users/' + user.uid + '/vip/exp').on('value', expSnap => {
-      if (expSnap.val() != null) updateVipUI(expSnap.val() || 0, {});
-    });
   }
 
   function updateVipUI(exp, vipData) {
@@ -3065,106 +3018,36 @@
       const monthlyAmtEl = document.getElementById('vipMonthlyAmt');
       if (weeklyAmtEl) weeklyAmtEl.textContent = '₹' + level.weekly;
       if (monthlyAmtEl) monthlyAmtEl.textContent = '₹' + level.monthly;
-      const weekStart = getWeekStart();
-      const monthStart = getMonthStart();
       const weeklyBtn = document.getElementById('vipWeeklyBtn');
       const monthlyBtn = document.getElementById('vipMonthlyBtn');
 
-      if (weeklyBtn && vipData.weeklyClaimedAt >= weekStart) {
-        weeklyBtn.textContent = '✅ Claimed'; weeklyBtn.disabled = true;
-        weeklyBtn.style.background = 'var(--bg3)'; weeklyBtn.style.color = 'var(--muted)';
-      } else if (weeklyBtn) {
+      if (weeklyBtn && !window._vipWeeklyClaimedThisSession) {
         weeklyBtn.textContent = 'Claim'; weeklyBtn.disabled = false;
         weeklyBtn.style.background = ''; weeklyBtn.style.color = '';
       }
-      if (monthlyBtn && vipData.monthlyClaimedAt >= monthStart) {
-        monthlyBtn.textContent = '✅ Claimed'; monthlyBtn.disabled = true;
-        monthlyBtn.style.background = 'var(--bg3)'; monthlyBtn.style.color = 'var(--muted)';
-      } else if (monthlyBtn) {
+      if (monthlyBtn && !window._vipMonthlyClaimedThisSession) {
         monthlyBtn.textContent = 'Claim'; monthlyBtn.disabled = false;
         monthlyBtn.style.background = ''; monthlyBtn.style.color = '';
       }
   }
 
-  function getWeekStart() {
-    const now = new Date();
-    const day = now.getDay();
-    const diff = now.getDate() - day + (day === 0 ? -6 : 1); // Monday
-    return new Date(now.setDate(diff)).setHours(0,0,0,0);
-  }
-
-  function getMonthStart() {
-    const now = new Date();
-    return new Date(now.getFullYear(), now.getMonth(), 1).getTime();
-  }
-
   async function claimVipBonus(type) {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) { showToast('🔐 Please sign in'); return; }
-
     try {
-      const __depCheck = await db.ref('users/' + user.uid + '/hasDeposited').once('value');
-      if (!__depCheck.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
-      const snap = await db.ref('users/' + user.uid + '/vip').once('value');
-      const vipData = snap.val() || { exp: 0, weeklyClaimedAt: 0, monthlyClaimedAt: 0 };
-      const exp = vipData.exp || 0;
-      const level = getVipLevel(exp);
-
-      const weekStart = getWeekStart();
-      const monthStart = getMonthStart();
-
-      if (type === 'weekly') {
-        if (vipData.weeklyClaimedAt >= weekStart) { showToast('⚠️ Already claimed this week!'); return; }
-        const amt = level.weekly;
-        const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
-        const newBal = parseFloat(((balSnap.val() || 0) + amt).toFixed(2));
-        await db.ref('users/' + user.uid + '/balance').transaction(() => newBal);
-        await db.ref('users/' + user.uid + '/vip/weeklyClaimedAt').set(Date.now());
-        await db.ref('users/' + user.uid + '/transactions/' + Date.now()).set({
-          type: 'vip_weekly', amount: amt, details: level.name + ' VIP Weekly Bonus',
-          balance: newBal, timestamp: Date.now()
-        });
-        // Add wager requirement — 1x of bonus amount
-        const wagerSnap = await db.ref('users/' + user.uid + '/wager').once('value');
-        const w = wagerSnap.val() || { required: 0, completed: 0, startedAt: 0 };
-        const isNew = !w.startedAt || w.startedAt === 0;
-        await db.ref('users/' + user.uid + '/wager').set({
-          required: parseFloat((parseFloat(w.required || 0) + amt).toFixed(2)),
-          completed: parseFloat(w.completed || 0),
-          startedAt: isNew ? Date.now() : w.startedAt
-        });
-        updateBalanceDisplay(newBal);
-        const btn = document.getElementById('vipWeeklyBtn');
-        btn.textContent = '✅ Claimed'; btn.disabled = true; btn.style.background = 'var(--bg3)'; btn.style.color = 'var(--muted)';
-        showToast('🎁 ₹' + amt + ' weekly bonus credited!');
-
-      } else if (type === 'monthly') {
-        if (vipData.monthlyClaimedAt >= monthStart) { showToast('⚠️ Already claimed this month!'); return; }
-        const amt = level.monthly;
-        const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
-        const newBal = parseFloat(((balSnap.val() || 0) + amt).toFixed(2));
-        await db.ref('users/' + user.uid + '/balance').transaction(() => newBal);
-        await db.ref('users/' + user.uid + '/vip/monthlyClaimedAt').set(Date.now());
-        await db.ref('users/' + user.uid + '/transactions/' + Date.now()).set({
-          type: 'vip_monthly', amount: amt, details: level.name + ' VIP Monthly Bonus',
-          balance: newBal, timestamp: Date.now()
-        });
-        // Add wager requirement — 1x of bonus amount
-        const wagerSnap2 = await db.ref('users/' + user.uid + '/wager').once('value');
-        const w2 = wagerSnap2.val() || { required: 0, completed: 0, startedAt: 0 };
-        const isNew2 = !w2.startedAt || w2.startedAt === 0;
-        await db.ref('users/' + user.uid + '/wager').set({
-          required: parseFloat((parseFloat(w2.required || 0) + amt).toFixed(2)),
-          completed: parseFloat(w2.completed || 0),
-          startedAt: isNew2 ? Date.now() : w2.startedAt
-        });
-        updateBalanceDisplay(newBal);
-        const btn = document.getElementById('vipMonthlyBtn');
-        btn.textContent = '✅ Claimed'; btn.disabled = true; btn.style.background = 'var(--bg3)'; btn.style.color = 'var(--muted)';
-        showToast('🎁 ₹' + amt + ' monthly bonus credited!');
-      }
-    } catch(e) { showToast('❌ Claim failed: ' + e.message); }
+      const token = localStorage.getItem('royalwin_token');
+      if (!token) { showToast('🔐 Please sign in'); return; }
+      const apiType = type === 'weekly' ? 'vip_weekly' : 'vip_monthly';
+      const res = await fetch('https://royalwin-api.vercel.app/api/claim-bonus', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ type: apiType })
+      });
+      const data = await res.json();
+      if (!data.success) { showToast('⚠️ ' + (data.msg || 'Claim failed')); return; }
+      updateBalanceDisplay(data.balance);
+      const btn = document.getElementById(type === 'weekly' ? 'vipWeeklyBtn' : 'vipMonthlyBtn');
+      if (btn) { btn.textContent = '✅ Claimed'; btn.disabled = true; btn.style.background = 'var(--bg3)'; btn.style.color = 'var(--muted)'; }
+      if (type === 'weekly') window._vipWeeklyClaimedThisSession = true; else window._vipMonthlyClaimedThisSession = true;
+      showToast('🎁 ₹' + data.reward + ' ' + type + ' bonus credited!');
+    } catch(e) { showToast('❌ Claim failed. Please try again.'); }
   }
 
   async function addVipExp(exp) {
@@ -3239,75 +3122,87 @@
       });
     }
   });
-  let _notifListener = null;
+  let _notifPollInterval = null;
 
-  function loadNotifications() {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) return;
-    if (_notifListener) { db.ref('users/' + user.uid + '/notifications').off('value', _notifListener); _notifListener = null; }
-    _notifListener = db.ref('users/' + user.uid + '/notifications').orderByChild('timestamp').limitToLast(5).on('value', snap => {
-      const data = snap.val();
+  async function loadNotifications() {
+    try {
+      const token = localStorage.getItem('royalwin_token');
+      if (!token) return;
+      const res = await fetch('https://royalwin-api.vercel.app/api/notifications', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (!data.success) return;
+      const notifs = data.notifications.slice(0, 5);
+      const unread = notifs.filter(n => !n.read).length;
+
       const listEl = document.getElementById('notifList');
       const badge = document.getElementById('notifBadge');
-      if (!listEl) return;
-      if (!data) {
-        listEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;"><span data-t="notif.none">No notifications yet</span></div>';
-        if (badge) badge.style.display = 'none';
-        return;
+      if (listEl) {
+        listEl.innerHTML = notifs.length === 0
+          ? '<div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.82rem;"><span data-t="notif.none">No notifications yet</span></div>'
+          : notifs.map(n => `
+            <div onclick="markNotifRead('${n.id}')" style="padding:0.7rem 1rem;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;background:${n.read?'transparent':'rgba(240,192,64,0.04)'};display:flex;gap:0.6rem;align-items:flex-start;">
+              <div style="font-size:1.1rem;flex-shrink:0;">${n.icon||'🔔'}</div>
+              <div style="flex:1;">
+                <div style="font-size:0.8rem;font-weight:${n.read?'400':'700'};color:${n.read?'var(--muted)':'var(--text)'};">${n.title||''}</div>
+                <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${n.message||''}</div>
+                <div style="font-size:0.65rem;color:var(--muted);margin-top:2px;">${n.timestamp?new Date(Number(n.timestamp)).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</div>
+              </div>
+              ${!n.read?'<div style="width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:4px;"></div>':''}
+            </div>`).join('');
       }
-      const notifs = Object.entries(data).map(([k,v]) => ({...v, key: k})).sort((a,b) => (b.timestamp||0) - (a.timestamp||0)).slice(0, 5);
-      const unread = notifs.filter(n => !n.read).length;
       if (badge) { badge.style.display = unread > 0 ? 'flex' : 'none'; badge.textContent = unread > 9 ? '9+' : unread; }
-      // Desktop notification HTML
-      const notifHTML = notifs.map(n => `
-        <div onclick="markNotifRead('${n.key}')" style="padding:0.7rem 1rem;border-bottom:1px solid rgba(255,255,255,0.04);cursor:pointer;background:${n.read?'transparent':'rgba(240,192,64,0.04)'};display:flex;gap:0.6rem;align-items:flex-start;">
-          <div style="font-size:1.1rem;flex-shrink:0;">${n.icon||'🔔'}</div>
-          <div style="flex:1;">
-            <div style="font-size:0.8rem;font-weight:${n.read?'400':'700'};color:${n.read?'var(--muted)':'var(--text)'};">${n.title||''}</div>
-            <div style="font-size:0.72rem;color:var(--muted);margin-top:2px;">${n.body||''}</div>
-            <div style="font-size:0.65rem;color:var(--muted);margin-top:2px;">${n.timestamp?new Date(n.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</div>
-          </div>
-          ${!n.read?'<div style="width:7px;height:7px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:4px;"></div>':''}
-        </div>`).join('');
-      listEl.innerHTML = notifHTML;
 
-      // Mobile notification HTML — compact like desktop
-      const mobileNotifHTML = notifs.map(n => `
-        <div onclick="markNotifRead('${n.key}')" style="padding:0.55rem 0.8rem;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;background:${n.read?'transparent':'rgba(240,192,64,0.05)'};display:flex;gap:0.5rem;align-items:flex-start;">
-          <div style="font-size:0.9rem;flex-shrink:0;margin-top:1px;">${n.icon||'🔔'}</div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:0.75rem;font-weight:${n.read?'400':'700'};color:${n.read?'var(--muted)':'var(--text)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.title||''}</div>
-            <div style="font-size:0.68rem;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.body||''}</div>
-            <div style="font-size:0.6rem;color:var(--muted);margin-top:1px;">${n.timestamp?new Date(n.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</div>
-          </div>
-          ${!n.read?'<div style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:4px;"></div>':''}
-        </div>`).join('');
       const mobileListEl = document.getElementById('mobileNotifList');
-      if (mobileListEl) mobileListEl.innerHTML = (mobileNotifHTML || '<div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.78rem;">No notifications yet</div>') +
-        `<div style="padding:0.6rem 1rem;border-top:1px solid var(--border);text-align:center;">
-          <button onclick="markAllRead();" style="background:none;border:none;color:var(--gold);font-size:0.72rem;font-weight:600;cursor:pointer;font-family:'Exo 2',sans-serif;">Mark all as read</button>
-        </div>`;
+      if (mobileListEl) {
+        const mobileNotifHTML = notifs.map(n => `
+          <div onclick="markNotifRead('${n.id}')" style="padding:0.55rem 0.8rem;border-bottom:1px solid rgba(255,255,255,0.05);cursor:pointer;background:${n.read?'transparent':'rgba(240,192,64,0.05)'};display:flex;gap:0.5rem;align-items:flex-start;">
+            <div style="font-size:0.9rem;flex-shrink:0;margin-top:1px;">${n.icon||'🔔'}</div>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:0.75rem;font-weight:${n.read?'400':'700'};color:${n.read?'var(--muted)':'var(--text)'};white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.title||''}</div>
+              <div style="font-size:0.68rem;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${n.message||''}</div>
+              <div style="font-size:0.6rem;color:var(--muted);margin-top:1px;">${n.timestamp?new Date(Number(n.timestamp)).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):''}</div>
+            </div>
+            ${!n.read?'<div style="width:6px;height:6px;border-radius:50%;background:var(--gold);flex-shrink:0;margin-top:4px;"></div>':''}
+          </div>`).join('');
+        mobileListEl.innerHTML = (mobileNotifHTML || '<div style="text-align:center;color:var(--muted);padding:1rem;font-size:0.78rem;">No notifications yet</div>') +
+          `<div style="padding:0.6rem 1rem;border-top:1px solid var(--border);text-align:center;">
+            <button onclick="markAllRead();" style="background:none;border:none;color:var(--gold);font-size:0.72rem;font-weight:600;cursor:pointer;font-family:'Exo 2',sans-serif;">Mark all as read</button>
+          </div>`;
+      }
       const badge2 = document.getElementById('notifBadge2');
       if (badge2) { badge2.style.display = unread > 0 ? 'flex' : 'none'; badge2.textContent = unread > 9 ? '9+' : unread; }
-    });
+    } catch(e) {}
   }
 
-  async function markNotifRead(key) {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db || !key) return;
-    await db.ref('users/' + user.uid + '/notifications/' + key + '/read').set(true);
+  function startNotificationsPolling() {
+    loadNotifications();
+    if (_notifPollInterval) clearInterval(_notifPollInterval);
+    _notifPollInterval = setInterval(loadNotifications, 15000);
+  }
+
+  async function markNotifRead(id) {
+    try {
+      const token = localStorage.getItem('royalwin_token');
+      if (!token || !id) return;
+      await fetch('https://royalwin-api.vercel.app/api/notifications/mark-read', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ id })
+      });
+      loadNotifications();
+    } catch(e) {}
   }
 
   async function markAllRead() {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db) return;
-    const snap = await db.ref('users/' + user.uid + '/notifications').once('value');
-    const data = snap.val() || {};
-    const updates = {};
-    Object.keys(data).forEach(k => { updates[k + '/read'] = true; });
-    if (Object.keys(updates).length > 0) await db.ref('users/' + user.uid + '/notifications').update(updates);
-    showToast('✅ All notifications marked as read');
+    try {
+      const token = localStorage.getItem('royalwin_token');
+      if (!token) return;
+      await fetch('https://royalwin-api.vercel.app/api/notifications/mark-read', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ all: true })
+      });
+      showToast('✅ All notifications marked as read');
+      loadNotifications();
+    } catch(e) {}
   }
 
   async function pushNotification(uid, icon, title, body) {
@@ -3811,28 +3706,28 @@
 
   var _depHistPage = 1;
   var _depHistData = [];
-  var _depHistListener = null;
 
   async function loadDepositHistoryPage(page) {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
+    const token = localStorage.getItem('royalwin_token');
     const el = document.getElementById('depositHistoryPageRows');
-    if (!user || !db || !el) return;
+    if (!token || !el) return;
 
     if (page) { _depHistPage = page; _renderDepositHistory(); return; }
 
     el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
 
-    if (_depHistListener) {
-      try { (window.fbDB||fbDB).ref('adminRequests/deposits').off('value', _depHistListener); } catch(e) {}
-      _depHistListener = null;
-    }
-
-    _depHistListener = db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).on('value', snap => {
-      const data = snap.val();
-      _depHistData = data ? Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0)) : [];
+    try {
+      const res = await fetch('https://royalwin-api.vercel.app/api/transactions', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (!data.success) return;
+      // Only successful deposits are ever recorded as transactions (credited on approval) —
+      // pending/rejected/cancelled deposits have no transaction row and won't appear here.
+      _depHistData = data.transactions
+        .filter(tx => tx.type === 'deposit')
+        .map(tx => ({ amount: parseFloat(tx.amount), status: 'approved', method: tx.details || 'UPI', timestamp: Number(tx.timestamp) }))
+        .sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
       _renderDepositHistory();
-    });
+    } catch(e) {}
   }
 
   function _renderDepositHistory() {
@@ -3889,27 +3784,32 @@
 
   var _withHistPage = 1;
   var _withHistData = [];
-  var _withHistListener = null;
   async function loadWithdrawHistoryPage(page) {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
+    const token = localStorage.getItem('royalwin_token');
     const el = document.getElementById('withdrawHistoryPageRows');
-    if (!user || !db || !el) return;
+    if (!token || !el) return;
 
     if (page) { _withHistPage = page; _renderWithdrawHistory(); return; }
 
     el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
 
-    if (_withHistListener) {
-      try { (window.fbDB||fbDB).ref('adminRequests/withdrawals').off('value', _withHistListener); } catch(e) {}
-      _withHistListener = null;
-    }
-
-    _withHistListener = db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(user.uid).on('value', snap => {
-      const data = snap.val();
-      _withHistData = data ? Object.values(data).sort((a,b) => (b.timestamp||0)-(a.timestamp||0)) : [];
+    try {
+      const res = await fetch('https://royalwin-api.vercel.app/api/transactions', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (!data.success) return;
+      // No shared ID links a withdrawal_request to its later withdrawal_refund (if rejected),
+      // so a rejected withdrawal shows as two separate rows rather than one row that updates status.
+      _withHistData = data.transactions
+        .filter(tx => tx.type === 'withdrawal_request' || tx.type === 'withdrawal_refund')
+        .map(tx => ({
+          amount: Math.abs(parseFloat(tx.amount)),
+          status: tx.type === 'withdrawal_refund' ? 'rejected' : 'processing',
+          method: tx.details || 'UPI',
+          timestamp: Number(tx.timestamp)
+        }))
+        .sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
       _renderWithdrawHistory();
-    });
+    } catch(e) {}
   }
 
   function _renderWithdrawHistory() {
@@ -3976,18 +3876,7 @@
     } else {
       startTime = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
     }
-    let data = betHistoryData;
-    if (data.length === 0) {
-      try {
-        const db = window.fbDB || fbDB;
-        const user = window.currentUser;
-        if (db && user) {
-          const snap = await db.ref('users/' + user.uid + '/betHistory').once('value');
-          if (snap.val()) data = Object.values(snap.val());
-        }
-      } catch(e) {}
-    }
-
+    const data = betHistoryData;
     const filtered = data.filter(d => (d.timestamp || 0) >= startTime);
     const wins = filtered.filter(d => d.won);
     const losses = filtered.filter(d => !d.won);
@@ -4738,7 +4627,6 @@
     const password = document.getElementById('regPassword') ? document.getElementById('regPassword').value : '';
     const inviteCode = document.getElementById('inviteCodeInput') ? document.getElementById('inviteCodeInput').value.trim() : '';
     const terms = document.getElementById('terms');
-    if (!inviteCode) { showToast('⚠️ Invite code is mandatory to register'); return; }
     if (!rawContact || rawContact.length !== 10 || !/^[6-9]\d{9}$/.test(rawContact)) {
       showToast('⚠️ Enter a valid 10-digit Indian mobile number'); return;
     }
@@ -5023,109 +4911,46 @@
 
   // ── WEEKLY LOSS REBATE ──
   async function loadWeeklyRebatePage() {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) return;
-
-    // Get Monday of current week
     const now = new Date();
-    const dayOfWeek = now.getDay();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-    monday.setHours(0, 0, 0, 0);
-    const weekStart = monday.getTime();
-
-    try {
-      // Get deposits this week
-      const depSnap = await db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).once('value');
-      const deps = depSnap.val() ? Object.values(depSnap.val()).filter(d => d.status === 'approved' && (d.timestamp||0) >= weekStart) : [];
-      const totalDeposit = deps.reduce((s,d) => s + (d.amount||0), 0);
-
-      // Get bet history this week
-      const betSnap = await db.ref('users/' + user.uid + '/wingoMyBets').once('value');
-      const bets = betSnap.val() ? Object.values(betSnap.val()).filter(b => (b.timestamp||0) >= weekStart) : [];
-      const totalBet = bets.reduce((s,b) => s + (b.bet||0), 0);
-      const totalWon = bets.filter(b => (b.pl||0) > 0).reduce((s,b) => s + (b.pl||0), 0);
-      const netLoss = Math.max(0, totalBet - totalWon);
-      const lossPct = totalDeposit > 0 ? Math.round((netLoss / totalDeposit) * 100) : 0;
-      const rebateAmt = parseFloat((netLoss * 0.05).toFixed(2));
-
-      // Update UI
-      document.getElementById('rebateWeekDeposit').textContent = '₹' + totalDeposit.toLocaleString('en-IN');
-      document.getElementById('rebateWeekLoss').textContent = '₹' + netLoss.toLocaleString('en-IN');
-      document.getElementById('rebateLossPct').textContent = lossPct + '%';
-      document.getElementById('rebateLossPct').style.color = lossPct >= 50 ? 'var(--red2)' : 'var(--green)';
-      document.getElementById('rebateAmount').textContent = '₹' + rebateAmt.toLocaleString('en-IN');
-
-      // Check if Monday and eligible
-      const isMonday = now.getDay() === 1;
-      const isEligible = lossPct >= 50 && rebateAmt > 0;
-
-      // Check if already claimed this week
-      const claimSnap = await db.ref('users/' + user.uid + '/weeklyRebateClaimed').once('value');
-      const lastClaimed = claimSnap.val() || 0;
-      const alreadyClaimed = lastClaimed >= weekStart;
-
-      const statusEl = document.getElementById('rebateStatusMsg');
-      const claimBtn = document.getElementById('rebateClaimBtn');
-
-      if (alreadyClaimed) {
-        statusEl.textContent = '✅ Already claimed this week';
-        statusEl.style.color = 'var(--green)';
-        claimBtn.style.display = 'none';
-      } else if (!isMonday) {
-        statusEl.textContent = '📅 Rebate can only be claimed on Monday';
-        statusEl.style.color = 'var(--muted)';
-        claimBtn.style.display = 'none';
-      } else if (!isEligible) {
-        statusEl.textContent = lossPct < 50 ? '❌ Loss must exceed 50% of deposits to qualify' : '❌ No eligible losses this week';
-        statusEl.style.color = 'var(--muted)';
-        claimBtn.style.display = 'none';
-      } else {
-        statusEl.textContent = '🎉 You qualify for ₹' + rebateAmt + ' rebate!';
-        statusEl.style.color = '#a87dff';
-        claimBtn.style.display = 'block';
-        claimBtn.dataset.amount = rebateAmt;
-      }
-
-      // Load claim history
-      const histSnap = await db.ref('users/' + user.uid + '/weeklyRebateHistory').once('value');
-      const histEl = document.getElementById('rebateHistory');
-      if (histSnap.val()) {
-        const hist = Object.values(histSnap.val()).sort((a,b) => b.timestamp - a.timestamp);
-        histEl.innerHTML = hist.map(h => `
-          <div style="display:flex;justify-content:space-between;align-items:center;padding:0.7rem 1rem;border-bottom:1px solid rgba(255,255,255,0.04);">
-            <div>
-              <div style="font-size:0.8rem;font-weight:700;color:#a87dff;">+₹${h.amount}</div>
-              <div style="font-size:0.65rem;color:var(--muted);">${new Date(h.timestamp).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div>
-            </div>
-            <div style="font-size:0.7rem;color:var(--green);">✅ Credited</div>
-          </div>`).join('');
-      } else {
-        histEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1.5rem;font-size:0.82rem;">No claims yet</div>';
-      }
-    } catch(e) { console.error('Rebate load error:', e); }
+    const isMonday = now.getDay() === 1;
+    document.getElementById('rebateWeekDeposit').textContent = '—';
+    document.getElementById('rebateWeekLoss').textContent = '—';
+    document.getElementById('rebateLossPct').textContent = '—';
+    document.getElementById('rebateAmount').textContent = '—';
+    const statusEl = document.getElementById('rebateStatusMsg');
+    const claimBtn = document.getElementById('rebateClaimBtn');
+    if (!isMonday) {
+      statusEl.textContent = '📅 Rebate can only be claimed on Monday';
+      statusEl.style.color = 'var(--muted)';
+      claimBtn.style.display = 'none';
+    } else {
+      statusEl.textContent = 'Tap claim to check your eligibility for this week';
+      statusEl.style.color = 'var(--muted)';
+      claimBtn.style.display = 'block';
+    }
+    const histEl = document.getElementById('rebateHistory');
+    if (histEl) histEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1.5rem;font-size:0.82rem;">History unavailable</div>';
   }
 
   async function claimWeeklyRebate() {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) return;
     const btn = document.getElementById('rebateClaimBtn');
-    const amount = parseFloat(btn.dataset.amount || 0);
-    if (!amount) return;
     try {
+      const token = localStorage.getItem('royalwin_token');
+      if (!token) { showToast('🔐 Please sign in'); return; }
       btn.disabled = true;
       btn.textContent = '⏳ Claiming...';
-      await db.ref('users/' + user.uid + '/balance').transaction(bal => (bal || 0) + amount);
-      await db.ref('users/' + user.uid + '/weeklyRebateClaimed').set(Date.now());
-      await db.ref('users/' + user.uid + '/weeklyRebateHistory').push({ amount, timestamp: Date.now() });
-      const balSnap2 = await db.ref('users/' + user.uid + '/balance').once('value');
-      await db.ref('users/' + user.uid + '/transactions').push({ type: 'weekly_rebate', amount, details: 'Weekly Loss Rebate (5% of net loss)', balance: parseFloat(balSnap2.val() || 0), timestamp: Date.now() });
-      await pushNotification(user.uid, '💰', 'Weekly Rebate Credited!', '₹' + amount + ' has been added to your wallet.');
-      showToast('🎉 ₹' + amount + ' rebate credited!');
-      loadWeeklyRebatePage();
-    } catch(e) { showToast('❌ Error: ' + e.message); btn.disabled = false; btn.textContent = '💰 Claim Rebate'; }
+      const res = await fetch('https://royalwin-api.vercel.app/api/claim-bonus', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ type: 'weekly_rebate' })
+      });
+      const data = await res.json();
+      if (!data.success) { showToast('⚠️ ' + (data.msg || 'Not eligible')); btn.disabled = false; btn.textContent = '💰 Claim Rebate'; return; }
+      updateBalanceDisplay(data.balance);
+      showToast('🎉 ₹' + data.reward + ' rebate credited!');
+      btn.textContent = '✅ Claimed';
+      document.getElementById('rebateStatusMsg').textContent = '✅ Already claimed this week';
+      document.getElementById('rebateStatusMsg').style.color = 'var(--green)';
+    } catch(e) { showToast('❌ Claim failed. Please try again.'); btn.disabled = false; btn.textContent = '💰 Claim Rebate'; }
   }
 
   // ── WELCOME BONUS POPUP ──
@@ -5161,86 +4986,40 @@
 
   // ── PROMO REBATE CARD LOADER ──
   async function loadPromoRebateCard() {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) return;
-
     const now = new Date();
-    const dayOfWeek = now.getDay();
-    const monday = new Date(now);
-    monday.setDate(now.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-    monday.setHours(0, 0, 0, 0);
-    const weekStart = monday.getTime();
-
-    try {
-      const depSnap = await db.ref('adminRequests/deposits').orderByChild('uid').equalTo(user.uid).once('value');
-      const deps = depSnap.val() ? Object.values(depSnap.val()).filter(d => d.status === 'approved' && (d.timestamp||0) >= weekStart) : [];
-      const totalDeposit = deps.reduce((s,d) => s + (d.amount||0), 0);
-
-      const betSnap = await db.ref('users/' + user.uid + '/wingoMyBets').once('value');
-      const bets = betSnap.val() ? Object.values(betSnap.val()).filter(b => (b.timestamp||0) >= weekStart) : [];
-      const totalBet = bets.reduce((s,b) => s + (b.bet||0), 0);
-      const totalWon = bets.filter(b => (b.pl||0) > 0).reduce((s,b) => s + (b.pl||0), 0);
-      const netLoss = Math.max(0, totalBet - totalWon);
-      const lossPct = totalDeposit > 0 ? Math.round((netLoss / totalDeposit) * 100) : 0;
-      const rebateAmt = parseFloat((netLoss * 0.05).toFixed(2));
-
-      const lossEl = document.getElementById('promoRebateLoss');
-      const amtEl = document.getElementById('promoRebateAmt');
-      const msgEl = document.getElementById('promoRebateMsg');
-      const btn = document.getElementById('promoRebateBtn');
-      const btnAmt = document.getElementById('promoRebateBtnAmt');
-
-      if (lossEl) lossEl.textContent = '₹' + netLoss.toLocaleString('en-IN');
-      if (amtEl) amtEl.textContent = '₹' + rebateAmt.toLocaleString('en-IN');
-
-      const isMonday = now.getDay() === 1;
-      const isEligible = lossPct >= 50 && rebateAmt > 0;
-      const claimSnap = await db.ref('users/' + user.uid + '/weeklyRebateClaimed').once('value');
-      const lastClaimed = claimSnap.val() || 0;
-      const alreadyClaimed = lastClaimed >= weekStart;
-
-      if (alreadyClaimed) {
-        if (msgEl) { msgEl.textContent = '✅ Claimed this week'; msgEl.style.color = 'var(--green)'; }
-        if (btn) { btn.disabled = true; btn.style.background = 'rgba(255,255,255,0.08)'; btn.style.color = 'var(--muted)'; btn.textContent = '✅ Claimed'; }
-      } else if (!isMonday) {
-        if (msgEl) { msgEl.textContent = '📅 Available to claim on Monday'; msgEl.style.color = 'var(--muted)'; }
-        if (btn) { btn.disabled = true; btn.style.background = 'rgba(255,255,255,0.08)'; btn.style.color = 'var(--muted)'; btn.textContent = 'Claim'; }
-      } else if (!isEligible) {
-        if (msgEl) { msgEl.textContent = lossPct < 50 ? '❌ Need 50%+ loss to qualify' : '❌ No loss this week'; msgEl.style.color = 'var(--muted)'; }
-        if (btn) { btn.disabled = true; btn.style.background = 'rgba(255,255,255,0.08)'; btn.style.color = 'var(--muted)'; btn.textContent = 'Claim'; }
-      } else {
-        if (msgEl) { msgEl.textContent = '🎉 You qualify! Claim now'; msgEl.style.color = 'var(--gold)'; }
-        if (btn) {
-          btn.disabled = false;
-          btn.style.background = 'linear-gradient(135deg,#c07a10,var(--gold2))';
-          btn.style.color = '#000';
-          btn.textContent = '💰 Claim ₹' + rebateAmt;
-          btn.dataset.amount = rebateAmt;
-        }
-      }
-    } catch(e) {}
+    const isMonday = now.getDay() === 1;
+    const lossEl = document.getElementById('promoRebateLoss');
+    const amtEl = document.getElementById('promoRebateAmt');
+    const msgEl = document.getElementById('promoRebateMsg');
+    const btn = document.getElementById('promoRebateBtn');
+    if (lossEl) lossEl.textContent = '—';
+    if (amtEl) amtEl.textContent = '—';
+    if (!isMonday) {
+      if (msgEl) { msgEl.textContent = '📅 Available to claim on Monday'; msgEl.style.color = 'var(--muted)'; }
+      if (btn) { btn.disabled = true; btn.style.background = 'rgba(255,255,255,0.08)'; btn.style.color = 'var(--muted)'; btn.textContent = 'Claim'; }
+    } else {
+      if (msgEl) { msgEl.textContent = 'Tap claim to check your eligibility'; msgEl.style.color = 'var(--gold)'; }
+      if (btn) { btn.disabled = false; btn.style.background = 'linear-gradient(135deg,#c07a10,var(--gold2))'; btn.style.color = '#000'; btn.textContent = '💰 Claim Rebate'; }
+    }
   }
 
   async function claimWeeklyRebatePromo() {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) return;
     const btn = document.getElementById('promoRebateBtn');
-    const amount = parseFloat(btn.dataset.amount || 0);
-    if (!amount) return;
     try {
+      const token = localStorage.getItem('royalwin_token');
+      if (!token) { showToast('🔐 Please sign in'); return; }
       btn.disabled = true;
       btn.textContent = '⏳';
-      await db.ref('users/' + user.uid + '/balance').transaction(bal => (bal || 0) + amount);
-      await db.ref('users/' + user.uid + '/weeklyRebateClaimed').set(Date.now());
-      await db.ref('users/' + user.uid + '/weeklyRebateHistory').push({ amount, timestamp: Date.now() });
-      const balSnapP = await db.ref('users/' + user.uid + '/balance').once('value');
-      await db.ref('users/' + user.uid + '/transactions').push({ type: 'weekly_rebate', amount, details: 'Weekly Loss Rebate (5% of net loss)', balance: parseFloat(balSnapP.val() || 0), timestamp: Date.now() });
-      await pushNotification(user.uid, '💰', 'Weekly Rebate Credited!', '₹' + amount + ' rebate added to your wallet.');
-      showToast('🎉 ₹' + amount + ' rebate credited!');
-      loadPromoRebateCard();
-    } catch(e) { showToast('❌ Error: ' + e.message); btn.disabled = false; }
+      const res = await fetch('https://royalwin-api.vercel.app/api/claim-bonus', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ type: 'weekly_rebate' })
+      });
+      const data = await res.json();
+      if (!data.success) { showToast('⚠️ ' + (data.msg || 'Not eligible')); btn.disabled = false; btn.textContent = '💰 Claim Rebate'; return; }
+      updateBalanceDisplay(data.balance);
+      showToast('🎉 ₹' + data.reward + ' rebate credited!');
+      btn.textContent = '✅ Claimed';
+    } catch(e) { showToast('❌ Claim failed. Please try again.'); btn.disabled = false; }
   }
 
   function openSettingsModal() {
@@ -5353,136 +5132,66 @@
       showToast('❌ ' + msg);
     }
   }
-  let _chatListener = null;
+  let _chatPollInterval = null;
 
   async function initLiveChat() {
     const user = window.currentUser;
-    const db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
-    if (!user || !db) return;
+    if (!user) return;
     window._chatInitialized = true;
-    // Clear unread badge
     const badge = document.getElementById('chatUnreadBadge');
     if (badge) { badge.style.display = 'none'; badge.textContent = ''; }
 
-    const chatRef = db.ref('chats/' + user.uid + '/messages');
     const msgsEl = document.getElementById('chatMessages');
     if (!msgsEl) return;
-    if (_chatListener) db.ref('chats/' + user.uid + '/messages').off('value', _chatListener);
-    await db.ref('chats/' + user.uid + '/info').set({
-      uid: user.uid,
-      username: window.userProfile?.username || 'User',
-      memberId: window.userProfile?.memberId || '',
-      lastSeen: Date.now(),
-      status: 'open'
-    });
-    _chatListener = chatRef.on('value', snap => {
-      const messages = snap.val();
+    await renderChatMessages();
+    if (_chatPollInterval) clearInterval(_chatPollInterval);
+    _chatPollInterval = setInterval(renderChatMessages, 5000);
+  }
+
+  async function renderChatMessages() {
+    const msgsEl = document.getElementById('chatMessages');
+    if (!msgsEl) return;
+    try {
+      const token = localStorage.getItem('royalwin_token');
+      if (!token) return;
+      const res = await fetch('https://royalwin-api.vercel.app/api/chat/messages', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (!data.success) return;
+
       msgsEl.innerHTML = '';
       const welcome = document.createElement('div');
       welcome.className = 'msg agent';
       welcome.innerHTML = '👋 Hello <b>' + (window.userProfile?.username || 'there') + '</b>! Welcome to RoyalWin Support. How can I help you?';
       msgsEl.appendChild(welcome);
 
-      if (messages) {
-        Object.values(messages).sort((a,b) => a.timestamp - b.timestamp).forEach(m => {
-          const div = document.createElement('div');
-          div.className = 'msg ' + (m.sender === 'admin' ? 'agent' : 'user');
-
-          if (m.type === 'image' && m.fileData) {
-            const img = document.createElement('img');
-            img.src = m.fileData;
-            img.style.cssText = 'max-width:100%;max-height:200px;border-radius:8px;display:block;cursor:pointer;';
-            img.onclick = () => window.open(m.fileData, '_blank');
-            div.appendChild(img);
-          } else if (m.type === 'file' && m.fileData) {
-            const link = document.createElement('a');
-            link.href = m.fileData;
-            link.download = m.fileName || 'file';
-            link.style.cssText = 'display:flex;align-items:center;gap:0.4rem;color:inherit;text-decoration:none;font-size:0.82rem;';
-            link.innerHTML = '📎 <span>' + (m.fileName || 'Download file') + '</span>';
-            div.appendChild(link);
-          } else {
-            div.textContent = m.text || '';
-          }
-          const time = document.createElement('div');
-          time.style.cssText = 'font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:3px;text-align:' + (m.sender === 'admin' ? 'left' : 'right');
-          time.textContent = new Date(m.timestamp).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
-          div.appendChild(time);
-          msgsEl.appendChild(div);
-        });
-      }
+      data.messages.forEach(m => {
+        const div = document.createElement('div');
+        div.className = 'msg ' + (m.is_admin ? 'agent' : 'user');
+        div.textContent = m.message || '';
+        const time = document.createElement('div');
+        time.style.cssText = 'font-size:0.6rem;color:rgba(255,255,255,0.3);margin-top:3px;text-align:' + (m.is_admin ? 'left' : 'right');
+        time.textContent = new Date(Number(m.timestamp)).toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+        div.appendChild(time);
+        msgsEl.appendChild(div);
+      });
       msgsEl.scrollTop = msgsEl.scrollHeight;
-      if (messages) {
-        Object.entries(messages).forEach(([key, m]) => {
-          if (m.sender === 'admin' && !m.readByUser) {
-            db.ref('chats/' + user.uid + '/messages/' + key + '/readByUser').set(true);
-          }
-        });
-      }
-    });
+    } catch(e) {}
   }
 
-  async function sendChatFile(input) {
-    const file = input.files[0];
-    if (!file) return;
-
-    const user = window.currentUser;
-    const db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
-    if (!user || !db) { showToast('🔐 Please sign in to send files'); return; }
-    if (!window._chatInitialized) await initLiveChat();
-    if (file.size > 5 * 1024 * 1024) { showToast('❌ File too large! Max 5MB'); return; }
-
-    showToast('📤 Uploading...');
-
-    try {
-      const isImage = file.type.startsWith('image/');
-      const base64 = await new Promise((res, rej) => {
-        const reader = new FileReader();
-        reader.onload = () => res(reader.result);
-        reader.onerror = rej;
-        reader.readAsDataURL(file);
-      });
-
-      await db.ref('chats/' + user.uid + '/messages').push({
-        type: isImage ? 'image' : 'file',
-        fileName: file.name,
-        fileSize: file.size,
-        fileData: base64,
-        sender: 'user',
-        timestamp: Date.now(),
-        readByAdmin: false
-      });
-
-      await db.ref('chats/' + user.uid + '/info').update({
-        lastMessage: isImage ? '📷 Image' : '📎 ' + file.name,
-        lastMessageTime: Date.now(),
-        unreadByAdmin: true,
-        status: 'open'
-      });
-
-      input.value = ''; // reset input
-      showToast('✅ File sent!');
-    } catch(e) {
-      showToast('❌ Upload failed: ' + e.message);
-      console.error('File upload error:', e);
-    }
+  function sendChatFile(input) {
+    showToast('📎 File/image sharing is not available right now — please describe your issue in text.');
+    if (input) input.value = '';
   }
 
   async function sendChat() {
     const inp = document.getElementById('chatInput');
     const msg = inp ? inp.value.trim() : '';
     if (!msg) return;
-    const db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
     const user = window.currentUser;
 
     if (!user) {
       showToast('🔐 Please sign in to use Live Chat');
       showPage('login');
-      return;
-    }
-
-    if (!db) {
-      showToast('⏳ Connecting... please try again in a moment');
       return;
     }
     if (!window._chatInitialized) {
@@ -5492,21 +5201,16 @@
     if (inp) inp.value = '';
 
     try {
-      await db.ref('chats/' + user.uid + '/messages').push({
-        text: msg,
-        sender: 'user',
-        timestamp: Date.now(),
-        readByAdmin: false
+      const token = localStorage.getItem('royalwin_token');
+      const res = await fetch('https://royalwin-api.vercel.app/api/chat/send', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ message: msg })
       });
-      await db.ref('chats/' + user.uid + '/info').update({
-        lastMessage: msg,
-        lastMessageTime: Date.now(),
-        unreadByAdmin: true,
-        status: 'open'
-      });
+      const data = await res.json();
+      if (!data.success) { showToast('❌ ' + (data.msg || 'Failed to send message')); return; }
+      renderChatMessages();
     } catch(e) {
-      showToast('❌ Failed to send message: ' + e.message);
-      console.error('sendChat error:', e);
+      showToast('❌ Failed to send message');
     }
   }
   const wheelPrizes = ['₹18', '₹48', '₹88', '₹288', '₹488'];
@@ -5660,119 +5364,37 @@
   async function doRegister() {
     if (window._registerInProgress) return; // Second-layer guard against double account creation
     window._registerInProgress = true;
-    const firstName = document.getElementById('regFirstName') ? document.getElementById('regFirstName').value.trim() : '';
-    const lastName = document.getElementById('regLastName') ? document.getElementById('regLastName').value.trim() : '';
-    const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
-    const username = document.getElementById('regUsername') ? document.getElementById('regUsername').value.trim() : '';
-    const password = document.getElementById('regPassword') ? document.getElementById('regPassword').value : '';
-    const inviteCode = document.getElementById('inviteCodeInput') ? document.getElementById('inviteCodeInput').value.trim() : '';
-    if (!inviteCode) { showToast('⚠️ Invite code is mandatory to register'); return; }
-    if (!contact) { showToast('⚠️ Enter your mobile or email'); return; }
-    if (!username) { showToast('⚠️ Enter a username'); return; }
-    if (!password || password.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
-    // Validate password strength BEFORE sending OTP
-    const pwErr = validatePassword(password);
-    if (pwErr) { showToast('⚠️ ' + pwErr); return; }
-    // Phone-only registration — contact is always a 10-digit number
-    // Firebase Auth requires email format so we use phone@royalwin.app internally
-    const email = contact.replace(/\s/g,'') + '@royalwin.app';
-
     try {
+      const contact = document.getElementById('regContact') ? document.getElementById('regContact').value.trim() : '';
+      const username = document.getElementById('regUsername') ? document.getElementById('regUsername').value.trim() : '';
+      const password = document.getElementById('regPassword') ? document.getElementById('regPassword').value : '';
+      const inviteCode = document.getElementById('inviteCodeInput') ? document.getElementById('inviteCodeInput').value.trim() : '';
+      if (!contact) { showToast('⚠️ Enter your mobile or email'); return; }
+      if (!username) { showToast('⚠️ Enter a username'); return; }
+      if (!password || password.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
+      // Validate password strength BEFORE sending OTP
+      const pwErr = validatePassword(password);
+      if (pwErr) { showToast('⚠️ ' + pwErr); return; }
+      const cleanContact = contact.replace(/\s/g,'');
+
       showToast('⏳ Creating your account...');
-      const userCred = await firebase.auth().createUserWithEmailAndPassword(email, password);
-      const user = userCred.user;
-      window._registrationInProgress = true;
-      const _rc = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-      const myRefCode = 'ROY-' + Array.from({length:6}, () => _rc[Math.floor(Math.random() * _rc.length)]).join('');
-      let memberId;
-      let isUnique = false;
-      while (!isUnique) {
-        memberId = Math.floor(100000 + Math.random() * 900000).toString();
-        const snap = await firebase.database().ref('memberIds/' + memberId).once('value');
-        if (!snap.val()) isUnique = true;
-      }
-      await firebase.database().ref('memberIds/' + memberId).set(user.uid);
-      await firebase.database().ref('users/' + user.uid).set({
-        memberId,
-        uid: user.uid,
-        firstName,
-        lastName,
-        username,
-        email: '',
-        mobile: '+91' + contact.replace(/\s/g,''),
-        contact: '+91' + contact.replace(/\s/g,''),
-        balance: 0,
-        referralCode: myRefCode,
-        referredBy: inviteCode || '',
-        createdAt: Date.now(),
-        kycStatus: 'pending',
-        isActive: true
+      const res = await fetch('https://royalwin-api.vercel.app/api/register', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, contact: cleanContact, password, inviteCode })
       });
-      if (inviteCode) {
-        try {
-          const db = firebase.database();
-          const allUsersSnap = await db.ref('users').once('value');
-          const allUsers = allUsersSnap.val() || {};
-          const codeToUser = {};
-          Object.entries(allUsers).forEach(([uid, u]) => {
-            if (u.referralCode) codeToUser[u.referralCode] = { uid, referredBy: u.referredBy || '', username: u.username || '', memberId: u.memberId || '' };
-          });
-          const newUserInfo = {
-            uid: user.uid,
-            username: username,
-            memberId: memberId,
-            joinedAt: Date.now(),
-            firstDepositAmt: 0,
-            bonus: 0,
-            commission: 0,
-            creditedAt: Date.now()
-          };
+      const data = await res.json();
+      if (!data.success) { showToast('❌ ' + (data.msg || 'Registration failed')); return; }
 
-          let currentCode = inviteCode;
-          const referrerChain = {};
-          for (let level = 1; level <= 4; level++) {
-            const referrer = codeToUser[currentCode];
-            if (!referrer) break;
-            referrerChain['l' + level] = referrer.uid;
-
-            const refKey = level === 1 ? 'referrals' : 'referrals_l' + level;
-            await db.ref('users/' + referrer.uid + '/' + refKey + '/' + user.uid).set({
-              ...newUserInfo,
-              level: level
-            });
-            currentCode = referrer.referredBy;
-            if (!currentCode) break;
-          }
-          if (Object.keys(referrerChain).length > 0) {
-            await db.ref('users/' + user.uid + '/referrerChain').set(referrerChain);
-          }
-        } catch(refErr) {
-          // console.warn('Referral chain error:', refErr);
-        }
-      }
       const avatarEl = document.getElementById('userAvatar');
       if (avatarEl) avatarEl.textContent = username.charAt(0).toUpperCase();
 
-      // Sign out and redirect to login — user must login consciously
-      window._postRegistrationSignOut = true;
-      await firebase.auth().signOut();
-      window._registrationInProgress = false;
-      isLoggedIn = false;
-      window.currentUser = null;
       window._referralCode = null;
       try { localStorage.removeItem('royalwin_referralCode'); } catch(e) {}
       showToast('🎉 Registration successful! Please login to continue');
-      setTimeout(() => {
-        window._postRegistrationSignOut = false;
-        showPage('login');
-      }, 800);
+      setTimeout(() => showPage('login'), 800);
     } catch(e) {
       console.error('Register error:', e);
-      window._registrationInProgress = false;
-      const msg = e.code === 'auth/email-already-in-use' ? 'This account already exists. Please sign in.' :
-                  e.code === 'auth/weak-password' ? 'Password is too weak.' :
-                  e.code === 'auth/invalid-email' ? 'Invalid email address.' : e.message;
-      showToast('❌ ' + msg);
+      showToast('❌ ' + (e.message || 'Registration failed. Please try again.'));
     } finally {
       window._registerInProgress = false;
     }
@@ -5896,22 +5518,7 @@
   const numColors = ['violet-red','#27ae60','#e02020','#27ae60','#e02020','violet-green','#e02020','#27ae60','#e02020','#27ae60'];
   const numBigSmall = ['Small','Small','Small','Small','Small','Big','Big','Big','Big','Big'];
   let cgSettings = { fee: 0.04, minBet: 10, maxBet: 50000, colorPayout: 2, violetPayout: 4.5, numPayout: 9, bigSmallPayout: 2, colorOnVioletPayout: 1.5 };
-  async function loadGameSettings() {
-    try {
-      const db = window.fbDB || fbDB;
-      if (!db) return;
-      const snap = await db.ref('wingo/settings').once('value');
-      const s = snap.val();
-      if (s) {
-        if (s.fee != null) cgSettings.fee = parseFloat(s.fee) / 100; // stored as % e.g. 4
-        if (s.minBet != null) cgSettings.minBet = parseFloat(s.minBet);
-        if (s.maxBet != null) cgSettings.maxBet = parseFloat(s.maxBet);
-        if (s.colorPayout != null) cgSettings.colorPayout = parseFloat(s.colorPayout);
-        if (s.violetPayout != null) cgSettings.violetPayout = parseFloat(s.violetPayout);
-        if (s.numPayout != null) cgSettings.numPayout = parseFloat(s.numPayout);
-      }
-    } catch(e) { /* suppressed */ }
-  }
+  const cgWinColorByNum = {0:'violet-red',1:'green',2:'red',3:'green',4:'red',5:'violet-green',6:'red',7:'green',8:'red',9:'green'};
 
   let cgTimer = 1, cgSeconds = 60, cgInterval = null;
   const cgRoundByTimer = {1: 20250513001, 3: 20250513001, 5: 20250513001};
@@ -5944,14 +5551,7 @@
     if (!isLoggedIn) { showPage('login'); showToast('🔐 Please sign in to play'); return; }
     rwBarStart();
     document.getElementById('colorGameOverlay').classList.add('open');
-    const db = window.fbDB || fbDB;
-    const user = window.currentUser;
-    if (db && user) {
-      db.ref('users/' + user.uid + '/balance').on('value', snap => {
-        updateBalanceDisplay(snap.val() || 0);
-      });
-    }
-    loadGameSettings();
+    pollBalance();
     buildNumGrid();
     if (!window._cgTimersStarted) {
       startAllTimers();
@@ -5967,303 +5567,95 @@
     cgHistPage = 1;
     cgMyBetsPage = 1;
     loadAllHistory();
+    loadMyBets();
     setTimeout(rwBarFinish, 300);
+  }
 
-    // Immediately settle any pending bets that have results in Firebase
-    // This handles bets placed while game was closed (timers were stopped)
-    // Don't wait for the timer tick — check Firebase directly right now
-    setTimeout(async () => {
-      const dbSettle = window.fbDB || fbDB;
-      const userSettle = window.currentUser;
-      if (!dbSettle || !userSettle) return;
+  async function loadMyBets() {
+    try {
+      const token = localStorage.getItem('royalwin_token');
+      if (!token) return;
+      const res = await fetch('https://royalwin-api.vercel.app/api/my-bets', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (!data.success) return;
+
+      const prevByTimer = { 1: cgMyBetsByTimer[1].slice(), 3: cgMyBetsByTimer[3].slice(), 5: cgMyBetsByTimer[5].slice() };
+      [1, 3, 5].forEach(t => cgMyBetsByTimer[t].length = 0);
+      data.bets.map(normalizeBet).forEach(b => { if (cgMyBetsByTimer[b.timer]) cgMyBetsByTimer[b.timer].push(b); });
+
+      if (document.getElementById('colorGameOverlay')?.classList.contains('open')) {
+        cgMyBetsByTimer[cgTimer].forEach(b => {
+          if (b.status === 'pending') return;
+          const prevMatch = (prevByTimer[cgTimer] || []).find(p => p.id === b.id);
+          const justSettled = !prevMatch || prevMatch.status === 'pending';
+          const isRecent = (Date.now() - (b.timestamp || 0)) < 120000;
+          if (justSettled && isRecent) showCGResult(b.status === 'won', b.winNum, b.winColor, Math.max(b.pl || 0, 0), b.bet, b.round);
+        });
+      }
+
+      cgMyBets = cgMyBetsByTimer[cgTimer] || [];
+      renderMyBets();
+    } catch(e) {}
+  }
+
+  function normalizeBet(row) {
+    const betAmt = parseFloat(row.bet_amount);
+    const actualBet = parseFloat(row.actual_bet != null ? row.actual_bet : Math.round(betAmt * (1 - cgSettings.fee)));
+    const selColor = row.saved_color === 'green' ? '#27ae60' : row.saved_color === 'red' ? '#e02020' : row.saved_color === 'violet' ? '#7c4dff'
+      : row.saved_bs === 'big' ? '#ffd700' : row.saved_bs === 'small' ? '#2563eb' : '#aaa';
+    const selection = row.saved_color ? row.saved_color.charAt(0).toUpperCase() + row.saved_color.slice(1)
+      : row.saved_bs ? row.saved_bs.charAt(0).toUpperCase() + row.saved_bs.slice(1)
+      : (row.saved_num !== null && row.saved_num !== undefined) ? 'No.' + row.saved_num : '—';
+    const base = { id: row.id, timer: row.timer, round: row.period_id, bet: betAmt, actualBet, selection, selColor, status: row.status, timestamp: Number(row.created_at) };
+
+    if (row.status === 'pending') return { ...base, result: '⏳ Waiting...', resultBg: 'rgba(240,192,64,0.3)', pl: null };
+
+    const hist = (cgHistoryByTimer[row.timer] || []).find(h => h.round === row.period_id);
+    const winNum = hist ? hist.num : null;
+    const pl = row.status === 'won' ? (winNum != null ? Math.round(computeWinAmount(row, winNum)) : actualBet) : -betAmt;
+
+    return {
+      ...base, winNum, winColor: hist ? hist.color : null,
+      result: hist ? (hist.color + ' / ' + hist.num) : (row.status === 'won' ? 'Won' : 'Lost'),
+      resultBg: hist ? hist.histBg : (row.status === 'won' ? '#27ae60' : '#e02020'),
+      pl
+    };
+  }
+
+  function computeWinAmount(row, winNum) {
+    const actualBet = parseFloat(row.actual_bet || 0);
+    const sc = row.saved_color, sn = row.saved_num, sb = row.saved_bs;
+    const winColorRaw = cgWinColorByNum[winNum];
+    if (sc === 'violet' && (winColorRaw === 'violet-red' || winColorRaw === 'violet-green')) return actualBet * cgSettings.violetPayout;
+    if (sc === 'red' && winColorRaw === 'red') return actualBet * cgSettings.colorPayout;
+    if (sc === 'green' && winColorRaw === 'green') return actualBet * cgSettings.colorPayout;
+    if (sc === 'red' && winColorRaw === 'violet-red') return actualBet * cgSettings.colorOnVioletPayout;
+    if (sc === 'green' && winColorRaw === 'violet-green') return actualBet * cgSettings.colorOnVioletPayout;
+    if (sn !== null && sn !== undefined && parseInt(sn) === winNum) return actualBet * cgSettings.numPayout;
+    if (sb === 'big' && winNum >= 5) return actualBet * cgSettings.bigSmallPayout;
+    if (sb === 'small' && winNum <= 4) return actualBet * cgSettings.bigSmallPayout;
+    return 0;
+  }
+
+  async function loadAllHistory() {
+    [1, 3, 5].forEach(async mins => {
       try {
-        const pSnap = await dbSettle.ref('users/' + userSettle.uid + '/wingoPendingBets').once('value');
-        if (!pSnap.val()) return;
-        const pendingBets = Object.entries(pSnap.val()).map(([k, v]) => ({ ...v, _firebaseKey: k }));
-        if (pendingBets.length === 0) return;
-        // Group by timer
-        const byTimer = { 1: [], 3: [], 5: [] };
-        pendingBets.forEach(b => { const t = b.timer || 1; if (byTimer[t]) byTimer[t].push(b); });
-        // For each timer, check if there's a result available for each pending round
-        for (const [timerStr, bets] of Object.entries(byTimer)) {
-          if (bets.length === 0) continue;
-          const t = parseInt(timerStr);
-          const rounds = [...new Set(bets.map(b => b.round))];
-          for (const round of rounds) {
-            const hSnap = await dbSettle.ref('wingo/wingo' + t + 'min/history')
-              .orderByChild('round').equalTo(round).limitToLast(1).once('value');
-            if (!hSnap.val()) continue; // no result yet — leave as pending
-            const roundData = Object.values(hSnap.val())[0];
-            if (!roundData) continue;
-            // Result exists — settle these bets directly
-            const roundBets = bets.filter(b => b.round === round);
-            for (const bet of roundBets) {
-              const winNum = parseInt(roundData.num);
-              const _numColorsRaw = {0:'violet-red',1:'green',2:'red',3:'green',4:'red',5:'violet-green',6:'red',7:'green',8:'red',9:'green'};
-              const winColorRaw = _numColorsRaw[winNum];
-              const FEE = cgSettings ? cgSettings.fee : 0.04;
-              const actualBet = bet.actualBet || Math.round((bet.bet || 0) * (1 - FEE));
-              let betWon = false, betWinAmt = 0;
-              const CP = cgSettings ? cgSettings.colorPayout : 2;
-              const VP = cgSettings ? cgSettings.violetPayout : 4.5;
-              const NP = cgSettings ? cgSettings.numPayout : 9;
-              const BSP = cgSettings ? cgSettings.colorOnVioletPayout : 1.5;
-              const BSPP = cgSettings ? cgSettings.bigSmallPayout : 2;
-              const sc = bet.savedColor, sn = bet.savedNum, sb = bet.savedBS;
-              if (sc === 'violet' && (winColorRaw === 'violet-red' || winColorRaw === 'violet-green')) { betWon=true; betWinAmt=actualBet*VP; }
-              else if (sc === 'red' && winColorRaw === 'red') { betWon=true; betWinAmt=actualBet*CP; }
-              else if (sc === 'red' && winColorRaw === 'violet-red') { betWon=true; betWinAmt=actualBet*BSP; }
-              else if (sc === 'green' && winColorRaw === 'green') { betWon=true; betWinAmt=actualBet*CP; }
-              else if (sc === 'green' && winColorRaw === 'violet-green') { betWon=true; betWinAmt=actualBet*BSP; }
-              else if (sn !== null && sn !== undefined && parseInt(sn) === winNum) { betWon=true; betWinAmt=actualBet*NP; }
-              else if (sb === 'big' && winNum >= 5) { betWon=true; betWinAmt=actualBet*BSPP; }
-              else if (sb === 'small' && winNum <= 4) { betWon=true; betWinAmt=actualBet*BSPP; }
-              const histLabel = (winColorRaw==='violet-red'||winColorRaw==='violet-green') ? 'violet' : winColorRaw;
-              const betRecord = {
-                round: bet.round, bet: bet.bet, actualBet,
-                selection: bet.selection, selColor: bet.selColor,
-                result: histLabel + ' / ' + winNum,
-                resultBg: roundData.histBg || '#27ae60',
-                pl: betWon ? Math.round(betWinAmt) : -bet.bet,
-                status: betWon ? 'won' : 'lost',
-                timer: t, timestamp: Date.now()
-              };
-              if (!cgMyBetsByTimer[t]) cgMyBetsByTimer[t] = [];
-              const idx = cgMyBetsByTimer[t].findIndex(b => b.round === bet.round && b.selection === bet.selection);
-              if (idx !== -1) cgMyBetsByTimer[t][idx] = betRecord;
-              else cgMyBetsByTimer[t].unshift(betRecord);
-              // Credit winnings
-              if (betWon && betWinAmt > 0) {
-                dbSettle.ref('users/' + userSettle.uid + '/balance').transaction(bal => parseFloat(((bal||0)+betWinAmt).toFixed(2)));
-              }
-              // Remove from pending
-              dbSettle.ref('users/' + userSettle.uid + '/wingoPendingBets/' + bet._firebaseKey).remove();
-              // Save result
-              const rKey = 'wingo' + t + 'min_round_' + bet.round + '_' + Date.now();
-              dbSettle.ref('users/' + userSettle.uid + '/wingoMyBets/' + rKey).set(betRecord);
-              addBetToHistory('WinGo', bet.bet, histLabel+'/'+winNum, betWon ? betWinAmt.toFixed(0) : 0, betWon, bet.round.toString(), 0, t, bet.selection);
-            }
-          }
-        }
-        cgMyBets = cgMyBetsByTimer[cgTimer] || [];
-        renderMyBets();
-      } catch(e) { console.warn('Immediate settle error:', e.message); }
-    }, 800); // slight delay to let Firebase and cgSettings initialize first
-
-    loadMyBetsFromFirebase(true);
-    // Also trigger background settler immediately in case user just logged back in
-    if (window._bgSettle) setTimeout(window._bgSettle, 300);
-    const db2 = window.fbDB || fbDB;
-    const user2 = window.currentUser;
-    if (db2 && user2) {
-      // Real-time listener: when a bet result is written to wingoMyBets, refresh My Bets instantly
-      db2.ref('users/' + user2.uid + '/wingoMyBets').limitToLast(10).on('child_added', snap => {
-        const bet = snap.val();
-        if (!bet || bet.status === 'pending') return;
-        const timer = bet.timer || cgTimer;
-        if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
-        // Use round+selection+timestamp as unique key — allows multiple bets on same selection in same round
-        const existsIdx = cgMyBetsByTimer[timer].findIndex(b =>
-          b.round === bet.round && b.selection === bet.selection && b.timestamp === bet.timestamp
-        );
-        if (existsIdx !== -1) cgMyBetsByTimer[timer][existsIdx] = bet;
-        else cgMyBetsByTimer[timer].unshift(bet);
-        cgMyBets = cgMyBetsByTimer[cgTimer] || [];
-        renderMyBets();
-      });
-      db2.ref('users/' + user2.uid + '/wingoPendingBets').on('child_removed', snap => {
-        setTimeout(() => loadMyBetsFromFirebase(false), 300);
-      });
-      [1, 3, 5].forEach(t => {
-        db2.ref('wingo/wingo' + t + 'min/history').limitToLast(1).on('child_added', snap => {
-          const newRound = snap.val();
-          if (!newRound) return;
-          const pending = window._cgPendingBets || [];
-          const match = pending.find(b => (b.timer === t || !b.timer) && b.round === newRound.round);
-          if (match) {
-            setTimeout(() => resolveRoundForTimer(t, 0), 200);
-          }
-        });
-      });
-    }
-  }
-
-  function loadMyBetsFromFirebase(resolveStalePending) {
-    const db = window.fbDB || fbDB;
-    if (!db || !window.currentUser) return;
-    const uid = window.currentUser.uid;
-    db.ref('users/' + uid + '/wingoMyBets')
-      .orderByChild('timestamp').limitToLast(50)
-      .once('value', snap => {
-        const completed = snap.val() ? Object.values(snap.val()).sort((a,b) => (b.timestamp||0)-(a.timestamp||0)) : [];
-        cgMyBetsByTimer[1] = completed.filter(b => b.timer === 1);
-        cgMyBetsByTimer[3] = completed.filter(b => b.timer === 3);
-        cgMyBetsByTimer[5] = completed.filter(b => b.timer === 5);
-        db.ref('users/' + uid + '/wingoPendingBets').once('value', pSnap => {
-          const now = Date.now();
-          if (pSnap.val()) {
-            const pending = Object.entries(pSnap.val());
-            window._cgPendingBets = window._cgPendingBets || [];
-            pending.forEach(([key, bet]) => {
-              bet._firebaseKey = key;
-              const timerMs = (bet.timer || 1) * 60 * 1000;
-              const betAge = now - (bet.timestamp || 0);
-              if (resolveStalePending && betAge > timerMs) {
-                const timerMode = bet.timer || 1;
-                db.ref('wingo/wingo' + timerMode + 'min/history').orderByChild('round').equalTo(bet.round).once('value', rSnap => {
-                  let roundData = null;
-                  if (rSnap.val()) {
-                    const entries = Object.values(rSnap.val());
-                    roundData = entries.find(e => e.round === bet.round);
-                  }
-                  if (roundData) {
-                    // Settle the bet directly using the found round data
-                    // instead of relying on cgRoundByTimer (which has stale values on load)
-                    const winNum = parseInt(roundData.num);
-                    const winColor = roundData.color;
-                    const bigSmall = roundData.bigSmall;
-                    const FEE = cgSettings ? cgSettings.fee : 0.04;
-                    const actualBet = bet.actualBet || Math.round((bet.bet || 0) * (1 - FEE));
-                    let betWon = false, betWinAmt = 0;
-                    const numColorsLocal = {0:'violet-red',1:'green',2:'red',3:'green',4:'red',5:'violet-green',6:'red',7:'green',8:'red',9:'green'};
-                    const winColorRaw = numColorsLocal[winNum];
-                    const wc = winColorRaw === 'violet-red' || winColorRaw === 'violet-green' ? 'violet' : winColorRaw === '#e02020' ? 'red' : winColorRaw;
-                    const savedColor = bet.savedColor || bet.selColor || '';
-                    const savedNum = bet.savedNum !== undefined ? bet.savedNum : null;
-                    const savedBS = bet.savedBS || '';
-                    const CP = cgSettings ? cgSettings.colorPayout : 2;
-                    const VP = cgSettings ? cgSettings.violetPayout : 4.5;
-                    const NP = cgSettings ? cgSettings.numPayout : 9;
-                    const BSP = cgSettings ? cgSettings.colorOnVioletPayout : 1.5;
-                    const BSPP = cgSettings ? cgSettings.bigSmallPayout : 2;
-                    if (savedColor === 'violet' && (winColorRaw === 'violet-red' || winColorRaw === 'violet-green')) { betWon=true; betWinAmt=actualBet*VP; }
-                    else if (savedColor === 'red' && winColorRaw === 'red') { betWon=true; betWinAmt=actualBet*CP; }
-                    else if (savedColor === 'green' && winColorRaw === 'green') { betWon=true; betWinAmt=actualBet*CP; }
-                    else if (savedColor === 'red' && winColorRaw === 'violet-red') { betWon=true; betWinAmt=actualBet*BSP; }
-                    else if (savedColor === 'green' && winColorRaw === 'violet-green') { betWon=true; betWinAmt=actualBet*BSP; }
-                    else if (savedNum !== null && savedNum === winNum) { betWon=true; betWinAmt=actualBet*NP; }
-                    else if (savedBS === 'big' && winNum >= 5) { betWon=true; betWinAmt=actualBet*BSPP; }
-                    else if (savedBS === 'small' && winNum <= 4) { betWon=true; betWinAmt=actualBet*BSPP; }
-                    const betRecord = {
-                      round: bet.round, bet: bet.bet, actualBet,
-                      selection: bet.selection, selColor: bet.selColor,
-                      result: winColor + ' / ' + winNum, resultBg: roundData.histBg || '#27ae60',
-                      pl: betWon ? Math.round(betWinAmt) : -bet.bet,
-                      status: betWon ? 'won' : 'lost',
-                      timer: timerMode, timestamp: Date.now()
-                    };
-                    const timer = bet.timer || timerMode;
-                    if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
-                    const existsIdx = cgMyBetsByTimer[timer].findIndex(b => b.round === bet.round && b.selection === bet.selection);
-                    if (existsIdx !== -1) cgMyBetsByTimer[timer][existsIdx] = betRecord;
-                    else cgMyBetsByTimer[timer].unshift(betRecord);
-                    // Credit winnings if won
-                    if (betWon && betWinAmt > 0) {
-                      try {
-                        const dbSettle = window.fbDB || fbDB;
-                        const userSettle = window.currentUser;
-                        if (dbSettle && userSettle) {
-                          dbSettle.ref('users/' + userSettle.uid + '/balance').transaction(bal => parseFloat(((bal||0)+betWinAmt).toFixed(2)));
-                          addBetToHistory('WinGo', bet.bet, winColor+'/'+winNum, betWinAmt.toFixed(0), true, bet.round.toString(), 0, timerMode, bet.selection);
-                        }
-                      } catch(e) {}
-                    } else if (!betWon) {
-                      addBetToHistory('WinGo', bet.bet, winColor+'/'+winNum, 0, false, bet.round.toString(), 0, timerMode, bet.selection);
-                    }
-                    // Remove from pending
-                    try {
-                      const dbR = window.fbDB || fbDB;
-                      const userR = window.currentUser;
-                      if (dbR && userR) dbR.ref('users/' + userR.uid + '/wingoPendingBets/' + key).remove();
-                    } catch(e) {}
-                    renderMyBets();
-                  } else {
-                    if (betAge > 24 * 60 * 60 * 1000) {
-                      const timer = bet.timer || cgTimer;
-                      if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
-                      const alreadyShown = cgMyBetsByTimer[timer].some(b => b.round === bet.round && b.selection === bet.selection);
-                      if (!alreadyShown) {
-                        cgMyBetsByTimer[timer].unshift({
-                          ...bet, status: 'unresolved',
-                          result: '⚠️ Contact Support',
-                          resultBg: 'rgba(224,32,32,0.4)', pl: null
-                        });
-                      }
-                    } else {
-                      const exists = window._cgPendingBets.some(b => b.round === bet.round && b.selection === bet.selection);
-                      if (!exists) window._cgPendingBets.push(bet);
-                      const timer = bet.timer || cgTimer;
-                      if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
-                      const alreadyShown = cgMyBetsByTimer[timer].some(b => b.round === bet.round && b.selection === bet.selection && b.status === 'pending');
-                      if (!alreadyShown) cgMyBetsByTimer[timer].unshift({
-                        ...bet, status: 'pending',
-                        result: betAge > 30 * 60 * 1000 ? '⏳ Contact Support' : '⏳ Waiting...',
-                        resultBg: 'rgba(240,192,64,0.3)', pl: null
-                      });
-                    }
-                  }
-                });
-              } else {
-                if (betAge > 24 * 60 * 60 * 1000) {
-                  const timer = bet.timer || cgTimer;
-                  if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
-                  const alreadyShown = cgMyBetsByTimer[timer].some(b => b.round === bet.round && b.selection === bet.selection);
-                  if (!alreadyShown) {
-                    cgMyBetsByTimer[timer].unshift({
-                      ...bet, status: 'unresolved',
-                      result: '⚠️ Contact Support',
-                      resultBg: 'rgba(224,32,32,0.4)', pl: null
-                    });
-                  }
-                  return;
-                }
-                const exists = window._cgPendingBets.some(b => b.round === bet.round && b.selection === bet.selection);
-                if (!exists) window._cgPendingBets.push(bet);
-                const timer = bet.timer || cgTimer;
-                if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
-                const alreadyShown = cgMyBetsByTimer[timer].some(b => b.round === bet.round && b.selection === bet.selection && b.status === 'pending');
-                if (!alreadyShown) cgMyBetsByTimer[timer].unshift({ ...bet, status: 'pending', result: '⏳ Waiting...', resultBg: 'rgba(240,192,64,0.3)', pl: null });
-              }
-            });
-          }
-          cgMyBets = cgMyBetsByTimer[cgTimer] || [];
-          renderMyBets();
-        });
-      });
-  }
-
-  function loadAllHistory() {
-    const db = window.fbDB || fbDB;
-    if (!db) return;
-    cgHistoryByTimer[1] = [];
-    cgHistoryByTimer[3] = [];
-    cgHistoryByTimer[5] = [];
-    [1, 3, 5].forEach(mins => {
-      db.ref('wingo/wingo' + mins + 'min/history').off();
-      db.ref('wingo/wingo' + mins + 'min/history').on('value', snap => {
-        if (!snap.val()) return;
-        const raw = Array.isArray(snap.val()) ? snap.val() : Object.values(snap.val());
-        const seen = new Set();
-        cgHistoryByTimer[mins] = raw
-          .filter(h => h && h.round)
-          .sort((a, b) => (b.round || 0) - (a.round || 0))
-          .filter(h => {
-            if (seen.has(h.round)) return false;
-            seen.add(h.round);
-            return true;
-          })
-          .map(h => ({
-            ...h,
-            histBg: h.histBg || (h.color === 'violet'
-              ? (h.num === 0 ? 'linear-gradient(135deg,#7c4dff 50%,#e02020 50%)' : 'linear-gradient(135deg,#7c4dff 50%,#27ae60 50%)')
-              : h.color === 'red' ? '#e02020' : '#27ae60')
-          }));
+        const res = await fetch('https://royalwin-api.vercel.app/api/history?timer=' + mins + '&limit=50');
+        const data = await res.json();
+        if (!data.success) return;
+        cgHistoryByTimer[mins] = data.history.map(h => ({
+          round: h.period_id, num: h.win_num, color: h.color, bigSmall: h.big_small,
+          histBg: h.hist_bg || (h.color === 'violet'
+            ? (h.win_num === 0 ? 'linear-gradient(135deg,#7c4dff 50%,#e02020 50%)' : 'linear-gradient(135deg,#7c4dff 50%,#27ae60 50%)')
+            : h.color === 'red' ? '#e02020' : '#27ae60'),
+          timestamp: Number(h.timestamp)
+        }));
         if (mins === cgTimer) {
           cgHistory = cgHistoryByTimer[cgTimer] || [];
           renderHistDots();
           renderHistRows();
         }
-      });
+      } catch(e) {}
     });
   }
 
@@ -6271,19 +5663,9 @@
     rwBarStart();
     document.getElementById('colorGameOverlay').classList.remove('open');
     closeResultPopup();
-    if (cgInterval) { clearInterval(cgInterval); cgInterval = null; }
-    Object.keys(cgTimerIntervals).forEach(k => {
-      if (cgTimerIntervals[k]) { clearInterval(cgTimerIntervals[k]); cgTimerIntervals[k] = null; }
-    });
+    if (cgPollInterval) { clearInterval(cgPollInterval); cgPollInterval = null; }
     window._cgTimersStarted = false;
-    const db = window.fbDB || fbDB;
-    const user = window.currentUser;
-    if (db && user) {
-      db.ref('users/' + user.uid + '/balance').off();
-      db.ref('users/' + user.uid + '/wingoPendingBets').off();
-      [1,3,5].forEach(t => db.ref('wingo/wingo' + t + 'min/history').off());
-      updateMobileHomeBalance();
-    }
+    updateMobileHomeBalance();
     _isPlacingBet = false;
     setTimeout(rwBarFinish, 200);
   }
@@ -6310,131 +5692,47 @@
     const btn = document.getElementById('cgConfirmBtn');
     if (btn) { btn.textContent = 'Select'; btn.className = 'cg-confirm-btn default-btn'; btn.disabled = false; }
   }
-  const cgTimerIntervals = {1: null, 3: null, 5: null};
-  const cgLastResolvedRound = {1: -1, 3: -1, 5: -1};
+  let cgPollInterval = null;
   const cgBettingOpenByTimer = {1: true, 3: true, 5: true};
   const cgHistoryByTimer = {1: [], 3: [], 5: []};
 
   function startAllTimers() {
-    [1, 3, 5].forEach(mins => startTimerForMode(mins));
+    [1, 3, 5].forEach(mins => pollGameState(mins));
+    if (cgPollInterval) clearInterval(cgPollInterval);
+    cgPollInterval = setInterval(() => { [1, 3, 5].forEach(mins => pollGameState(mins)); }, 1000);
   }
 
-  function startTimerForMode(mins) {
-    if (cgTimerIntervals[mins]) clearInterval(cgTimerIntervals[mins]);
-    const periodMs = mins * 60 * 1000;
+  async function pollGameState(mins) {
+    try {
+      const res = await fetch('https://royalwin-api.vercel.app/api/game-state?timer=' + mins);
+      const data = await res.json();
+      if (!data.success) return;
+      const prevPeriodId = cgRoundByTimer[mins];
+      cgRoundByTimer[mins] = data.currentPeriodId;
+      cgBettingOpenByTimer[mins] = !data.locked;
 
-    function tick() {
-      const now = Date.now();
-      const IST_OFFSET = 5.5 * 60 * 60 * 1000;
-      const istNow = now + IST_OFFSET;
-      const istDate = new Date(istNow);
-      const istMidnight = istNow - (istNow % (24 * 60 * 60 * 1000));
-      const msSinceMidnightIST = istNow - istMidnight;
-      const elapsed = msSinceMidnightIST % periodMs;
-      const remainingMs = periodMs - elapsed;
-      const remaining = Math.floor(remainingMs / 1000);
-      const totalSecs = mins * 60;
-      const dateStr = `${istDate.getUTCFullYear()}${String(istDate.getUTCMonth()+1).padStart(2,'0')}${String(istDate.getUTCDate()).padStart(2,'0')}`;
-      const minutesSinceMidnight = istDate.getUTCHours() * 60 + istDate.getUTCMinutes();
-      const counter = Math.floor(minutesSinceMidnight / mins);
-      const roundId = parseInt(dateStr + String(counter).padStart(4, '0'));
-
-      cgRoundByTimer[mins] = roundId;
       if (cgTimer === mins) {
-        cgSeconds = remaining;
+        cgSeconds = data.secondsLeft;
+        cgBettingOpen = !data.locked;
         const el = document.getElementById('cgCountdown');
         if (el) {
-          const mm = Math.floor(remaining / 60).toString().padStart(2, '0');
-          const ss = (remaining % 60).toString().padStart(2, '0');
+          const mm = Math.floor(data.secondsLeft / 60).toString().padStart(2, '0');
+          const ss = (data.secondsLeft % 60).toString().padStart(2, '0');
           el.textContent = mm + ':' + ss;
         }
-        if (cgTimer === mins) {
-          const roundEl = document.getElementById('cgRoundNum');
-          if (roundEl) roundEl.textContent = roundId;
-        }
-        // Use server-synced time ONLY for betting close check (prevents drift on 1min timer)
-        const serverNow = Date.now() + (window._serverTimeOffset || 0);
-        const serverIstNow = serverNow + IST_OFFSET;
-        const serverMsSinceMidnight = serverIstNow - (serverIstNow - (serverIstNow % (24*60*60*1000)));
-        const serverRemainingMs = periodMs - (serverMsSinceMidnight % periodMs);
-
-        if (serverRemainingMs <= 10000 && cgBettingOpenByTimer[mins]) {
-          cgBettingOpenByTimer[mins] = false;
-          cgBettingOpen = false;
-          updateCGStatus();
+        const roundEl = document.getElementById('cgRoundNum');
+        if (roundEl) roundEl.textContent = data.currentPeriodId;
+        updateCGStatus();
+        if (!_isPlacingBet) {
           const btn = document.getElementById('cgConfirmBtn');
-          if (btn) btn.disabled = true;
+          if (btn) btn.disabled = !cgBettingOpen;
         }
       }
-      if (remaining >= totalSecs - 1 && cgLastResolvedRound[mins] !== roundId) {
-        cgLastResolvedRound[mins] = roundId;
-        cgBettingOpenByTimer[mins] = true;
-        if (!window._cgPendingBets) window._cgPendingBets = [];
-        window._cgPendingBets = window._cgPendingBets.filter(b =>
-          b.round >= roundId - 3 || (b.timer && b.timer !== mins)
-        );
-        if (cgTimer === mins) {
-          cgBettingOpen = true;
-          updateCGStatus();
-          const btn = document.getElementById('cgConfirmBtn');
-          if (btn) {
-            btn.textContent = 'Select';
-            btn.className = 'cg-confirm-btn default-btn';
-            btn.disabled = false;
-          }
-        }
-        const roundStartTime = Date.now();
-        const expectedRound = cgRoundByTimer[mins] - 1;
-        let resolved = false;
-        const db2 = window.fbDB || fbDB;
-        if (db2) {
-          // When timer ends, listen for the game engine to write the result to history
-          // Then update the results display (Last 5, etc.) — bet settlement is handled
-          // server-side by the game engine writing to wingoMyBets, which the persistent
-          // listener at login picks up instantly. No duplicate local settlement needed.
-          const resultRef = db2.ref('wingo/wingo' + mins + 'min/lastResultTime');
-          const listener = resultRef.on('value', async (snap) => {
-            if (resolved) return;
-            const lastTime = snap.val() || 0;
-            if (lastTime > roundStartTime - 2000) {
-              resolved = true;
-              resultRef.off('value', listener);
-              // Update the game history display (Last 5 results)
-              loadAllHistory();
-              // Update My Bets from Firebase — game engine has already settled
-              setTimeout(() => loadMyBetsFromFirebase(false), 800);
-            }
-          });
-          // Poll every 500ms for faster result detection
-          const pollInterval = setInterval(() => {
-            if (resolved) { clearInterval(pollInterval); return; }
-            db2.ref('wingo/wingo' + mins + 'min/lastResultTime').once('value').then(s => {
-              if (s.val() > roundStartTime - 2000) {
-                resolved = true;
-                clearInterval(pollInterval);
-                try { resultRef.off('value', listener); } catch(e) {}
-                loadAllHistory();
-                setTimeout(() => loadMyBetsFromFirebase(false), 500);
-              }
-            });
-          }, 500);
-          // Safety fallback after 10 seconds
-          setTimeout(() => {
-            if (!resolved) {
-              resolved = true;
-              clearInterval(pollInterval);
-              try { resultRef.off('value', listener); } catch(e) {}
-              loadAllHistory();
-              setTimeout(() => loadMyBetsFromFirebase(false), 500);
-            }
-          }, 10000);
-        }
-
+      if (prevPeriodId && prevPeriodId !== data.currentPeriodId) {
+        loadAllHistory();
+        loadMyBets();
       }
-    }
-
-    tick();
-    cgTimerIntervals[mins] = setInterval(tick, 1000);
+    } catch(e) {}
   }
 
   function startCGTimer() {
@@ -6537,460 +5835,49 @@
     if (!amt || amt < cgSettings.minBet) { showToast('⚠️ Minimum bet is ₹' + cgSettings.minBet); return; }
     if (amt > cgSettings.maxBet) { showToast('⚠️ Maximum bet is ₹' + cgSettings.maxBet.toLocaleString('en-IN')); return; }
     if (amt % 10 !== 0) { showToast('⚠️ Bet must be a multiple of ₹10'); return; }
-    const fee = Math.round(amt * cgSettings.fee);
-    const actualAmt = amt - fee;
-    const sel = cgSelectedColor ? cgSelectedColor.toUpperCase() : cgSelectedBigSmall ? cgSelectedBigSmall.toUpperCase() : 'Number ' + cgSelectedNum;
-    // Capture selection immediately before any async operations clear them
-    const capturedColor = cgSelectedColor;
-    const capturedNum = cgSelectedNum;
-    const capturedBS = cgSelectedBigSmall;
-    const capturedAmt = amt;
-    const capturedActualAmt = actualAmt;
-    const capturedTimer = cgTimer;
-    const capturedRound = cgRoundByTimer[cgTimer];
+
+    const capturedColor = cgSelectedColor, capturedNum = cgSelectedNum, capturedBS = cgSelectedBigSmall, capturedTimer = cgTimer;
+    const sel = capturedColor ? capturedColor.toUpperCase() : capturedBS ? capturedBS.toUpperCase() : 'Number ' + capturedNum;
+    const type = capturedColor ? 'color' : capturedBS ? 'bigsmall' : 'number';
+    const value = capturedColor || capturedBS || String(capturedNum);
 
     _isPlacingBet = true;
-    showToast('✅ Bet of ₹' + amt + ' placed on ' + sel + '!');
     document.getElementById('cgConfirmBtn').disabled = true;
     try {
-      const db = window.fbDB || fbDB;
-      const user = window.currentUser;
-      if (db && user) {
-        const currentRound = cgRoundByTimer[cgTimer];
-        const samePeriodBets = (window._cgPendingBets || []).filter(b =>
-          b.round === currentRound && b.timer === cgTimer
-        );
-        const numBets = samePeriodBets.filter(b => b.savedNum !== null && b.savedNum !== undefined);
-        const colorBets = samePeriodBets.map(b => b.savedColor).filter(Boolean);
-        const hasRedAndGreen = colorBets.includes('red') && colorBets.includes('green');
-        const bsBets = samePeriodBets.map(b => b.savedBS).filter(Boolean);
-        const hasBigAndSmall = bsBets.includes('big') && bsBets.includes('small');
-        const uniqueNums = [...new Set(numBets.map(b => b.savedNum))];
-        const hasMultiNum = uniqueNums.length >= 4;
+      const res = await fetch('https://royalwin-api.vercel.app/api/place-bet', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('royalwin_token') },
+        body: JSON.stringify({ timer: capturedTimer, type, value, amount: amt })
+      });
+      const data = await res.json();
+      if (!data.success) { showToast('❌ ' + (data.msg || 'Bet failed')); return; }
 
-        let fraudDetail = null;
-        if (hasRedAndGreen) fraudDetail = 'Bet on both Red + Green in period ' + currentRound;
-        else if (hasBigAndSmall) fraudDetail = 'Bet on both Big + Small in period ' + currentRound;
-        else if (hasMultiNum) fraudDetail = 'Bet on ' + uniqueNums.length + ' different numbers (' + uniqueNums.join(',') + ') in period ' + currentRound;
+      showToast('✅ Bet of ₹' + amt + ' placed on ' + sel + '!');
+      updateBalanceDisplay(data.balance);
 
-        if (fraudDetail) {
-          db.ref('users/' + user.uid + '/fraudLog').push({
-            detail: fraudDetail,
-            mode: cgTimer + 'Min',
-            round: currentRound,
-            timestamp: Date.now(),
-            penaltyApplied: false
-          });
-        }
-      }
-    } catch(e) { /* fraud detection error — don't block bet */ }
-    setTimeout(() => {
-      if (cgBettingOpen) {
-        document.getElementById('cgConfirmBtn').disabled = false;
-        document.getElementById('cgConfirmBtn').textContent = 'Select';
-        document.getElementById('cgConfirmBtn').className = 'cg-confirm-btn default-btn';
+      const selColor = capturedColor === 'green' ? '#27ae60' : capturedColor === 'red' ? '#e02020' : capturedColor === 'violet' ? '#7c4dff'
+        : capturedBS === 'big' ? '#ffd700' : capturedBS === 'small' ? '#2563eb' : '#aaa';
+      const selLabel = capturedColor ? capturedColor.charAt(0).toUpperCase()+capturedColor.slice(1)
+        : capturedBS ? capturedBS.charAt(0).toUpperCase()+capturedBS.slice(1) : 'No.'+capturedNum;
+      if (!cgMyBetsByTimer[capturedTimer]) cgMyBetsByTimer[capturedTimer] = [];
+      cgMyBetsByTimer[capturedTimer].unshift({
+        id: data.betId, timer: capturedTimer, round: data.periodId, bet: amt,
+        selection: selLabel, selColor, status: 'pending',
+        result: '⏳ Waiting...', resultBg: 'rgba(240,192,64,0.3)', pl: null, timestamp: Date.now()
+      });
+      cgMyBets = cgMyBetsByTimer[cgTimer] || [];
+      cgMyBetsPage = 1;
+      renderMyBets();
+    } catch(e) {
+      showToast('❌ Bet failed. Please try again.');
+    } finally {
+      setTimeout(() => {
         cgSelectedColor = null; cgSelectedNum = null; cgSelectedBigSmall = null;
         document.querySelectorAll('.cg-color-btn, .cg-num-btn').forEach(b => b.classList.remove('selected'));
+        const btn = document.getElementById('cgConfirmBtn');
+        if (btn) { btn.textContent = 'Select'; btn.className = 'cg-confirm-btn default-btn'; btn.disabled = !cgBettingOpen; }
         _isPlacingBet = false;
-      }
-    }, 1500);
-    window._cgActualBet = capturedActualAmt;
-    const selColor = capturedColor === 'green' ? '#27ae60' : capturedColor === 'red' ? '#e02020' : capturedColor === 'violet' ? '#7c4dff' : capturedBS === 'big' ? '#ffd700' : capturedBS === 'small' ? '#2563eb' : '#aaa';
-    const selLabel = capturedColor ? capturedColor.charAt(0).toUpperCase()+capturedColor.slice(1) : capturedBS ? capturedBS.charAt(0).toUpperCase()+capturedBS.slice(1) : 'No.'+capturedNum;
-    if (!window._cgPendingBets) window._cgPendingBets = [];
-    const pendingBetObj = {
-      round: capturedRound, bet: capturedAmt, actualBet: capturedActualAmt,
-      selection: selLabel, selColor,
-      savedColor: capturedColor, savedNum: capturedNum, savedBS: capturedBS,
-      timer: capturedTimer, timestamp: Date.now()
-    };
-    window._cgPendingBets.push(pendingBetObj);
-    window._cgPendingBet = window._cgPendingBets[window._cgPendingBets.length - 1];
-    try {
-      const db2 = window.fbDB || fbDB;
-      if (db2 && window.currentUser) {
-        const pendingKey = 'p_' + capturedTimer + '_' + capturedRound + '_' + Date.now();
-        db2.ref('users/' + window.currentUser.uid + '/wingoPendingBets/' + pendingKey).set(pendingBetObj);
-        pendingBetObj._firebaseKey = pendingKey;
-      }
-    } catch(e) {}
-    if (!cgMyBetsByTimer[capturedTimer]) cgMyBetsByTimer[capturedTimer] = [];
-    const pendingEntry = {
-      round: capturedRound, bet: capturedAmt, actualBet: capturedActualAmt,
-      selection: selLabel, selColor,
-      result: '⏳ Waiting...', resultBg: 'rgba(240,192,64,0.3)',
-      pl: null, status: 'pending', timestamp: Date.now(),
-      _firebaseKey: pendingBetObj._firebaseKey
-    };
-    cgMyBetsByTimer[capturedTimer].unshift(pendingEntry);
-    cgMyBetsPage = 1;
-    renderMyBets();
-    try {
-      const db = window.fbDB || fbDB;
-      const user = window.currentUser;
-      if (db && user) {
-        const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
-        const currentBal = parseFloat(balSnap.val() || 0);
-        if (currentBal < capturedAmt) { showToast('❌ Insufficient balance!'); return; }
-        await db.ref('users/' + user.uid + '/balance').transaction(bal => {
-          const current = parseFloat(bal || 0);
-          if (current < capturedAmt) return; // abort if insufficient
-          return parseFloat((current - capturedAmt).toFixed(2));
-        });
-        updateBalanceDisplay(currentBal - capturedAmt);
-
-        // Write dailyBets client-side for instant Activity Award update
-        // Game engine does NOT write dailyBets to avoid double counting
-        try {
-          const todayKey = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
-          const fbdb = window.fbDB;
-          const uid = user.uid;
-          if (fbdb && uid) {
-            fbdb.ref('users/' + uid + '/dailyBets/' + todayKey).transaction(function(val) {
-              return parseFloat(((val || 0) + capturedAmt).toFixed(2));
-            });
-            fbdb.ref('pendingBetsIndex/wingo' + capturedTimer + 'min/' + uid).set(true);
-          }
-        } catch(e) { console.warn('dailyBets update failed:', e); }
-
-        const roundKey = 'wingo' + cgTimer + 'min_round_' + cgRoundByTimer[cgTimer];
-        const userBetsSnap = await db.ref('users/' + user.uid + '/roundBets/' + roundKey).once('value');
-        const prevBets = userBetsSnap.val() || {};
-        let isHedging = false;
-        const newSel = cgSelectedColor || cgSelectedBigSmall;
-        const prevSelections = Object.keys(prevBets);
-
-        for (const prev of prevSelections) {
-          if ((newSel === 'red' && prev === 'green') || (newSel === 'green' && prev === 'red')) { isHedging = true; break; }
-          if ((newSel === 'big' && prev === 'small') || (newSel === 'small' && prev === 'big')) { isHedging = true; break; }
-        }
-
-        if (isHedging) {
-          const newBal = parseFloat((currentBal - amt).toFixed(2));
-          const penalty = parseFloat((newBal * 1.5).toFixed(2));
-          const wagerSnap = await db.ref('users/' + user.uid + '/wager').once('value');
-          const wager = wagerSnap.val() || { required: 0, completed: 0 };
-          const newRequired = parseFloat((parseFloat(wager.required || 0) + penalty).toFixed(2));
-          await db.ref('users/' + user.uid + '/wager').update({ required: newRequired });
-          await db.ref('users/' + user.uid + '/fraudLog/' + Date.now()).set({
-            type: 'hedge_bet',
-            detail: 'Bet on ' + newSel + ' after ' + prevSelections.join(','),
-            round: cgRoundByTimer[cgTimer],
-            mode: cgTimer + 'min',
-            penalty,
-            timestamp: Date.now()
-          });
-
-          showToast('⚠️ Suspicious betting detected! Wager requirement increased.');
-        }
-        if (newSel) {
-          await db.ref('users/' + user.uid + '/roundBets/' + roundKey + '/' + newSel).set(true);
-        }
-        const vipExp = Math.floor(amt / 100);
-        if (vipExp > 0) addVipExp(vipExp);
-        const wagerSnap2 = await db.ref('users/' + user.uid + '/wager').once('value');
-        const wager2 = wagerSnap2.val();
-        if (wager2 && wager2.required > 0 && wager2.completed < wager2.required) {
-          // Only count bets placed AFTER the wager startedAt timestamp
-          const betTime = Date.now();
-          const startedAt = wager2.startedAt || 0;
-          if (betTime >= startedAt) {
-            const newCompleted = parseFloat((parseFloat(wager2.completed || 0) + amt).toFixed(2));
-            await db.ref('users/' + user.uid + '/wager/completed').set(newCompleted);
-            // If wager now complete, reset everything cleanly
-            if (newCompleted >= wager2.required) {
-              await db.ref('users/' + user.uid + '/wager').set({ required: 0, completed: 0, startedAt: 0 });
-            }
-          }
-        }
-        const totalBetSnap = await db.ref('users/' + user.uid + '/totalBet').once('value');
-        const newTotalBet = parseFloat(((totalBetSnap.val() || 0) + amt).toFixed(2));
-        await db.ref('users/' + user.uid + '/totalBet').set(newTotalBet);
-        try {
-          const chainSnap = await db.ref('users/' + user.uid + '/referrerChain').once('value');
-          const chain = chainSnap.val();
-          if (chain) {
-            if (!window._commRates) {
-              const ratesSnap = await db.ref('settings/commissionRates').once('value');
-              const rates = ratesSnap.val() || {};
-              window._commRates = {
-                1: (rates.l1 != null ? rates.l1 : 1) / 100,
-                2: (rates.l2 != null ? rates.l2 : 0.8) / 100,
-                3: (rates.l3 != null ? rates.l3 : 0.5) / 100,
-                4: (rates.l4 != null ? rates.l4 : 0.2) / 100,
-              };
-              setTimeout(() => { window._commRates = null; }, 600000);
-            }
-
-            const todayKey = new Date().toISOString().split('T')[0];
-            const profile = window.userProfile;
-
-            for (let level = 1; level <= 4; level++) {
-              const referrerUid = chain['l' + level];
-              if (!referrerUid) continue;
-
-              const commAmt = parseFloat((amt * window._commRates[level]).toFixed(2));
-              if (commAmt <= 0) continue;
-
-              const refKey = level === 1 ? 'referrals' : 'referrals_l' + level;
-              await Promise.all([
-                db.ref('users/' + referrerUid + '/balance').transaction(bal => parseFloat(((bal || 0) + commAmt).toFixed(2))),
-                db.ref('users/' + referrerUid + '/' + refKey + '/' + user.uid + '/totalBet').transaction(v => parseFloat(((v || 0) + amt).toFixed(2))),
-                db.ref('users/' + referrerUid + '/' + refKey + '/' + user.uid + '/commission').transaction(v => parseFloat(((v || 0) + commAmt).toFixed(2))),
-                db.ref('users/' + referrerUid + '/dailyCommission/' + todayKey).transaction(v => parseFloat(((v || 0) + commAmt).toFixed(2))),
-                db.ref('users/' + referrerUid + '/transactions/' + Date.now() + '_c' + level).set({
-                  type: 'commission',
-                  amount: commAmt,
-                  from: user.uid,
-                  fromMemberId: profile ? (profile.memberId || '') : '',
-                  level: level,
-                  betAmt: amt,
-                  timestamp: Date.now(),
-                  description: 'L' + level + ' referral bet commission'
-                })
-              ]);
-            }
-          }
-        } catch(refErr) { /* suppressed */ }
-      }
-    } catch(e) { /* suppressed */ }
-    try {
-      const db = window.fbDB || fbDB;
-      if (db) {
-        const path = 'wingo/wingo' + cgTimer + 'min/betSummary';
-        const snap = await db.ref(path).once('value');
-        const summary = snap.val() || {};
-        const key = selLabel.toLowerCase().replace(/\s/g, '_') + '_' + Date.now();
-        let betType = 'color', betValue = selLabel.toLowerCase();
-        if (capturedNum !== null && capturedNum !== undefined) { betType = 'number'; betValue = String(capturedNum); }
-        else if (capturedBS) { betType = 'bigsmall'; betValue = capturedBS.toLowerCase(); }
-        else if (capturedColor) { betType = 'color'; betValue = capturedColor.toLowerCase(); }
-        summary[key] = { type: betType, value: betValue, amount: amt, timestamp: Date.now() };
-        await db.ref(path).set(summary);
-      }
-    } catch(e) { /* suppressed */ }
-  }
-
-  async function resolveRoundForTimer(timerMode, roundStartTime) {
-    roundStartTime = roundStartTime || Date.now();
-    const currentRound = cgRoundByTimer[timerMode];
-    const roundToResolve = currentRound - 1;
-
-    // First check in-memory pending bets
-    let pendingBetsForRound = (window._cgPendingBets || []).filter(b =>
-      (b.timer === timerMode || !b.timer) &&
-      (b.round === roundToResolve || b.round === currentRound)
-    );
-
-    // If nothing in memory, load from Firebase — covers page refresh case
-    if (pendingBetsForRound.length === 0) {
-      try {
-        const dbLoad = window.fbDB || fbDB;
-        const userLoad = window.currentUser;
-        if (dbLoad && userLoad) {
-          const pSnap = await dbLoad.ref('users/' + userLoad.uid + '/wingoPendingBets').once('value');
-          if (pSnap.val()) {
-            const fromFirebase = Object.entries(pSnap.val())
-              .map(([k, v]) => ({ ...v, _firebaseKey: k }))
-              .filter(b => (b.timer === timerMode || !b.timer) &&
-                (b.round === roundToResolve || b.round === currentRound));
-            if (fromFirebase.length > 0) {
-              window._cgPendingBets = window._cgPendingBets || [];
-              fromFirebase.forEach(b => {
-                if (!window._cgPendingBets.some(p => p.round === b.round && p.selection === b.selection)) {
-                  window._cgPendingBets.push(b);
-                }
-              });
-              pendingBetsForRound = fromFirebase;
-            }
-          }
-        }
-      } catch(e) {}
-    }
-
-    // Clean up resolved rounds from memory
-    window._cgPendingBets = (window._cgPendingBets || []).filter(b =>
-      !(  (b.timer === timerMode || !b.timer) &&
-          (b.round === roundToResolve || b.round === currentRound)  )
-    );
-    window._cgPendingBet = null;
-
-    const firstBet = pendingBetsForRound[0] || null;
-    const savedSelectedColor = firstBet ? firstBet.savedColor : cgSelectedColor;
-    const savedSelectedNum = firstBet ? (firstBet.savedNum !== undefined ? firstBet.savedNum : null) : cgSelectedNum;
-    const savedSelectedBS = firstBet ? firstBet.savedBS : cgSelectedBigSmall;
-    const isActiveTimer = (timerMode === cgTimer);
-    let winNum;
-    const timerKey = 'wingo/wingo' + timerMode + 'min';
-    try {
-      if (!window.fbDB && !fbDB) {
-        await new Promise(r => setTimeout(r, 1000));
-        if (typeof firebase !== 'undefined' && firebase.apps.length > 0) {
-          window.fbDB = firebase.database();
-          fbDB = window.fbDB;
-        }
-      }
-      const db = window.fbDB || fbDB;
-      if (db) {
-        const histSnap = await db.ref(timerKey + '/history')
-          .orderByChild('round').equalTo(currentRound - 1)
-          .limitToLast(3).once('value');
-        if (histSnap.val()) {
-          const entries = Object.values(histSnap.val())
-            .filter(e => e.round === currentRound - 1);
-          if (entries.length > 0 && entries[0].num !== undefined) {
-            winNum = parseInt(entries[0].num);
-          }
-        }
-        if (winNum === undefined) {
-          const lastSnap = await db.ref(timerKey + '/lastResult').once('value');
-          const lastTimeSnap = await db.ref(timerKey + '/lastResultTime').once('value');
-          const lastVal = lastSnap.val();
-          const lastTime = lastTimeSnap.val() || 0;
-          if (lastVal !== null && parseInt(lastVal) >= 0 && parseInt(lastVal) <= 9
-              && lastTime > roundStartTime - 5000) {
-            winNum = parseInt(lastVal);
-          }
-        }
-        if (winNum === undefined) {
-          const snap = await db.ref(timerKey + '/currentResult').once('value');
-          const val = snap.val();
-          if (val !== null && parseInt(val) >= 0 && parseInt(val) <= 9) {
-            winNum = parseInt(val);
-          }
-        }
-        if (winNum === undefined) {
-          // console.warn('Result not in Firebase yet for round', currentRound - 1, '— keeping pending');
-          return;
-        }
-      } else {
-        // console.warn('No Firebase DB — cannot resolve');
-        return;
-      }
-    } catch(e) {
-      // console.warn('Firebase read failed — keeping bet pending:', e);
-      return; // Don't resolve on error
-    }
-    const winColorRaw = numColors[winNum];
-    let winColor;
-    if (winColorRaw === 'violet-red') winColor = 'violet-red';
-    else if (winColorRaw === 'violet-green') winColor = 'violet-green';
-    else if (winColorRaw === '#e02020') winColor = 'red';
-    else winColor = 'green';
-
-    const bigSmall = winNum >= 5 ? 'Big' : 'Small';
-    const firstPendingBet = pendingBetsForRound[0];
-    const betAmt = firstPendingBet ? firstPendingBet.bet : (parseInt(document.getElementById('cgBetAmt').value) || 10);
-    const actualBet = firstPendingBet ? (firstPendingBet.actualBet || Math.round(betAmt * (1 - cgSettings.fee))) : (window._cgActualBet || Math.round(betAmt * (1 - cgSettings.fee)));
-    let won = false, winAmt = 0;
-    if (savedSelectedColor === 'violet' && (winColor === 'violet-red' || winColor === 'violet-green')) { won=true; winAmt=actualBet*cgSettings.violetPayout; }
-    else if (savedSelectedColor === 'red' && winColor === 'red') { won=true; winAmt=actualBet*cgSettings.colorPayout; }
-    else if (savedSelectedColor === 'green' && winColor === 'green') { won=true; winAmt=actualBet*cgSettings.colorPayout; }
-    else if (savedSelectedColor === 'red' && winColor === 'violet-red') { won=true; winAmt=actualBet*cgSettings.colorOnVioletPayout; }
-    else if (savedSelectedColor === 'green' && winColor === 'violet-green') { won=true; winAmt=actualBet*cgSettings.colorOnVioletPayout; }
-    else if (savedSelectedNum !== null && savedSelectedNum === winNum) { won=true; winAmt=actualBet*cgSettings.numPayout; }
-    else if (savedSelectedBS === 'big' && winNum >= 5) { won=true; winAmt=actualBet*cgSettings.bigSmallPayout; }
-    else if (savedSelectedBS === 'small' && winNum <= 4) { won=true; winAmt=actualBet*cgSettings.bigSmallPayout; }
-    const histBg = winColor === 'violet-red'
-      ? 'linear-gradient(135deg, #7c4dff 50%, #e02020 50%)'
-      : winColor === 'violet-green'
-      ? 'linear-gradient(135deg, #7c4dff 50%, #27ae60 50%)'
-      : winColor === 'red' ? '#e02020' : '#27ae60';
-    const histColorLabel = (winColor === 'violet-red' || winColor === 'violet-green') ? 'violet' : winColor;
-    const timerRound = cgRoundByTimer[timerMode] || 20250513001;
-    const resolvedRoundId = currentRound - 1;
-    if (!cgHistoryByTimer[timerMode]) cgHistoryByTimer[timerMode] = [];
-    try {
-      const db = window.fbDB || fbDB;
-      if (db) {
-        const histPath = 'wingo/wingo' + timerMode + 'min/history';
-        await db.ref(histPath).push({ round: resolvedRoundId, num: winNum, color: histColorLabel, bigSmall, histBg, timestamp: Date.now() });
-      }
-    } catch(e) { /* suppressed */ }
-    if (cgHistory.length > 20) cgHistory.pop();
-    if (cgTimer === timerMode) {
-      const roundEl = document.getElementById('cgRoundNum');
-      if (roundEl) roundEl.textContent = cgRoundByTimer[cgTimer];
-    }
-
-    renderHistRows();
-    if (pendingBetsForRound.length > 0) {
-      let totalWin = 0;
-      let anyWon = false;
-
-      for (const pendingBet of pendingBetsForRound) {
-          const betActual = pendingBet.actualBet || Math.round(pendingBet.bet * (1 - cgSettings.fee));
-          let betWon = false, betWinAmt = 0;
-
-          if (pendingBet.savedColor === 'violet' && (winColor === 'violet-red' || winColor === 'violet-green')) { betWon=true; betWinAmt=betActual*cgSettings.violetPayout; }
-          else if (pendingBet.savedColor === 'red' && winColor === 'red') { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
-          else if (pendingBet.savedColor === 'green' && winColor === 'green') { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
-          else if (pendingBet.savedColor === 'red' && winColor === 'violet-red') { betWon=true; betWinAmt=betActual*cgSettings.colorOnVioletPayout; }
-          else if (pendingBet.savedColor === 'green' && winColor === 'violet-green') { betWon=true; betWinAmt=betActual*cgSettings.colorOnVioletPayout; }
-          else if (pendingBet.savedNum !== null && pendingBet.savedNum !== undefined && parseInt(pendingBet.savedNum) === winNum) { betWon=true; betWinAmt=betActual*cgSettings.numPayout; }
-          else if (pendingBet.savedBS === 'big' && winNum >= 5) { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
-          else if (pendingBet.savedBS === 'small' && winNum <= 4) { betWon=true; betWinAmt=betActual*cgSettings.colorPayout; }
-
-          if (betWon) { totalWin += betWinAmt; anyWon = true; }
-          const pendingIdx = cgMyBetsByTimer[timerMode].findIndex(b =>
-            b.status === 'pending' && b.round === pendingBet.round && b.selection === pendingBet.selection && b.bet === pendingBet.bet
-          );
-          const betRecord = {
-            round: pendingBet.round, bet: pendingBet.bet,
-            selection: pendingBet.selection, selColor: pendingBet.selColor,
-            result: histColorLabel + ' / ' + winNum, resultBg: histBg,
-            pl: betWon ? Math.round(betWinAmt) : -pendingBet.bet,
-            status: betWon ? 'won' : 'lost',
-            timer: timerMode, timestamp: Date.now()
-          };
-          if (pendingIdx !== -1) {
-            cgMyBetsByTimer[timerMode][pendingIdx] = betRecord;
-          } else {
-            cgMyBetsByTimer[timerMode].unshift(betRecord);
-          }
-          if (cgMyBetsByTimer[timerMode].length > 50) cgMyBetsByTimer[timerMode].pop();
-          try {
-            const db3 = window.fbDB || fbDB;
-            if (db3 && window.currentUser && pendingBet._firebaseKey) {
-              db3.ref('users/' + window.currentUser.uid + '/wingoPendingBets/' + pendingBet._firebaseKey).remove();
-            }
-          } catch(e) {}
-          addBetToHistory('WinGo', pendingBet.bet, histColorLabel + ' / ' + winNum, betWinAmt.toFixed(0), betWon, timerRound.toString(), 0, timerMode, pendingBet.selection);
-          try {
-            const db2 = window.fbDB || fbDB;
-            if (db2 && window.currentUser) {
-              const key = 'wingo' + timerMode + 'min_round_' + pendingBet.round + '_' + Date.now();
-              db2.ref('users/' + window.currentUser.uid + '/wingoMyBets/' + key).set(betRecord);
-            }
-          } catch(e) {}
-        }
-
-        renderMyBets();
-        if (isActiveTimer) {
-          const resolvedRound = pendingBetsForRound[0] ? pendingBetsForRound[0].round : (currentRound - 1);
-          showCGResult(anyWon, winNum, winColor, totalWin, pendingBetsForRound.reduce((s,b)=>s+b.bet,0), resolvedRound);
-        }
-        if (anyWon && totalWin > 0) {
-          try {
-            const db = window.fbDB || fbDB;
-            const user = window.currentUser;
-            if (db && user) {
-              await db.ref('users/' + user.uid + '/balance').transaction(bal => {
-                return parseFloat(((bal || 0) + totalWin).toFixed(2));
-              });
-            }
-          } catch(e) { /* suppressed */ }
-        }
-    }
-
-    window._cgActualBet = null;
-    try {
-      const db = window.fbDB || fbDB;
-      if (db) await db.ref('wingo/wingo' + timerMode + 'min/betSummary').remove();
-    } catch(e) {}
-    if (isActiveTimer) {
-      cgSelectedColor = null; cgSelectedNum = null; cgSelectedBigSmall = null;
-      document.querySelectorAll('.cg-color-btn, .cg-num-btn').forEach(b => b.classList.remove('selected'));
+      }, 800);
     }
   }
 
@@ -7150,7 +6037,7 @@
       const plColor = isPending ? 'var(--gold)' : b.pl > 0 ? 'var(--green)' : b.pl < 0 ? 'var(--red2)' : 'var(--muted)';
       const plText = isPending ? '⏳' : b.pl > 0 ? '+₹'+b.pl : b.pl < 0 ? '−₹'+Math.abs(b.pl) : '—';
       const rowStyle = isPending ? 'border:1px solid rgba(240,192,64,0.3);background:rgba(240,192,64,0.04);' : '';
-      const _ts = b.timestamp ? new Date(b.timestamp) : null;
+      const _ts = b.timestamp ? new Date(Number(b.timestamp)) : null;
       const _timeStr = _ts ? (
         String(_ts.getFullYear()).slice(2) + '/' +
         String(_ts.getMonth()+1).padStart(2,'0') + '/' +
@@ -7268,9 +6155,30 @@
     };
     if (map[page]) { const btn = document.getElementById(map[page]); if (btn) btn.classList.add('active'); }
   }
-  let betHistoryData = []; // Loaded from Firebase
+  let betHistoryData = []; // Loaded from /api/my-bets
 
   let currentBetFilter = 'all';
+
+  async function loadBetHistoryData() {
+    try {
+      const token = localStorage.getItem('royalwin_token');
+      if (!token) return;
+      const res = await fetch('https://royalwin-api.vercel.app/api/my-bets', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (!data.success) return;
+      betHistoryData = data.bets
+        .map(normalizeBet)
+        .filter(b => b.status !== 'pending')
+        .map(b => ({
+          game: 'WinGo', icon: '🎯', mode: b.timer + 'Min', round: b.round,
+          bet: b.bet, selection: b.selection, won: b.status === 'won',
+          result: b.result, profit: b.status === 'won' ? b.pl : -b.bet,
+          timestamp: b.timestamp
+        }))
+        .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      renderBetHistory(currentBetFilter || 'all');
+    } catch(e) {}
+  }
 
   let allTransactions = [];
   let currentTxFilter = 'all';
@@ -7278,116 +6186,20 @@
   async function loadTransactionHistory() {
     const container = document.getElementById('txHistoryRows');
     if (!container) return;
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) {
+    const token = localStorage.getItem('royalwin_token');
+    if (!token) {
       container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Please log in to view transactions</div>';
       return;
     }
     container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;"><span data-t="common.loading">Loading...</span></div>';
     try {
-      let txs = [];
-      try {
-        const depSnap = await db.ref('adminRequests/deposits').once('value');
-        if (depSnap.val()) {
-          const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
-          const currentBal = parseFloat(balSnap.val() || 0);
-
-          const allDeps = Object.values(depSnap.val()).filter(d => d.uid === user.uid);
-          const approved = allDeps
-            .filter(d => d.status === 'approved')
-            .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0)); // oldest first
-          let runningBal = currentBal;
-          for (let i = approved.length - 1; i >= 0; i--) {
-            const d = approved[i];
-            if (!d.balanceAfter) {
-              approved[i]._computedBal = parseFloat(runningBal.toFixed(2));
-            } else {
-              approved[i]._computedBal = d.balanceAfter;
-            }
-            const totalAmt = (d.amount || 0) + (d.bonusAmt || 0);
-            runningBal = parseFloat((runningBal - totalAmt).toFixed(2));
-          }
-
-          approved.forEach(d => {
-            const totalAmt = (d.amount || 0) + (d.bonusAmt || 0);
-            txs.push({
-              type: 'deposit',
-              amount: totalAmt,
-              details: 'Success',
-              balance: d._computedBal || d.balanceAfter || 0,
-              timestamp: d.timestamp || 0
-            });
-          });
-
-          allDeps.filter(d => d.status === 'rejected' || d.status === 'failed').forEach(d => {
-            txs.push({
-              type: 'deposit',
-              amount: d.amount || 0,
-              details: 'Failed',
-              balance: d.balanceAfter || 0,
-              timestamp: d.timestamp || 0
-            });
-          });
-        }
-      } catch(e) { /* suppressed */ }
-      try {
-        const withSnap = await db.ref('adminRequests/withdrawals').once('value');
-        if (withSnap.val()) {
-          Object.values(withSnap.val())
-            .filter(w => w.uid === user.uid)
-            .forEach(w => {
-              const statusLabel = w.status === 'approved' ? 'Success' : (w.status === 'rejected' || w.status === 'failed') ? 'Failed' : 'Pending';
-              txs.push({
-                type: 'withdrawal',
-                amount: w.amount || 0,
-                details: statusLabel,
-                balance: w.balanceAfter || 0,
-                timestamp: w.timestamp || 0
-              });
-            });
-        }
-      } catch(e) { /* suppressed */ }
-      try {
-        const txSnap = await db.ref('users/' + user.uid + '/transactions').once('value');
-        if (txSnap.val()) {
-          Object.values(txSnap.val()).forEach(tx => {
-            if (tx.type === 'deposit' || tx.type === 'deposit_bonus') return; // skip, handled above
-            txs.push(tx);
-          });
-        }
-      } catch(e) { /* suppressed */ }
-      try {
-        const betSnap = await db.ref('users/' + user.uid + '/betHistory').once('value');
-        if (betSnap.val()) {
-          Object.values(betSnap.val()).forEach(b => {
-            txs.push({
-              type: b.won ? 'win' : 'loss',
-              amount: b.won ? parseFloat(b.profit || 0) : parseFloat(b.bet || 0),
-              details: (b.game || 'Game') + ' · ' + (b.result || '') + (b.won ? '' : ' · Bet lost'),
-              balance: b.balance || 0,
-              timestamp: b.timestamp || 0
-            });
-          });
-        }
-      } catch(e) { /* suppressed */ }
-      // Also include wingoMyBets — game engine writes settled bets here directly
-      try {
-        const wingoSnap = await db.ref('users/' + user.uid + '/wingoMyBets').once('value');
-        if (wingoSnap.val()) {
-          Object.values(wingoSnap.val()).forEach(b => {
-            if (b.status === 'pending') return;
-            txs.push({
-              type: b.status === 'won' ? 'win' : 'loss',
-              amount: b.status === 'won' ? Math.abs(b.pl || 0) : (b.bet || 0),
-              details: 'WinGo ' + (b.timer || 1) + 'Min · ' + (b.selection || '') + ' → ' + (b.result || ''),
-              balance: 0,
-              timestamp: b.timestamp || 0
-            });
-          });
-        }
-      } catch(e) { /* suppressed */ }
-      window.allTransactions = txs.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+      const res = await fetch('https://royalwin-api.vercel.app/api/transactions', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (!data.success) {
+        container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Error loading transactions</div>';
+        return;
+      }
+      window.allTransactions = data.transactions.map(tx => ({ ...tx, timestamp: Number(tx.timestamp) }));
       renderTxRows(window.allTransactions);
     } catch(e) {
       console.error('Transaction history error:', e);
@@ -7438,6 +6250,11 @@
       invitation_bonus:  { icon:'👥', label:'Invitation Bonus',  color:'#27ae60', sign:'+' },
       activity_award:    { icon:'🎯', label:'Activity Award',    color:'#27ae60', sign:'+' },
       gift:              { icon:'🎁', label:'Gift Code',         color:'#27ae60', sign:'+' },
+      bet_place:         { icon:'🎮', label:'Bet Placed',        color:'#e02020', sign:'-' },
+      withdrawal_request:{ icon:'⬆️', label:'Withdrawal Requested', color:'#e02020', sign:'-' },
+      weekly_rebate:     { icon:'💰', label:'Weekly Rebate',      color:'#27ae60', sign:'+' },
+      admin_credit:      { icon:'➕', label:'Credit',             color:'#27ae60', sign:'+' },
+      admin_deduct:      { icon:'➖', label:'Debit',              color:'#e02020', sign:'-' },
     };
 
     const totalPages = Math.max(1, Math.ceil(txs.length / _txPageSize));
@@ -7637,15 +6454,6 @@
         } catch(e) { /* suppressed */ }
       }
       try {
-        firebase.database().ref('users/' + uid + '/betHistory').on('value', histSnap => {
-          if (histSnap.val()) {
-            betHistoryData = Object.values(histSnap.val())
-              .sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
-            renderBetHistory(currentBetFilter || 'all');
-          }
-        });
-      } catch(e) {}
-      try {
         const txSnap = await firebase.database().ref('users/' + uid + '/transactions').once('value');
         if (txSnap.val()) {
           window.userTransactions = Object.values(txSnap.val())
@@ -7731,10 +6539,24 @@
         }
       } catch(e) {}
       updateProfilePage(profile);
-      firebase.database().ref('users/' + uid + '/balance').on('value', (snap) => {
-        updateBalanceDisplay(snap.val() || 0);
-      });
+      startBalancePolling();
     } catch(e) { /* suppressed */ }
+  }
+
+  let _balancePollInterval = null;
+  async function pollBalance() {
+    try {
+      const token = localStorage.getItem('royalwin_token');
+      if (!token) return;
+      const res = await fetch('https://royalwin-api.vercel.app/api/user', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (data.success) updateBalanceDisplay(data.user.balance || 0);
+    } catch(e) {}
+  }
+  function startBalancePolling() {
+    pollBalance();
+    if (_balancePollInterval) clearInterval(_balancePollInterval);
+    _balancePollInterval = setInterval(pollBalance, 5000);
   }
 
   function updateBalanceDisplay(balance) {
@@ -7765,22 +6587,12 @@
   }
 
   function refreshCgBalance() {
-    const db = window.fbDB || fbDB;
-    const user = window.currentUser;
-    if (!db || !user) return;
     const btn = document.querySelector('[onclick="refreshCgBalance()"]');
     if (btn) { btn.classList.add('spinning'); setTimeout(() => btn.classList.remove('spinning'), 700); }
-    db.ref('users/' + user.uid + '/balance').once('value').then(snap => {
-      updateBalanceDisplay(snap.val() || 0);
-    });
+    pollBalance();
   }
   function updateMobileHomeBalance() {
-    const db = window.fbDB || fbDB;
-    const user = window.currentUser;
-    if (!db || !user) return;
-    db.ref('users/' + user.uid + '/balance').on('value', snap => {
-      updateBalanceDisplay(snap.val() || 0);
-    });
+    pollBalance();
   }
   window.updateMobileHomeBalance = updateMobileHomeBalance;
 
@@ -7856,27 +6668,16 @@
       fbDB = firebase.database();
       window.fbDB = fbDB;
       window.fbAuth = firebase.auth();
-      // ── LOADER: Only hidden by onAuthStateChanged below. Safety net at 6s for very slow connections. ──
+      // ── LOADER: Only hidden by onAuthChange below. Safety net at 6s for very slow connections. ──
 
-      firebase.auth().onAuthStateChanged((user) => {
+      restoreSession().then(onAuthChange);
+
+      function onAuthChange(user) {
         if (user) {
           window.currentUser = user;
           isLoggedIn = true;
           loadUserProfile(user.uid);
-          loadNotifications();
-          // ── CHAT UNREAD BADGE ──
-          if (window._chatUnreadListener) {
-            try { (window.fbDB||fbDB).ref('chats/' + user.uid + '/messages').off('value', window._chatUnreadListener); } catch(e) {}
-          }
-          window._chatUnreadListener = (window.fbDB||fbDB).ref('chats/' + user.uid + '/messages').on('value', snap => {
-            const msgs = snap.val() || {};
-            const unread = Object.values(msgs).filter(m => m.sender === 'admin' && !m.readByUser).length;
-            const badge = document.getElementById('chatUnreadBadge');
-            if (badge) {
-              badge.textContent = unread > 9 ? '9+' : unread;
-              badge.style.display = unread > 0 ? 'flex' : 'none';
-            }
-          });
+          startNotificationsPolling();
           checkDepositBonus();
           // ── DAILY LOGIN EXP (2 EXP per day) ──
           (async () => {
@@ -7893,117 +6694,12 @@
           })();
           loadAnnouncement();
 
-          // ── PERSISTENT REAL-TIME BET RESULT LISTENER ──
-          // Fires the instant game engine writes a settled bet to wingoMyBets
-          // Works regardless of whether game overlay is open or closed
-          const dbPersist = window.fbDB || fbDB;
-          if (dbPersist) {
-            if (window._wingoMyBetsListener) {
-              try { dbPersist.ref('users/' + user.uid + '/wingoMyBets').off('child_added', window._wingoMyBetsListener); } catch(e) {}
-            }
-            window._wingoMyBetsListener = dbPersist.ref('users/' + user.uid + '/wingoMyBets')
-              .limitToLast(20).on('child_added', snap => {
-                const bet = snap.val();
-                if (!bet || bet.status === 'pending') return;
-                const t = bet.timer || 1;
-                if (!cgMyBetsByTimer[t]) cgMyBetsByTimer[t] = [];
-                const idx = cgMyBetsByTimer[t].findIndex(b =>
-                  b.round === bet.round && b.selection === bet.selection && b.timestamp === bet.timestamp
-                );
-                if (idx !== -1) cgMyBetsByTimer[t][idx] = bet;
-                else cgMyBetsByTimer[t].unshift(bet);
-                // Show result popup only for bets settled in the last 2 minutes
-                // (prevents popup firing for old bets when listener first attaches)
-                const isRecent = (Date.now() - (bet.timestamp || 0)) < 120000;
-                if (isRecent && document.getElementById('colorGameOverlay')?.classList.contains('open') && t === cgTimer) {
-                  const won = bet.status === 'won';
-                  const parts = (bet.result || '').split('/').map(s => s.trim());
-                  const num = parseInt(parts[1]);
-                  const colorRaw = {0:'violet-red',1:'green',2:'red',3:'green',4:'red',5:'violet-green',6:'red',7:'green',8:'red',9:'green'}[num] || parts[0];
-                  const winAmt = won ? Math.abs(bet.pl || 0) : 0;
-                  showCGResult(won, isNaN(num) ? undefined : num, colorRaw, winAmt, bet.bet || 0, bet.round);
-                }
-                // Update My Bets UI if game is open
-                if (document.getElementById('colorGameOverlay')?.classList.contains('open')) {
-                  cgMyBets = cgMyBetsByTimer[cgTimer] || [];
-                  renderMyBets();
-                }
-                // Remove from in-memory pending array
-                window._cgPendingBets = (window._cgPendingBets || []).filter(b =>
-                  !(b.round === bet.round && b.selection === bet.selection && b.timestamp === bet.timestamp)
-                );
-              });
-          }
-
-          // ── BACKGROUND BET SETTLER ──
-          // Runs every 30 seconds regardless of whether the game is open.
-          // Checks Firebase for any pending bets that now have results available
-          // and settles them immediately — so users always see up-to-date results
-          // in My Bets even when they're navigating around the app.
-          if (window._bgSettleInterval) clearInterval(window._bgSettleInterval);
-          const bgSettle = async () => {
-            const dbBg = window.fbDB || fbDB;
-            const userBg = window.currentUser;
-            if (!dbBg || !userBg) return;
-            try {
-              const pSnap = await dbBg.ref('users/' + userBg.uid + '/wingoPendingBets').once('value');
-              if (!pSnap.val()) return;
-              const pending = Object.entries(pSnap.val()).map(([k,v]) => ({...v, _firebaseKey:k}));
-              if (pending.length === 0) return;
-              const rounds = [...new Set(pending.map(b => ({ round: b.round, timer: b.timer||1 })).map(JSON.stringify))].map(JSON.parse);
-              for (const {round, timer} of rounds) {
-                const hSnap = await dbBg.ref('wingo/wingo' + timer + 'min/history')
-                  .orderByChild('round').equalTo(round).limitToLast(1).once('value');
-                if (!hSnap.val()) continue;
-                const roundData = Object.values(hSnap.val())[0];
-                if (!roundData) continue;
-                const roundBets = pending.filter(b => b.round === round && (b.timer||1) === timer);
-                for (const bet of roundBets) {
-                  const winNum = parseInt(roundData.num);
-                  const winColorRaw = roundData.color;
-                  const FEE = 0.04;
-                  const actualBet = bet.actualBet || Math.round((bet.bet||0)*(1-FEE));
-                  let betWon = false, betWinAmt = 0;
-                  const sc = bet.savedColor, sn = bet.savedNum, sb = bet.savedBS;
-                  if (sc==='violet'&&(winColorRaw==='violet'||winColorRaw==='violet-red'||winColorRaw==='violet-green')){betWon=true;betWinAmt=actualBet*4.5;}
-                  else if (sc==='red'&&winColorRaw==='red'){betWon=true;betWinAmt=actualBet*2;}
-                  else if (sc==='red'&&winColorRaw==='violet-red'){betWon=true;betWinAmt=actualBet*1.5;}
-                  else if (sc==='green'&&winColorRaw==='green'){betWon=true;betWinAmt=actualBet*2;}
-                  else if (sc==='green'&&winColorRaw==='violet-green'){betWon=true;betWinAmt=actualBet*1.5;}
-                  else if (sn!==null&&sn!==undefined&&parseInt(sn)===winNum){betWon=true;betWinAmt=actualBet*9;}
-                  else if (sb==='big'&&winNum>=5){betWon=true;betWinAmt=actualBet*2;}
-                  else if (sb==='small'&&winNum<=4){betWon=true;betWinAmt=actualBet*2;}
-                  const histLabel = (winColorRaw==='violet-red'||winColorRaw==='violet-green')?'violet':winColorRaw;
-                  const betRecord = {
-                    round:bet.round, bet:bet.bet, actualBet,
-                    selection:bet.selection, selColor:bet.selColor,
-                    result:histLabel+' / '+winNum, resultBg:roundData.histBg||'#27ae60',
-                    pl:betWon?Math.round(betWinAmt):-bet.bet,
-                    status:betWon?'won':'lost', timer, timestamp:Date.now()
-                  };
-                  if (!cgMyBetsByTimer[timer]) cgMyBetsByTimer[timer] = [];
-                  const idx = cgMyBetsByTimer[timer].findIndex(b=>b.round===bet.round&&b.selection===bet.selection);
-                  if (idx!==-1) cgMyBetsByTimer[timer][idx]=betRecord;
-                  else cgMyBetsByTimer[timer].unshift(betRecord);
-                  if (betWon&&betWinAmt>0) {
-                    dbBg.ref('users/'+userBg.uid+'/balance').transaction(bal=>parseFloat(((bal||0)+betWinAmt).toFixed(2)));
-                  }
-                  dbBg.ref('users/'+userBg.uid+'/wingoPendingBets/'+bet._firebaseKey).remove();
-                  const rk='wingo'+timer+'min_round_'+bet.round+'_'+Date.now();
-                  dbBg.ref('users/'+userBg.uid+'/wingoMyBets/'+rk).set(betRecord);
-                }
-              }
-              // Update My Bets UI if game is open
-              if (document.getElementById('colorGameOverlay')?.classList.contains('open')) {
-                cgMyBets = cgMyBetsByTimer[cgTimer] || [];
-                renderMyBets();
-              }
-            } catch(e) {}
-          };
-          // Run immediately on login, then every 30 seconds
-          window._bgSettle = bgSettle;
-          setTimeout(bgSettle, 500);
-          window._bgSettleInterval = setInterval(bgSettle, 30000);
+          // ── MY BETS POLLING ──
+          // game-engine.js settles bets server-side; this just refreshes status and
+          // shows the result popup if the color game overlay is open on that timer.
+          if (window._myBetsPollInterval) clearInterval(window._myBetsPollInterval);
+          setTimeout(loadMyBets, 500);
+          window._myBetsPollInterval = setInterval(loadMyBets, 15000);
           document.getElementById('navGuest').style.display = 'none';
           const loader = document.getElementById('appLoader');
           if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 400); }
@@ -8081,7 +6777,8 @@
           const loaderOut = document.getElementById('appLoader');
           if (loaderOut) { loaderOut.style.opacity = '0'; setTimeout(() => loaderOut.style.display = 'none', 400); }
         }
-      });
+      }
+      window.onAuthChange = onAuthChange;
 
       // ── SAFETY NET: If Firebase takes too long, hide loader after 6 seconds ──
       setTimeout(() => {
@@ -8091,28 +6788,6 @@
           setTimeout(() => loader.style.display = 'none', 400);
         }
       }, 6000);
-      fbDB.ref('wingo/currentResult').once('value').then(snap => {
-      }).catch(e => console.error('Firebase read error:', e));
-      const cgScheduleByTimer = {1: [], 3: [], 5: []};
-      window.cgScheduleByTimer = cgScheduleByTimer;
-      [1,3,5].forEach(mins => {
-        fbDB.ref('wingo/wingo' + mins + 'min/schedule').on('value', (snap) => {
-          if (snap.val()) {
-            cgScheduleByTimer[mins] = Object.values(snap.val());
-          } else {
-            cgScheduleByTimer[mins] = [];
-          }
-        });
-      });
-      fbDB.ref('.info/serverTimeOffset').on('value', (snap) => {
-        window._serverTimeOffset = snap.val() || 0;
-      });
-      fbDB.ref('.info/serverTimeOffset').on('value', (snap) => {
-        window._serverTimeOffset = snap.val() || 0;
-      });
-      fbDB.ref('wingo/bettinglocked').on('value', (snap) => {
-        if (snap.val() === true) cgBettingOpen = false;
-      });
       fbDB.ref('announcement').on('value', (snap) => {
         const data = snap.val();
         let bannerEl = document.getElementById('announcementBanner');
@@ -10554,10 +9229,6 @@ async function confirmUSDTPayment() {
 </html>
 
 window.loadInvitationBonusPage = function() {
-  if (!firebase.apps.length) return;
-  var user = firebase.auth().currentUser;
-  if (!user) return;
-  var db = firebase.database();
   var TIERS = [
     {bonus:1,invites:2,reward:155},{bonus:2,invites:10,reward:555},
     {bonus:3,invites:30,reward:1555},{bonus:4,invites:70,reward:3355},
@@ -10565,38 +9236,17 @@ window.loadInvitationBonusPage = function() {
     {bonus:7,invites:1000,reward:48555},{bonus:8,invites:5000,reward:355555},
     {bonus:9,invites:10000,reward:755555},{bonus:10,invites:20000,reward:1555555}
   ];
-
-  // Clear existing listener
-  if (window._inviteListener) {
-    try { firebase.database().ref('users/'+user.uid+'/referrals').off('value', window._inviteListener); } catch(e) {}
-  }
-
-  window._inviteListener = db.ref('users/'+user.uid+'/referrals').on('value', function(snap) {
-    var refs = snap.val() || {};
-    var total = Object.keys(refs).length;
-    var deposited = Object.values(refs).filter(function(r){return r.hasDeposited;}).length;
-    var el1 = document.getElementById('inviteTotalInvited');
-    var el2 = document.getElementById('inviteDeposited');
-    if (el1) el1.textContent = total;
-    if (el2) el2.textContent = deposited;
-    db.ref('users/'+user.uid+'/claimedInviteTiers').once('value').then(function(cs) {
-      var claimed = cs.val() || {};
-      TIERS.forEach(function(t) {
-        var isClaimed = claimed['tier'+t.bonus];
-        var done = deposited >= t.invites;
-        var canClaim = done && !isClaimed;
-        var progEl = document.getElementById('inv-prog-'+t.bonus);
-        var btnEl = document.getElementById('inv-btn-'+t.bonus);
-        var card = document.getElementById('inv-card-'+t.bonus);
-        if (progEl) progEl.textContent = Math.min(deposited,t.invites)+' / '+t.invites+' deposits';
-        if (card) card.style.borderColor = canClaim ? 'var(--gold)' : 'var(--border)';
-        if (btnEl) {
-          if (isClaimed) btnEl.innerHTML = '<span style="color:var(--green);font-weight:700;">✅ Claimed</span>';
-          else if (canClaim) btnEl.innerHTML = '<button onclick="window.claimInviteTier('+t.bonus+','+t.reward+')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.4rem 0.9rem;color:#000;font-weight:800;font-size:0.8rem;cursor:pointer;">Claim</button>';
-          else btnEl.innerHTML = '<span style="color:var(--muted);font-size:0.8rem;">Unfinished</span>';
-        }
-      });
-    });
+  // No GET status route exists for referral counts/claimed tiers — show static tier info,
+  // let claimInviteTier() react to the server's actual eligibility check.
+  var el1 = document.getElementById('inviteTotalInvited'); if (el1) el1.textContent = '—';
+  var el2 = document.getElementById('inviteDeposited'); if (el2) el2.textContent = '—';
+  TIERS.forEach(function(t) {
+    var progEl = document.getElementById('inv-prog-'+t.bonus);
+    var btnEl = document.getElementById('inv-btn-'+t.bonus);
+    var card = document.getElementById('inv-card-'+t.bonus);
+    if (progEl) progEl.textContent = t.invites + ' qualifying deposits needed';
+    if (card) card.style.borderColor = 'var(--border)';
+    if (btnEl) btnEl.innerHTML = '<button onclick="window.claimInviteTier('+t.bonus+','+t.reward+')" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:8px;padding:0.4rem 0.9rem;color:#000;font-weight:800;font-size:0.8rem;cursor:pointer;">Claim</button>';
   });
 }
 </script>
@@ -10683,19 +9333,12 @@ window.loadActivityAwardPage = function() {
 <script>
 var ATTEND_REWARDS = [5, 8, 16, 25, 45, 90, 188];
 window.loadAttendancePage = function() {
-  var user = window.currentUser; var db = window.fbDB;
-  if (!user || !db) { _attendRenderUI(0, false, 0); return; }
-  db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
-    var data = snap.val() || {}, streak = data.streak || 0, lastCheckin = data.lastCheckin || '', totalEarned = data.totalEarned || 0;
-    var today = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
-    var yesterday = new Date(Date.now() + 5.5*60*60*1000 - 86400000).toISOString().split('T')[0];
-    if (lastCheckin && lastCheckin !== today && lastCheckin !== yesterday) streak = 0;
-    _attendRenderUI(streak, lastCheckin === today, totalEarned);
-  }).catch(function() { _attendRenderUI(0, false, 0); });
+  // No GET status route exists for attendance — show the neutral default until a claim attempt tells us more.
+  _attendRenderUI(0, false, null);
 };
 function _attendRenderUI(streak, alreadyClaimed, totalEarned) {
   var streakEl = document.getElementById('attendStreak'); if (streakEl) streakEl.textContent = streak;
-  var totalEl = document.getElementById('attendTotal'); if (totalEl) totalEl.textContent = '₹' + parseFloat(totalEarned).toFixed(2);
+  var totalEl = document.getElementById('attendTotal'); if (totalEl && totalEarned != null) totalEl.textContent = '₹' + parseFloat(totalEarned).toFixed(2);
   for (var d = 1; d <= 7; d++) {
     var card = document.getElementById('attendCard' + d); if (!card) continue;
     if (d <= streak) { card.style.borderColor='var(--green)'; card.style.background='rgba(0,230,118,0.08)'; card.style.opacity='1'; }
@@ -10706,74 +9349,40 @@ function _attendRenderUI(streak, alreadyClaimed, totalEarned) {
   if (alreadyClaimed) { btn.textContent='✅ Already Checked In Today'; btn.disabled=true; btn.style.background='var(--bg3)'; btn.style.color='var(--muted)'; }
   else { var nextDay=Math.min(streak+1,7), reward=ATTEND_REWARDS[nextDay-1]; btn.textContent='✅ Check In Today — Claim ₹'+reward; btn.disabled=false; btn.style.background=''; btn.style.color=''; }
 }
-window.claimAttendance = function() {
-  var user = window.currentUser, db = window.fbDB || (typeof fbDB !== 'undefined' ? fbDB : null);
-  if (!user || !db) { showToast('🔐 Please sign in first'); return; }
-  var _prof = window.userProfile;
-  if (_prof && !_prof.hasDeposited) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
-  db.ref('users/' + user.uid + '/hasDeposited').once('value').then(function(__depSnap) {
-    if (!__depSnap.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
-    var today = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0], yesterday = new Date(Date.now() + 5.5*60*60*1000 - 86400000).toISOString().split('T')[0];
-    db.ref('users/' + user.uid + '/attendance').once('value').then(function(snap) {
-      var data = snap.val() || {}, streak = data.streak || 0, lastCheckin = data.lastCheckin || '', totalEarned = parseFloat(data.totalEarned || 0);
-      if (lastCheckin === today) { showToast('⚠️ Already checked in today!'); return; }
-      if (lastCheckin && lastCheckin !== yesterday) streak = 0;
-      var newStreak = (streak % 7) + 1, reward = ATTEND_REWARDS[newStreak - 1], newTotal = parseFloat((totalEarned + reward).toFixed(2));
-      db.ref('users/' + user.uid + '/balance').once('value').then(function(balSnap) {
-        var newBal = parseFloat(((balSnap.val() || 0) + reward).toFixed(2));
-        var updates = {};
-        updates['users/'+user.uid+'/attendance/streak'] = newStreak;
-        updates['users/'+user.uid+'/attendance/lastCheckin'] = today;
-        updates['users/'+user.uid+'/attendance/totalEarned'] = newTotal;
-        updates['users/'+user.uid+'/balance'] = newBal;
-        db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
-          var w = wSnap.val() || {required:0,completed:0,startedAt:0};
-          var isNew = !w.startedAt || w.startedAt === 0;
-          var newWager = {
-            required: parseFloat((parseFloat(w.required||0) + reward).toFixed(2)),
-            completed: parseFloat(w.completed||0),
-            startedAt: isNew ? Date.now() : w.startedAt
-          };
-          db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
-            db.ref().update(updates).then(function() {
-              db.ref('users/'+user.uid+'/transactions').push({type:'attendance',amount:reward,details:'Day '+newStreak+' attendance bonus (1x wager)',balance:newBal,timestamp:Date.now()});
-              if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-              showToast('🎁 Day '+newStreak+' check-in! +₹'+reward+' credited! (1x wager required)');
-              _attendRenderUI(newStreak, true, newTotal);
-            }).catch(function(e) { showToast('❌ '+e.message); });
-          }).catch(function(e) { showToast('❌ '+e.message); });
-        });
-      });
-    }).catch(function(e) { showToast('❌ '+e.message); });
-  });
-};
-window.claimInviteTier = function(tierNum, reward) {
-  var user = window.currentUser, db = window.fbDB;
-  if (!user || !db) { showToast('🔐 Please sign in first'); return; }
-  db.ref('users/'+user.uid+'/claimedInviteTiers/tier'+tierNum).once('value').then(function(snap) {
-    if (snap.val()) { showToast('⚠️ Already claimed!'); return; }
-    db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
-      var newBal = parseFloat(((balSnap.val()||0)+reward).toFixed(2));
-      var updates = {}; updates['users/'+user.uid+'/claimedInviteTiers/tier'+tierNum]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
-      db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
-        var w = wSnap.val()||{required:0,completed:0,startedAt:0};
-        var isNew = !w.startedAt || w.startedAt === 0;
-        var newWager = {
-          required: parseFloat((parseFloat(w.required||0)+reward).toFixed(2)),
-          completed: parseFloat(w.completed||0),
-          startedAt: isNew ? Date.now() : w.startedAt
-        };
-        db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
-          db.ref().update(updates).then(function() {
-            db.ref('users/'+user.uid+'/transactions').push({type:'invitation_bonus',amount:reward,details:'Invitation Bonus Tier '+tierNum+' (1x wager)',balance:newBal,timestamp:Date.now()});
-            if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-            showToast('🎉 Tier '+tierNum+' bonus! +₹'+reward.toLocaleString('en-IN')+' credited! (1x wager required)');
-            if (typeof window.loadInvitationBonusPage==='function') window.loadInvitationBonusPage();
-          }).catch(function(e) { showToast('❌ '+e.message); });
-        }).catch(function(e) { showToast('❌ '+e.message); });
-      });
+window.claimAttendance = async function() {
+  try {
+    const token = localStorage.getItem('royalwin_token');
+    if (!token) { showToast('🔐 Please sign in first'); return; }
+    const res = await fetch('https://royalwin-api.vercel.app/api/claim-bonus', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ type: 'attendance' })
     });
-  });
+    const data = await res.json();
+    if (!data.success) { showToast('⚠️ ' + (data.msg || 'Claim failed')); return; }
+    updateBalanceDisplay(data.balance);
+    showToast('🎁 Day ' + data.streak + ' check-in! +₹' + data.reward + ' credited! (1x wager required)');
+    _attendRenderUI(data.streak, true, null);
+  } catch(e) {
+    showToast('❌ Claim failed. Please try again.');
+  }
+};
+window.claimInviteTier = async function(tierNum, reward) {
+  var token = localStorage.getItem('royalwin_token');
+  if (!token) { showToast('🔐 Please sign in first'); return; }
+  try {
+    var res = await fetch('https://royalwin-api.vercel.app/api/claim-bonus', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ type: 'invite_tier', tier: tierNum })
+    });
+    var data = await res.json();
+    if (!data.success) { showToast('⚠️ ' + (data.msg || 'Claim failed')); return; }
+    if (typeof updateBalanceDisplay === 'function') updateBalanceDisplay(data.balance);
+    showToast('🎉 Tier ' + tierNum + ' bonus! +₹' + data.reward.toLocaleString('en-IN') + ' credited! (1x wager required)');
+    var btnEl = document.getElementById('inv-btn-' + tierNum);
+    if (btnEl) btnEl.innerHTML = '<span style="color:var(--green);font-weight:700;">✅ Claimed</span>';
+  } catch(e) {
+    showToast('❌ Claim failed. Please try again.');
+  }
 };
 window.claimActivityTask = function(taskId, reward) {
   var user = window.currentUser, db = window.fbDB;
@@ -10800,90 +9409,6 @@ window.claimActivityTask = function(taskId, reward) {
             if (typeof window.loadActivityAwardPage==='function') window.loadActivityAwardPage();
           }).catch(function(e) { showToast('❌ '+e.message); });
         }).catch(function(e) { showToast('❌ '+e.message); });
-      });
-    });
-  });
-};
-var VIP_LEVELS_DATA = [
-  {name:'Bronze',minExp:0,weekly:25,monthly:50},
-  {name:'Silver',minExp:200,weekly:125,monthly:250},
-  {name:'Gold',minExp:500,weekly:225,monthly:650},
-  {name:'Diamond',minExp:1000,weekly:325,monthly:1350}
-];
-function _getVipLevelData(exp) {
-  var level = VIP_LEVELS_DATA[0];
-  for (var i=VIP_LEVELS_DATA.length-1;i>=0;i--) { if(exp>=VIP_LEVELS_DATA[i].minExp){level=VIP_LEVELS_DATA[i];break;} }
-  return level;
-}
-window.claimVipWeekly = function() {
-  var user=window.currentUser, db=window.fbDB||(typeof fbDB!=='undefined'?fbDB:null);
-  if (!user||!db) { showToast('🔐 Please sign in first'); return; }
-  if (window.userProfile && !window.userProfile.hasDeposited) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
-  var weekStart=new Date(); weekStart.setHours(0,0,0,0); weekStart.setDate(weekStart.getDate()-weekStart.getDay());
-  var weekKey=weekStart.toISOString().split('T')[0];
-  db.ref('users/'+user.uid+'/hasDeposited').once('value').then(function(__d) {
-    if (!__d.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
-    db.ref('users/'+user.uid+'/vip/claimedWeekly/'+weekKey).once('value').then(function(snap) {
-      if (snap.val()) { showToast('⚠️ Already claimed weekly bonus!'); return; }
-      db.ref('users/'+user.uid+'/vip/exp').once('value').then(function(expSnap) {
-        var level=_getVipLevelData(parseFloat(expSnap.val()||0)), reward=level.weekly;
-        db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
-          var newBal=parseFloat(((balSnap.val()||0)+reward).toFixed(2));
-          var updates={}; updates['users/'+user.uid+'/vip/claimedWeekly/'+weekKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
-          db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
-            var w=wSnap.val()||{required:0,completed:0,startedAt:0};
-            var isNew=!w.startedAt||w.startedAt===0;
-            var newWager={
-              required:parseFloat((parseFloat(w.required||0)+reward).toFixed(2)),
-              completed:parseFloat(w.completed||0),
-              startedAt:isNew?Date.now():w.startedAt
-            };
-            db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
-              db.ref().update(updates).then(function() {
-                db.ref('users/'+user.uid+'/transactions').push({type:'vip_weekly',amount:reward,details:level.name+' VIP Weekly Bonus (1x wager)',balance:newBal,timestamp:Date.now()});
-                if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-                showToast('👑 Weekly VIP bonus! +₹'+reward+' credited! (1x wager required)');
-                if (typeof loadVipPage==='function') loadVipPage();
-              });
-            });
-          });
-        });
-      });
-    });
-  });
-};
-window.claimVipMonthly = function() {
-  var user=window.currentUser, db=window.fbDB||(typeof fbDB!=='undefined'?fbDB:null);
-  if (!user||!db) { showToast('🔐 Please sign in first'); return; }
-  if (window.userProfile && !window.userProfile.hasDeposited) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
-  var now=new Date(), monthKey=now.getFullYear()+'-'+(now.getMonth()+1);
-  db.ref('users/'+user.uid+'/hasDeposited').once('value').then(function(__dm) {
-    if (!__dm.val()) { showToast('⚠️ Minimum ₹500 deposit required to claim this bonus'); return; }
-    db.ref('users/'+user.uid+'/vip/claimedMonthly/'+monthKey).once('value').then(function(snap) {
-      if (snap.val()) { showToast('⚠️ Already claimed monthly bonus!'); return; }
-      db.ref('users/'+user.uid+'/vip/exp').once('value').then(function(expSnap) {
-        var level=_getVipLevelData(parseFloat(expSnap.val()||0)), reward=level.monthly;
-        db.ref('users/'+user.uid+'/balance').once('value').then(function(balSnap) {
-          var newBal=parseFloat(((balSnap.val()||0)+reward).toFixed(2));
-          var updates={}; updates['users/'+user.uid+'/vip/claimedMonthly/'+monthKey]=Date.now(); updates['users/'+user.uid+'/balance']=newBal;
-          db.ref('users/'+user.uid+'/wager').once('value').then(function(wSnap) {
-            var w=wSnap.val()||{required:0,completed:0,startedAt:0};
-            var isNew=!w.startedAt||w.startedAt===0;
-            var newWager={
-              required:parseFloat((parseFloat(w.required||0)+reward).toFixed(2)),
-              completed:parseFloat(w.completed||0),
-              startedAt:isNew?Date.now():w.startedAt
-            };
-            db.ref('users/'+user.uid+'/wager').set(newWager).then(function() {
-              db.ref().update(updates).then(function() {
-                db.ref('users/'+user.uid+'/transactions').push({type:'vip_monthly',amount:reward,details:level.name+' VIP Monthly Bonus (1x wager)',balance:newBal,timestamp:Date.now()});
-                if (typeof updateBalanceDisplay==='function') updateBalanceDisplay(newBal);
-                showToast('👑 Monthly VIP bonus! +₹'+reward+' credited! (1x wager required)');
-                if (typeof loadVipPage==='function') loadVipPage();
-              });
-            });
-          });
-        });
       });
     });
   });
