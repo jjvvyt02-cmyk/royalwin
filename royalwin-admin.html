@@ -189,7 +189,7 @@
     </div>
     <div class="form-group">
       <label class="form-label">Password</label>
-      <input class="form-input" type="password" id="adminPassword" placeholder="••••••••" id="adminPassword">
+      <input class="form-input" type="password" id="adminPassword" placeholder="••••••••">
     </div>
     <button class="btn btn-gold btn-full" id="adminLoginBtn">🔐 Sign In to Admin</button>
     <div class="error-msg" id="loginError">❌ Invalid credentials. Access denied.</div>
@@ -1234,7 +1234,7 @@ window.toggleAutoForMode = async function(mins, isAuto) {
 
 function renderLastResults(mins, history) {
   const el = document.getElementById('lastResults' + mins + 'min');
-  if (!el) return;
+  if (!el) { console.warn('renderLastResults: element lastResults' + mins + 'min not found in DOM'); return; }
   if (!history || history.length === 0) {
     el.innerHTML = '<div style="font-size:0.72rem;color:var(--muted);text-align:center;padding:0.3rem;">No results yet</div>';
     return;
@@ -1334,7 +1334,7 @@ async function pollHistory() {
           }
         }
       }
-    } catch(e) {}
+    } catch(e) { console.error('pollHistory error (timer ' + mins + '):', e); }
   }
 }
 
@@ -2133,7 +2133,7 @@ async function pollWithdrawals() {
           ${r.status === 'pending' ? `
           <button onclick="autoPayWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--gold);border:none;border-radius:5px;padding:0.25rem 0.5rem;color:#000;font-size:0.68rem;font-weight:700;cursor:pointer;">⚡ CXPay</button>
           <button onclick="autoPayWithdrawalWGPay('${key}','${r.uid}',${r.amount})" style="background:#8b5cf6;border:none;border-radius:5px;padding:0.25rem 0.5rem;color:#fff;font-size:0.68rem;font-weight:700;cursor:pointer;">⚡ WGPay</button>
-          <button onclick="approveWithdrawal('${key}','${r.uid}',${r.amount})" style="background:var(--green);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">✅</button>
+          <button onclick="approveWithdrawal('${key}','${r.uid}','${(r.username||'').replace(/'/g,"\\'")}','${r.member_id||''}')" style="background:var(--green);border:none;border-radius:5px;padding:0.25rem 0.6rem;color:#000;font-size:0.72rem;font-weight:700;cursor:pointer;">✅</button>
           <button onclick="rejectRequest('withdrawals','${key}')" style="background:rgba(224,32,32,0.2);border:1px solid rgba(224,32,32,0.3);border-radius:5px;padding:0.25rem 0.6rem;color:var(--red2);font-size:0.72rem;cursor:pointer;">❌</button>
           ` : `<span style="font-size:0.68rem;color:${r.status==='approved'?'var(--green)':r.status==='processing'?'var(--gold)':'var(--red2)'};padding:0.2rem 0.5rem;background:var(--bg3);border-radius:5px;">${r.status}</span>`}
         </div>
@@ -2207,16 +2207,6 @@ window.autoPayWithdrawalWGPay = async function(key, uid, amount) {
   } catch(e) {
     showToast('❌ Error: ' + e.message);
   }
-};
-
-window.approveWithdrawal = async function(key, uid, amount) {
-  try {
-    const data = await apiCall('/api/admin/approve-withdrawal', 'POST', { withdrawalId: key });
-    if (data.success) {
-      showToast('✅ Withdrawal of ₹' + parseFloat(amount).toLocaleString('en-IN') + ' approved!');
-      pollWithdrawals();
-    } else { showToast('❌ ' + (data.error || 'Failed')); }
-  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.rejectRequest = async function(type, key) {
