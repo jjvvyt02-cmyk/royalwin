@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>RoyalWin — Admin Panel</title>
+<title>RoyalWin — Admin Panel [DEBUG-BUILD-1]</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@700;900&family=Exo+2:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
@@ -964,6 +964,7 @@
 </div>
 
 <script>
+console.log('%c[DEBUG-BUILD-1] admin.html script started executing', 'background:orange;color:black;font-size:16px;padding:4px;');
 // ── NEON ADMIN CONFIG ──
 const API = 'https://royalwin-api.vercel.app';
 const ADMIN_TOKEN = localStorage.getItem('royalwin_admin_token') || '';
@@ -1316,6 +1317,7 @@ async function pollGameState() {
 }
 
 async function pollHistory() {
+  console.log('[DEBUG] pollHistory() called');
   for (const mins of [1,3,5]) {
     try {
       const data = await apiCall('/api/admin/game-history?timer=' + mins);
