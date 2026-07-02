@@ -3230,24 +3230,32 @@
     const db = window.fbDB || fbDB;
     if (!user || !db) return;
     try {
-      const [betSnap, depSnap, profileSnap] = await Promise.all([
-        db.ref('users/' + user.uid + '/betHistory').once('value'),
-        db.ref('adminRequests/deposits').once('value'),
-        db.ref('users/' + user.uid).once('value'),
+      const token = localStorage.getItem('royalwin_token');
+      // Each promise has its own fallback — the Firebase reads reject with permission_denied
+      // now that there's no Firebase Auth session, and Promise.all would otherwise abort the
+      // /api/user fetch too (and with it, the profile display) whenever that happens.
+      const [betSnap, depSnap, userRes] = await Promise.all([
+        db.ref('users/' + user.uid + '/betHistory').once('value').catch(() => ({ val: () => null })),
+        db.ref('adminRequests/deposits').once('value').catch(() => ({ val: () => null })),
+        token ? fetch('https://royalwin-api.vercel.app/api/user', { headers: { 'Authorization': 'Bearer ' + token } }).catch(() => null) : Promise.resolve(null),
       ]);
-      const profile = profileSnap.val() || {};
+      const userData = userRes ? await userRes.json() : null;
       const bets = betSnap.val() ? Object.values(betSnap.val()) : [];
       const deps = depSnap.val() ? Object.values(depSnap.val()).filter(d => d.uid === user.uid && d.status === 'approved') : [];
       const totalBets = bets.length;
       const wins = bets.filter(b => b.won).length;
       const winRate = totalBets > 0 ? Math.round(wins / totalBets * 100) : 0;
       const totalDeposited = deps.reduce((s,d) => s + (d.amount||0), 0);
-      const joinedAt = profile.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
+      const joinedAt = (userData && userData.success && userData.user.created_at) ? new Date(Number(userData.user.created_at)).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
       const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
       setText('profileMemberSince', 'Member since: ' + joinedAt);
       setText('profileTotalBets', totalBets);
       setText('profileWinRate', winRate + '%');
       setText('profileTotalDeposited', '₹' + totalDeposited.toLocaleString('en-IN'));
+      if (userData && userData.success) {
+        updateProfilePage(userData.user);
+        setText('profileUsernameDisplay', userData.user.username || '—');
+      }
     } catch(e) { /* suppressed */ }
   }
 
