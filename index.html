@@ -2538,6 +2538,9 @@
       showToast('✅ Welcome back!');
       if (typeof onAuthChange === 'function') onAuthChange(data.user);
       showPage('home');
+      if (data.welcomeBonusGiven && typeof showWelcomeBonus === 'function') {
+        setTimeout(() => showWelcomeBonus(data.welcomeBonusAmount), 1500);
+      }
     } catch(e) {
       showToast('❌ ' + (e.message || 'Login failed. Please try again.'));
     }
@@ -3226,26 +3229,27 @@
     });
   }
   async function loadProfileStats() {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) return;
+    const token = localStorage.getItem('royalwin_token');
+    if (!token) return;
     try {
-      const token = localStorage.getItem('royalwin_token');
-      // Each promise has its own fallback — the Firebase reads reject with permission_denied
-      // now that there's no Firebase Auth session, and Promise.all would otherwise abort the
-      // /api/user fetch too (and with it, the profile display) whenever that happens.
-      const [betSnap, depSnap, userRes] = await Promise.all([
-        db.ref('users/' + user.uid + '/betHistory').once('value').catch(() => ({ val: () => null })),
-        db.ref('adminRequests/deposits').once('value').catch(() => ({ val: () => null })),
-        token ? fetch('https://royalwin-api.vercel.app/api/user', { headers: { 'Authorization': 'Bearer ' + token } }).catch(() => null) : Promise.resolve(null),
+      const [betsRes, depsRes, userRes] = await Promise.all([
+        fetch('https://royalwin-api.vercel.app/api/my-bets', { headers: { 'Authorization': 'Bearer ' + token } }).catch(() => null),
+        fetch('https://royalwin-api.vercel.app/api/my-deposits', { headers: { 'Authorization': 'Bearer ' + token } }).catch(() => null),
+        fetch('https://royalwin-api.vercel.app/api/user', { headers: { 'Authorization': 'Bearer ' + token } }).catch(() => null),
       ]);
+      const betsData = betsRes ? await betsRes.json() : null;
+      const depsData = depsRes ? await depsRes.json() : null;
       const userData = userRes ? await userRes.json() : null;
-      const bets = betSnap.val() ? Object.values(betSnap.val()) : [];
-      const deps = depSnap.val() ? Object.values(depSnap.val()).filter(d => d.uid === user.uid && d.status === 'approved') : [];
-      const totalBets = bets.length;
-      const wins = bets.filter(b => b.won).length;
+
+      const bets = (betsData && betsData.success) ? betsData.bets : [];
+      const settledBets = bets.filter(b => b.status !== 'pending');
+      const totalBets = settledBets.length;
+      const wins = settledBets.filter(b => b.status === 'won').length;
       const winRate = totalBets > 0 ? Math.round(wins / totalBets * 100) : 0;
-      const totalDeposited = deps.reduce((s,d) => s + (d.amount||0), 0);
+
+      const deps = (depsData && depsData.success) ? depsData.deposits.filter(d => d.status === 'approved') : [];
+      const totalDeposited = deps.reduce((s,d) => s + parseFloat(d.amount||0), 0);
+
       const joinedAt = (userData && userData.success && userData.user.created_at) ? new Date(Number(userData.user.created_at)).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'}) : '—';
       const setText = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
       setText('profileMemberSince', 'Member since: ' + joinedAt);
