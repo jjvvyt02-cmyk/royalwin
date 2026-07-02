@@ -2554,32 +2554,38 @@
     if (m) m.style.display = 'none';
   }
   async function loadGiftHistory() {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) return;
-    const snap = await db.ref('users/' + user.uid + '/redeemedGifts').once('value');
-    const gifts = snap.val() ? Object.values(snap.val()) : [];
-    const el = document.getElementById('giftHistoryList');
-    if (!el) return;
-    if (gifts.length === 0) { el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.8rem;"><span data-t="gift.none">No gifts redeemed yet</span></div>'; return; }
-    el.innerHTML = gifts.map(g => `
-      <div style="display:flex;justify-content:space-between;align-items:center;padding:0.7rem 1rem;border-bottom:1px solid var(--border);">
-        <div>
-          <div style="font-size:0.82rem;font-weight:700;color:var(--gold);">${g.code}</div>
-          <div style="font-size:0.68rem;color:var(--muted);">${new Date(g.redeemedAt).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div>
-        </div>
-        <div style="font-size:0.85rem;font-weight:700;color:var(--green);">+₹${g.amount}</div>
-      </div>`).join('');
+    const token = localStorage.getItem('royalwin_token');
+    if (!token) return;
+    let gifts = [];
+    try {
+      const res = await fetch('https://royalwin-api.vercel.app/api/my-gifts', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (data.success) gifts = data.gifts;
+    } catch(e) {}
+    const html = gifts.length === 0
+      ? '<div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.8rem;"><span data-t="gift.none">No gifts redeemed yet</span></div>'
+      : gifts.map(g => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:0.7rem 1rem;border-bottom:1px solid var(--border);">
+          <div>
+            <div style="font-size:0.82rem;font-weight:700;color:var(--gold);">${g.code}</div>
+            <div style="font-size:0.68rem;color:var(--muted);">${new Date(Number(g.redeemed_at)).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})}</div>
+          </div>
+          <div style="font-size:0.85rem;font-weight:700;color:var(--green);">+₹${parseFloat(g.amount).toLocaleString('en-IN')}</div>
+        </div>`).join('');
+    // Attribute-selector, not getElementById — both the page and modal versions share this ID, both must update
+    document.querySelectorAll('[id="giftHistoryList"]').forEach(el => { el.innerHTML = html; });
   }
   async function redeemGiftCode() {
-    const input = document.getElementById('giftCodeInput');
-    const code = input ? input.value.trim().toUpperCase() : '';
-    const statusEl = document.getElementById('giftRedeemStatus');
+    // Find whichever input actually has text — page and modal share the same ID, only one is in use at a time
+    const inputs = Array.from(document.querySelectorAll('[id="giftCodeInput"]'));
+    const activeInput = inputs.find(i => i.value.trim()) || inputs[0];
+    const code = activeInput ? activeInput.value.trim().toUpperCase() : '';
+    const statusEls = document.querySelectorAll('[id="giftRedeemStatus"]');
 
     if (!code) { showToast('⚠️ Enter a gift code'); return; }
     const token = localStorage.getItem('royalwin_token');
     if (!token) { showToast('🔐 Please sign in'); return; }
-    if (statusEl) { statusEl.style.display = 'block'; statusEl.style.color = 'var(--muted)'; statusEl.textContent = '⏳ Checking code...'; }
+    statusEls.forEach(el => { el.style.display = 'block'; el.style.color = 'var(--muted)'; el.textContent = '⏳ Checking code...'; });
 
     try {
       const res = await fetch('https://royalwin-api.vercel.app/api/claim-bonus', {
@@ -2588,17 +2594,17 @@
       });
       const data = await res.json();
       if (!data.success) {
-        if (statusEl) { statusEl.style.color = 'var(--red2)'; statusEl.textContent = '❌ ' + (data.msg || 'Invalid gift code'); }
+        statusEls.forEach(el => { el.style.color = 'var(--red2)'; el.textContent = '❌ ' + (data.msg || 'Invalid gift code'); });
         showToast('❌ ' + (data.msg || 'Invalid gift code'));
         return;
       }
       updateBalanceDisplay(data.balance);
-      if (input) input.value = '';
-      if (statusEl) { statusEl.style.color = 'var(--green)'; statusEl.textContent = '✅ Code redeemed! ₹' + data.reward + ' added to your wallet.'; }
+      inputs.forEach(i => { i.value = ''; });
+      statusEls.forEach(el => { el.style.color = 'var(--green)'; el.textContent = '✅ Code redeemed! ₹' + data.reward + ' added to your wallet.'; });
       showToast('🎁 Gift redeemed! +₹' + data.reward + ' added to wallet');
       loadGiftHistory();
     } catch(e) {
-      if (statusEl) { statusEl.style.color = 'var(--red2)'; statusEl.textContent = '❌ Redemption failed. Please try again.'; }
+      statusEls.forEach(el => { el.style.color = 'var(--red2)'; el.textContent = '❌ Redemption failed. Please try again.'; });
       showToast('❌ Redemption failed. Please try again.');
     }
   }
@@ -3783,12 +3789,6 @@
         <button onclick="loadDepositHistoryPage(${_depHistPage+1})" ${_depHistPage>=totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_depHistPage>=totalPages?'opacity:0.4;':''}">▶</button>
       </div>`;
     }
-  }
-
-  function loadDepositHistory() {
-    const el = document.getElementById('depositHistoryRows');
-    if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
-    loadDepositHistoryPage();
   }
 
   var _withHistPage = 1;
