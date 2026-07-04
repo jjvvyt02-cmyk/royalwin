@@ -3059,6 +3059,24 @@
     } catch(e) { showToast('❌ Claim failed. Please try again.'); }
   }
 
+  // ── WELCOME BONUS: auto-claimed once on first real login (not the brief ──
+  // auto-login right after registration, before we explicitly sign the user back out) ──
+  async function claimWelcomeBonusIfEligible() {
+    if (window._registrationInProgress) return;
+    try {
+      const token = localStorage.getItem('royalwin_token');
+      if (!token) return;
+      const res = await fetch('https://royalwin-api.vercel.app/api/claim-bonus', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ type: 'welcome_bonus' })
+      });
+      const data = await res.json();
+      if (!data.success) return; // already claimed (or ineligible) — reactive-only, stay silent
+      updateBalanceDisplay(data.balance);
+      setTimeout(() => showWelcomeBonus(data.reward), 1500);
+    } catch(e) { /* suppressed */ }
+  }
+
   async function addVipExp(exp) {
     const user = window.currentUser;
     const db = window.fbDB || fbDB;
@@ -6440,51 +6458,6 @@
       if (!profile) return;
       window.userProfile = profile;
 
-      // ── WELCOME BONUS: Give ₹38 on first login ──
-      // Skip entirely if this is the brief auto-login Firebase performs right after account
-      // creation (before our code explicitly signs the user back out) - that is NOT a real,
-      // conscious login, so the bonus must wait until the user actually logs in themselves.
-      if (!profile.welcomeBonusGiven && !window._registrationInProgress) {
-        const WELCOME_AMOUNT = 38;
-        const WELCOME_WAGER = 76; // 2x wager requirement
-        try {
-          const db = window.fbDB || fbDB;
-          if (db) {
-            // Credit balance
-            await db.ref('users/' + uid + '/balance').transaction(bal => (bal || 0) + WELCOME_AMOUNT);
-            // Add wager requirement
-            await db.ref('users/' + uid + '/wager').transaction(w => {
-              const existing = w || { required: 0, completed: 0, startedAt: 0 };
-              const isNew = !existing.startedAt || existing.startedAt === 0;
-              return {
-                required: parseFloat((parseFloat(existing.required || 0) + WELCOME_WAGER).toFixed(2)),
-                completed: parseFloat(existing.completed || 0),
-                startedAt: isNew ? Date.now() : existing.startedAt
-              };
-            });
-            // Mark as given
-            await db.ref('users/' + uid + '/welcomeBonusGiven').set(true);
-            // Record in transaction history so it appears in Transaction History page
-            await db.ref('users/' + uid + '/transactions').push({
-              type: 'welcome_bonus',
-              amount: WELCOME_AMOUNT,
-              description: '🎁 Welcome Bonus',
-              details: 'First login bonus credited',
-              timestamp: Date.now()
-            });
-            // Send notification
-            await db.ref('users/' + uid + '/notifications').push({
-              icon: '🎁',
-              title: 'Welcome Bonus Credited!',
-              body: '₹38 has been added to your wallet. Wager ₹76 to unlock withdrawal.',
-              read: false,
-              timestamp: Date.now()
-            });
-            // Show welcome popup
-            setTimeout(() => showWelcomeBonus(WELCOME_AMOUNT), 1500);
-          }
-        } catch(e) { /* suppressed */ }
-      }
       try {
         const txSnap = await firebase.database().ref('users/' + uid + '/transactions').once('value');
         if (txSnap.val()) {
@@ -6709,6 +6682,7 @@
           window.currentUser = user;
           isLoggedIn = true;
           loadUserProfile(user.uid);
+          claimWelcomeBonusIfEligible();
           startNotificationsPolling();
           startChatBadgePolling();
           checkDepositBonus();
