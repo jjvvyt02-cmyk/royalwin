@@ -3961,69 +3961,63 @@
     const upiId = document.getElementById('bonus100UpiId').value.trim();
     if (!amt || amt < 300) { showToast('⚠️ Minimum deposit is ₹300'); return; }
     if (!window.currentUser) { showToast('⚠️ Please login first'); showPage('login'); return; }
+    const token = localStorage.getItem('royalwin_token');
     try {
-      const db = window.fbDB || fbDB;
-      await db.ref('adminRequests/deposits').push({
-        amount: amt, status: 'pending', method: 'UPI - 100% Bonus',
-        uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
-        username: window.userProfile ? window.userProfile.username : 'Unknown',
-        contact: window.userProfile ? (window.userProfile.contact || '') : '',
-        upiId: upiId || 'Not provided',
-        isFirstDeposit: true,
-        bonusType: 'first_100pct',
-        bonusPct: 100, bonusAmt: amt, wagerReq: 10,
-        referredBy: window.userProfile?.referredBy || '',
-        timestamp: Date.now()
+      const res = await fetch('https://royalwin-api.vercel.app/api/deposit', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ amount: amt, gateway: upiId ? `manual_upi_100pct (UPI ref: ${upiId})` : 'manual_upi_100pct', bonusOption: '100p' })
       });
-      await db.ref('users/' + window.currentUser.uid + '/depositRequests').push({
-        amount: amt, status: 'pending', method: 'UPI - 100% Bonus',
-        bonusPct: 100, bonusAmt: amt, wagerReq: 10, timestamp: Date.now()
-      });
+      const data = await res.json();
+      if (!data.success) { showToast('❌ ' + (data.msg || 'Failed to submit deposit request.')); return; }
       showToast('✅ Request submitted! You will receive ₹' + (amt * 2).toLocaleString('en-IN') + ' after verification.');
       showPage('home');
     } catch(e) { showToast('❌ Error: ' + e.message); }
   }
 
+  let _wagerProgressInterval = null;
+  function _renderWagerProgress(wagerReqRaw, wagerDoneRaw) {
+    const bar = document.getElementById('wagerProgressBar');
+    const pctText = document.getElementById('wagerPctText');
+    const statusMsg = document.getElementById('wagerStatusMsg');
+    const withdrawBtn = document.getElementById('withdrawNowBtn');
+    const required = parseFloat(wagerReqRaw || 0);
+    const completed = parseFloat(wagerDoneRaw || 0);
+    const wagerPending = required > 0 && completed < required;
+    if (!wagerPending) {
+      // No active wager or wager complete — withdrawal unlocked
+      if (bar) { bar.style.width = '100%'; bar.style.background = 'linear-gradient(90deg,#27ae60,#1d9e75)'; }
+      if (pctText) { pctText.textContent = '100%'; pctText.style.color = 'var(--green)'; }
+      if (statusMsg) { statusMsg.textContent = 'Bet ₹0 more to unlock withdrawal ✅'; statusMsg.style.color = 'var(--green)'; }
+      if (withdrawBtn) { withdrawBtn.disabled = false; withdrawBtn.style.opacity = '1'; withdrawBtn.style.cursor = 'pointer'; }
+    } else {
+      // Active wager pending — block withdrawal
+      const remaining = parseFloat((required - completed).toFixed(2));
+      const pct = Math.min(99, Math.round(completed / required * 100));
+      if (bar) { bar.style.width = pct + '%'; bar.style.background = 'linear-gradient(90deg,#c07a10,var(--gold))'; }
+      if (pctText) { pctText.textContent = pct + '%'; pctText.style.color = 'var(--gold)'; }
+      if (statusMsg) { statusMsg.textContent = 'Bet ₹' + remaining.toLocaleString('en-IN') + ' more to unlock withdrawal'; statusMsg.style.color = 'var(--muted)'; }
+      if (withdrawBtn) { withdrawBtn.disabled = true; withdrawBtn.style.opacity = '0.35'; withdrawBtn.style.cursor = 'not-allowed'; }
+    }
+  }
   async function loadWagerProgress() {
     const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) return;
-    try {
-      db.ref('users/' + user.uid + '/wager').off();
-      db.ref('users/' + user.uid + '/wager').on('value', async (snap) => {
-        const wager = snap.val();
-        const bar = document.getElementById('wagerProgressBar');
-        const pctText = document.getElementById('wagerPctText');
-        const statusMsg = document.getElementById('wagerStatusMsg');
-        const withdrawBtn = document.getElementById('withdrawNowBtn');
-        const required = wager ? parseFloat(wager.required || 0) : 0;
-        const completed = wager ? parseFloat(wager.completed || 0) : 0;
-        const wagerPending = required > 0 && completed < required;
-        if (!wagerPending) {
-          // No active wager or wager complete — withdrawal unlocked
-          if (bar) { bar.style.width = '100%'; bar.style.background = 'linear-gradient(90deg,#27ae60,#1d9e75)'; }
-          if (pctText) { pctText.textContent = '100%'; pctText.style.color = 'var(--green)'; }
-          if (statusMsg) { statusMsg.textContent = 'Bet ₹0 more to unlock withdrawal ✅'; statusMsg.style.color = 'var(--green)'; }
-          // Enable withdraw button
-          if (withdrawBtn) { withdrawBtn.disabled = false; withdrawBtn.style.opacity = '1'; withdrawBtn.style.cursor = 'pointer'; }
-        } else {
-          // Active wager pending — block withdrawal
-          const remaining = parseFloat((required - completed).toFixed(2));
-          const pct = Math.min(99, Math.round(completed / required * 100));
-          if (bar) { bar.style.width = pct + '%'; bar.style.background = 'linear-gradient(90deg,#c07a10,var(--gold))'; }
-          if (pctText) { pctText.textContent = pct + '%'; pctText.style.color = 'var(--gold)'; }
-          if (statusMsg) { statusMsg.textContent = 'Bet ₹' + remaining.toLocaleString('en-IN') + ' more to unlock withdrawal'; statusMsg.style.color = 'var(--muted)'; }
-          // Disable withdraw button silently
-          if (withdrawBtn) { withdrawBtn.disabled = true; withdrawBtn.style.opacity = '0.35'; withdrawBtn.style.cursor = 'not-allowed'; }
-        }
-      }); // end of .on listener
-    } catch(e) { /* suppressed */ }
+    if (!user) return;
+    const token = localStorage.getItem('royalwin_token');
+    const fetchAndRender = async () => {
+      try {
+        const res = await fetch('https://royalwin-api.vercel.app/api/user', { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        if (data.success) _renderWagerProgress(data.user.wager_required, data.user.wager_completed);
+      } catch(e) { /* suppressed */ }
+    };
+    fetchAndRender();
+    if (_wagerProgressInterval) clearInterval(_wagerProgressInterval);
+    _wagerProgressInterval = setInterval(fetchAndRender, 5000);
   }
 
   async function saveWithdrawDetails(method) {
-    const db = window.fbDB || fbDB;
     const user = window.currentUser;
-    if (!user || !db) return;
+    if (!user) return;
 
     let details = {};
     if (method === 'upi') {
@@ -4044,21 +4038,26 @@
     }
 
     try {
-      await db.ref('users/' + user.uid + '/withdrawDetails/' + method).set({
-        ...details, savedAt: Date.now(), lockedByAdmin: false
+      const token = localStorage.getItem('royalwin_token');
+      const res = await fetch('https://royalwin-api.vercel.app/api/withdraw-details', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ method, details })
       });
+      const data = await res.json();
+      if (!data.success) { showToast('❌ ' + (data.msg || 'Error saving details')); return; }
       showToast('✅ Details saved! Cannot be changed without contacting support.');
       loadSavedWithdrawDetails();
     } catch(e) { showToast('❌ Error: ' + e.message); }
   }
 
   async function loadSavedWithdrawDetails() {
-    const db = window.fbDB || fbDB;
     const user = window.currentUser;
-    if (!user || !db) return;
+    if (!user) return;
     try {
-      const snap = await db.ref('users/' + user.uid + '/withdrawDetails').once('value');
-      const data = snap.val() || {};
+      const token = localStorage.getItem('royalwin_token');
+      const res = await fetch('https://royalwin-api.vercel.app/api/withdraw-details', { headers: { 'Authorization': 'Bearer ' + token } });
+      const resData = await res.json();
+      const data = resData.success ? resData.details : {};
       if (data.upi) {
         document.getElementById('savedUpiDisplay').style.display = 'flex';
         document.getElementById('savedUpiText').textContent = data.upi.upiId;
@@ -4075,9 +4074,6 @@
         document.getElementById('savedUsdtText').textContent = data.usdt.addr;
         document.getElementById('newUsdtForm').style.display = 'none';
       }
-      const depSnap = await db.ref('users/' + user.uid + '/hasUsdtDeposit').once('value');
-      window._userHasUsdtDeposit = depSnap.val() || false;
-
     } catch(e) { /* suppressed */ }
   }
 
@@ -4438,18 +4434,18 @@
     const bonusSection = document.getElementById('bonusSelectionSection');
     const recurringSection = document.getElementById('recurringBonusInfo');
     const user = window.currentUser;
-    const db = window.fbDB || fbDB;
+    const token = localStorage.getItem('royalwin_token');
 
-    // IMPORTANT: Hide BOTH sections by default until Firebase confirms
-    // Never show bonusSelectionSection before Firebase responds
-    // This prevents the First Deposit Bonus flicker on every wallet tap
+    // IMPORTANT: Hide BOTH sections by default until the server confirms.
+    // This prevents the First Deposit Bonus flicker on every wallet tap.
     if (bonusSection) bonusSection.style.display = 'none';
     if (recurringSection) recurringSection.style.display = 'none';
 
-    if (!user || !db) return;
+    if (!user || !token) return;
     try {
-      const snap = await db.ref('users/' + user.uid + '/hasDeposited').once('value');
-      const hasDeposited = snap.val();
+      const res = await fetch('https://royalwin-api.vercel.app/api/user', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      const hasDeposited = data.success && !!data.user.has_deposited;
       if (hasDeposited) {
         // User already deposited — show recurring bonus only
         if (bonusSection) bonusSection.style.display = 'none';
@@ -4475,68 +4471,12 @@
     const amt = parseFloat(document.getElementById('withdrawAmount').value);
     if (!amt || amt < minAmt) { showToast('⚠️ Minimum withdrawal for ' + currentWithdrawMethod.toUpperCase() + ' is ₹' + minAmt); return; }
     if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
-    const db = window.fbDB || fbDB;
+    const token = localStorage.getItem('royalwin_token');
     try {
-      const wagerSnap = await db.ref('users/' + window.currentUser.uid + '/wager').once('value');
-      const wager = wagerSnap.val();
-      if (wager && wager.required > 0 && wager.completed < wager.required) {
-        // Wager pending — block silently (button is already visually disabled)
-        return;
-      }
-      const allWithSnap = await db.ref('adminRequests/withdrawals').orderByChild('uid').equalTo(window.currentUser.uid).once('value');
-      const allWithData = allWithSnap.val();
-      if (allWithData) {
-        const hasPending = Object.values(allWithData).some(w => w.status === 'pending' || w.status === 'processing');
-        if (hasPending) {
-          showToast('❌ You already have a pending withdrawal. Please wait for it to be processed first.');
-          return;
-        }
-      }
-      const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-      const todayStartTs = todayStart.getTime();
-      if (allWithData) {
-        const todayCount = Object.values(allWithData).filter(w =>
-          (w.timestamp || 0) >= todayStartTs && w.status !== 'rejected' && w.status !== 'failed'
-        ).length;
-        if (todayCount >= 2) {
-          showToast('❌ Maximum 2 withdrawals allowed per day. Try again tomorrow.');
-          return;
-        }
-      }
-      const balSnap = await db.ref('users/' + window.currentUser.uid + '/balance').once('value');
-      const bal = parseFloat(balSnap.val() || 0);
-      if (amt > bal) { showToast('❌ Insufficient balance! Your balance: ₹' + bal.toLocaleString('en-IN')); return; }
-      // ── 5% WITHDRAWAL FEE (hidden from user) ──
-      // Full amt is deducted from user wallet
-      // Only 95% is actually sent to user — 5% stays as platform revenue
-      const feeRate = 0.05;
-      const fee = parseFloat((amt * feeRate).toFixed(2));
-      const amountToSend = parseFloat((amt - fee).toFixed(2));
-      const newBal = parseFloat((bal - amt).toFixed(2));
-      await db.ref('users/' + window.currentUser.uid + '/balance').transaction(() => newBal);
-      updateBalanceDisplay(newBal);
-      if (currentWithdrawMethod === 'usdt') {
-        const depSnap = await db.ref('adminRequests/deposits').orderByChild('uid').equalTo(window.currentUser.uid).once('value');
-        const depData = depSnap.val() || {};
-        let totalInrDeposited = 0, totalUsdtDeposited = 0;
-        Object.values(depData).forEach(d => {
-          if (d.status !== 'approved') return;
-          const m = (d.method || '').toUpperCase();
-          if (m.includes('USDT')) totalUsdtDeposited += parseFloat(d.amount || 0);
-          else totalInrDeposited += parseFloat(d.amount || 0);
-        });
-        if (totalUsdtDeposited <= totalInrDeposited) {
-          await db.ref('users/' + window.currentUser.uid + '/balance').transaction(() => bal);
-          updateBalanceDisplay(bal);
-          showToast('❌ Try using Bank or UPI');
-          return;
-        }
-      }
-      const savedSnap = await db.ref('users/' + window.currentUser.uid + '/withdrawDetails/' + currentWithdrawMethod).once('value');
-      const saved = savedSnap.val();
+      const savedRes = await fetch('https://royalwin-api.vercel.app/api/withdraw-details', { headers: { 'Authorization': 'Bearer ' + token } });
+      const savedData = await savedRes.json();
+      const saved = savedData.success ? savedData.details[currentWithdrawMethod] : null;
       if (!saved) {
-        await db.ref('users/' + window.currentUser.uid + '/balance').transaction(() => bal);
-        updateBalanceDisplay(bal);
         showToast('⚠️ Please save your ' + currentWithdrawMethod.toUpperCase() + ' details first');
         return;
       }
@@ -4546,16 +4486,15 @@
       else if (currentWithdrawMethod === 'bank') upiId = `Acc: ${saved.acc} | IFSC: ${saved.ifsc} | Bank: ${saved.bank} | Name: ${saved.name}`;
       else upiId = `USDT TRC20: ${saved.addr}`;
 
-      await db.ref('adminRequests/withdrawals').push({
-        amount: amt, amountToSend: amountToSend, status: 'pending',
-        uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
-        username: window.userProfile ? window.userProfile.username : 'Unknown',
-        contact: window.userProfile ? (window.userProfile.contact || '') : '',
-        upiId, method: currentWithdrawMethod.toUpperCase(),
-        balanceBefore: bal, balanceAfter: newBal,
-        timestamp: Date.now()
+      // Balance deduction, wager-lock check, pending/daily-limit checks, and USDT
+      // eligibility are all enforced atomically server-side by /api/withdraw.
+      const res = await fetch('https://royalwin-api.vercel.app/api/withdraw', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ amount: amt, method: currentWithdrawMethod, accountDetails: { upiId } })
       });
-
+      const data = await res.json();
+      if (!data.success) { showToast('❌ ' + (data.msg || 'Withdrawal failed')); return; }
+      updateBalanceDisplay(data.balance);
       showToast('✅ Withdrawal submitted successfully');
       loadWithdrawHistory();
     } catch(e) { showToast('❌ Withdrawal failed: ' + e.message); }
@@ -5477,35 +5416,27 @@
     const amt = parseFloat(document.getElementById('depositAmount').value || 500);
     if (amt < 300) { showToast('⚠️ Minimum deposit is ₹300'); return; }
     showToast('⏳ Opening payment page...');
+    const token = localStorage.getItem('royalwin_token');
     try {
-      const db = window.fbDB || fbDB;
       const orderId = 'RW' + Date.now() + window.currentUser.uid.substring(0,6);
-      let bonusPct=0, bonusAmt=0, wagerReq=1;
-      if (selectedBonusOption===1){bonusPct=8;bonusAmt=Math.round(amt*0.08);wagerReq=1.5;}
-      else if (selectedBonusOption===2){bonusPct=15;bonusAmt=Math.round(amt*0.15);wagerReq=2.5;}
+      let bonusOption = null;
+      if (selectedBonusOption === 1) bonusOption = '8p';
+      else if (selectedBonusOption === 2) bonusOption = '15p';
       else {
-        const hasDepSnap = await db.ref('users/' + window.currentUser.uid + '/hasDeposited').once('value');
-        if (hasDepSnap.val()) { bonusPct=5; bonusAmt=Math.round(amt*0.05); wagerReq=1; }
+        const uRes = await fetch(VERCEL_API_URL + '/api/user', { headers: { 'Authorization': 'Bearer ' + token } });
+        const uData = await uRes.json();
+        if (uData.success && uData.user.has_deposited) bonusOption = '5p';
       }
-      const depositRef = await db.ref('adminRequests/deposits').push({
-        orderId, amount: amt, status: 'pending', method: selectedDepositGateway === 'wgpay' ? 'WGPay - UPI' : 'Gateway - UPI',
-        gateway: selectedDepositGateway,
-        uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
-        username: window.userProfile?.username || 'Unknown',
-        contact: window.userProfile?.contact || '',
-        bonusPct, bonusAmt, wagerReq,
-        isFirstDeposit: !window.userProfile?.hasDeposited,
-        timestamp: Date.now()
+
+      // Create the pending deposit record via REST API first (replaces old Firebase
+      // adminRequests/deposits push) so the gateway webhook has a real Neon row to credit.
+      const depResp = await fetch(VERCEL_API_URL + '/api/deposit', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ amount: amt, gateway: selectedDepositGateway, bonusOption })
       });
-      const depositKey = depositRef.key;
-      setTimeout(async () => {
-        try {
-          const checkSnap = await db.ref('adminRequests/deposits/' + depositKey + '/status').once('value');
-          if (checkSnap.val() === 'pending') {
-            await db.ref('adminRequests/deposits/' + depositKey + '/status').set('cancelled');
-          }
-        } catch(e) {}
-      }, 5 * 60 * 1000);
+      const depData = await depResp.json();
+      if (!depData.success) { showToast('❌ ' + (depData.msg || 'Failed to start deposit. Try again.')); return; }
+      const depositKey = depData.depositKey;
 
       let response, data;
       if (selectedDepositGateway === 'wgpay') {
@@ -5521,7 +5452,6 @@
           window.open(data.paymentUrl, '_blank');
           showToast('✅ Payment page opened!');
         } else {
-          db.ref('adminRequests/deposits/' + depositKey + '/status').set('cancelled');
           showToast('❌ ' + (data.msg || 'Payment gateway error. Please try again.'));
         }
       } else {
@@ -5530,19 +5460,17 @@
           body: JSON.stringify({ amount: amt, uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,6),
             username: window.userProfile?.username || 'User',
             contact: window.userProfile?.contact || '',
-            orderId, callbackUrl: window.location.href })
+            orderId, callbackUrl: window.location.href, depositKey })
         });
         data = await response.json();
         if (data.success && data.url) {
           window.open(data.url, '_blank');
           showToast('✅ Payment page opened!');
         } else {
-          db.ref('adminRequests/deposits/' + depositKey + '/status').set('cancelled');
           showToast('❌ ' + (data.msg || 'Payment gateway error. Please try again.'));
         }
       }
     } catch(e) {
-      try { if (depositKey) db.ref('adminRequests/deposits/' + depositKey + '/status').set('cancelled'); } catch(err) {}
       showToast('❌ Payment gateway unavailable. Please try again later.');
     }
   }
@@ -8509,10 +8437,6 @@ function openUSDTModal() {
 
     if (totalSeconds <= 0) {
       clearInterval(window._usdtTimerInterval);
-      if (window._usdtDepositKey && !window._usdtConfirmed) {
-        var db = window.fbDB || fbDB;
-        if (db) db.ref('adminRequests/deposits/' + window._usdtDepositKey + '/status').set('cancelled');
-      }
       closeUSDTModal();
       showToast('⏱ USDT deposit timed out. Please try again.');
     }
@@ -8523,10 +8447,6 @@ function openUSDTModal() {
   getAssignedUsdtAddress().then(function(addr) {
     if (_activeUsdtAddress) return; // QuantumPay already set address
     _activeUsdtAddress = addr;
-    if (window._usdtDepositKey && (window.fbDB || fbDB)) {
-      var db = window.fbDB || fbDB;
-      db.ref('adminRequests/deposits/' + window._usdtDepositKey + '/assignedUsdtAddress').set(addr);
-    }
     if (addrEl) addrEl.textContent = addr || 'No USDT address configured. Contact support.';
     if (addr && qrEl && typeof QRCode !== 'undefined') {
       qrEl.innerHTML = '';
@@ -8544,8 +8464,6 @@ function closeUSDTModal() {
   if (modal) modal.style.display = 'none';
   if (window._usdtTimerInterval) clearInterval(window._usdtTimerInterval);
   if (window._usdtDepositKey && !window._usdtConfirmed) {
-    var db = window.fbDB || fbDB;
-    if (db) db.ref('adminRequests/deposits/' + window._usdtDepositKey + '/status').set('cancelled');
     window._usdtDepositKey = null;
   }
 }
@@ -8560,25 +8478,8 @@ async function confirmUSDTPayment() {
   if (!window.currentUser) { showToast('⚠️ Please login first'); return; }
   var amt = parseFloat(document.getElementById('depositAmount').value || 1000);
   if (amt < 1000) { showToast('⚠️ Minimum USDT deposit is ₹1,000'); return; }
-  var db = window.fbDB || fbDB;
-  if (!db) { showToast('❌ Connection error'); return; }
+  if (!window._usdtDepositKey) { showToast('❌ Connection error. Please try again.'); return; }
   try {
-    if (window._usdtDepositKey) {
-      await db.ref('adminRequests/deposits/' + window._usdtDepositKey).update({
-        assignedUsdtAddress: _activeUsdtAddress,
-        confirmedAt: Date.now()
-      });
-    } else {
-      await db.ref('adminRequests/deposits').push({
-        amount: amt, status: 'pending', method: 'USDT TRC20',
-        uid: window.currentUser.uid, memberId: window.userProfile?.memberId || window.currentUser.uid.substring(0,8),
-        username: window.userProfile ? window.userProfile.username : 'Unknown',
-        contact: window.userProfile ? (window.userProfile.contact || '') : '',
-        assignedUsdtAddress: _activeUsdtAddress,
-        isFirstDeposit: window.userProfile ? !window.userProfile.hasDeposited : true,
-        timestamp: Date.now()
-      });
-    }
     window._usdtConfirmed = true;
     if (window._usdtTimerInterval) clearInterval(window._usdtTimerInterval);
     var timerEl = document.getElementById('usdtCountdown');
