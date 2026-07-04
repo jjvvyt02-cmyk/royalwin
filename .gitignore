@@ -1,0 +1,5 @@
+royalwin-context-summary.md
+.env
+.env.*
+node_modules/
+.claude/settings.local.json

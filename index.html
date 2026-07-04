@@ -2420,13 +2420,6 @@
     window._bonus100Locked = false;
     lockBonusCards(false);
     _showPageInternal(name);
-    const _prevPage = window._currentPage;
-    if (_prevPage === 'referral' || _prevPage === 'subdata') {
-      const db = window.fbDB || fbDB;
-      if (db) {
-        db.ref('users').off();
-      }
-    }
     window._currentPage = name;
     if (name === 'home') {
       const mah = document.getElementById('mobileAppHome');
@@ -3077,47 +3070,6 @@
     } catch(e) { /* suppressed */ }
   }
 
-  async function addVipExp(exp) {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) return;
-    try {
-      const snap = await db.ref('users/' + user.uid + '/vip').once('value');
-      const vipData = snap.val() || { exp: 0, levelupClaimed: [] };
-      const oldExp = vipData.exp || 0;
-      const newExp = oldExp + exp;
-      const oldLevel = getVipLevel(oldExp);
-      const newLevel = getVipLevel(newExp);
-
-      await db.ref('users/' + user.uid + '/vip/exp').set(newExp);
-      if (newLevel.name !== oldLevel.name) {
-        const claimed = vipData.levelupClaimed || [];
-        if (!claimed.includes(newLevel.name)) {
-          const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
-          const newBal = parseFloat(((balSnap.val() || 0) + newLevel.levelupBonus).toFixed(2));
-          await db.ref('users/' + user.uid + '/balance').transaction(() => newBal);
-          await db.ref('users/' + user.uid + '/vip/levelupClaimed').set([...claimed, newLevel.name]);
-          await db.ref('users/' + user.uid + '/transactions/' + Date.now()).set({
-            type: 'vip_levelup', amount: newLevel.levelupBonus,
-            details: '🎉 Level up! ' + oldLevel.name + ' → ' + newLevel.name,
-            balance: newBal, timestamp: Date.now()
-          });
-          // Add wager requirement — 1x of level up bonus amount
-          const wagerSnap = await db.ref('users/' + user.uid + '/wager').once('value');
-          const wv = wagerSnap.val() || { required: 0, completed: 0, startedAt: 0 };
-          const isNewW = !wv.startedAt || wv.startedAt === 0;
-          await db.ref('users/' + user.uid + '/wager').set({
-            required: parseFloat((parseFloat(wv.required || 0) + newLevel.levelupBonus).toFixed(2)),
-            completed: parseFloat(wv.completed || 0),
-            startedAt: isNewW ? Date.now() : wv.startedAt
-          });
-          await pushNotification(user.uid, newLevel.icon, 'VIP Level Up! ' + newLevel.name, '₹' + newLevel.levelupBonus + ' bonus credited to your wallet!');
-          updateBalanceDisplay(newBal);
-          showToast('🎉 Level Up! ' + newLevel.icon + ' ' + newLevel.name + ' — ₹' + newLevel.levelupBonus + ' bonus credited!');
-        }
-      }
-    } catch(e) { /* suppressed */ }
-  }
   const _vipTypes = {
     vip_weekly:  { icon:'📅', label:'VIP Weekly Bonus',  color:'#27ae60', sign:'+' },
     vip_monthly: { icon:'🗓️', label:'VIP Monthly Bonus', color:'#27ae60', sign:'+' },
@@ -3232,25 +3184,50 @@
     } catch(e) {}
   }
 
-  async function pushNotification(uid, icon, title, body) {
-    const db = window.fbDB || fbDB;
-    if (!db || !uid) return;
-    try { await db.ref('users/' + uid + '/notifications').push({ icon, title, body, read: false, timestamp: Date.now() }); }
-    catch(e) { /* push notif failed */ }
+  let _siteStatusInterval = null;
+  async function pollSiteStatus() {
+    try {
+      const res = await fetch('https://royalwin-api.vercel.app/api/site-status');
+      const data = await res.json();
+      if (!data.success) return;
+
+      const ann = data.announcement;
+      let bannerEl = document.getElementById('announcementBanner');
+      if (ann && ann.active && ann.message) {
+        if (!bannerEl) {
+          bannerEl = document.createElement('div');
+          bannerEl.id = 'announcementBanner';
+          bannerEl.style.cssText = 'background:linear-gradient(135deg,#c07a10,var(--gold2));color:#000;text-align:center;padding:0.5rem 1rem;font-size:0.88rem;font-weight:700;position:fixed;top:64px;left:0;right:0;z-index:200;';
+          document.body.insertBefore(bannerEl, document.body.firstChild);
+        }
+        bannerEl.textContent = '📢 ' + ann.message;
+        bannerEl.style.display = 'block';
+      } else if (bannerEl) {
+        bannerEl.style.display = 'none';
+      }
+
+      const maint = data.maintenance;
+      if (maint && maint.active) {
+        let overlay = document.getElementById('maintenanceOverlay');
+        if (!overlay) {
+          overlay = document.createElement('div');
+          overlay.id = 'maintenanceOverlay';
+          overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(10,10,15,0.97);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;';
+          overlay.innerHTML = '<div style="font-size:3rem;margin-bottom:1rem;">🔧</div><div style="font-family:Cinzel,serif;font-size:1.5rem;color:var(--gold);margin-bottom:0.5rem;">Under Maintenance</div><div id="maintenanceMsgText" style="color:var(--muted);font-size:0.95rem;"></div>';
+          document.body.appendChild(overlay);
+        }
+        document.getElementById('maintenanceMsgText').textContent = maint.message || '🔧 Site under maintenance. Back soon!';
+        overlay.style.display = 'flex';
+      } else {
+        const overlay = document.getElementById('maintenanceOverlay');
+        if (overlay) overlay.style.display = 'none';
+      }
+    } catch(e) { /* suppressed */ }
   }
-  function loadAnnouncement() {
-    const db = window.fbDB || fbDB;
-    if (!db) return;
-    db.ref('announcements/current').on('value', snap => {
-      const data = snap.val();
-      const banner = document.getElementById('announcementBanner');
-      if (!banner) return;
-      if (data && data.active && data.text) {
-        banner.style.display = 'flex';
-        const textEl = document.getElementById('announcementText');
-        if (textEl) textEl.textContent = data.text;
-      } else { banner.style.display = 'none'; }
-    });
+  function startSiteStatusPolling() {
+    pollSiteStatus();
+    if (_siteStatusInterval) clearInterval(_siteStatusInterval);
+    _siteStatusInterval = setInterval(pollSiteStatus, 30000);
   }
   async function loadProfileStats() {
     const token = localStorage.getItem('royalwin_token');
@@ -3283,11 +3260,23 @@
       if (userData && userData.success) {
         updateProfilePage(userData.user);
         setText('profileUsernameDisplay', userData.user.username || '—');
+        const exp = parseFloat(userData.user.vip_exp || 0);
+        const vLevel = getVipLevel(exp);
+        const badge = document.getElementById('profileVipBadge');
+        if (badge) {
+          badge.style.display = 'inline-block';
+          badge.textContent = vLevel.icon + ' ' + vLevel.name;
+          const colors = { Bronze:'rgba(205,127,50,0.2)', Silver:'rgba(192,192,192,0.2)', Gold:'rgba(240,192,64,0.2)', Diamond:'rgba(168,125,255,0.2)' };
+          const textColors = { Bronze:'#cd7f32', Silver:'#c0c0c0', Gold:'var(--gold)', Diamond:'#a87dff' };
+          badge.style.background = colors[vLevel.name] || colors.Bronze;
+          badge.style.color = textColors[vLevel.name] || textColors.Bronze;
+          badge.style.borderColor = textColors[vLevel.name] || textColors.Bronze;
+        }
       }
     } catch(e) { /* suppressed */ }
   }
 
-  function loadRebateRates() {
+  async function loadRebateRates() {
     const defaults = { l1: 1, l2: 0.8, l3: 0.5, l4: 0.2 };
     const fmt = v => Number(v).toFixed(3) + '%';
     const applyRates = (rates) => {
@@ -3297,16 +3286,11 @@
       });
     };
     applyRates(defaults);
-    const tryFirebase = () => {
-      const db = window.fbDB;
-      if (!db) { setTimeout(tryFirebase, 400); return; }
-      try {
-        db.ref('settings/commissionRates').on('value', snap => {
-          applyRates(snap.val() || {});
-        });
-      } catch(e) { /* suppressed */ }
-    };
-    tryFirebase();
+    try {
+      const res = await fetch('https://royalwin-api.vercel.app/api/site-status');
+      const data = await res.json();
+      if (data.success) applyRates(data.commissionRates || {});
+    } catch(e) { /* suppressed — defaults already applied */ }
   }
   function filterSubData() { renderSubDataRows(window._refAllData || []); }
 
@@ -3381,35 +3365,32 @@
     if (totalEl) totalEl.textContent = '0.00';
 
     const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) {
+    const token = localStorage.getItem('royalwin_token');
+    if (!user || !token) {
       rowsEl.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--muted);font-size:0.82rem;">Please log in</div>';
       return;
     }
 
     try {
-      // Read all commission transactions from the transactions node
-      // Each has: type='commission', amount, fromMemberId, level, timestamp
-      const txSnap = await db.ref('users/' + user.uid + '/transactions').once('value');
-      const txData = txSnap.val() || {};
+      // Direct (level-1) referrals only — see loadReferralData() for why levels 2-4 are dropped.
+      const res = await fetch('https://royalwin-api.vercel.app/api/my-referrals', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (!data.success) throw new Error('Failed to load');
 
-      // Filter to commission type and to the selected date only
-      const dayStart = new Date(dateVal).setHours(0,0,0,0);
-      const dayEnd = dayStart + 86400000;
+      const memberIdByUid = {};
+      (data.referrals || []).forEach(r => { memberIdByUid[r.referee_uid] = r.member_id; });
 
-      // Group by fromMemberId — sum all commission earned from each user on this date
+      // Group by referrer — sum all commission earned from each user on this date
+      // (date_key is the IST calendar day it was credited server-side, 'YYYY-MM-DD')
       const byMember = {};
-      Object.values(txData).forEach(tx => {
-        if (tx.type !== 'commission') return;
-        const ts = tx.timestamp || 0;
-        if (ts < dayStart || ts >= dayEnd) return;
-        const mid = tx.fromMemberId || tx.from || '—';
+      (data.commissions || []).forEach(c => {
+        if (c.date_key !== dateVal) return;
+        const mid = memberIdByUid[c.from_uid] || ('UID:' + (c.from_uid || '').substring(0,6));
         if (!byMember[mid]) {
-          byMember[mid] = { memberId: mid, lv: tx.level || 1, totalComm: 0 };
+          byMember[mid] = { memberId: mid, lv: c.level || 1, totalComm: 0 };
         }
-        byMember[mid].totalComm = parseFloat((byMember[mid].totalComm + (tx.amount || 0)).toFixed(2));
-        // keep lowest level (direct > team)
-        if (tx.level < byMember[mid].lv) byMember[mid].lv = tx.level;
+        byMember[mid].totalComm = parseFloat((byMember[mid].totalComm + parseFloat(c.amount || 0)).toFixed(2));
+        if (c.level < byMember[mid].lv) byMember[mid].lv = c.level;
       });
 
       let commRows = Object.values(byMember);
@@ -3557,15 +3538,23 @@
     }).join('');
   }
 
-  function renderCommissionRows(referrals) {
+  function renderCommissionRows(commissions, refs) {
     const el = document.getElementById('refCommissionRows');
     const countEl = document.getElementById('commSearchCount');
     if (!el) return;
     const query = (window._commSearchQuery || '').toLowerCase();
-    const commRows = [];
-    referrals.forEach(r => {
-      if (r.bonus && r.bonus > 0) commRows.push({ lv: r.level||1, user: r.username||('UID:' + (r.uid||'').substring(0,6)), uid: r.uid||'', memberId: r.memberId||'', date: r.creditedAt||r.joinedAt, amount: r.bonus, type: 'Reg Bonus' });
-      if (r.commission && r.commission > 0) commRows.push({ lv: r.level||1, user: r.username||('UID:' + (r.uid||'').substring(0,6)), uid: r.uid||'', memberId: r.memberId||'', date: r.creditedAt||r.joinedAt, amount: r.commission, type: 'Commission' });
+    const refByUid = {};
+    (refs || []).forEach(r => { refByUid[r.uid] = r; });
+    const commRows = (commissions || []).map(c => {
+      const r = refByUid[c.from_uid];
+      return {
+        lv: c.level || 1,
+        user: (r && r.username) || ('UID:' + (c.from_uid || '').substring(0,6)),
+        uid: c.from_uid || '',
+        memberId: (r && r.memberId) || '',
+        date: Number(c.timestamp) || 0,
+        amount: parseFloat(c.amount || 0)
+      };
     });
     commRows.sort((a,b) => (b.date||0) - (a.date||0));
     let filtered = commRows;
@@ -3594,128 +3583,64 @@
     }).join('');
   }
 
+  // ── REFERRALS: direct (level-1) only — levels 2-4, daily/yesterday commission,
+  // and today's-registration counts were dropped (no Neon backend for them; the old
+  // 4-level per-bet commission engine was deliberately not carried over from Firebase,
+  // see royalwin-index-migration memory notes). Everything below is real, current data. ──
   async function loadReferralData() {
     const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) return;
+    if (!user) return;
     const profile = window.userProfile;
     if (!profile || !profile.referralCode) return;
+    const token = localStorage.getItem('royalwin_token');
     try {
-      const snap = await db.ref('users/' + user.uid + '/referrals').once('value');
-      const raw = snap.val() ? snap.val() : {};
-      const level1 = Object.values(raw).map(r => ({...r, level: 1}));
-      const [snap2, snap3, snap4] = await Promise.all([
-        db.ref('users/' + user.uid + '/referrals_l2').once('value'),
-        db.ref('users/' + user.uid + '/referrals_l3').once('value'),
-        db.ref('users/' + user.uid + '/referrals_l4').once('value'),
-      ]);
-      const level2 = snap2.val() ? Object.values(snap2.val()).map(r => ({...r, level: 2})) : [];
-      const level3 = snap3.val() ? Object.values(snap3.val()).map(r => ({...r, level: 3})) : [];
-      const level4 = snap4.val() ? Object.values(snap4.val()).map(r => ({...r, level: 4})) : [];
+      const res = await fetch('https://royalwin-api.vercel.app/api/my-referrals', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (!data.success) return;
 
-      const allRefs = [...level1, ...level2, ...level3, ...level4];
-      window._refAllData = allRefs;
-      const totalComm = allRefs.reduce((s, r) => s + (r.bonus || 0) + (r.commission || 0), 0);
+      const refs = data.referrals.map(r => ({
+        level: 1,
+        uid: r.referee_uid,
+        username: r.username,
+        memberId: r.member_id,
+        joinedAt: Number(r.joined_at) || 0,
+        firstDepositAmt: r.has_deposited ? parseFloat(r.total_deposited || 0) : 0
+      }));
+      window._refAllData = refs;
+      window._refCommissions = data.commissions || [];
+
       const el_totalComm = document.getElementById('agencyTotalComm');
       const el_totalRefs = document.getElementById('agencyTotalRefs');
-      if (el_totalComm) el_totalComm.textContent = '₹' + totalComm.toLocaleString('en-IN', {minimumFractionDigits:2});
-      if (el_totalRefs) el_totalRefs.textContent = allRefs.length;
-      const yesterday = new Date(); yesterday.setDate(yesterday.getDate()-1);
-      const yKey = yesterday.toISOString().split('T')[0];
-      const yCommSnap = await db.ref('users/' + user.uid + '/dailyCommission/' + yKey).once('value');
-      db.ref('users/' + user.uid + '/dailyCommission/' + new Date().toISOString().slice(0,10)).on('value', commSnap => {
-        const todayComm = commSnap.val() || 0;
-        const todayEl = document.querySelector('.agency-today-comm');
-        if (todayEl) todayEl.textContent = '₹' + parseFloat(todayComm).toLocaleString('en-IN', {minimumFractionDigits:2});
-      });
-      const yestComm = yCommSnap.val() || 0;
+      if (el_totalComm) el_totalComm.textContent = '₹' + data.totalCommission.toLocaleString('en-IN', {minimumFractionDigits:2});
+      if (el_totalRefs) el_totalRefs.textContent = refs.length;
+      // Daily/yesterday commission breakdown isn't tracked as a running ledger — not shown.
       const el_yest = document.getElementById('agencyYesterdayComm');
-      if (el_yest) el_yest.textContent = Number(yestComm).toFixed(2);
-      const dirDeps = level1.filter(r => r.firstDepositAmt > 0);
+      if (el_yest) el_yest.textContent = '—';
 
-      // ── TODAY filter for direct/team cards ──
-      const todayStart = new Date(); todayStart.setHours(0,0,0,0);
-      const todayTs = todayStart.getTime();
+      // Direct Members card — real, all-time data (no "today" filter available)
+      const depRefs = refs.filter(r => r.firstDepositAmt > 0);
+      document.getElementById('dirRegCount').textContent = refs.length;
+      document.getElementById('dirDepCount').textContent = depRefs.length;
+      document.getElementById('dirDepAmt').textContent = fmtK(depRefs.reduce((s,r) => s + r.firstDepositAmt, 0));
+      document.getElementById('dirFirstDep').textContent = depRefs.length;
 
-      // Registrations: users who joined today
-      const dirToday = level1.filter(r => (r.joinedAt||0) >= todayTs);
-      const teamAll = [...level2, ...level3, ...level4];
-      const teamToday = teamAll.filter(r => (r.joinedAt||0) >= todayTs);
-      document.getElementById('dirRegCount').textContent = dirToday.length;
-      document.getElementById('teamRegCount').textContent = teamToday.length;
+      // Team Members card (levels 2-4) — no backend, always empty
+      document.getElementById('teamRegCount').textContent = 0;
+      document.getElementById('teamDepCount').textContent = 0;
+      document.getElementById('teamDepAmt').textContent = '0';
+      document.getElementById('teamFirstDep').textContent = 0;
 
-      // For deposits/amount/first deposit — read from actual approved deposits today
-      try {
-        const depSnap = await db.ref('adminRequests/deposits').once('value');
-        const allDeposits = depSnap.val() ? Object.values(depSnap.val()) : [];
-
-        // Build sets of referral UIDs for quick lookup
-        const dirUids = new Set(level1.map(r => r.uid).filter(Boolean));
-        const teamUids = new Set(teamAll.map(r => r.uid).filter(Boolean));
-        // Track which UIDs have ever deposited before today (for first deposit detection)
-        const dirFirstDepUids = new Set(level1.filter(r => r.firstDepositAmt > 0 && (r.firstDepositTs||0) < todayTs).map(r => r.uid));
-        const teamFirstDepUids = new Set(teamAll.filter(r => r.firstDepositAmt > 0 && (r.firstDepositTs||0) < todayTs).map(r => r.uid));
-
-        // Filter to approved deposits made today
-        const todayDeps = allDeposits.filter(d =>
-          d.status === 'approved' && (d.timestamp||0) >= todayTs
-        );
-
-        // Direct subordinate deposit stats
-        const dirTodayDeps = todayDeps.filter(d => dirUids.has(d.uid));
-        const dirDepUidsToday = new Set(dirTodayDeps.map(d => d.uid));
-        const dirTotalAmt = dirTodayDeps.reduce((s, d) => s + parseFloat(d.amount||0), 0);
-        // First deposit = deposited today AND had no prior deposits
-        const dirFirstToday = [...dirDepUidsToday].filter(uid => !dirFirstDepUids.has(uid)).length;
-        document.getElementById('dirDepCount').textContent = dirDepUidsToday.size;
-        document.getElementById('dirDepAmt').textContent = fmtK(dirTotalAmt);
-        document.getElementById('dirFirstDep').textContent = dirFirstToday;
-
-        // Team subordinate deposit stats
-        const teamTodayDeps = todayDeps.filter(d => teamUids.has(d.uid));
-        const teamDepUidsToday = new Set(teamTodayDeps.map(d => d.uid));
-        const teamTotalAmt = teamTodayDeps.reduce((s, d) => s + parseFloat(d.amount||0), 0);
-        const teamFirstToday = [...teamDepUidsToday].filter(uid => !teamFirstDepUids.has(uid)).length;
-        document.getElementById('teamDepCount').textContent = teamDepUidsToday.size;
-        document.getElementById('teamDepAmt').textContent = fmtK(teamTotalAmt);
-        document.getElementById('teamFirstDep').textContent = teamFirstToday;
-      } catch(e) {
-        // Fallback to referral node data if deposits can't be read
-        const dirDepsToday = dirToday.filter(r => r.firstDepositAmt > 0);
-        document.getElementById('dirDepCount').textContent = dirDepsToday.length;
-        document.getElementById('dirDepAmt').textContent = fmtK(dirDepsToday.reduce((s,r) => s+(r.firstDepositAmt||0),0));
-        document.getElementById('dirFirstDep').textContent = dirDepsToday.length;
-        const teamDepsToday = teamToday.filter(r => r.firstDepositAmt > 0);
-        document.getElementById('teamDepCount').textContent = teamDepsToday.length;
-        document.getElementById('teamDepAmt').textContent = fmtK(teamDepsToday.reduce((s,r) => s+(r.firstDepositAmt||0),0));
-        document.getElementById('teamFirstDep').textContent = teamDepsToday.length;
-      }
-
-      // ── PROMOTION DATA CARD — all-time totals + this week commission ──
-      const totalCommAll = allRefs.reduce((s, r) => s + (r.bonus||0) + (r.commission||0), 0);
-      const weekStart = new Date(); weekStart.setHours(0,0,0,0);
-      weekStart.setDate(weekStart.getDate() - weekStart.getDay()); // start of this week (Sunday)
-      const weekTs = weekStart.getTime();
-      // Week commission from dailyCommission node
-      const weekKeys = [];
-      for (let d = new Date(weekTs); d <= new Date(); d.setDate(d.getDate()+1)) {
-        weekKeys.push(d.toISOString().slice(0,10));
-      }
-      let weekComm = 0;
-      try {
-        const weekSnaps = await Promise.all(weekKeys.map(k => db.ref('users/' + user.uid + '/dailyCommission/' + k).once('value')));
-        weekComm = weekSnaps.reduce((s, snap) => s + (snap.val() || 0), 0);
-      } catch(e) {}
+      // ── PROMOTION DATA CARD — all-time totals only (no weekly ledger) ──
       const promoWeekEl = document.getElementById('promoWeekComm');
       const promoTotalEl = document.getElementById('promoTotalComm');
       const promoDirEl = document.getElementById('promoDirectCount');
       const promoTeamEl = document.getElementById('promoTeamCount');
-      if (promoWeekEl) promoWeekEl.textContent = '₹' + weekComm.toLocaleString('en-IN', {minimumFractionDigits:2});
-      if (promoTotalEl) promoTotalEl.textContent = '₹' + totalCommAll.toLocaleString('en-IN', {minimumFractionDigits:2});
-      if (promoDirEl) promoDirEl.textContent = level1.length;
-      if (promoTeamEl) promoTeamEl.textContent = teamAll.length;
+      if (promoWeekEl) promoWeekEl.textContent = '—';
+      if (promoTotalEl) promoTotalEl.textContent = '₹' + data.totalCommission.toLocaleString('en-IN', {minimumFractionDigits:2});
+      if (promoDirEl) promoDirEl.textContent = refs.length;
+      if (promoTeamEl) promoTeamEl.textContent = 0;
       renderRefRows();
-      renderCommissionRows(allRefs);
+      renderCommissionRows(window._refCommissions, refs);
 
     } catch(e) { /* suppressed */ }
   }
@@ -3917,16 +3842,18 @@
     const barEl = document.getElementById('gsWinRateBar');
     if (barEl) barEl.style.width = winRate + '%';
     try {
-      const db = window.fbDB || fbDB;
-      const user = window.currentUser;
-      if (db && user) {
-        const vipSnap = await db.ref('users/' + user.uid + '/vip/exp').once('value');
-        const exp = parseFloat(vipSnap.val() || 0);
-        const vLevel = getVipLevel(exp);
-        const vipEl = document.getElementById('gsVipLevel');
-        const expEl = document.getElementById('gsVipExp');
-        if (vipEl) vipEl.textContent = vLevel.icon + ' ' + vLevel.name;
-        if (expEl) expEl.textContent = exp.toLocaleString('en-IN') + ' EXP';
+      const token = localStorage.getItem('royalwin_token');
+      if (window.currentUser && token) {
+        const res = await fetch('https://royalwin-api.vercel.app/api/user', { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        if (data.success) {
+          const exp = parseFloat(data.user.vip_exp || 0);
+          const vLevel = getVipLevel(exp);
+          const vipEl = document.getElementById('gsVipLevel');
+          const expEl = document.getElementById('gsVipExp');
+          if (vipEl) vipEl.textContent = vLevel.icon + ' ' + vLevel.name;
+          if (expEl) expEl.textContent = exp.toLocaleString('en-IN') + ' EXP';
+        }
       }
     } catch(e) {}
   }
@@ -4696,14 +4623,17 @@
   // ── LOGOUT ALL DEVICES ──
   async function logoutAllDevices() {
     if (!confirm('This will log you out from all devices. Continue?')) return;
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) return;
+    const token = localStorage.getItem('royalwin_token');
+    if (!token) return;
     try {
-      // Update a session token — other devices will detect change and logout
-      await db.ref('users/' + user.uid + '/sessionToken').set(Date.now().toString());
-      await firebase.auth().signOut();
+      // Bumps the server-side session version, invalidating every existing token
+      // (including this device's) — see getAuthUser() in handler.js.
+      await fetch('https://royalwin-api.vercel.app/api/logout-all-devices', {
+        method: 'POST', headers: { 'Authorization': 'Bearer ' + token }
+      });
       showToast('✅ Logged out from all devices');
+      localStorage.removeItem('royalwin_token');
+      if (typeof onAuthChange === 'function') onAuthChange(null);
       showPage('home');
     } catch(e) { showToast('❌ Error: ' + e.message); }
   }
@@ -4713,11 +4643,15 @@
     const upi = document.getElementById('settingsUpiInput').value.trim();
     const msgEl = document.getElementById('settingsUpiMsg');
     if (!upi) { msgEl.style.display='block'; msgEl.textContent='⚠️ Enter UPI ID'; msgEl.style.color='var(--red2)'; return; }
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) return;
+    if (!window.currentUser) return;
     try {
-      await db.ref('users/' + user.uid + '/savedUpi').set({ upiId: upi, savedAt: Date.now() });
+      const token = localStorage.getItem('royalwin_token');
+      const res = await fetch('https://royalwin-api.vercel.app/api/saved-payment-details', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ method: 'upi', details: { upiId: upi } })
+      });
+      const data = await res.json();
+      if (!data.success) { msgEl.style.display='block'; msgEl.textContent='❌ ' + (data.msg || 'Error saving'); msgEl.style.color='var(--red2)'; return; }
       msgEl.style.display='block'; msgEl.textContent='✅ UPI ID saved!'; msgEl.style.color='var(--green)';
       document.getElementById('settingsUpiInput').value = '';
       document.getElementById('settingsSavedUpiText').textContent = upi;
@@ -4727,11 +4661,13 @@
   }
 
   async function clearSavedUpi() {
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) return;
+    if (!window.currentUser) return;
     if (!confirm('Remove saved UPI ID?')) return;
-    await db.ref('users/' + user.uid + '/savedUpi').remove();
+    const token = localStorage.getItem('royalwin_token');
+    await fetch('https://royalwin-api.vercel.app/api/saved-payment-details', {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ method: 'upi' })
+    });
     document.getElementById('settingsSavedUpi').style.display = 'none';
     showToast('✅ UPI ID removed');
   }
@@ -4748,10 +4684,15 @@
     if (!acc) { showMsg('⚠️ Enter account number', false); return; }
     if (!ifsc) { showMsg('⚠️ Enter IFSC code', false); return; }
     if (!bankName) { showMsg('⚠️ Enter bank name', false); return; }
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db) return;
+    if (!window.currentUser) return;
     try {
-      await db.ref('users/' + user.uid + '/savedBank').set({ name, acc, ifsc, bankName, savedAt: Date.now() });
+      const token = localStorage.getItem('royalwin_token');
+      const res = await fetch('https://royalwin-api.vercel.app/api/saved-payment-details', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ method: 'bank', details: { name, acc, ifsc, bankName } })
+      });
+      const data = await res.json();
+      if (!data.success) { showMsg('❌ ' + (data.msg || 'Error saving'), false); return; }
       document.getElementById('settingsSavedBankName').textContent = name;
       document.getElementById('settingsSavedBankAcc').textContent = acc;
       document.getElementById('settingsSavedBankIfsc').textContent = ifsc + ' · ' + bankName;
@@ -4772,10 +4713,13 @@
   }
 
   async function clearSavedBank() {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db) return;
+    if (!window.currentUser) return;
     if (!confirm('Remove saved bank details?')) return;
-    await db.ref('users/' + user.uid + '/savedBank').remove();
+    const token = localStorage.getItem('royalwin_token');
+    await fetch('https://royalwin-api.vercel.app/api/saved-payment-details', {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ method: 'bank' })
+    });
     document.getElementById('settingsSavedBank').style.display = 'none';
     showToast('✅ Bank details removed');
   }
@@ -4787,10 +4731,15 @@
     const showMsg = (t, ok) => { msgEl.style.display='block'; msgEl.textContent=t; msgEl.style.color=ok?'var(--green)':'var(--red2)'; };
     if (!wallet) { showMsg('⚠️ Enter USDT wallet address', false); return; }
     if (wallet.length < 30) { showMsg('⚠️ Invalid TRC20 wallet address', false); return; }
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db) return;
+    if (!window.currentUser) return;
     try {
-      await db.ref('users/' + user.uid + '/savedUsdt').set({ wallet, network: 'TRC20', savedAt: Date.now() });
+      const token = localStorage.getItem('royalwin_token');
+      const res = await fetch('https://royalwin-api.vercel.app/api/saved-payment-details', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ method: 'usdt', details: { wallet, network: 'TRC20' } })
+      });
+      const data = await res.json();
+      if (!data.success) { showMsg('❌ ' + (data.msg || 'Error saving'), false); return; }
       document.getElementById('settingsSavedUsdtText').textContent = wallet;
       document.getElementById('settingsSavedUsdt').style.display = 'block';
       document.getElementById('settingsUsdtInput').value = '';
@@ -4804,19 +4753,21 @@
   }
 
   async function clearSavedUsdt() {
-    const user = window.currentUser; const db = window.fbDB || fbDB;
-    if (!user || !db) return;
+    if (!window.currentUser) return;
     if (!confirm('Remove saved USDT wallet?')) return;
-    await db.ref('users/' + user.uid + '/savedUsdt').remove();
+    const token = localStorage.getItem('royalwin_token');
+    await fetch('https://royalwin-api.vercel.app/api/saved-payment-details', {
+      method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ method: 'usdt' })
+    });
     document.getElementById('settingsSavedUsdt').style.display = 'none';
     showToast('✅ USDT wallet removed');
   }
 
-  // Load saved UPI in settings
+  // Load saved UPI/bank/USDT in settings
   async function loadSettingsPage() {
     let user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    // Wait up to 3 seconds for Firebase auth to be ready
+    // Wait up to 3 seconds for session restore to be ready
     if (!user) {
       await new Promise(resolve => {
         let attempts = 0;
@@ -4833,41 +4784,46 @@
         }, 100);
       });
     }
-    if (!user || !db) return;
+    if (!user) return;
     try {
+      const token = localStorage.getItem('royalwin_token');
+      const res = await fetch('https://royalwin-api.vercel.app/api/saved-payment-details', { headers: { 'Authorization': 'Bearer ' + token } });
+      const resData = await res.json();
+      const data = resData.success ? resData.details : {};
       // Load UPI
-      const upiSnap = await db.ref('users/' + user.uid + '/savedUpi').once('value');
-      if (upiSnap.val() && upiSnap.val().upiId) {
-        document.getElementById('settingsSavedUpiText').textContent = upiSnap.val().upiId;
+      if (data.upi && data.upi.upiId) {
+        document.getElementById('settingsSavedUpiText').textContent = data.upi.upiId;
         document.getElementById('settingsSavedUpi').style.display = 'block';
         const upiArea = document.getElementById('settingsUpiInputArea');
         if (upiArea) upiArea.style.display = 'none';
       }
       // Load Bank
-      const bankSnap = await db.ref('users/' + user.uid + '/savedBank').once('value');
-      if (bankSnap.val()) {
-        const b = bankSnap.val();
+      if (data.bank) {
+        const b = data.bank;
         document.getElementById('settingsSavedBankName').textContent = b.name || '—';
         document.getElementById('settingsSavedBankAcc').textContent = b.acc || '—';
         document.getElementById('settingsSavedBankIfsc').textContent = (b.ifsc || '—') + ' · ' + (b.bankName || '—');
         document.getElementById('settingsSavedBank').style.display = 'block';
       }
       // Load USDT
-      const usdtSnap = await db.ref('users/' + user.uid + '/savedUsdt').once('value');
-      if (usdtSnap.val() && usdtSnap.val().wallet) {
-        document.getElementById('settingsSavedUsdtText').textContent = usdtSnap.val().wallet;
+      if (data.usdt && data.usdt.wallet) {
+        document.getElementById('settingsSavedUsdtText').textContent = data.usdt.wallet;
         document.getElementById('settingsSavedUsdt').style.display = 'block';
         const usdtInputRow = document.getElementById('settingsUsdtInput');
         if (usdtInputRow) usdtInputRow.parentElement.style.display = 'none';
       }
-      // Check username cooldown
-      const cdSnap = await db.ref('users/' + user.uid + '/usernameChangedAt').once('value');
-      const lastChanged = cdSnap.val() || 0;
-      const daysSince = (Date.now() - lastChanged) / (1000 * 60 * 60 * 24);
-      if (lastChanged && daysSince < 7) {
-        const daysLeft = Math.ceil(7 - daysSince);
-        const cdEl = document.getElementById('settingsUsernameCooldown');
-        if (cdEl) { cdEl.style.display='block'; cdEl.textContent='⏳ Next change available in ' + daysLeft + ' day(s)'; }
+      // Check username cooldown (changeUsername() itself is still Firebase-backed, left
+      // untouched — out of scope, see royalwin-index-migration memory notes)
+      const db = window.fbDB || fbDB;
+      if (db) {
+        const cdSnap = await db.ref('users/' + user.uid + '/usernameChangedAt').once('value');
+        const lastChanged = cdSnap.val() || 0;
+        const daysSince = (Date.now() - lastChanged) / (1000 * 60 * 60 * 24);
+        if (lastChanged && daysSince < 7) {
+          const daysLeft = Math.ceil(7 - daysSince);
+          const cdEl = document.getElementById('settingsUsernameCooldown');
+          if (cdEl) { cdEl.style.display='block'; cdEl.textContent='⏳ Next change available in ' + daysLeft + ' day(s)'; }
+        }
       }
     } catch(e) {}
   }
@@ -6329,44 +6285,6 @@
     currentBetFilter = filter;
     renderBetHistory(filter);
   }
-  async function addBetToHistory(game, bet, result, profit, won, round, balanceAfter, timerMode, selection) {
-    const now = new Date();
-    const time = now.toLocaleDateString('en-IN', {day:'numeric', month:'short'}) + ', ' +
-                 now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
-    let currentBal = balanceAfter || 0;
-    if (!balanceAfter) {
-      try {
-        const db = window.fbDB || fbDB;
-        const user = window.currentUser;
-        if (db && user) {
-          const balSnap = await db.ref('users/' + user.uid + '/balance').once('value');
-          currentBal = parseFloat(balSnap.val() || 0);
-        }
-      } catch(e) {}
-    }
-
-    const entry = {
-      game, icon:'🎯',
-      color: won ? '#27ae60' : '#e02020',
-      bet: parseFloat(bet), result,
-      profit: won ? parseFloat(profit) : -parseFloat(bet),
-      won, time, round: round || '—',
-      mode: timerMode ? timerMode + 'Min' : null,
-      selection: selection || null,
-      timestamp: Date.now(),
-      balance: currentBal
-    };
-    betHistoryData.unshift(entry);
-    if (currentBetFilter !== undefined) renderBetHistory(currentBetFilter);
-    try {
-      const db = window.fbDB || fbDB;
-      const user = window.currentUser;
-      if (db && user) {
-        await db.ref('users/' + user.uid + '/betHistory').push(entry);
-      }
-    } catch(e) { /* suppressed */ }
-  }
-
   let _toastTimer = null;
   function showToast(msg) {
     const t = document.getElementById('toast');
@@ -6410,22 +6328,6 @@
       if (profUserDisp) profUserDisp.textContent = profile.username || profile.firstName || '—';
       const profUID = document.getElementById('profileUIDDisplay');
       let uidVal = profile.memberId;
-      if (!uidVal || uidVal.length > 10) {
-        const user = window.currentUser;
-        const db = window.fbDB || fbDB;
-        let newMemberId;
-        let attempts = 0;
-        do {
-          newMemberId = Math.floor(100000 + Math.random() * 900000).toString();
-          const snap = await db.ref('memberIds/' + newMemberId).once('value');
-          if (!snap.val()) break;
-          attempts++;
-        } while (attempts < 10);
-        await db.ref('memberIds/' + newMemberId).set(user.uid);
-        await db.ref('users/' + user.uid + '/memberId').set(newMemberId);
-        profile.memberId = newMemberId;
-        uidVal = newMemberId;
-      }
       const profUIDEl = document.getElementById('profileUIDDisplay');
       if (profUIDEl) {
         profUIDEl.innerHTML = '';
@@ -6455,22 +6357,6 @@
       const profUser = document.getElementById('profileUsername') || document.getElementById('profileUsernameDisplay');
       if (profUser) profUser.textContent = '@' + (profile.username || '—');
       updateBalanceDisplay(profile.balance || 0);
-      try {
-        const db = window.fbDB || fbDB;
-        const vipSnap = await db.ref('users/' + user.uid + '/vip/exp').once('value');
-        const exp = parseFloat(vipSnap.val() || 0);
-        const vLevel = getVipLevel(exp);
-        const badge = document.getElementById('profileVipBadge');
-        if (badge) {
-          badge.style.display = 'inline-block';
-          badge.textContent = vLevel.icon + ' ' + vLevel.name;
-          const colors = { Bronze:'rgba(205,127,50,0.2)', Silver:'rgba(192,192,192,0.2)', Gold:'rgba(240,192,64,0.2)', Diamond:'rgba(168,125,255,0.2)' };
-          const textColors = { Bronze:'#cd7f32', Silver:'#c0c0c0', Gold:'var(--gold)', Diamond:'#a87dff' };
-          badge.style.background = colors[vLevel.name] || colors.Bronze;
-          badge.style.color = textColors[vLevel.name] || textColors.Bronze;
-          badge.style.borderColor = textColors[vLevel.name] || textColors.Bronze;
-        }
-      } catch(e) {}
       updateProfilePage(profile);
       startBalancePolling();
     } catch(e) { /* suppressed */ }
@@ -6569,6 +6455,7 @@
     }
   }
   window.addEventListener('load', () => tryInitFirebase(10));
+  startSiteStatusPolling(); // announcement banner + maintenance mode — not login-gated
   // ── TRUE SAFETY NET: hides the loader even if the Firebase SDK itself never loads
   // (network issue, ad-blocker, blocked CDN). The safety net inside initFirebase() only
   // fires if Firebase loaded successfully - this one fires regardless, after 8 seconds. ──
@@ -6617,17 +6504,13 @@
           // ── DAILY LOGIN EXP (2 EXP per day) ──
           (async () => {
             try {
-              const db = window.fbDB || fbDB;
-              const uid = user.uid;
-              const todayIST = new Date(Date.now() + 5.5*60*60*1000).toISOString().split('T')[0];
-              const lastLoginSnap = await db.ref(`users/${uid}/vip/lastLoginExpDate`).once('value');
-              if (lastLoginSnap.val() !== todayIST) {
-                await db.ref(`users/${uid}/vip/exp`).transaction(exp => (exp || 0) + 2);
-                await db.ref(`users/${uid}/vip/lastLoginExpDate`).set(todayIST);
-              }
+              const token = localStorage.getItem('royalwin_token');
+              await fetch('https://royalwin-api.vercel.app/api/claim-bonus', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ type: 'daily_login_exp' })
+              });
             } catch(e) {}
           })();
-          loadAnnouncement();
 
           // ── MY BETS POLLING ──
           // game-engine.js settles bets server-side; this just refreshes status and
@@ -6723,50 +6606,6 @@
           setTimeout(() => loader.style.display = 'none', 400);
         }
       }, 6000);
-      fbDB.ref('announcement').on('value', (snap) => {
-        const data = snap.val();
-        let bannerEl = document.getElementById('announcementBanner');
-        if (data && data.active && data.message) {
-          if (!bannerEl) {
-            bannerEl = document.createElement('div');
-            bannerEl.id = 'announcementBanner';
-            bannerEl.style.cssText = 'background:linear-gradient(135deg,#c07a10,var(--gold2));color:#000;text-align:center;padding:0.5rem 1rem;font-size:0.88rem;font-weight:700;position:fixed;top:64px;left:0;right:0;z-index:200;';
-            document.body.insertBefore(bannerEl, document.body.firstChild);
-          }
-          bannerEl.textContent = '📢 ' + data.message;
-          bannerEl.style.display = 'block';
-        } else if (bannerEl) {
-          bannerEl.style.display = 'none';
-        }
-      });
-      fbDB.ref('maintenance').on('value', (snap) => {
-        const data = snap.val();
-        if (data && data.active) {
-          let overlay = document.getElementById('maintenanceOverlay');
-          if (!overlay) {
-            overlay = document.createElement('div');
-            overlay.id = 'maintenanceOverlay';
-            overlay.style.cssText = 'position:fixed;inset:0;z-index:9999;background:rgba(10,10,15,0.97);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;';
-            overlay.innerHTML = '<div style="font-size:3rem;margin-bottom:1rem;">🔧</div><div style="font-family:Cinzel,serif;font-size:1.5rem;color:var(--gold);margin-bottom:0.5rem;">Under Maintenance</div><div id="maintenanceMsgText" style="color:var(--muted);font-size:0.95rem;"></div>';
-            document.body.appendChild(overlay);
-          }
-          document.getElementById('maintenanceMsgText').textContent = data.message || '🔧 Site under maintenance. Back soon!';
-          overlay.style.display = 'flex';
-        } else {
-          const overlay = document.getElementById('maintenanceOverlay');
-          if (overlay) overlay.style.display = 'none';
-        }
-      });
-      firebase.auth().onAuthStateChanged((user) => {
-        if (user) {
-          fbDB.ref('users/' + user.uid + '/isBlocked').on('value', (snap) => {
-            if (snap.val() === true) {
-              firebase.auth().signOut();
-              showToast('❌ Your account has been blocked. Contact support.');
-            }
-          });
-        }
-      });
     } catch(e) {
       // console.warn('Firebase error:', e.message);
     }
@@ -8313,21 +8152,10 @@
 var _activeUsdtAddress = '';
 
 function getAssignedUsdtAddress() {
-  return new Promise(function(resolve) {
-    var db = window.fbDB || fbDB;
-    if (!db) { resolve(''); return; }
-    db.ref('settings/usdtAddresses').once('value').then(function(snap) {
-      var data = snap.val();
-      if (data && typeof data === 'object') {
-        var addrs = Object.values(data).filter(function(a) { return a.active && a.address; });
-        if (addrs.length > 0) {
-          var random = addrs[Math.floor(Math.random() * addrs.length)];
-          resolve(random.address); return;
-        }
-      }
-      db.ref('settings/usdtAddress').once('value').then(function(s) { resolve(s.val() || ''); });
-    }).catch(function() { resolve(''); });
-  });
+  return fetch('https://royalwin-api.vercel.app/api/usdt-address')
+    .then(function(r) { return r.json(); })
+    .then(function(data) { return (data.success && data.address) || ''; })
+    .catch(function() { return ''; });
 }
 
 function openUSDTModal() {
