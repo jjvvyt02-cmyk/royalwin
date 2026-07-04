@@ -639,9 +639,6 @@
   .support-opt .lbl { font-size:0.85rem; font-weight:600; }
   .support-opt .sub { font-size:0.75rem; color:var(--muted); margin-top:0.2rem; }
 
-  /* Forgot Password */
-  .forgot-sent { display:none; text-align:center; padding:1rem 0; }
-
   /* ─── COLOR PREDICTION GAME ─── */
   .color-game-overlay {
     display:none; position:fixed; top:0; left:0; right:0; bottom:65px; z-index:600;
@@ -1016,7 +1013,7 @@
     }
     #page-home { padding: 0 !important; }
     #mobileAppHome { padding: 0.85rem 0.75rem 0 !important; box-sizing: border-box !important; }
-    #page-login, #page-register, #page-forgot { padding: 0 !important; }
+    #page-login, #page-register { padding: 0 !important; }
     /* Mobile nav — constrained to app width */
     .mobile-nav {
       max-width: 430px !important;
@@ -1144,8 +1141,7 @@
     }
     /* Auth pages — centered via flexbox, manage own spacing */
     #page-login,
-    #page-register,
-    #page-forgot {
+    #page-register {
       padding: 0 !important;
     }
     /* Auth wrap handles top spacing */
@@ -1910,7 +1906,6 @@
           <button type="button" onclick="togglePasswordVisibility('loginPassword', this)" style="position:absolute;right:0.7rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0.2rem;">👁️</button>
         </div>
       </div>
-      <div style="text-align:right;margin-bottom:1.2rem;"><a style="color:var(--gold);font-size:0.94rem;cursor:pointer;" onclick="showPage('forgot')">Forgot password?</a></div>
       <button class="btn btn-gold btn-full" onclick="doLogin()">Sign In</button>
       <div class="auth-footer">No account? <a onclick="showPage('register')">Register now</a></div>
     </div>
@@ -2302,7 +2297,7 @@
   }
 
   function showPage(name) {
-    const _guestAllowed = ['home', 'login', 'register', 'forgot', 'terms', 'privacy', 'responsible', 'gifts'];
+    const _guestAllowed = ['home', 'login', 'register', 'terms', 'privacy', 'responsible', 'gifts'];
     if (!isLoggedIn && !_guestAllowed.includes(name)) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       const loginPage = document.getElementById('page-login');
@@ -2312,7 +2307,7 @@
       return;
     }
     const mobileNavEl = document.getElementById('mobileNav');
-    const authPages = ['login', 'register', 'forgot'];
+    const authPages = ['login', 'register'];
     if (mobileNavEl) {
       mobileNavEl.style.display = authPages.includes(name) ? 'none' : (isLoggedIn ? 'grid' : 'none');
     }
@@ -2613,7 +2608,6 @@
       'auth.welcome':'Welcome Back','auth.signin.sub':'Sign in to your account',
       'auth.create':'Create Account','auth.reg.sub':'Join RoyalWin today',
       'auth.noacc':"Don't have an account?",'auth.haveacc':'Already have an account?',
-      'auth.forgot':'Forgot Password?',
       'wallet.balance':'Your Balance','wallet.howtopay':'How to Pay',
       'wallet.paid':'Payment Received!','wallet.nobonus':'No Bonus','wallet.wager':'Wager Progress',
       'acc.winloss':'Win & Loss history','acc.alltx':'All transactions',
@@ -2654,7 +2648,6 @@
       'auth.welcome':'वापस आपका स्वागत है','auth.signin.sub':'अपने अकाउंट में साइन इन करें',
       'auth.create':'अकाउंट बनाएं','auth.reg.sub':'आज RoyalWin से जुड़ें',
       'auth.noacc':'अकाउंट नहीं है?','auth.haveacc':'पहले से अकाउंट है?',
-      'auth.forgot':'पासवर्ड भूल गए?',
       'wallet.balance':'आपका बैलेंस','wallet.howtopay':'कैसे भुगतान करें',
       'wallet.paid':'भुगतान प्राप्त हुआ!','wallet.nobonus':'कोई बोनस नहीं','wallet.wager':'वेजर प्रगति',
       'acc.winloss':'जीत और हार का इतिहास','acc.alltx':'सभी लेनदेन',
@@ -2860,7 +2853,7 @@
     const page = params.get('page');
     if (!page) return;
 
-    const guestPages = ['login', 'register', 'forgot'];
+    const guestPages = ['login', 'register'];
     if (guestPages.includes(page)) {
       setTimeout(() => showPage(page), 300);
     } else {
@@ -4533,10 +4526,6 @@
     container.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  function otpMove(el, nextId) {
-    if (el.value && nextId) document.getElementById(nextId).focus();
-  }
-
   async function changePassword() {
     const oldPw = document.getElementById('settingsOldPassword').value;
     const newPw = document.getElementById('settingsNewPassword').value;
@@ -4555,28 +4544,22 @@
     if (newPw !== confirmPw) { showMsg('⚠️ Passwords do not match', false); return; }
     if (oldPw === newPw) { showMsg('⚠️ New password must be different from current', false); return; }
 
+    if (!window.currentUser) { showMsg('❌ Not logged in', false); return; }
     try {
-      const user = firebase.auth().currentUser;
-      if (!user) { showMsg('❌ Not logged in', false); return; }
-
-      // Re-authenticate with old password first
-      const email = user.email;
-      const credential = firebase.auth.EmailAuthProvider.credential(email, oldPw);
-      await user.reauthenticateWithCredential(credential);
-
-      // Update password
-      await user.updatePassword(newPw);
+      const token = localStorage.getItem('royalwin_token');
+      const res = await fetch('https://royalwin-api.vercel.app/api/change-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ oldPassword: oldPw, newPassword: newPw })
+      });
+      const data = await res.json();
+      if (!data.success) { showMsg('❌ ' + (data.msg || 'Failed to update password'), false); return; }
 
       showMsg('✅ Password updated successfully!', true);
       document.getElementById('settingsOldPassword').value = '';
       document.getElementById('settingsNewPassword').value = '';
       document.getElementById('settingsConfirmPassword').value = '';
     } catch(e) {
-      const msg = e.code === 'auth/wrong-password' ? '❌ Current password is incorrect' :
-                  e.code === 'auth/weak-password' ? '❌ New password is too weak' :
-                  e.code === 'auth/requires-recent-login' ? '❌ Please log out and log in again first' :
-                  '❌ Error: ' + e.message;
-      showMsg(msg, false);
+      showMsg('❌ Error: ' + e.message, false);
     }
   }
 
@@ -4594,24 +4577,15 @@
     if (!newUsername) { showMsg('⚠️ Enter a new username', false); return; }
     if (newUsername.length < 3) { showMsg('⚠️ Username must be at least 3 characters', false); return; }
     if (!/^[a-zA-Z0-9_]+$/.test(newUsername)) { showMsg('⚠️ Only letters, numbers and underscore allowed', false); return; }
-    const user = window.currentUser;
-    const db = window.fbDB || fbDB;
-    if (!user || !db) { showMsg('❌ Not logged in', false); return; }
+    if (!window.currentUser) { showMsg('❌ Not logged in', false); return; }
     try {
-      // Check cooldown
-      const snap = await db.ref('users/' + user.uid + '/usernameChangedAt').once('value');
-      const lastChanged = snap.val() || 0;
-      const daysSince = (Date.now() - lastChanged) / (1000 * 60 * 60 * 24);
-      if (daysSince < 7) {
-        const daysLeft = Math.ceil(7 - daysSince);
-        showMsg('⏳ You can change username in ' + daysLeft + ' day(s)', false);
-        return;
-      }
-      // Check if username taken
-      const usersSnap = await db.ref('users').orderByChild('username').equalTo(newUsername).once('value');
-      if (usersSnap.val()) { showMsg('❌ Username already taken', false); return; }
-      // Update username
-      await db.ref('users/' + user.uid).update({ username: newUsername, usernameChangedAt: Date.now() });
+      const token = localStorage.getItem('royalwin_token');
+      const res = await fetch('https://royalwin-api.vercel.app/api/change-username', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ newUsername })
+      });
+      const data = await res.json();
+      if (!data.success) { showMsg('❌ ' + (data.msg || 'Failed to update username'), false); return; }
       showMsg('✅ Username updated to ' + newUsername, true);
       document.getElementById('settingsNewUsername').value = '';
       // Update display
@@ -4812,18 +4786,15 @@
         const usdtInputRow = document.getElementById('settingsUsdtInput');
         if (usdtInputRow) usdtInputRow.parentElement.style.display = 'none';
       }
-      // Check username cooldown (changeUsername() itself is still Firebase-backed, left
-      // untouched — out of scope, see royalwin-index-migration memory notes)
-      const db = window.fbDB || fbDB;
-      if (db) {
-        const cdSnap = await db.ref('users/' + user.uid + '/usernameChangedAt').once('value');
-        const lastChanged = cdSnap.val() || 0;
-        const daysSince = (Date.now() - lastChanged) / (1000 * 60 * 60 * 24);
-        if (lastChanged && daysSince < 7) {
-          const daysLeft = Math.ceil(7 - daysSince);
-          const cdEl = document.getElementById('settingsUsernameCooldown');
-          if (cdEl) { cdEl.style.display='block'; cdEl.textContent='⏳ Next change available in ' + daysLeft + ' day(s)'; }
-        }
+      // Check username cooldown
+      const userRes = await fetch('https://royalwin-api.vercel.app/api/user', { headers: { 'Authorization': 'Bearer ' + token } });
+      const userData = await userRes.json();
+      const lastChanged = userData.success ? Number(userData.user.username_changed_at || 0) : 0;
+      const daysSince = (Date.now() - lastChanged) / (1000 * 60 * 60 * 24);
+      if (lastChanged && daysSince < 7) {
+        const daysLeft = Math.ceil(7 - daysSince);
+        const cdEl = document.getElementById('settingsUsernameCooldown');
+        if (cdEl) { cdEl.style.display='block'; cdEl.textContent='⏳ Next change available in ' + daysLeft + ' day(s)'; }
       }
     } catch(e) {}
   }
@@ -4991,65 +4962,6 @@
       const el = document.getElementById(id);
       if (el) { el.textContent = val.length > 0 ? labels[score] : ''; el.style.color = colors[score]; }
     });
-  }
-  async function sendForgotOTP() {
-    const v = document.getElementById('forgotInput').value.trim();
-    if (!v) { showToast('⚠️ Enter your mobile or email'); return; }
-
-    const isEmail = v.includes('@');
-    try {
-      if (isEmail) {
-        await firebase.auth().sendPasswordResetEmail(v);
-        showToast('📧 Password reset email sent to ' + v);
-        document.getElementById('forgotForm').style.display = 'none';
-        document.getElementById('forgotOTPWrap').style.display = 'block';
-        setTimeout(() => document.getElementById('fotp1').focus(), 100);
-      } else {
-        let phone = v.replace(/\s/g, '');
-        if (!phone.startsWith('+')) phone = '+91' + phone;
-        try {
-          if (window.recaptchaVerifier) { window.recaptchaVerifier.clear(); window.recaptchaVerifier = null; }
-        } catch(e) {}
-        document.getElementById('recaptchaContainer').innerHTML = '';
-        window.recaptchaVerifier = new firebase.auth.RecaptchaVerifier('recaptchaContainer', {
-          size: 'invisible', callback: () => {}
-        });
-        await window.recaptchaVerifier.render();
-        const confirmResult = await firebase.auth().signInWithPhoneNumber(phone, window.recaptchaVerifier);
-        window._forgotConfirmResult = confirmResult;
-        window._confirmResult = confirmResult;
-        window._forgotPhone = phone;
-        showToast('📱 OTP sent to ' + phone);
-        document.getElementById('forgotForm').style.display = 'none';
-        document.getElementById('forgotOTPWrap').style.display = 'block';
-        setTimeout(() => document.getElementById('fotp1').focus(), 100);
-      }
-    } catch(e) {
-      if (window.recaptchaVerifier) { window.recaptchaVerifier.clear(); window.recaptchaVerifier = null; }
-      showToast('❌ ' + (e.message || 'Failed to send OTP'));
-    }
-  }
-  async function doResetPassword() {
-    const otp = ['fotp1','fotp2','fotp3','fotp4','fotp5','fotp6'].map(id => document.getElementById(id).value).join('');
-    if (otp.length < 6) { showToast('⚠️ Enter full 6-digit OTP'); return; }
-    const newPass = document.getElementById('newPass') ? document.getElementById('newPass').value : '';
-    if (!newPass || newPass.length < 6) { showToast('⚠️ Password must be at least 6 characters'); return; }
-    try {
-      if (window._forgotConfirmResult) {
-        const cred = await window._forgotConfirmResult.confirm(otp);
-        await cred.user.updatePassword(newPass);
-        showToast('✅ Password reset successfully!');
-        await firebase.auth().signOut();
-        setTimeout(() => showPage('login'), 1200);
-      } else {
-        showToast('✅ Check your email for the reset link!');
-        setTimeout(() => showPage('login'), 1200);
-      }
-    } catch(e) {
-      const msg = e.code === 'auth/invalid-verification-code' ? 'Invalid OTP. Please try again.' :
-                  e.code === 'auth/weak-password' ? 'Password too weak. Use at least 8 characters with a number.' : e.message;
-      showToast('❌ ' + msg);
-    }
   }
   let _chatPollInterval = null;
   let _chatBadgePollInterval = null;
@@ -6299,35 +6211,29 @@
   }
   async function loadUserProfile(uid) {
     try {
-      const snap = await firebase.database().ref('users/' + uid).once('value');
-      const profile = snap.val();
-      if (!profile) return;
+      const token = localStorage.getItem('royalwin_token');
+      if (!token) return;
+      const res = await fetch('https://royalwin-api.vercel.app/api/user', { headers: { 'Authorization': 'Bearer ' + token } });
+      const data = await res.json();
+      if (!data.success) return;
+      const profile = data.user;
       window.userProfile = profile;
 
-      try {
-        const txSnap = await firebase.database().ref('users/' + uid + '/transactions').once('value');
-        if (txSnap.val()) {
-          window.userTransactions = Object.values(txSnap.val())
-            .sort((a,b) => (b.timestamp || 0) - (a.timestamp || 0));
-          renderTransactionHistory();
-        }
-      } catch(e) {}
       const avatarEl = document.getElementById('userAvatar');
-      if (avatarEl) avatarEl.textContent = (profile.username || profile.firstName || 'U').charAt(0).toUpperCase();
+      if (avatarEl) avatarEl.textContent = (profile.username || 'U').charAt(0).toUpperCase();
       const bottomAv = document.getElementById('bottomAvatar');
       if (bottomAv) {
-        bottomAv.textContent = (profile.username || profile.firstName || 'U').charAt(0).toUpperCase();
+        bottomAv.textContent = (profile.username || 'U').charAt(0).toUpperCase();
         bottomAv.style.display = 'flex';
         const svgIcon = bottomAv.previousElementSibling;
         if (svgIcon) svgIcon.style.display = 'none';
       }
-      const initial = (profile.username || profile.firstName || 'U').charAt(0).toUpperCase();
+      const initial = (profile.username || 'U').charAt(0).toUpperCase();
       const profAvBig = document.getElementById('profileAvatarBig');
       if (profAvBig) profAvBig.textContent = initial;
       const profUserDisp = document.getElementById('profileUsernameDisplay');
-      if (profUserDisp) profUserDisp.textContent = profile.username || profile.firstName || '—';
-      const profUID = document.getElementById('profileUIDDisplay');
-      let uidVal = profile.memberId;
+      if (profUserDisp) profUserDisp.textContent = profile.username || '—';
+      const uidVal = profile.member_id;
       const profUIDEl = document.getElementById('profileUIDDisplay');
       if (profUIDEl) {
         profUIDEl.innerHTML = '';
@@ -6346,8 +6252,8 @@
         profUIDEl.appendChild(copyBtn);
       }
       const lastLoginEl = document.getElementById('profileLastLogin');
-      if (lastLoginEl && profile.lastLogin) {
-        lastLoginEl.textContent = '🕐 Last login: ' + new Date(profile.lastLogin).toLocaleString('en-IN', {
+      if (lastLoginEl && profile.last_login) {
+        lastLoginEl.textContent = '🕐 Last login: ' + new Date(Number(profile.last_login)).toLocaleString('en-IN', {
           day:'numeric', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'
         });
       }
@@ -6539,30 +6445,16 @@
           if (dh) dh.style.display = 'none';
           updateMobileHomeBalance();
           try {
-            const db = window.fbDB || fbDB;
-            if (db) {
-              db.ref('users/' + user.uid + '/lastLogin').set(Date.now());
-              // Track IP address for fraud detection
-              fetch('https://api.ipify.org?format=json')
-                .then(r => r.json())
-                .then(data => {
-                  const ip = data.ip;
-                  const loginRecord = { ip, timestamp: Date.now(), device: navigator.userAgent.substring(0,100) };
-                  db.ref('users/' + user.uid + '/loginHistory').push(loginRecord);
-                  db.ref('users/' + user.uid + '/lastIp').set(ip);
-                  // Check if same IP used by multiple accounts
-                  db.ref('users').orderByChild('lastIp').equalTo(ip).once('value', snap => {
-                    if (snap.val()) {
-                      const uids = Object.keys(snap.val()).filter(u => u !== user.uid);
-                      if (uids.length > 0) {
-                        db.ref('users/' + user.uid + '/ipConflict').set({
-                          ip, conflictingUids: uids, detectedAt: Date.now()
-                        });
-                      }
-                    }
-                  });
-                }).catch(() => {});
-            }
+            // Track IP/device for login history + cross-account fraud detection
+            // (last_login itself is already updated server-side by /api/login)
+            const token = localStorage.getItem('royalwin_token');
+            fetch('https://api.ipify.org?format=json')
+              .then(r => r.json())
+              .then(data => fetch('https://royalwin-api.vercel.app/api/track-login', {
+                method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+                body: JSON.stringify({ ip: data.ip, device: navigator.userAgent })
+              }))
+              .catch(() => {});
           } catch(e) {}
           resetInactivityTimer();
         } else {
@@ -7655,35 +7547,6 @@
         <input class="chat-input" id="chatInput" placeholder="Type your message..." onkeydown="if(event.key==='Enter')sendChat()" style="flex:1;min-width:0;">
         <button class="chat-send" onclick="sendChat()" style="flex-shrink:0;padding:0.6rem 1rem;line-height:1;">➤</button>
       </div>
-    </div>
-  </div>
-</div>
-
-<div class="page" id="page-forgot">
-  <div class="auth-wrap">
-    <div class="auth-card">
-      <div class="auth-logo"><div class="auth-logo-text">ROYAL♠WIN</div></div>
-      <div class="auth-title">Forgot Password</div>
-      <div class="auth-sub">Enter your mobile/email to receive a reset OTP</div>
-      <div id="forgotForm">
-        <div class="form-group"><label class="form-label">Mobile / Email</label><input class="form-input" id="forgotInput" placeholder="+91 9876543210"></div>
-        <button class="btn btn-gold btn-full" onclick="sendForgotOTP()">📱 Send Reset OTP</button>
-      </div>
-      <div class="forgot-sent" id="forgotOTPWrap">
-        <div style="font-size:2rem;margin-bottom:0.5rem;">📱</div>
-        <div style="margin-bottom:1rem;color:var(--muted);font-size:0.9rem;">OTP sent! Enter it below to reset your password.</div>
-        <div class="otp-inputs" style="margin-bottom:1rem;">
-          <input class="otp-input" maxlength="1" id="fotp1" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,'fotp2')">
-          <input class="otp-input" maxlength="1" id="fotp2" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,'fotp3')">
-          <input class="otp-input" maxlength="1" id="fotp3" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,'fotp4')">
-          <input class="otp-input" maxlength="1" id="fotp4" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,'fotp5')">
-          <input class="otp-input" maxlength="1" id="fotp5" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,'fotp6')">
-          <input class="otp-input" maxlength="1" id="fotp6" inputmode="numeric" pattern="[0-9]*" type="tel" oninput="otpMove(this,null)">
-        </div>
-        <div class="form-group"><label class="form-label">New Password</label><input class="form-input" type="password" id="newPass" placeholder="Enter new password" oninput="checkStrength(this.value)"><div class="strength-bar" style="margin-top:6px;"><div class="strength-fill" id="strengthFill3"></div></div><div class="strength-label" id="strengthLabel3"></div></div>
-        <button class="btn btn-gold btn-full" onclick="doResetPassword()">🔒 Reset Password</button>
-      </div>
-      <div class="auth-footer" style="margin-top:1rem;"><a onclick="showPage('login')">← Back to Sign In</a></div>
     </div>
   </div>
 </div>
