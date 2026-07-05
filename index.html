@@ -5449,16 +5449,16 @@
 
   function scheduleNextCheck(mins, currentPeriodId, secondsLeft) {
     if (cgNextCheckTimeout[mins]) clearTimeout(cgNextCheckTimeout[mins]);
-    const fireInMs = Math.max(0, secondsLeft) * 1000 + 2000; // period-end + 2s buffer
+    const fireInMs = Math.max(0, secondsLeft) * 1000 + 500; // period-end + small clock-skew buffer
     cgNextCheckTimeout[mins] = setTimeout(() => handlePeriodEnd(mins, currentPeriodId), fireInMs);
   }
 
-  // Fires ~2s after a period ends. game-engine.js's settlement cron runs at most
-  // once a minute, so it may not have caught up yet — verify by checking whether the
-  // newest history row for this timer actually matches the period that just ended
-  // before trusting the fetch. Retries every 3s for up to 20s if not yet confirmed,
-  // then gives up until the next period boundary (same self-healing My Bets' old 15s
-  // poll used to provide, just event-driven at period boundaries instead of constant).
+  // Fires ~0.5s after a period ends. /api/game-state and /api/history both now settle an
+  // already-ended round inline the moment they're called (instead of only waiting on the
+  // once-a-minute cron), so this first check normally finds it already settled — verify by
+  // checking whether the newest history row for this timer actually matches the period
+  // that just ended before trusting the fetch. Retries every 1.5s for up to 10s in the rare
+  // case the request raced ahead of the DB write, then gives up until the next boundary.
   async function handlePeriodEnd(mins, justEndedPeriodId, retryStartedAt) {
     if (!retryStartedAt) retryStartedAt = Date.now();
     const [gameState, histData] = await Promise.all([
@@ -5468,7 +5468,7 @@
 
     const settled = histData && histData.success && histData.history[0]
       && String(histData.history[0].period_id) === String(justEndedPeriodId);
-    const outOfTime = Date.now() - retryStartedAt >= 20000;
+    const outOfTime = Date.now() - retryStartedAt >= 10000;
 
     if (settled || outOfTime) {
       if (histData && histData.success) {
@@ -5478,7 +5478,7 @@
       loadMyBets();
       if (gameState) scheduleNextCheck(mins, gameState.currentPeriodId, gameState.secondsLeft);
     } else {
-      cgNextCheckTimeout[mins] = setTimeout(() => handlePeriodEnd(mins, justEndedPeriodId, retryStartedAt), 3000);
+      cgNextCheckTimeout[mins] = setTimeout(() => handlePeriodEnd(mins, justEndedPeriodId, retryStartedAt), 1500);
     }
   }
 
