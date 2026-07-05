@@ -1199,7 +1199,11 @@ window.toggleLock = async function(mins) {
 
 window.forceResolve = async function(mins) {
   if (!confirm('Force resolve ' + mins + ' Min round now?')) return;
-  showToast('⚡ [' + mins + ' Min] Force resolve triggered (next cron tick)');
+  try {
+    const data = await apiCall('/api/admin/force-resolve', 'POST', { timer: mins });
+    if (data.resolved) showToast('⚡ [' + mins + ' Min] Resolved → ' + data.result.winNum + ' (' + data.result.method + ')');
+    else showToast('⚡ [' + mins + ' Min] Nothing to resolve — round already settled or still open');
+  } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
 window.toggleAutoForMode = async function(mins, isAuto) {
