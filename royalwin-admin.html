@@ -966,25 +966,6 @@
 <script>
 // ── NEON ADMIN CONFIG ──
 const API = 'https://royalwin-api.vercel.app';
-const ADMIN_TOKEN = localStorage.getItem('royalwin_admin_token') || '';
-
-async function apiCall(endpoint, method = 'GET', body = null) {
-  const opts = {
-    method,
-    headers: { 'Content-Type': 'application/json', 'x-admin-token': ADMIN_TOKEN }
-  };
-  if (body) opts.body = JSON.stringify(body);
-  const res = await fetch(API + endpoint, opts);
-  const data = await res.json();
-  if (res.status === 401) {
-    localStorage.removeItem('royalwin_admin_token');
-    window._adminLoggedIn = false;
-    document.getElementById('loginWrap').style.display = 'flex';
-    document.getElementById('adminWrap').style.display = 'none';
-    throw new Error('Session expired');
-  }
-  return data;
-}
 
 // ── STATE ──
 let selectedNum = null;

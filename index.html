@@ -2533,10 +2533,6 @@
       showToast('❌ ' + (e.message || 'Login failed. Please try again.'));
     }
   }
-  function showGiftsModal() {
-    const m = document.getElementById('giftsModal');
-    if (m) { m.style.display = 'flex'; loadGiftHistory(); }
-  }
   function closeGiftsModal() {
     const m = document.getElementById('giftsModal');
     if (m) m.style.display = 'none';
@@ -2560,15 +2556,16 @@
           </div>
           <div style="font-size:0.85rem;font-weight:700;color:var(--green);">+₹${parseFloat(g.amount).toLocaleString('en-IN')}</div>
         </div>`).join('');
-    // Attribute-selector, not getElementById — both the page and modal versions share this ID, both must update
-    document.querySelectorAll('[id="giftHistoryList"]').forEach(el => { el.innerHTML = html; });
+    // Page and modal have distinct ids (giftHistoryList / giftHistoryListModal) — update both
+    [document.getElementById('giftHistoryList'), document.getElementById('giftHistoryListModal')]
+      .filter(Boolean).forEach(el => { el.innerHTML = html; });
   }
   async function redeemGiftCode() {
-    // Find whichever input actually has text — page and modal share the same ID, only one is in use at a time
-    const inputs = Array.from(document.querySelectorAll('[id="giftCodeInput"]'));
+    // Find whichever input actually has text — page and modal are separate inputs, only one is in use at a time
+    const inputs = [document.getElementById('giftCodeInput'), document.getElementById('giftCodeInputModal')].filter(Boolean);
     const activeInput = inputs.find(i => i.value.trim()) || inputs[0];
     const code = activeInput ? activeInput.value.trim().toUpperCase() : '';
-    const statusEls = document.querySelectorAll('[id="giftRedeemStatus"]');
+    const statusEls = [document.getElementById('giftRedeemStatus'), document.getElementById('giftRedeemStatusModal')].filter(Boolean);
 
     if (!code) { showToast('⚠️ Enter a gift code'); return; }
     const token = localStorage.getItem('royalwin_token');
@@ -3431,61 +3428,6 @@
   window._refLevelFilter = 'all';
   window._refCurrentSubTab = 'subordinates';
 
-  function showRefSubTab(tab) {
-    window._refCurrentSubTab = tab;
-    ['subordinates','commission'].forEach(t => {
-      const el = document.getElementById('refSubContent-' + t);
-      const btn = document.getElementById('subTab-' + t);
-      if (el) el.style.display = t === tab ? 'block' : 'none';
-      if (btn) { btn.classList.toggle('active', t === tab); }
-    });
-  }
-
-  function filterRefLevel(btn, level) {
-    window._refLevelFilter = level;
-    document.querySelectorAll('.sub-level-filter').forEach(b => {
-      b.style.background = 'transparent';
-      b.style.color = 'var(--muted)';
-      b.style.borderColor = 'var(--border)';
-    });
-    btn.style.background = 'rgba(240,192,64,0.15)';
-    btn.style.color = 'var(--gold)';
-    btn.style.borderColor = 'var(--gold)';
-    renderRefRows();
-  }
-
-  function searchRefHistory(query) {
-    window._refSearchQuery = query.trim().toLowerCase();
-    const clearBtn = document.getElementById('refSearchClear');
-    if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
-    renderRefRows();
-  }
-
-  function clearRefSearch() {
-    const inp = document.getElementById('refSearchInput');
-    if (inp) inp.value = '';
-    window._refSearchQuery = '';
-    const clearBtn = document.getElementById('refSearchClear');
-    if (clearBtn) clearBtn.style.display = 'none';
-    renderRefRows();
-  }
-
-  function searchCommHistory(query) {
-    window._commSearchQuery = query.trim().toLowerCase();
-    const clearBtn = document.getElementById('commSearchClear');
-    if (clearBtn) clearBtn.style.display = query ? 'block' : 'none';
-    renderCommissionRows(window._refAllData || []);
-  }
-
-  function clearCommSearch() {
-    const inp = document.getElementById('commSearchInput');
-    if (inp) inp.value = '';
-    window._commSearchQuery = '';
-    const clearBtn = document.getElementById('commSearchClear');
-    if (clearBtn) clearBtn.style.display = 'none';
-    renderCommissionRows(window._refAllData || []);
-  }
-
   function renderRefRows() {
     const histEl = document.getElementById('refHistoryRows');
     const countEl = document.getElementById('refSearchCount');
@@ -3636,26 +3578,6 @@
       renderCommissionRows(window._refCommissions, refs);
 
     } catch(e) { /* suppressed */ }
-  }
-
-  function downloadRefQR() {
-    const profile = window.userProfile;
-    const code = profile && profile.referralCode ? profile.referralCode : (document.getElementById('myRefCode') ? document.getElementById('myRefCode').textContent : 'ROYALWIN');
-    const link = 'https://royalwingames.com?invitationCode=' + code;
-    const canvas = document.getElementById('refQrCanvas');
-    if (!canvas) { showToast('📋 Share link: ' + link); return; }
-    const ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,200,200);
-    ctx.fillStyle = '#000'; ctx.font = '11px monospace'; ctx.textAlign = 'center';
-    ctx.fillText('ROYAL WIN', 100, 30);
-    ctx.font = '9px monospace';
-    ctx.fillText(code, 100, 185);
-    for (let i = 0; i < 10; i++) for (let j = 0; j < 10; j++) {
-      if (Math.random() > 0.5) { ctx.fillStyle = '#000'; ctx.fillRect(40 + i*13, 40 + j*13, 11, 11); }
-    }
-    const a = document.createElement('a'); a.download = 'royalwin-referral-qr.png';
-    a.href = canvas.toDataURL(); a.click();
-    showToast('📷 QR Code downloaded!');
   }
 
   var _depHistPage = 1;
@@ -3849,15 +3771,6 @@
         }
       }
     } catch(e) {}
-  }
-
-  function showDepositHistory() {
-    showPage('wallet');
-    switchWalletTab('history');
-  }
-  function showWithdrawHistory() {
-    showPage('wallet');
-    setTimeout(() => switchWalletTab('withdraw'), 50);
   }
 
   function calcBonus100(val) {
@@ -4381,10 +4294,6 @@
     }
   }
 
-  async function doDeposit() {
-    showToast('⚠️ Please use the Pay Now button to deposit.');
-  }
-
   async function doWithdraw() {
     if (currentWithdrawMethod === 'upi') { showToast('⏳ UPI withdrawal is temporarily unavailable. Please use Bank Transfer.'); return; }
     const minAmt = currentWithdrawMethod === 'upi' ? 300 : currentWithdrawMethod === 'bank' ? 500 : 3000;
@@ -4634,18 +4543,6 @@
     } catch(e) { msgEl.style.display='block'; msgEl.textContent='❌ Error: '+e.message; msgEl.style.color='var(--red2)'; }
   }
 
-  async function clearSavedUpi() {
-    if (!window.currentUser) return;
-    if (!confirm('Remove saved UPI ID?')) return;
-    const token = localStorage.getItem('royalwin_token');
-    await fetch('https://royalwin-api.vercel.app/api/saved-payment-details', {
-      method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ method: 'upi' })
-    });
-    document.getElementById('settingsSavedUpi').style.display = 'none';
-    showToast('✅ UPI ID removed');
-  }
-
   // ── SAVE BANK DETAILS ──
   async function saveBankDetails() {
     const name = document.getElementById('settingsBankName').value.trim();
@@ -4686,18 +4583,6 @@
     } catch(e) { showMsg('❌ Error: ' + e.message, false); }
   }
 
-  async function clearSavedBank() {
-    if (!window.currentUser) return;
-    if (!confirm('Remove saved bank details?')) return;
-    const token = localStorage.getItem('royalwin_token');
-    await fetch('https://royalwin-api.vercel.app/api/saved-payment-details', {
-      method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ method: 'bank' })
-    });
-    document.getElementById('settingsSavedBank').style.display = 'none';
-    showToast('✅ Bank details removed');
-  }
-
   // ── SAVE USDT DETAILS ──
   async function saveUsdtDetails() {
     const wallet = document.getElementById('settingsUsdtInput').value.trim();
@@ -4724,18 +4609,6 @@
       showMsg('✅ USDT wallet saved!', true);
       setTimeout(() => { msgEl.style.display='none'; }, 2000);
     } catch(e) { showMsg('❌ Error: ' + e.message, false); }
-  }
-
-  async function clearSavedUsdt() {
-    if (!window.currentUser) return;
-    if (!confirm('Remove saved USDT wallet?')) return;
-    const token = localStorage.getItem('royalwin_token');
-    await fetch('https://royalwin-api.vercel.app/api/saved-payment-details', {
-      method: 'DELETE', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ method: 'usdt' })
-    });
-    document.getElementById('settingsSavedUsdt').style.display = 'none';
-    showToast('✅ USDT wallet removed');
   }
 
   // Load saved UPI/bank/USDT in settings
@@ -4875,24 +4748,6 @@
   }
 
   // ── PROMO REBATE CARD LOADER ──
-  async function loadPromoRebateCard() {
-    const now = new Date();
-    const isMonday = now.getDay() === 1;
-    const lossEl = document.getElementById('promoRebateLoss');
-    const amtEl = document.getElementById('promoRebateAmt');
-    const msgEl = document.getElementById('promoRebateMsg');
-    const btn = document.getElementById('promoRebateBtn');
-    if (lossEl) lossEl.textContent = '—';
-    if (amtEl) amtEl.textContent = '—';
-    if (!isMonday) {
-      if (msgEl) { msgEl.textContent = '📅 Available to claim on Monday'; msgEl.style.color = 'var(--muted)'; }
-      if (btn) { btn.disabled = true; btn.style.background = 'rgba(255,255,255,0.08)'; btn.style.color = 'var(--muted)'; btn.textContent = 'Claim'; }
-    } else {
-      if (msgEl) { msgEl.textContent = 'Tap claim to check your eligibility'; msgEl.style.color = 'var(--gold)'; }
-      if (btn) { btn.disabled = false; btn.style.background = 'linear-gradient(135deg,#c07a10,var(--gold2))'; btn.style.color = '#000'; btn.textContent = '💰 Claim Rebate'; }
-    }
-  }
-
   async function claimWeeklyRebatePromo() {
     const btn = document.getElementById('promoRebateBtn');
     try {
@@ -4912,13 +4767,6 @@
     } catch(e) { showToast('❌ Claim failed. Please try again.'); btn.disabled = false; }
   }
 
-  function openSettingsModal() {
-    showPage('accountsettings');
-  }
-
-  function closeSettingsModal() {
-    showPage('profile');
-  }
 
   function toggleMobileNotif() {
     const dd = document.getElementById('mobileNotifDropdown');
@@ -5258,7 +5106,6 @@
   ];
 
   function showTicker() { /* removed */ }
-  function buildTicker() { /* removed */ }
 
 
     const VERCEL_API_URL = 'https://royalwin-api.vercel.app';
@@ -5645,22 +5492,6 @@
     updateBetDisplay();
   }
 
-  function snapToTen(inp) {
-    let val = parseInt(inp.value) || 10;
-    val = Math.max(10, Math.round(val / 10) * 10);
-    inp.value = val;
-    updateBetDisplay();
-  }
-
-  function validateBetAmount(inp) {
-    let val = parseInt(inp.value) || 10;
-    if (val % 10 !== 0) {
-      val = Math.max(10, Math.round(val / 10) * 10);
-      inp.value = val;
-      showToast('⚠️ Bet amount must be a multiple of 10');
-    }
-    updateBetDisplay();
-  }
 
   function mulBet(factor) {
     const inp = document.getElementById('cgBetAmt');
@@ -6135,7 +5966,6 @@
     }
   }
 
-  function renderTransactionHistory() { loadTransactionHistory(); }
 
   let _betHistPage = 1;
   const _betHistPageSize = 10;
@@ -7137,15 +6967,15 @@
     <div style="margin-bottom:1rem;">
       <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;"><span data-t="gift.enter">Enter Gift Code</span></div>
       <div style="display:flex;gap:0.5rem;">
-        <input id="giftCodeInput" type="text" placeholder="e.g. ROYAL100" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;color:var(--text);font-size:0.88rem;font-family:'Exo 2',sans-serif;outline:none;" oninput="this.value=this.value.toUpperCase();document.getElementById('giftRedeemStatus').style.display='none'">
+        <input id="giftCodeInputModal" type="text" placeholder="e.g. ROYAL100" style="flex:1;background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.7rem 1rem;color:var(--text);font-size:0.88rem;font-family:'Exo 2',sans-serif;outline:none;" oninput="this.value=this.value.toUpperCase();document.getElementById('giftRedeemStatusModal').style.display='none'">
         <button onclick="redeemGiftCode()" style="background:linear-gradient(135deg,#c07a10,var(--gold2));border:none;border-radius:10px;padding:0.7rem 1.2rem;color:#000;font-weight:800;font-size:0.85rem;cursor:pointer;font-family:'Exo 2',sans-serif;">Redeem</button>
       </div>
-      
-      <div id="giftRedeemStatus" style="display:none;margin-top:0.6rem;font-size:0.82rem;font-weight:600;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border-radius:8px;line-height:1.4;"></div>
+
+      <div id="giftRedeemStatusModal" style="display:none;margin-top:0.6rem;font-size:0.82rem;font-weight:600;padding:0.6rem 0.8rem;background:rgba(255,255,255,0.04);border-radius:8px;line-height:1.4;"></div>
     </div>
-    
+
     <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.5rem;"><span data-t="gift.redeemed">Redeemed Gifts</span></div>
-    <div id="giftHistoryList" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;min-height:80px;max-height:200px;overflow-y:auto;">
+    <div id="giftHistoryListModal" style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;min-height:80px;max-height:200px;overflow-y:auto;">
       <div style="text-align:center;padding:1.5rem;color:var(--muted);font-size:0.8rem;"><span data-t="gift.none">No gifts redeemed yet</span></div>
     </div>
   </div>
