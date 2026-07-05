@@ -5357,6 +5357,7 @@
     document.getElementById('colorGameOverlay').classList.remove('open');
     closeResultPopup();
     if (cgPollInterval) { clearInterval(cgPollInterval); cgPollInterval = null; }
+    if (cgHistoryPollInterval) { clearInterval(cgHistoryPollInterval); cgHistoryPollInterval = null; }
     window._cgTimersStarted = false;
     updateMobileHomeBalance();
     _isPlacingBet = false;
@@ -5386,6 +5387,7 @@
     if (btn) { btn.textContent = 'Select'; btn.className = 'cg-confirm-btn default-btn'; btn.disabled = false; }
   }
   let cgPollInterval = null;
+  let cgHistoryPollInterval = null;
   const cgBettingOpenByTimer = {1: true, 3: true, 5: true};
   const cgHistoryByTimer = {1: [], 3: [], 5: []};
 
@@ -5393,6 +5395,15 @@
     [1, 3, 5].forEach(mins => pollGameState(mins));
     if (cgPollInterval) clearInterval(cgPollInterval);
     cgPollInterval = setInterval(() => { [1, 3, 5].forEach(mins => pollGameState(mins)); }, 1000);
+    // Backup poll for the results/history widget, on the same 15s cadence as My Bets'
+    // own independent interval (see window._myBetsPollInterval). Settlement runs on an
+    // external once-a-minute cron (game-engine.js), while /api/game-state's
+    // currentPeriodId flips on wall-clock time alone — so the one-shot refresh in
+    // pollGameState() below can fire before the cron has actually caught up. My Bets
+    // already self-heals via its own 15s poll; history had no retry and could sit up
+    // to a full period behind until this.
+    if (cgHistoryPollInterval) clearInterval(cgHistoryPollInterval);
+    cgHistoryPollInterval = setInterval(loadAllHistory, 15000);
   }
 
   async function pollGameState(mins) {
