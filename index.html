@@ -5330,19 +5330,23 @@
     return 0;
   }
 
+  function mapHistoryRows(rows) {
+    return rows.map(h => ({
+      round: h.period_id, num: h.win_num, color: h.color, bigSmall: h.big_small,
+      histBg: h.hist_bg || (h.color === 'violet'
+        ? (h.win_num === 0 ? 'linear-gradient(135deg,#7c4dff 50%,#e02020 50%)' : 'linear-gradient(135deg,#7c4dff 50%,#27ae60 50%)')
+        : h.color === 'red' ? '#e02020' : '#27ae60'),
+      timestamp: Number(h.timestamp)
+    }));
+  }
+
   async function loadAllHistory() {
     [1, 3, 5].forEach(async mins => {
       try {
         const res = await fetch('https://royalwin-api.vercel.app/api/history?timer=' + mins + '&limit=50');
         const data = await res.json();
         if (!data.success) return;
-        cgHistoryByTimer[mins] = data.history.map(h => ({
-          round: h.period_id, num: h.win_num, color: h.color, bigSmall: h.big_small,
-          histBg: h.hist_bg || (h.color === 'violet'
-            ? (h.win_num === 0 ? 'linear-gradient(135deg,#7c4dff 50%,#e02020 50%)' : 'linear-gradient(135deg,#7c4dff 50%,#27ae60 50%)')
-            : h.color === 'red' ? '#e02020' : '#27ae60'),
-          timestamp: Number(h.timestamp)
-        }));
+        cgHistoryByTimer[mins] = mapHistoryRows(data.history);
         if (mins === cgTimer) {
           cgHistory = cgHistoryByTimer[cgTimer] || [];
           renderHistDots();
@@ -5356,8 +5360,8 @@
     rwBarStart();
     document.getElementById('colorGameOverlay').classList.remove('open');
     closeResultPopup();
-    if (cgPollInterval) { clearInterval(cgPollInterval); cgPollInterval = null; }
-    if (cgHistoryPollInterval) { clearInterval(cgHistoryPollInterval); cgHistoryPollInterval = null; }
+    if (cgInterval) { clearInterval(cgInterval); cgInterval = null; }
+    [1, 3, 5].forEach(mins => { if (cgNextCheckTimeout[mins]) { clearTimeout(cgNextCheckTimeout[mins]); cgNextCheckTimeout[mins] = null; } });
     window._cgTimersStarted = false;
     updateMobileHomeBalance();
     _isPlacingBet = false;
@@ -5386,57 +5390,96 @@
     const btn = document.getElementById('cgConfirmBtn');
     if (btn) { btn.textContent = 'Select'; btn.className = 'cg-confirm-btn default-btn'; btn.disabled = false; }
   }
-  let cgPollInterval = null;
-  let cgHistoryPollInterval = null;
   const cgBettingOpenByTimer = {1: true, 3: true, 5: true};
   const cgHistoryByTimer = {1: [], 3: [], 5: []};
+  const cgPeriodEndAt = {1: 0, 3: 0, 5: 0};        // ms epoch — local clock per timer, re-synced from server at each check-in
+  const cgNextCheckTimeout = {1: null, 3: null, 5: null};
 
   function startAllTimers() {
-    [1, 3, 5].forEach(mins => pollGameState(mins));
-    if (cgPollInterval) clearInterval(cgPollInterval);
-    cgPollInterval = setInterval(() => { [1, 3, 5].forEach(mins => pollGameState(mins)); }, 1000);
-    // Backup poll for the results/history widget, on the same 15s cadence as My Bets'
-    // own independent interval (see window._myBetsPollInterval). Settlement runs on an
-    // external once-a-minute cron (game-engine.js), while /api/game-state's
-    // currentPeriodId flips on wall-clock time alone — so the one-shot refresh in
-    // pollGameState() below can fire before the cron has actually caught up. My Bets
-    // already self-heals via its own 15s poll; history had no retry and could sit up
-    // to a full period behind until this.
-    if (cgHistoryPollInterval) clearInterval(cgHistoryPollInterval);
-    cgHistoryPollInterval = setInterval(loadAllHistory, 15000);
+    [1, 3, 5].forEach(mins => checkGameState(mins, true));
+    if (cgInterval) clearInterval(cgInterval);
+    cgInterval = setInterval(localTick, 1000);
   }
 
-  async function pollGameState(mins) {
+  // Purely local — no network. Ticks the visible countdown + betting-open/closed
+  // state every second from the last known period-end time, instead of polling the
+  // server every second just to display a number that changes predictably. The
+  // server remains the sole authority on the real betting window regardless
+  // (/api/place-bet rejects bets in the last 10s independent of this display).
+  function localTick() {
+    const endAt = cgPeriodEndAt[cgTimer];
+    if (!endAt) return;
+    const secondsLeft = Math.max(0, Math.round((endAt - Date.now()) / 1000));
+    cgSeconds = secondsLeft;
+    cgBettingOpen = secondsLeft > 10;
+    cgBettingOpenByTimer[cgTimer] = cgBettingOpen;
+    const el = document.getElementById('cgCountdown');
+    if (el) {
+      const mm = Math.floor(secondsLeft / 60).toString().padStart(2, '0');
+      const ss = (secondsLeft % 60).toString().padStart(2, '0');
+      el.textContent = mm + ':' + ss;
+    }
+    updateCGStatus();
+    if (!_isPlacingBet) {
+      const btn = document.getElementById('cgConfirmBtn');
+      if (btn) btn.disabled = !cgBettingOpen;
+    }
+  }
+
+  // Fetches /api/game-state for one timer and re-syncs its local period-end clock.
+  // When scheduleNext is true, schedules the next check for exactly period-end+2s —
+  // the timer-synced single-shot fetch, replacing the old 1s-interval poll.
+  async function checkGameState(mins, scheduleNext) {
     try {
       const res = await fetch('https://royalwin-api.vercel.app/api/game-state?timer=' + mins);
       const data = await res.json();
-      if (!data.success) return;
-      const prevPeriodId = cgRoundByTimer[mins];
+      if (!data.success) return null;
       cgRoundByTimer[mins] = data.currentPeriodId;
+      cgPeriodEndAt[mins] = Date.now() + data.secondsLeft * 1000;
       cgBettingOpenByTimer[mins] = !data.locked;
-
-      if (cgTimer === mins) {
-        cgSeconds = data.secondsLeft;
-        cgBettingOpen = !data.locked;
-        const el = document.getElementById('cgCountdown');
-        if (el) {
-          const mm = Math.floor(data.secondsLeft / 60).toString().padStart(2, '0');
-          const ss = (data.secondsLeft % 60).toString().padStart(2, '0');
-          el.textContent = mm + ':' + ss;
-        }
+      if (mins === cgTimer) {
         const roundEl = document.getElementById('cgRoundNum');
         if (roundEl) roundEl.textContent = data.currentPeriodId;
-        updateCGStatus();
-        if (!_isPlacingBet) {
-          const btn = document.getElementById('cgConfirmBtn');
-          if (btn) btn.disabled = !cgBettingOpen;
-        }
+        localTick();
       }
-      if (prevPeriodId && prevPeriodId !== data.currentPeriodId) {
-        loadAllHistory();
-        loadMyBets();
+      if (scheduleNext) scheduleNextCheck(mins, data.currentPeriodId, data.secondsLeft);
+      return data;
+    } catch(e) { return null; }
+  }
+
+  function scheduleNextCheck(mins, currentPeriodId, secondsLeft) {
+    if (cgNextCheckTimeout[mins]) clearTimeout(cgNextCheckTimeout[mins]);
+    const fireInMs = Math.max(0, secondsLeft) * 1000 + 2000; // period-end + 2s buffer
+    cgNextCheckTimeout[mins] = setTimeout(() => handlePeriodEnd(mins, currentPeriodId), fireInMs);
+  }
+
+  // Fires ~2s after a period ends. game-engine.js's settlement cron runs at most
+  // once a minute, so it may not have caught up yet — verify by checking whether the
+  // newest history row for this timer actually matches the period that just ended
+  // before trusting the fetch. Retries every 3s for up to 20s if not yet confirmed,
+  // then gives up until the next period boundary (same self-healing My Bets' old 15s
+  // poll used to provide, just event-driven at period boundaries instead of constant).
+  async function handlePeriodEnd(mins, justEndedPeriodId, retryStartedAt) {
+    if (!retryStartedAt) retryStartedAt = Date.now();
+    const [gameState, histData] = await Promise.all([
+      checkGameState(mins, false),
+      fetch('https://royalwin-api.vercel.app/api/history?timer=' + mins + '&limit=50').then(r => r.json()).catch(() => null)
+    ]);
+
+    const settled = histData && histData.success && histData.history[0]
+      && String(histData.history[0].period_id) === String(justEndedPeriodId);
+    const outOfTime = Date.now() - retryStartedAt >= 20000;
+
+    if (settled || outOfTime) {
+      if (histData && histData.success) {
+        cgHistoryByTimer[mins] = mapHistoryRows(histData.history);
+        if (mins === cgTimer) { cgHistory = cgHistoryByTimer[cgTimer]; renderHistDots(); renderHistRows(); }
       }
-    } catch(e) {}
+      loadMyBets();
+      if (gameState) scheduleNextCheck(mins, gameState.currentPeriodId, gameState.secondsLeft);
+    } else {
+      cgNextCheckTimeout[mins] = setTimeout(() => handlePeriodEnd(mins, justEndedPeriodId, retryStartedAt), 3000);
+    }
   }
 
   function startCGTimer() {
@@ -5444,6 +5487,7 @@
     updateCGStatus();
     const roundEl = document.getElementById('cgRoundNum');
     if (roundEl) roundEl.textContent = cgRoundByTimer[cgTimer];
+    localTick();
   }
 
   function updateCGStatus() {
@@ -6259,12 +6303,12 @@
             } catch(e) {}
           })();
 
-          // ── MY BETS POLLING ──
-          // game-engine.js settles bets server-side; this just refreshes status and
-          // shows the result popup if the color game overlay is open on that timer.
-          if (window._myBetsPollInterval) clearInterval(window._myBetsPollInterval);
+          // ── MY BETS: one-time seed on login ──
+          // Ongoing refreshes now happen via the color-game overlay's timer-synced
+          // period-end checks (handlePeriodEnd), not a standalone interval — nothing
+          // outside the overlay depends on continuous polling here (the Bet History
+          // page does its own independent fetch on demand).
           setTimeout(loadMyBets, 500);
-          window._myBetsPollInterval = setInterval(loadMyBets, 15000);
           document.getElementById('navGuest').style.display = 'none';
           const loader = document.getElementById('appLoader');
           if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 400); }
