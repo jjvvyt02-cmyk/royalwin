@@ -1962,6 +1962,10 @@
             <span style="font-size:0.75rem;color:var(--muted);">First deposits</span>
             <span style="font-family:'Cinzel',serif;font-size:1.09rem;font-weight:800;color:var(--text);" id="dirFirstDep">0</span>
           </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:0.75rem;color:var(--muted);">Turnover</span>
+            <span style="font-family:'Cinzel',serif;font-size:1.09rem;font-weight:800;color:var(--gold);" id="dirTurnover">0</span>
+          </div>
         </div>
       </div>
 
@@ -1988,6 +1992,10 @@
           <div style="display:flex;justify-content:space-between;align-items:center;">
             <span style="font-size:0.75rem;color:var(--muted);">First deposits</span>
             <span style="font-family:'Cinzel',serif;font-size:1.09rem;font-weight:800;color:var(--text);" id="teamFirstDep">0</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <span style="font-size:0.75rem;color:var(--muted);">Turnover</span>
+            <span style="font-family:'Cinzel',serif;font-size:1.09rem;font-weight:800;color:var(--gold);" id="teamTurnover">0</span>
           </div>
         </div>
       </div>
@@ -3529,15 +3537,15 @@
     }).join('');
   }
 
-  // ── REFERRALS: direct (level-1) only — levels 2-4, daily/yesterday commission,
-  // and today's-registration counts were dropped (no Neon backend for them; the old
-  // 4-level per-bet commission engine was deliberately not carried over from Firebase,
-  // see royalwin-index-migration memory notes). Everything below is real, current data. ──
+  // ── REFERRALS: level 1 (direct) from referrals table, levels 2-4 walked server-side via
+  // users.referred_by. Agency-level totals (commission/turnover) are day-lagged by design —
+  // see PROMO_INSTANT_MODE in handler.js, currently on for live testing. Subordinate Data
+  // and team member counts stay instant/real-time regardless. ──
   async function loadReferralData() {
     const user = window.currentUser;
     if (!user) return;
     const profile = window.userProfile;
-    if (!profile || !profile.referralCode) return;
+    if (!profile || !profile.member_id) return;
     const token = localStorage.getItem('royalwin_token');
     try {
       const res = await fetch('https://royalwin-api.vercel.app/api/my-referrals', { headers: { 'Authorization': 'Bearer ' + token } });
@@ -3552,39 +3560,49 @@
         joinedAt: Number(r.joined_at) || 0,
         firstDepositAmt: r.has_deposited ? parseFloat(r.total_deposited || 0) : 0
       }));
-      window._refAllData = refs;
+      const teamRefs = (data.teamReferrals || []).map(r => ({
+        level: r.level,
+        uid: '',
+        username: r.username,
+        memberId: r.member_id,
+        joinedAt: Number(r.joined_at) || 0,
+        firstDepositAmt: r.has_deposited ? parseFloat(r.total_deposited || 0) : 0
+      }));
+      window._refAllData = refs.concat(teamRefs);
       window._refCommissions = data.commissions || [];
 
       const el_totalComm = document.getElementById('agencyTotalComm');
       const el_totalRefs = document.getElementById('agencyTotalRefs');
       if (el_totalComm) el_totalComm.textContent = '₹' + data.totalCommission.toLocaleString('en-IN', {minimumFractionDigits:2});
-      if (el_totalRefs) el_totalRefs.textContent = refs.length;
-      // Daily/yesterday commission breakdown isn't tracked as a running ledger — not shown.
+      if (el_totalRefs) el_totalRefs.textContent = refs.length + teamRefs.length;
       const el_yest = document.getElementById('agencyYesterdayComm');
-      if (el_yest) el_yest.textContent = '—';
+      if (el_yest) el_yest.textContent = data.yesterdayCommission.toLocaleString('en-IN', {minimumFractionDigits:2});
 
-      // Direct Members card — real, all-time data (no "today" filter available)
+      // Direct Members card (level 1) — instant/real-time
       const depRefs = refs.filter(r => r.firstDepositAmt > 0);
       document.getElementById('dirRegCount').textContent = refs.length;
       document.getElementById('dirDepCount').textContent = depRefs.length;
       document.getElementById('dirDepAmt').textContent = fmtK(depRefs.reduce((s,r) => s + r.firstDepositAmt, 0));
       document.getElementById('dirFirstDep').textContent = depRefs.length;
+      document.getElementById('dirTurnover').textContent = fmtK(data.l1Turnover || 0);
 
-      // Team Members card (levels 2-4) — no backend, always empty
-      document.getElementById('teamRegCount').textContent = 0;
-      document.getElementById('teamDepCount').textContent = 0;
-      document.getElementById('teamDepAmt').textContent = '0';
-      document.getElementById('teamFirstDep').textContent = 0;
+      // Team Members card (levels 2-4) — instant/real-time
+      const teamDepRefs = teamRefs.filter(r => r.firstDepositAmt > 0);
+      document.getElementById('teamRegCount').textContent = teamRefs.length;
+      document.getElementById('teamDepCount').textContent = teamDepRefs.length;
+      document.getElementById('teamDepAmt').textContent = fmtK(teamDepRefs.reduce((s,r) => s + r.firstDepositAmt, 0));
+      document.getElementById('teamFirstDep').textContent = teamDepRefs.length;
+      document.getElementById('teamTurnover').textContent = fmtK(data.teamTurnover || 0);
 
-      // ── PROMOTION DATA CARD — all-time totals only (no weekly ledger) ──
+      // ── PROMOTION DATA CARD — day-lagged totals (same PROMO_INSTANT_MODE toggle) ──
       const promoWeekEl = document.getElementById('promoWeekComm');
       const promoTotalEl = document.getElementById('promoTotalComm');
       const promoDirEl = document.getElementById('promoDirectCount');
       const promoTeamEl = document.getElementById('promoTeamCount');
-      if (promoWeekEl) promoWeekEl.textContent = '—';
+      if (promoWeekEl) promoWeekEl.textContent = '₹' + data.yesterdayCommission.toLocaleString('en-IN', {minimumFractionDigits:2});
       if (promoTotalEl) promoTotalEl.textContent = '₹' + data.totalCommission.toLocaleString('en-IN', {minimumFractionDigits:2});
       if (promoDirEl) promoDirEl.textContent = refs.length;
-      if (promoTeamEl) promoTeamEl.textContent = 0;
+      if (promoTeamEl) promoTeamEl.textContent = teamRefs.length;
       renderRefRows();
       renderCommissionRows(window._refCommissions, refs);
 
@@ -6232,9 +6250,9 @@
     const emailEl = document.querySelectorAll('#page-profile input[type="text"]')[2];
     if (emailEl) emailEl.value = profile.email || '';
     const refCodeEl = document.getElementById('myRefCode');
-    if (refCodeEl && profile.referralCode) refCodeEl.textContent = profile.referralCode;
+    if (refCodeEl && profile.member_id) refCodeEl.textContent = profile.member_id;
     const refLinkEl = document.getElementById('refLink');
-    if (refLinkEl && profile.referralCode) refLinkEl.textContent = 'https://royalwingames.com?invitationCode=' + profile.referralCode;
+    if (refLinkEl && profile.member_id) refLinkEl.textContent = 'https://royalwingames.com?invitationCode=' + profile.member_id;
   }
   let inactivityTimer;
   const SIX_HOURS = 3 * 60 * 60 * 1000; // 3hr inactivity timeout
