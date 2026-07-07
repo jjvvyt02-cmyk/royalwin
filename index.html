@@ -2485,6 +2485,7 @@
     if (name === 'weeklyrebate') { _showPageInternal('weeklyrebate'); setTimeout(loadWeeklyRebatePage, 200); return; }
     if (name === 'wallet') {
       switchWalletTab('deposit');
+      checkDepositBonus();
       loadWagerProgress();
     }
   }
