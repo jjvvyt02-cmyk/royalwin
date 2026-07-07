@@ -605,7 +605,7 @@
 
         <!-- Wager Adjustment -->
         <h3 style="margin-top:1.5rem;">🎯 Manually Adjust Wager</h3>
-        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.8rem;">Set or increase the wager completed amount for a user. Useful if you need to manually credit wager progress.</div>
+        <div style="font-size:0.78rem;color:var(--muted);margin-bottom:0.8rem;">Add to or reduce the wager a user still owes before they can withdraw. Useful if you need to manually adjust their remaining wager requirement.</div>
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:0.8rem;align-items:end;">
           <div>
             <div style="font-size:0.75rem;color:var(--muted);margin-bottom:0.4rem;">Member ID or UID</div>
@@ -2624,7 +2624,7 @@ window.loadQPDashboard = async function(filter) {
       const expires = inv.expiresAt ? new Date(inv.expiresAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : '—';
       const color = statusColor[inv.status] || '#aaa';
       const dep = depByInvoice[inv.id];
-      const memberInfo = dep ? `<div><span style="color:var(--muted);">Member ID:</span> <b style="color:var(--gold);">${dep.memberId || '—'}</b></div><div><span style="color:var(--muted);">Username:</span> ${dep.username || '—'}</div>` : '';
+      const memberInfo = dep ? `<div><span style="color:var(--muted);">Member ID:</span> <b style="color:var(--gold);">${dep.member_id || '—'}</b></div><div><span style="color:var(--muted);">Username:</span> ${dep.username || '—'}</div>` : '';
       return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.9rem 1rem;">
         <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.4rem;margin-bottom:0.5rem;">
           <div style="font-weight:700;font-size:0.85rem;color:var(--gold);">${inv.id}</div>
