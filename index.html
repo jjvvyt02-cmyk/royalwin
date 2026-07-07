@@ -5964,7 +5964,9 @@
     el.style.borderColor = 'var(--gold)'; el.classList.add('active');
     currentTxFilter = filter; _txPage = 1; _lastTxFilter = filter;
     const filtered = filter === 'all' ? (window.allTransactions || []) :
-      (window.allTransactions || []).filter(tx => tx.type === filter || (filter === 'deposit' && tx.type === 'deposit_bonus'));
+      (window.allTransactions || []).filter(tx => tx.type === filter
+        || (filter === 'deposit' && tx.type === 'deposit_bonus')
+        || (filter === 'commission' && (tx.type === 'team_commission' || tx.type === 'vip_diamond_reload')));
     renderTxRows(filtered);
   }
 
@@ -6001,6 +6003,8 @@
       admin_deduct:      { icon:'➖', label:'Debit',              color:'#e02020', sign:'-' },
       bet_win:           { icon:'🏆', label:'Bet Win',            color:'#27ae60', sign:'+' },
       welcome_bonus:     { icon:'🎁', label:'Welcome Bonus',      color:'#27ae60', sign:'+' },
+      team_commission:   { icon:'👥', label:'Team Commission',    color:'#27ae60', sign:'+' },
+      vip_diamond_reload:{ icon:'💎', label:'Diamond Reload Bonus', color:'#27ae60', sign:'+' },
     };
 
     const totalPages = Math.max(1, Math.ceil(txs.length / _txPageSize));
