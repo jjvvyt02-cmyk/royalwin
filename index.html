@@ -7381,7 +7381,7 @@
       </div>
 
       <!-- Weekly Loss Rebate Card -->
-      <div class="promo-card">
+      <div class="promo-card" onclick="showPage('weeklyrebate')" style="cursor:pointer;">
         <div class="promo-thumb" style="background:linear-gradient(135deg,#1a1035,#2d1b69);">💰</div>
         <div class="promo-body">
           <div class="promo-tag">Weekly Bonus</div>
@@ -7400,7 +7400,7 @@
           <div id="promoRebateMsg" style="font-size:0.72rem;color:var(--muted);margin-bottom:0.6rem;"></div>
           <div class="promo-footer">
             <span class="promo-expiry">Resets every Monday</span>
-            <button id="promoRebateBtn" onclick="claimWeeklyRebatePromo()" style="padding:0.4rem 1rem;font-size:0.82rem;border:none;border-radius:8px;cursor:pointer;font-family:'Exo 2',sans-serif;font-weight:700;background:rgba(255,255,255,0.1);color:var(--muted);" disabled>Claim</button>
+            <button id="promoRebateBtn" onclick="event.stopPropagation();claimWeeklyRebatePromo()" style="padding:0.4rem 1rem;font-size:0.82rem;border:none;border-radius:8px;cursor:pointer;font-family:'Exo 2',sans-serif;font-weight:700;background:rgba(255,255,255,0.1);color:var(--muted);" disabled>Claim</button>
           </div>
         </div>
       </div>
