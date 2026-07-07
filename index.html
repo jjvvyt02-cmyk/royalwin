@@ -4267,12 +4267,18 @@
       const el = document.getElementById('usdtAmountDisplay');
       if (el) el.textContent = usdt + ' USDT';
     }
-    if (!amt || selectedBonusOption === 0) {
-      const infoEl = document.getElementById('selectedBonusInfo');
-      if (infoEl) infoEl.style.display = 'none';
+    const infoEl0 = document.getElementById('selectedBonusInfo');
+    if (!amt) {
+      if (infoEl0) infoEl0.style.display = 'none';
       return;
     }
-    if (!amt) return;
+    if (selectedBonusOption === 0) {
+      if (infoEl0) {
+        infoEl0.style.display = 'block';
+        infoEl0.innerHTML = 'ℹ️ No bonus selected. Must wager ₹' + amt.toLocaleString('en-IN') + ' (1x) before withdrawing.';
+      }
+      return;
+    }
     const b1 = Math.round(amt * 0.08);
     const b2 = Math.round(amt * 0.15);
     const el1 = document.getElementById('bonusAmt1');
