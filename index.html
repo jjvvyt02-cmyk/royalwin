@@ -3808,26 +3808,27 @@
   }
 
   let _wagerProgressInterval = null;
-  function _renderWagerProgress(wagerReqRaw, wagerDoneRaw) {
+  // wager_required is now the actual amount still owed (a running balance — see
+  // game-engine.js), not a lifetime target compared against a lifetime-completed counter.
+  // There's no stored "starting point" for the current requirement, so this shows the plain
+  // remaining amount rather than a percentage that could be misleading without one.
+  function _renderWagerProgress(wagerReqRaw) {
     const bar = document.getElementById('wagerProgressBar');
     const pctText = document.getElementById('wagerPctText');
     const statusMsg = document.getElementById('wagerStatusMsg');
     const withdrawBtn = document.getElementById('withdrawNowBtn');
-    const required = parseFloat(wagerReqRaw || 0);
-    const completed = parseFloat(wagerDoneRaw || 0);
-    const wagerPending = required > 0 && completed < required;
+    const remaining = parseFloat(wagerReqRaw || 0);
+    const wagerPending = remaining > 0;
     if (!wagerPending) {
-      // No active wager or wager complete — withdrawal unlocked
+      // Nothing owed — withdrawal unlocked
       if (bar) { bar.style.width = '100%'; bar.style.background = 'linear-gradient(90deg,#27ae60,#1d9e75)'; }
-      if (pctText) { pctText.textContent = '100%'; pctText.style.color = 'var(--green)'; }
+      if (pctText) { pctText.textContent = 'Unlocked'; pctText.style.color = 'var(--green)'; }
       if (statusMsg) { statusMsg.textContent = 'Bet ₹0 more to unlock withdrawal ✅'; statusMsg.style.color = 'var(--green)'; }
       if (withdrawBtn) { withdrawBtn.disabled = false; withdrawBtn.style.opacity = '1'; withdrawBtn.style.cursor = 'pointer'; }
     } else {
-      // Active wager pending — block withdrawal
-      const remaining = parseFloat((required - completed).toFixed(2));
-      const pct = Math.min(99, Math.round(completed / required * 100));
-      if (bar) { bar.style.width = pct + '%'; bar.style.background = 'linear-gradient(90deg,#c07a10,var(--gold))'; }
-      if (pctText) { pctText.textContent = pct + '%'; pctText.style.color = 'var(--gold)'; }
+      // Still owed — block withdrawal
+      if (bar) { bar.style.width = '100%'; bar.style.background = 'linear-gradient(90deg,#c07a10,var(--gold))'; }
+      if (pctText) { pctText.textContent = 'Locked'; pctText.style.color = 'var(--gold)'; }
       if (statusMsg) { statusMsg.textContent = 'Bet ₹' + remaining.toLocaleString('en-IN') + ' more to unlock withdrawal'; statusMsg.style.color = 'var(--muted)'; }
       if (withdrawBtn) { withdrawBtn.disabled = true; withdrawBtn.style.opacity = '0.35'; withdrawBtn.style.cursor = 'not-allowed'; }
     }
@@ -3840,7 +3841,7 @@
       try {
         const res = await fetch('https://royalwin-api.vercel.app/api/user', { headers: { 'Authorization': 'Bearer ' + token } });
         const data = await res.json();
-        if (data.success) _renderWagerProgress(data.user.wager_required, data.user.wager_completed);
+        if (data.success) _renderWagerProgress(data.user.wager_required);
       } catch(e) { /* suppressed */ }
     };
     fetchAndRender();

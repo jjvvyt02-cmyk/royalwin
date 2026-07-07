@@ -1776,7 +1776,7 @@ function renderUsers(users) {
         <div style="font-size:0.7rem;margin-top:0.3rem;display:flex;gap:0.8rem;flex-wrap:wrap;">
           <span style="color:#27ae60;">⬇ Dep: ₹${(u._totalDeposits||0).toLocaleString('en-IN')}</span>
           <span style="color:#e02020;">⬆ With: ₹${(u._totalWithdrawals||0).toLocaleString('en-IN')}</span>
-          <span style="color:#a87dff;">🎯 Wager: ₹${(u.wager?.completed||0).toLocaleString('en-IN')} / ₹${(u.wager?.required||0).toLocaleString('en-IN')} <span style="color:var(--gold);">(₹${Math.max(0,(u.wager?.required||0)-(u.wager?.completed||0)).toLocaleString('en-IN')} left)</span></span>
+          <span style="color:#a87dff;">🎯 Wager owed: ₹${(u.wager?.required||0).toLocaleString('en-IN')} <span style="color:var(--muted);">(lifetime wagered: ₹${(u.wager?.completed||0).toLocaleString('en-IN')})</span></span>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;align-items:flex-end;gap:0.4rem;">
