@@ -16,9 +16,6 @@
 <title>RoyalWin — Premium Gaming Platform</title>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;800;900&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -3588,138 +3585,134 @@
     } catch(e) { /* suppressed */ }
   }
 
-  var _depHistPage = 1;
-  var _depHistData = [];
+  // ── SHARED HISTORY LOADER ──
+  // Fetch/cache/paginate orchestration shared by all 4 deposit/withdraw history views
+  // (dedicated history page + wallet-tab inline panel, both directions). Row/pager markup
+  // stays per-caller since the 4 views render meaningfully different templates — only the
+  // fetch/cache/paginate logic was truly duplicated.
+  // opts.alwaysRefetch: dedicated-history-page callers re-fetch fresh every time they're
+  // opened (matches original behavior); wallet-tab callers fetch once then reuse the cache
+  // until a fresh page load, so opts.alwaysRefetch is false for those.
+  async function _loadHistoryShared(state, opts, page) {
+    const token = localStorage.getItem('royalwin_token');
+    const targets = opts.targetIds.map(id => document.getElementById(id)).filter(Boolean);
+    if (!token || !targets.length) return;
 
+    if (page) {
+      state.page = page;
+    } else if (opts.alwaysRefetch || !state.data.length) {
+      targets.forEach(t => t.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>');
+      try {
+        const res = await fetch(opts.endpoint, { headers: { 'Authorization': 'Bearer ' + token } });
+        const data = await res.json();
+        if (!data.success) {
+          if (opts.silentOnBadSuccess) return;
+          state.data = [];
+        } else {
+          state.data = data[opts.dataKey].map(opts.normalize).sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
+        }
+      } catch(e) {
+        if (opts.onErrorHtml) targets.forEach(t => t.innerHTML = opts.onErrorHtml);
+        return;
+      }
+    }
+    _renderHistoryShared(state, targets, opts);
+  }
+
+  function _renderHistoryShared(state, targets, opts) {
+    const rows = state.data;
+    if (!rows.length) { targets.forEach(t => t.innerHTML = opts.emptyMsg); return; }
+    const limited = rows.slice(0, opts.perPage * opts.maxPages);
+    const totalPages = Math.min(Math.ceil(limited.length / opts.perPage), opts.maxPages);
+    if (state.page > totalPages) state.page = 1;
+    const pageItems = limited.slice((state.page-1)*opts.perPage, state.page*opts.perPage);
+    const html = pageItems.map(opts.renderRow).join('') + (totalPages > 1 ? opts.renderPager(state.page, totalPages) : '');
+    targets.forEach(t => t.innerHTML = html);
+  }
+
+  var _depHistState = { page: 1, data: [] };
   async function loadDepositHistoryPage(page) {
-    const token = localStorage.getItem('royalwin_token');
-    const el = document.getElementById('depositHistoryPageRows');
-    if (!token || !el) return;
-
-    if (page) { _depHistPage = page; _renderDepositHistory(); return; }
-
-    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
-
-    try {
-      const res = await fetch('https://royalwin-api.vercel.app/api/my-deposits', { headers: { 'Authorization': 'Bearer ' + token } });
-      const data = await res.json();
-      if (!data.success) return;
-      _depHistData = data.deposits
-        .map(d => ({ amount: parseFloat(d.amount), status: d.status, method: d.method || 'UPI', orderId: d.order_id, bonusPct: null, timestamp: Number(d.created_at) }))
-        .sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
-      _renderDepositHistory();
-    } catch(e) {}
+    await _loadHistoryShared(_depHistState, {
+      targetIds: ['depositHistoryPageRows'],
+      endpoint: 'https://royalwin-api.vercel.app/api/my-deposits',
+      dataKey: 'deposits',
+      normalize: d => ({ amount: parseFloat(d.amount), status: d.status, method: d.method || 'UPI', orderId: d.order_id, bonusPct: null, timestamp: Number(d.created_at) }),
+      perPage: 10, maxPages: 5,
+      alwaysRefetch: true,
+      silentOnBadSuccess: true,
+      emptyMsg: '<div style="text-align:center;color:var(--muted);padding:2rem;">No deposits yet</div>',
+      renderRow: r => {
+        const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+        let statusColor, statusText, statusIcon, statusBg;
+        switch(r.status) {
+          case 'approved':   statusColor='var(--green)'; statusBg='rgba(39,174,96,0.1)';   statusIcon='✅'; statusText='Success'; break;
+          case 'rejected':   statusColor='var(--red2)';  statusBg='rgba(224,32,32,0.1)';   statusIcon='❌'; statusText='Rejected'; break;
+          case 'cancelled':  statusColor='var(--muted)'; statusBg='rgba(128,128,128,0.1)'; statusIcon='🚫'; statusText='Cancelled'; break;
+          case 'processing': statusColor='var(--gold)';  statusBg='rgba(240,192,64,0.1)';  statusIcon='⚙️'; statusText='Processing'; break;
+          default:           statusColor='#f0c040';      statusBg='rgba(240,192,64,0.1)';  statusIcon='⏳'; statusText='Pending';
+        }
+        const bonusText = r.bonusPct ? `<span style="font-size:0.7rem;color:var(--gold);margin-left:0.4rem;">+${r.bonusPct}% bonus</span>` : '';
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.6rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
+            <div style="font-weight:800;color:var(--green);font-size:1rem;">+₹${(r.amount||0).toLocaleString('en-IN')}${bonusText}</div>
+            <div style="font-size:0.78rem;font-weight:700;color:${statusColor};background:${statusBg};padding:0.2rem 0.6rem;border-radius:20px;">${statusIcon} ${statusText}</div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <div style="font-size:0.72rem;color:var(--muted);">${r.method||'UPI'}</div>
+            <div style="font-size:0.7rem;color:var(--muted);">${time}</div>
+          </div>
+          ${r.orderId ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:0.2rem;font-family:monospace;">#${r.orderId}</div>` : ''}
+          ${r.status==='pending'?'<div style="font-size:0.68rem;color:var(--gold);margin-top:0.3rem;">⏳ Verification in progress...</div>':''}
+          ${r.status==='cancelled'?'<div style="font-size:0.68rem;color:var(--muted);margin-top:0.3rem;">Payment not completed</div>':''}
+        </div>`;
+      },
+      renderPager: (page, totalPages) => `<div style="display:flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.7rem 0 1.5rem;border-top:1px solid var(--border);margin-top:0.5rem;">
+        <button onclick="loadDepositHistoryPage(${page-1})" ${page<=1?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${page<=1?'opacity:0.4;':''}">◀</button>
+        <span style="color:var(--muted);font-size:0.78rem;min-width:80px;text-align:center;">Page ${page} of ${totalPages}</span>
+        <button onclick="loadDepositHistoryPage(${page+1})" ${page>=totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${page>=totalPages?'opacity:0.4;':''}">▶</button>
+      </div>`
+    }, page);
   }
 
-  function _renderDepositHistory() {
-    const el = document.getElementById('depositHistoryPageRows');
-    if (!el) return;
-    const rows = _depHistData;
-    if (!rows.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No deposits yet</div>'; return; }
-
-    const PER_PAGE = 10, MAX_PAGES = 5;
-    const limited = rows.slice(0, PER_PAGE * MAX_PAGES);
-    const totalPages = Math.min(Math.ceil(limited.length / PER_PAGE), MAX_PAGES);
-    if (_depHistPage > totalPages) _depHistPage = 1;
-    const pageItems = limited.slice((_depHistPage-1)*PER_PAGE, _depHistPage*PER_PAGE);
-
-    el.innerHTML = pageItems.map(r => {
-      const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
-      let statusColor, statusText, statusIcon, statusBg;
-      switch(r.status) {
-        case 'approved':   statusColor='var(--green)'; statusBg='rgba(39,174,96,0.1)';   statusIcon='✅'; statusText='Success'; break;
-        case 'rejected':   statusColor='var(--red2)';  statusBg='rgba(224,32,32,0.1)';   statusIcon='❌'; statusText='Rejected'; break;
-        case 'cancelled':  statusColor='var(--muted)'; statusBg='rgba(128,128,128,0.1)'; statusIcon='🚫'; statusText='Cancelled'; break;
-        case 'processing': statusColor='var(--gold)';  statusBg='rgba(240,192,64,0.1)';  statusIcon='⚙️'; statusText='Processing'; break;
-        default:           statusColor='#f0c040';      statusBg='rgba(240,192,64,0.1)';  statusIcon='⏳'; statusText='Pending';
-      }
-      const bonusText = r.bonusPct ? `<span style="font-size:0.7rem;color:var(--gold);margin-left:0.4rem;">+${r.bonusPct}% bonus</span>` : '';
-      return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.6rem;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;">
-          <div style="font-weight:800;color:var(--green);font-size:1rem;">+₹${(r.amount||0).toLocaleString('en-IN')}${bonusText}</div>
-          <div style="font-size:0.78rem;font-weight:700;color:${statusColor};background:${statusBg};padding:0.2rem 0.6rem;border-radius:20px;">${statusIcon} ${statusText}</div>
-        </div>
-        <div style="display:flex;justify-content:space-between;align-items:center;">
-          <div style="font-size:0.72rem;color:var(--muted);">${r.method||'UPI'}</div>
-          <div style="font-size:0.7rem;color:var(--muted);">${time}</div>
-        </div>
-        ${r.orderId ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:0.2rem;font-family:monospace;">#${r.orderId}</div>` : ''}
-        ${r.status==='pending'?'<div style="font-size:0.68rem;color:var(--gold);margin-top:0.3rem;">⏳ Verification in progress...</div>':''}
-        ${r.status==='cancelled'?'<div style="font-size:0.68rem;color:var(--muted);margin-top:0.3rem;">Payment not completed</div>':''}
-      </div>`;
-    }).join('');
-    if (totalPages > 1) {
-      el.innerHTML += `<div style="display:flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.7rem 0 1.5rem;border-top:1px solid var(--border);margin-top:0.5rem;">
-        <button onclick="loadDepositHistoryPage(${_depHistPage-1})" ${_depHistPage<=1?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_depHistPage<=1?'opacity:0.4;':''}">◀</button>
-        <span style="color:var(--muted);font-size:0.78rem;min-width:80px;text-align:center;">Page ${_depHistPage} of ${totalPages}</span>
-        <button onclick="loadDepositHistoryPage(${_depHistPage+1})" ${_depHistPage>=totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_depHistPage>=totalPages?'opacity:0.4;':''}">▶</button>
-      </div>`;
-    }
-  }
-
-  var _withHistPage = 1;
-  var _withHistData = [];
+  var _withHistState = { page: 1, data: [] };
   async function loadWithdrawHistoryPage(page) {
-    const token = localStorage.getItem('royalwin_token');
-    const el = document.getElementById('withdrawHistoryPageRows');
-    if (!token || !el) return;
-
-    if (page) { _withHistPage = page; _renderWithdrawHistory(); return; }
-
-    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
-
-    try {
-      const res = await fetch('https://royalwin-api.vercel.app/api/my-withdrawals', { headers: { 'Authorization': 'Bearer ' + token } });
-      const data = await res.json();
-      if (!data.success) return;
-      _withHistData = data.withdrawals
-        .map(w => ({ amount: parseFloat(w.amount), status: w.status, method: w.method || 'UPI', timestamp: Number(w.created_at) }))
-        .sort((a,b) => (b.timestamp||0)-(a.timestamp||0));
-      _renderWithdrawHistory();
-    } catch(e) {}
-  }
-
-  function _renderWithdrawHistory() {
-    const el = document.getElementById('withdrawHistoryPageRows');
-    if (!el) return;
-    const rows = _withHistData;
-    if (!rows.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No withdrawals yet</div>'; return; }
-
-    const PER_PAGE = 10, MAX_PAGES = 5;
-    const limited = rows.slice(0, PER_PAGE * MAX_PAGES);
-    const totalPages = Math.min(Math.ceil(limited.length / PER_PAGE), MAX_PAGES);
-    if (_withHistPage > totalPages) _withHistPage = 1;
-    const pageItems = limited.slice((_withHistPage-1)*PER_PAGE, _withHistPage*PER_PAGE);
-
-    el.innerHTML = pageItems.map(r => {
-      const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
-      let statusColor, statusText, statusIcon;
-      switch(r.status) {
-        case 'approved':    statusColor='var(--green)'; statusIcon='✅'; statusText='Success'; break;
-        case 'rejected':    statusColor='var(--red2)';  statusIcon='❌'; statusText='Rejected'; break;
-        case 'failed':      statusColor='var(--red2)';  statusIcon='❌'; statusText='Failed'; break;
-        case 'processing':  statusColor='var(--gold)';  statusIcon='⚙️'; statusText='Processing'; break;
-        default:            statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
-      }
-      return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.6rem;display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <div style="font-weight:700;color:var(--red2);font-size:1rem;">-₹${(r.amount||0).toLocaleString('en-IN')}</div>
-          <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">${r.method||'UPI'}</div>
-          <div style="font-size:0.7rem;color:var(--muted);">${time}</div>
-          ${r.orderId||r.wgpayTranFlow ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:0.1rem;font-family:monospace;">#${r.orderId||r.wgpayTranFlow}</div>` : ''}
-          ${r.status==='processing'?'<div style="font-size:0.68rem;color:var(--gold);margin-top:0.2rem;">Expected within 24 hours</div>':''}
-          ${r.status==='failed'||r.status==='rejected'?'<div style="font-size:0.68rem;color:var(--red2);margin-top:0.2rem;">Amount refunded to wallet</div>':''}
-        </div>
-        <div style="font-size:0.8rem;font-weight:700;color:${statusColor};">${statusIcon} ${statusText}</div>
-      </div>`;
-    }).join('');
-    if (totalPages > 1) {
-      el.innerHTML += `<div style="display:flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.7rem 0 1.5rem;border-top:1px solid var(--border);margin-top:0.5rem;">
-        <button onclick="loadWithdrawHistoryPage(${_withHistPage-1})" ${_withHistPage<=1?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_withHistPage<=1?'opacity:0.4;':''}">◀</button>
-        <span style="color:var(--muted);font-size:0.78rem;min-width:80px;text-align:center;">Page ${_withHistPage} of ${totalPages}</span>
-        <button onclick="loadWithdrawHistoryPage(${_withHistPage+1})" ${_withHistPage>=totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${_withHistPage>=totalPages?'opacity:0.4;':''}">▶</button>
-      </div>`;
-    }
+    await _loadHistoryShared(_withHistState, {
+      targetIds: ['withdrawHistoryPageRows'],
+      endpoint: 'https://royalwin-api.vercel.app/api/my-withdrawals',
+      dataKey: 'withdrawals',
+      normalize: w => ({ amount: parseFloat(w.amount), status: w.status, method: w.method || 'UPI', timestamp: Number(w.created_at) }),
+      perPage: 10, maxPages: 5,
+      alwaysRefetch: true,
+      silentOnBadSuccess: true,
+      emptyMsg: '<div style="text-align:center;color:var(--muted);padding:2rem;">No withdrawals yet</div>',
+      renderRow: r => {
+        const time = r.timestamp ? new Date(r.timestamp).toLocaleString('en-IN',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'}) : '—';
+        let statusColor, statusText, statusIcon;
+        switch(r.status) {
+          case 'approved':    statusColor='var(--green)'; statusIcon='✅'; statusText='Success'; break;
+          case 'rejected':    statusColor='var(--red2)';  statusIcon='❌'; statusText='Rejected'; break;
+          case 'failed':      statusColor='var(--red2)';  statusIcon='❌'; statusText='Failed'; break;
+          case 'processing':  statusColor='var(--gold)';  statusIcon='⚙️'; statusText='Processing'; break;
+          default:            statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
+        }
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:0.9rem 1rem;margin-bottom:0.6rem;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:700;color:var(--red2);font-size:1rem;">-₹${(r.amount||0).toLocaleString('en-IN')}</div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:0.2rem;">${r.method||'UPI'}</div>
+            <div style="font-size:0.7rem;color:var(--muted);">${time}</div>
+            ${r.orderId||r.wgpayTranFlow ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:0.1rem;font-family:monospace;">#${r.orderId||r.wgpayTranFlow}</div>` : ''}
+            ${r.status==='processing'?'<div style="font-size:0.68rem;color:var(--gold);margin-top:0.2rem;">Expected within 24 hours</div>':''}
+            ${r.status==='failed'||r.status==='rejected'?'<div style="font-size:0.68rem;color:var(--red2);margin-top:0.2rem;">Amount refunded to wallet</div>':''}
+          </div>
+          <div style="font-size:0.8rem;font-weight:700;color:${statusColor};">${statusIcon} ${statusText}</div>
+        </div>`;
+      },
+      renderPager: (page, totalPages) => `<div style="display:flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.7rem 0 1.5rem;border-top:1px solid var(--border);margin-top:0.5rem;">
+        <button onclick="loadWithdrawHistoryPage(${page-1})" ${page<=1?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${page<=1?'opacity:0.4;':''}">◀</button>
+        <span style="color:var(--muted);font-size:0.78rem;min-width:80px;text-align:center;">Page ${page} of ${totalPages}</span>
+        <button onclick="loadWithdrawHistoryPage(${page+1})" ${page>=totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.3rem 0.8rem;cursor:pointer;font-family:'Exo 2',sans-serif;font-size:0.82rem;${page>=totalPages?'opacity:0.4;':''}">▶</button>
+      </div>`
+    }, page);
   }
 
   async function loadGameStats(period = 'today') {
@@ -3961,112 +3954,85 @@
     }
   }
 
-  var _walDepPage = 1, _walDepData = [];
+  var _walDepState = { page: 1, data: [] };
   async function loadDepositHistory(page) {
-    const token = localStorage.getItem('royalwin_token');
-    const el = document.getElementById('depositHistoryRows');
-    const elPanel = document.getElementById('depositHistoryRowsPanel');
-    if (!token) return;
-    if (page) { _walDepPage = page; } else if (!_walDepData.length) {
-      if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
-      if (elPanel) elPanel.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
-      try {
-        const res = await fetch('https://royalwin-api.vercel.app/api/my-deposits', { headers: { 'Authorization': 'Bearer ' + token } });
-        const data = await res.json();
-        _walDepData = (data.success ? data.deposits : []).sort((a,b) => (b.created_at||0)-(a.created_at||0));
-      } catch(e) {
-        const msg = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Failed to load</div>';
-        if (el) el.innerHTML = msg; if (elPanel) elPanel.innerHTML = msg;
-        return;
-      }
-    }
-    const targets = [el, elPanel].filter(Boolean);
-    if (!_walDepData.length) {
-      const msg = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No deposits yet</div>';
-      targets.forEach(t => t.innerHTML = msg);
-      return;
-    }
-    const PER_PAGE = 5, MAX_PAGES = 10;
-    const limited = _walDepData.slice(0, PER_PAGE * MAX_PAGES);
-    const totalPages = Math.min(Math.ceil(limited.length / PER_PAGE), MAX_PAGES);
-    if (_walDepPage > totalPages) _walDepPage = 1;
-    const pageItems = limited.slice((_walDepPage-1)*PER_PAGE, _walDepPage*PER_PAGE);
-    const html = pageItems.map(r => {
-      const time = r.created_at ? new Date(Number(r.created_at)).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-      let statusColor, statusText, statusIcon;
-      switch(r.status) {
-        case 'approved':   statusColor='var(--green)'; statusIcon='✅'; statusText='Success'; break;
-        case 'rejected':   statusColor='var(--red2)';  statusIcon='❌'; statusText='Rejected'; break;
-        case 'cancelled':  statusColor='var(--muted)'; statusIcon='🚫'; statusText='Cancelled'; break;
-        case 'processing': statusColor='var(--gold)';  statusIcon='⚙️'; statusText='Processing'; break;
-        default:            statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
-      }
-      const bonusText = r.bonus_amount > 0 ? `<span style="font-size:0.7rem;color:var(--gold);margin-left:0.3rem;">+₹${parseFloat(r.bonus_amount).toLocaleString('en-IN')} bonus</span>` : '';
-      const orderId = r.order_id || '';
-      return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <div style="font-weight:700;color:var(--green);">+₹${parseFloat(r.amount||0).toLocaleString('en-IN')}${bonusText}</div>
-          <div style="font-size:0.7rem;color:var(--muted);">${r.method||'UPI'} · ${time}</div>
-          ${orderId ? `<div style="font-size:0.65rem;color:var(--muted);opacity:0.75;">#${orderId}</div>` : ''}
-        </div>
-        <div style="font-size:0.75rem;font-weight:700;color:${statusColor};">${statusIcon} ${statusText}</div>
-      </div>`;
-    }).join('') + (totalPages > 1 ? `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.7rem;">
-        <button onclick="loadDepositHistory(${_walDepPage-1})" ${_walDepPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walDepPage<=1?'opacity:0.4;':''}">&lt;</button>
-        <span style="color:var(--muted);font-size:0.75rem;">Page ${_walDepPage} / ${totalPages}</span>
-        <button onclick="loadDepositHistory(${_walDepPage+1})" ${_walDepPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walDepPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
-      </div>` : '');
-    targets.forEach(t => t.innerHTML = html);
+    await _loadHistoryShared(_walDepState, {
+      targetIds: ['depositHistoryRows', 'depositHistoryRowsPanel'],
+      endpoint: 'https://royalwin-api.vercel.app/api/my-deposits',
+      dataKey: 'deposits',
+      normalize: d => ({ ...d, timestamp: Number(d.created_at) }),
+      perPage: 5, maxPages: 10,
+      alwaysRefetch: false,
+      onErrorHtml: '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Failed to load</div>',
+      emptyMsg: '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No deposits yet</div>',
+      renderRow: r => {
+        const time = r.created_at ? new Date(Number(r.created_at)).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+        let statusColor, statusText, statusIcon;
+        switch(r.status) {
+          case 'approved':   statusColor='var(--green)'; statusIcon='✅'; statusText='Success'; break;
+          case 'rejected':   statusColor='var(--red2)';  statusIcon='❌'; statusText='Rejected'; break;
+          case 'cancelled':  statusColor='var(--muted)'; statusIcon='🚫'; statusText='Cancelled'; break;
+          case 'processing': statusColor='var(--gold)';  statusIcon='⚙️'; statusText='Processing'; break;
+          default:            statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
+        }
+        const bonusText = r.bonus_amount > 0 ? `<span style="font-size:0.7rem;color:var(--gold);margin-left:0.3rem;">+₹${parseFloat(r.bonus_amount).toLocaleString('en-IN')} bonus</span>` : '';
+        const orderId = r.order_id || '';
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:700;color:var(--green);">+₹${parseFloat(r.amount||0).toLocaleString('en-IN')}${bonusText}</div>
+            <div style="font-size:0.7rem;color:var(--muted);">${r.method||'UPI'} · ${time}</div>
+            ${orderId ? `<div style="font-size:0.65rem;color:var(--muted);opacity:0.75;">#${orderId}</div>` : ''}
+          </div>
+          <div style="font-size:0.75rem;font-weight:700;color:${statusColor};">${statusIcon} ${statusText}</div>
+        </div>`;
+      },
+      renderPager: (page, totalPages) => `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.7rem;">
+        <button onclick="loadDepositHistory(${page-1})" ${page<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${page<=1?'opacity:0.4;':''}">&lt;</button>
+        <span style="color:var(--muted);font-size:0.75rem;">Page ${page} / ${totalPages}</span>
+        <button onclick="loadDepositHistory(${page+1})" ${page>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${page>=totalPages?'opacity:0.4;':''}">&gt;</button>
+      </div>`
+    }, page);
   }
 
-  var _walWithPage = 1, _walWithData = [];
+  var _walWithState = { page: 1, data: [] };
   async function loadWithdrawHistory(page) {
-    const token = localStorage.getItem('royalwin_token');
-    const el = document.getElementById('withdrawHistoryRows');
-    if (!token || !el) return;
-    if (page) { _walWithPage = page; } else if (!_walWithData.length) {
-      el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
-      try {
-        const res = await fetch('https://royalwin-api.vercel.app/api/my-withdrawals', { headers: { 'Authorization': 'Bearer ' + token } });
-        const data = await res.json();
-        _walWithData = (data.success ? data.withdrawals : []).sort((a,b) => (b.created_at||0)-(a.created_at||0));
-      } catch(e) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Failed to load</div>'; return; }
-    }
-    if (!_walWithData.length) { el.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No withdrawals yet</div>'; return; }
-    const PER_PAGE = 5, MAX_PAGES = 10;
-    const limited = _walWithData.slice(0, PER_PAGE * MAX_PAGES);
-    const totalPages = Math.min(Math.ceil(limited.length / PER_PAGE), MAX_PAGES);
-    if (_walWithPage > totalPages) _walWithPage = 1;
-    const pageItems = limited.slice((_walWithPage-1)*PER_PAGE, _walWithPage*PER_PAGE);
-    el.innerHTML = pageItems.map(r => {
-      const time = r.created_at ? new Date(Number(r.created_at)).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
-      let statusColor, statusText, statusIcon;
-      switch(r.status) {
-        case 'approved':    statusColor='var(--green)'; statusIcon='✅'; statusText='Success'; break;
-        case 'rejected':    statusColor='var(--red2)';  statusIcon='❌'; statusText='Rejected'; break;
-        case 'failed':      statusColor='var(--red2)';  statusIcon='❌'; statusText='Failed'; break;
-        case 'processing':  statusColor='var(--gold)';  statusIcon='⚙️'; statusText='Processing'; break;
-        default:            statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
-      }
-      let accountDetails = {};
-      try { accountDetails = typeof r.account_details === 'string' ? JSON.parse(r.account_details) : (r.account_details || {}); } catch(e) {}
-      return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
-        <div>
-          <div style="font-weight:700;color:var(--red2);">-₹${parseFloat(r.amount||0).toLocaleString('en-IN')}</div>
-          <div style="font-size:0.7rem;color:var(--muted);">${r.method||'UPI'} · ${time}</div>
-          ${r.status==='processing'?'<div style="font-size:0.67rem;color:var(--gold);">Expected within 24 hours</div>':''}
-          ${r.status==='failed'||r.status==='rejected'?'<div style="font-size:0.67rem;color:var(--red2);">Amount refunded</div>':''}
-        </div>
-        <div style="font-size:0.75rem;font-weight:700;color:${statusColor};">${statusIcon} ${statusText}</div>
-      </div>`;
-    }).join('');
-    if (totalPages > 1) {
-      el.innerHTML += `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.7rem;">
-        <button onclick="loadWithdrawHistory(${_walWithPage-1})" ${_walWithPage<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walWithPage<=1?'opacity:0.4;':''}">&lt;</button>
-        <span style="color:var(--muted);font-size:0.75rem;">Page ${_walWithPage} / ${totalPages}</span>
-        <button onclick="loadWithdrawHistory(${_walWithPage+1})" ${_walWithPage>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${_walWithPage>=totalPages?'opacity:0.4;':''}">&gt;</button>
-      </div>`;
-    }
+    await _loadHistoryShared(_walWithState, {
+      targetIds: ['withdrawHistoryRows'],
+      endpoint: 'https://royalwin-api.vercel.app/api/my-withdrawals',
+      dataKey: 'withdrawals',
+      normalize: w => ({ ...w, timestamp: Number(w.created_at) }),
+      perPage: 5, maxPages: 10,
+      alwaysRefetch: false,
+      onErrorHtml: '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Failed to load</div>',
+      emptyMsg: '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">No withdrawals yet</div>',
+      renderRow: r => {
+        const time = r.created_at ? new Date(Number(r.created_at)).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+        let statusColor, statusText, statusIcon;
+        switch(r.status) {
+          case 'approved':    statusColor='var(--green)'; statusIcon='✅'; statusText='Success'; break;
+          case 'rejected':    statusColor='var(--red2)';  statusIcon='❌'; statusText='Rejected'; break;
+          case 'failed':      statusColor='var(--red2)';  statusIcon='❌'; statusText='Failed'; break;
+          case 'processing':  statusColor='var(--gold)';  statusIcon='⚙️'; statusText='Processing'; break;
+          default:            statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
+        }
+        let accountDetails = {};
+        try { accountDetails = typeof r.account_details === 'string' ? JSON.parse(r.account_details) : (r.account_details || {}); } catch(e) {}
+        return `<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:0.7rem 0.9rem;margin-bottom:0.5rem;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <div style="font-weight:700;color:var(--red2);">-₹${parseFloat(r.amount||0).toLocaleString('en-IN')}</div>
+            <div style="font-size:0.7rem;color:var(--muted);">${r.method||'UPI'} · ${time}</div>
+            ${r.status==='processing'?'<div style="font-size:0.67rem;color:var(--gold);">Expected within 24 hours</div>':''}
+            ${r.status==='failed'||r.status==='rejected'?'<div style="font-size:0.67rem;color:var(--red2);">Amount refunded</div>':''}
+          </div>
+          <div style="font-size:0.75rem;font-weight:700;color:${statusColor};">${statusIcon} ${statusText}</div>
+        </div>`;
+      },
+      renderPager: (page, totalPages) => `<div style="display:flex;justify-content:center;align-items:center;gap:0.4rem;margin-top:0.7rem;">
+        <button onclick="loadWithdrawHistory(${page-1})" ${page<=1?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${page<=1?'opacity:0.4;':''}">&lt;</button>
+        <span style="color:var(--muted);font-size:0.75rem;">Page ${page} / ${totalPages}</span>
+        <button onclick="loadWithdrawHistory(${page+1})" ${page>=totalPages?'disabled':''} style="background:var(--card);border:1px solid var(--border);border-radius:8px;padding:0.3rem 0.8rem;color:var(--muted);font-size:0.8rem;cursor:pointer;${page>=totalPages?'opacity:0.4;':''}">&gt;</button>
+      </div>`
+    }, page);
   }
 
   async function refreshWalletBalance() {
@@ -4090,9 +4056,9 @@
       if (tabEl) tabEl.classList.toggle('active', t === tab);
       if (panelEl) panelEl.classList.toggle('active', t === tab);
     });
-    if (tab === 'withdraw') { _walWithData = []; _walWithPage = 1; loadWagerProgress(); loadWithdrawHistory(); loadSavedWithdrawDetails(); }
+    if (tab === 'withdraw') { _walWithState.data = []; _walWithState.page = 1; loadWagerProgress(); loadWithdrawHistory(); loadSavedWithdrawDetails(); }
     if (tab === 'deposit') {
-      _walDepData = []; _walDepPage = 1;
+      _walDepState.data = []; _walDepState.page = 1;
       // Clear history rows before reloading to prevent stacking
       const histRows = document.getElementById('depositHistoryRows');
       if (histRows) histRows.innerHTML = '<div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1.5rem;">Loading...</div>';
@@ -6232,50 +6198,18 @@
     document.addEventListener(e, resetInactivityTimer, { passive: true });
   });
   resetInactivityTimer(); // Start timer on load
-  var fbDB, fbRef, fbSet, fbGet, fbOnValue;
-  function tryInitFirebase(attempts) {
-    if (typeof firebase !== 'undefined') {
-      initFirebase();
-    } else if (attempts > 0) {
-      setTimeout(() => tryInitFirebase(attempts - 1), 300);
-    } else {
-      console.error('Firebase SDK not loaded! Open via a web server, not file://');
-    }
-  }
-  window.addEventListener('load', () => tryInitFirebase(10));
+  window.addEventListener('load', initApp);
   startSiteStatusPolling(); // announcement banner + maintenance mode — not login-gated
-  // ── TRUE SAFETY NET: hides the loader even if the Firebase SDK itself never loads
-  // (network issue, ad-blocker, blocked CDN). The safety net inside initFirebase() only
-  // fires if Firebase loaded successfully - this one fires regardless, after 8 seconds. ──
+  // ── SAFETY NET: hides the loader if restoreSession() below hangs for any reason ──
   setTimeout(() => {
     const loader = document.getElementById('appLoader');
     if (loader && loader.style.display !== 'none') {
-      if (typeof firebase === 'undefined') {
-        showToast('⚠️ Connection issue. Please check your internet and refresh.');
-      }
       loader.style.opacity = '0';
       setTimeout(() => { loader.style.display = 'none'; }, 400);
     }
   }, 8000);
-  const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyDFiGTDrek9ju6LtmEWZST-PsVjjZiCZ6E",
-    authDomain: "royalwin-22446.firebaseapp.com",
-    databaseURL: "https://royalwin-22446-default-rtdb.asia-southeast1.firebasedatabase.app",
-    projectId: "royalwin-22446",
-    storageBucket: "royalwin-22446.firebasestorage.app",
-    messagingSenderId: "441796320694",
-    appId: "1:441796320694:web:f69595cfda590746b87517",
-    measurementId: "G-6Q7DX3EG1G"
-  };
-  function initFirebase() {
+  function initApp() {
     try {
-      if (firebase.apps.length === 0) {
-        firebase.initializeApp(FIREBASE_CONFIG);
-      }
-      window._firebaseReady = true;
-      fbDB = firebase.database();
-      window.fbDB = fbDB;
-      window.fbAuth = firebase.auth();
       // ── LOADER: Only hidden by onAuthChange below. Safety net at 6s for very slow connections. ──
 
       restoreSession().then(onAuthChange);
@@ -6371,7 +6305,7 @@
       }
       window.onAuthChange = onAuthChange;
 
-      // ── SAFETY NET: If Firebase takes too long, hide loader after 6 seconds ──
+      // ── SAFETY NET: hide loader after 6 seconds regardless, for slow connections ──
       setTimeout(() => {
         const loader = document.getElementById('appLoader');
         if (loader && loader.style.display !== 'none') {
@@ -6380,7 +6314,7 @@
         }
       }, 6000);
     } catch(e) {
-      // console.warn('Firebase error:', e.message);
+      // console.warn('Init error:', e.message);
     }
   }
 
@@ -7837,7 +7771,7 @@
 
       <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">
         <div style="font-family:'Cinzel',serif;color:var(--gold);margin-bottom:0.6rem;">5. Third-Party Services</div>
-        <p style="color:var(--muted);">We use Google Firebase for authentication and Neon (PostgreSQL) for database services. These services have their own privacy policies. We do not control and are not responsible for the privacy practices of third-party services.</p>
+        <p style="color:var(--muted);">We use Neon (PostgreSQL) for database and authentication services. This service has its own privacy policy. We do not control and are not responsible for the privacy practices of third-party services.</p>
       </div>
 
       <div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:1.2rem;">

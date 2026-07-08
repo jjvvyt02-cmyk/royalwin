@@ -162,11 +162,11 @@
   }
   .toast.show { transform:translateX(-50%) translateY(0); }
 
-  /* FIREBASE STATUS */
-  .fb-status { display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; }
-  .fb-dot { width:8px; height:8px; border-radius:50%; background:var(--muted); }
-  .fb-dot.connected { background:var(--green); }
-  .fb-dot.error { background:var(--red2); }
+  /* DB CONNECTION STATUS */
+  .db-status { display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; }
+  .db-dot { width:8px; height:8px; border-radius:50%; background:var(--muted); }
+  .db-dot.connected { background:var(--green); }
+  .db-dot.error { background:var(--red2); }
 
   @media (max-width:768px) {
     .status-bar { grid-template-columns:repeat(2,1fr); }
@@ -191,10 +191,8 @@
     <div class="error-msg" id="loginError">❌ Invalid credentials. Access denied.</div>
     <div style="margin-top:1.5rem;padding:1rem;background:var(--bg3);border-radius:8px;font-size:0.78rem;color:var(--muted);line-height:1.7;">
       <strong style="color:var(--gold);">Setup required:</strong><br>
-      1. Create Firebase project at <a href="https://console.firebase.google.com" target="_blank" style="color:var(--gold);">firebase.google.com</a><br>
-      2. Enable Authentication (Email/Password)<br>
-      3. Enable Realtime Database<br>
-      4. Paste your config in both HTML files
+      1. Set NEON_DATABASE_URL and ADMIN_TOKEN as environment variables on the API deployment (Vercel)<br>
+      2. Sign in above using the ADMIN_TOKEN value as your password
     </div>
   </div>
 </div>
@@ -204,7 +202,7 @@
   <nav class="admin-nav">
     <div class="admin-logo">ROYAL♠WIN ADMIN</div>
     <div class="admin-nav-right">
-      <div class="fb-status"><div class="fb-dot" id="fbDot"></div><span id="fbStatusText">Connecting...</span></div>
+      <div class="db-status"><div class="db-dot" id="dbDot"></div><span id="dbStatusText">Connecting...</span></div>
       <div class="admin-badge">👑 OWNER</div>
       <button class="btn btn-outline" style="padding:0.4rem 1rem;font-size:0.82rem;" onclick="doAdminLogout()">Sign Out</button>
     </div>
@@ -921,9 +919,9 @@
             </div>
             <button class="btn btn-outline btn-full" style="padding:0.5rem;" onclick="changeAdminPass()">🔒 Change Password</button>
             <div style="margin-top:0.8rem;background:var(--bg3);border-radius:8px;padding:0.7rem;font-size:0.78rem;line-height:1.8;">
-              <div>Firebase: <span id="fbStatusDetail" style="color:var(--green);">Connected</span></div>
-              <div>Auth: <span id="fbAuthStatus" style="color:var(--muted);">—</span></div>
-              <div style="font-size:0.68rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="fbDbUrl">—</div>
+              <div>Database: <span id="dbStatusDetail" style="color:var(--green);">Connected</span></div>
+              <div>Auth: <span id="adminAuthStatus" style="color:var(--muted);">—</span></div>
+              <div style="font-size:0.68rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" id="neonDbUrl">—</div>
             </div>
           </div>
 
@@ -974,17 +972,17 @@ window._adminLoggedIn = false;
 async function checkConnection() {
   try {
     const data = await fetch(API + '/api/health');
-    const dot = document.getElementById('fbDot');
-    const txt = document.getElementById('fbStatusText');
-    const detail = document.getElementById('fbStatusDetail');
-    const dbUrl = document.getElementById('fbDbUrl');
-    if (dot) dot.className = 'fb-dot connected';
+    const dot = document.getElementById('dbDot');
+    const txt = document.getElementById('dbStatusText');
+    const detail = document.getElementById('dbStatusDetail');
+    const dbUrl = document.getElementById('neonDbUrl');
+    if (dot) dot.className = 'db-dot connected';
     if (txt) txt.textContent = 'Neon DB Connected';
     if (detail) { detail.textContent = 'Connected'; detail.style.color = 'var(--green)'; }
     if (dbUrl) dbUrl.textContent = 'ep-blue-leaf-ao30x2um.c-2.ap-southeast-1.aws.neon.tech';
   } catch(e) {
-    const dot = document.getElementById('fbDot');
-    if (dot) dot.className = 'fb-dot error';
+    const dot = document.getElementById('dbDot');
+    if (dot) dot.className = 'db-dot error';
   }
 }
 
@@ -1001,7 +999,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window._adminToken = savedToken;
     document.getElementById('loginWrap').style.display = 'none';
     document.getElementById('adminWrap').style.display = 'block';
-    document.getElementById('fbAuthStatus').textContent = 'Admin';
+    document.getElementById('adminAuthStatus').textContent = 'Admin';
     window._adminLoggedIn = true;
     initAdmin();
   } else {
@@ -1027,7 +1025,7 @@ window.doAdminLogin = async function() {
     window._adminLoggedIn = true;
     document.getElementById('loginWrap').style.display = 'none';
     document.getElementById('adminWrap').style.display = 'block';
-    document.getElementById('fbAuthStatus').textContent = 'Admin';
+    document.getElementById('adminAuthStatus').textContent = 'Admin';
     initAdmin();
   } catch(e) {
     errEl.style.display = 'block';
