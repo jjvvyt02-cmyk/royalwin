@@ -872,37 +872,6 @@
   }
   .cg-hist-row.head { background:rgba(255,255,255,0.03); color:var(--muted); font-size:0.86rem; text-transform:uppercase; font-weight:700; }
 
-  /* ─── LIVE WINNER TICKER ─── */
-  .ticker-wrap {
-    background: linear-gradient(90deg, rgba(10,10,15,0.98), rgba(26,16,0,0.95), rgba(10,10,15,0.98));
-    border-top: 1px solid rgba(240,192,64,0.12);
-    border-bottom: 1px solid rgba(240,192,64,0.12);
-    padding: 0.6rem 0; overflow: hidden; position: relative;
-  }
-  .ticker-label {
-    position: absolute; left: 0; top: 0; bottom: 0; z-index: 2;
-    background: linear-gradient(135deg, #c07a10, var(--gold2));
-    color: #000; font-weight: 800; font-size: 0.75rem; letter-spacing: 1px;
-    padding: 0 1rem; display: flex; align-items: center; white-space: nowrap;
-    text-transform: uppercase;
-  }
-  .ticker-track {
-    display: flex; gap: 3rem; padding-left: 120px;
-    animation: tickerScroll 30s linear infinite;
-    white-space: nowrap;
-  }
-  .ticker-track:hover { animation-play-state: paused; }
-  .ticker-item { display: flex; align-items: center; gap: 0.5rem; font-size: 0.82rem; color: var(--text); flex-shrink: 0; }
-  .ticker-item .t-name { color: var(--gold); font-weight: 600; }
-  .ticker-item .t-amt { color: var(--green); font-weight: 700; }
-  .ticker-item .t-game { color: var(--muted); }
-  .ticker-item .t-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); display: inline-block; }
-  @keyframes tickerScroll {
-    0% { transform: translateX(0); }
-    100% { transform: translateX(-50%); }
-  }
-
-
   /* ─── MOBILE BOTTOM NAV ─── */
   .mobile-nav {
     display: none;
@@ -5133,27 +5102,6 @@
       window._registerInProgress = false;
     }
   }
-  const tickerWinners = [
-    {name:'Raj***', amt:'₹2,500', game:'WinGo', icon:'🎯'},
-    {name:'Pri***', amt:'₹1,200', game:'Mega Slots', icon:'🎰'},
-    {name:'Vik***', amt:'₹8,000', game:'WinGo', icon:'🎯'},
-    {name:'Sun***', amt:'₹500', game:'Dragon Tiger', icon:'🐉'},
-    {name:'Amo***', amt:'₹15,000', game:'WinGo', icon:'🎯'},
-    {name:'Nee***', amt:'₹3,400', game:'Dice Royale', icon:'🎲'},
-    {name:'Kar***', amt:'₹900', game:'Mega Slots', icon:'🎰'},
-    {name:'Man***', amt:'₹22,000', game:'WinGo', icon:'🎯'},
-    {name:'Dep***', amt:'₹1,800', game:'Dragon Tiger', icon:'🐉'},
-    {name:'San***', amt:'₹4,600', game:'WinGo', icon:'🎯'},
-    {name:'Rit***', amt:'₹750', game:'Dice Royale', icon:'🎲'},
-    {name:'Anu***', amt:'₹11,500', game:'WinGo', icon:'🎯'},
-    {name:'Gau***', amt:'₹2,100', game:'Mega Slots', icon:'🎰'},
-    {name:'Poo***', amt:'₹6,300', game:'WinGo', icon:'🎯'},
-    {name:'Har***', amt:'₹980', game:'Dragon Tiger', icon:'🐉'},
-  ];
-
-  function showTicker() { /* removed */ }
-
-
     const VERCEL_API_URL = 'https://royalwin-api.vercel.app';
 
   let selectedDepositGateway = 'wgpay';
@@ -5395,7 +5343,6 @@
         cgHistoryByTimer[mins] = mapHistoryRows(data.history);
         if (mins === cgTimer) {
           cgHistory = cgHistoryByTimer[cgTimer] || [];
-          renderHistDots();
           renderHistRows();
         }
       } catch(e) {}
@@ -5519,7 +5466,7 @@
     if (settled || outOfTime) {
       if (histData && histData.success) {
         cgHistoryByTimer[mins] = mapHistoryRows(histData.history);
-        if (mins === cgTimer) { cgHistory = cgHistoryByTimer[cgTimer]; renderHistDots(); renderHistRows(); }
+        if (mins === cgTimer) { cgHistory = cgHistoryByTimer[cgTimer]; renderHistRows(); }
       }
       loadMyBets();
       if (gameState) scheduleNextCheck(mins, gameState.currentPeriodId, gameState.secondsLeft);
@@ -5845,8 +5792,6 @@
       </div>`;
     }
   }
-
-  function renderHistDots() { /* removed */ }
 
   let cgHistPage = 1;
   const cgHistPageSize = 10;
@@ -6366,7 +6311,6 @@
           if (loader) { loader.style.opacity = '0'; setTimeout(() => loader.style.display = 'none', 400); }
           document.getElementById('navUser').style.display = 'flex';
 
-          showTicker();
           const heroSignIn = document.getElementById('heroSignInBtn');
           if (heroSignIn) heroSignIn.style.display = 'none';
           const heroPlay = document.getElementById('heroPlayBtn');

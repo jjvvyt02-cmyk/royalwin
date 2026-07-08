@@ -184,10 +184,6 @@
     <div class="login-logo">ROYAL♠WIN</div>
     <div class="login-sub">🔐 Admin Panel — Authorized Access Only</div>
     <div class="form-group">
-      <label class="form-label">Admin Email</label>
-      <input class="form-input" type="email" id="adminEmail" placeholder="admin@royalwin.com">
-    </div>
-    <div class="form-group">
       <label class="form-label">Password</label>
       <input class="form-input" type="password" id="adminPassword" placeholder="••••••••">
     </div>
@@ -1938,16 +1934,6 @@ window.resetWithdrawDetails = async function(uid) {
 
 
 // loadFraudAlerts defined below
-
-// ── RESOLVE MEMBER ID TO UID ──
-async function resolveUid(input) {
-  input = (input || '').trim();
-  if (!input) return null;
-  try {
-    const result = await apiCall('/api/admin/lookup?q=' + encodeURIComponent(input));
-    return result.success ? result.user.uid : null;
-  } catch(e) { return null; }
-}
 
 window.manualBalance = async function() {
   const input = document.getElementById('manualUid').value.trim();
