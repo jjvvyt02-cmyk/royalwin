@@ -2319,6 +2319,13 @@
     if (mobileNavEl) {
       mobileNavEl.style.display = authPages.includes(name) ? 'none' : (isLoggedIn ? 'grid' : 'none');
     }
+    // Wager progress only needs live polling while the wallet/deposit/withdraw view is
+    // actually visible — stop it on any other navigation so it doesn't poll forever in
+    // the background for the rest of the session.
+    if (!['wallet', 'deposit', 'withdraw'].includes(name) && _wagerProgressInterval) {
+      clearInterval(_wagerProgressInterval);
+      _wagerProgressInterval = null;
+    }
     let _lastNavPage = null;
     function _showPageInternal(pageName) {
       // Prevent rapid re-navigation to same page
@@ -3168,7 +3175,7 @@
   function startNotificationsPolling() {
     loadNotifications();
     if (_notifPollInterval) clearInterval(_notifPollInterval);
-    _notifPollInterval = setInterval(loadNotifications, 15000);
+    _notifPollInterval = setInterval(loadNotifications, 60000);
   }
 
   async function markNotifRead(id) {
@@ -4871,7 +4878,7 @@
   function startChatBadgePolling() {
     refreshChatBadge();
     if (_chatBadgePollInterval) clearInterval(_chatBadgePollInterval);
-    _chatBadgePollInterval = setInterval(refreshChatBadge, 20000);
+    _chatBadgePollInterval = setInterval(refreshChatBadge, 60000);
   }
 
   async function initLiveChat() {
@@ -6211,7 +6218,7 @@
   function startBalancePolling() {
     pollBalance();
     if (_balancePollInterval) clearInterval(_balancePollInterval);
-    _balancePollInterval = setInterval(pollBalance, 5000);
+    _balancePollInterval = setInterval(pollBalance, 30000);
   }
 
   function updateBalanceDisplay(balance) {
