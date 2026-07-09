@@ -5961,7 +5961,12 @@
         container.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Error loading transactions</div>';
         return;
       }
-      window.allTransactions = data.transactions.map(tx => ({ ...tx, timestamp: Number(tx.timestamp) }));
+      // team_commission is deliberately excluded here -- it fires per bet from every downline
+      // member, so for anyone with an active team it can flood this list. It's already shown
+      // (aggregated, more usefully) on the Agency page, so there's no real loss.
+      window.allTransactions = data.transactions
+        .filter(tx => tx.type !== 'team_commission')
+        .map(tx => ({ ...tx, timestamp: Number(tx.timestamp) }));
       renderTxRows(window.allTransactions);
     } catch(e) {
       console.error('Transaction history error:', e);
@@ -5984,7 +5989,7 @@
     const filtered = filter === 'all' ? (window.allTransactions || []) :
       (window.allTransactions || []).filter(tx => tx.type === filter
         || (filter === 'deposit' && tx.type === 'deposit_bonus')
-        || (filter === 'commission' && (tx.type === 'team_commission' || tx.type === 'vip_diamond_reload')));
+        || (filter === 'commission' && tx.type === 'vip_diamond_reload'));
     renderTxRows(filtered);
   }
 
