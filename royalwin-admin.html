@@ -1992,6 +1992,20 @@ window.deleteUser = async function(uid, username) {
 // ── FINANCE ──
 let _lastDepCount = 0;
 let _lastWithCount = 0;
+let _depPage = 1;
+let _withPage = 1;
+const _financePageSize = 10;
+
+function renderPagerHtml(page, totalPages, gotoFn) {
+  if (totalPages <= 1) return '';
+  return `<div style="display:flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.6rem 0;">
+    <button onclick="${gotoFn}(${page-1})" ${page<=1?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.25rem 0.7rem;cursor:pointer;font-size:0.75rem;${page<=1?'opacity:0.4;':''}">◀</button>
+    <span style="color:var(--muted);font-size:0.75rem;">Page ${page} of ${totalPages}</span>
+    <button onclick="${gotoFn}(${page+1})" ${page>=totalPages?'disabled':''} style="background:var(--bg3);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:0.25rem 0.7rem;cursor:pointer;font-size:0.75rem;${page>=totalPages?'opacity:0.4;':''}">▶</button>
+  </div>`;
+}
+window.gotoDepPage = function(p) { _depPage = p; pollDeposits(); };
+window.gotoWithPage = function(p) { _withPage = p; pollWithdrawals(); };
 
 function _playAlertSound() {
   try {
@@ -2049,7 +2063,10 @@ async function pollDeposits() {
     if (toShow.length === 0) {
       el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${showDepHistory ? 'No deposits yet' : '✅ No pending deposits'}</div>`;
     } else {
-      el.innerHTML = toShow.map(renderDepRow).join('');
+      const totalPages = Math.max(1, Math.ceil(toShow.length / _financePageSize));
+      if (_depPage > totalPages) _depPage = totalPages;
+      const pageItems = toShow.slice((_depPage-1)*_financePageSize, _depPage*_financePageSize);
+      el.innerHTML = pageItems.map(renderDepRow).join('') + renderPagerHtml(_depPage, totalPages, 'gotoDepPage');
     }
   } catch(e) { console.warn('pollDeposits error:', e.message); }
 }
@@ -2109,7 +2126,10 @@ async function pollWithdrawals() {
     if (toShow.length === 0) {
       el.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${showWithHistory ? 'No withdrawals yet' : '✅ No pending withdrawals'}</div>`;
     } else {
-      el.innerHTML = toShow.map(renderWithRow).join('');
+      const totalPages = Math.max(1, Math.ceil(toShow.length / _financePageSize));
+      if (_withPage > totalPages) _withPage = totalPages;
+      const pageItems = toShow.slice((_withPage-1)*_financePageSize, _withPage*_financePageSize);
+      el.innerHTML = pageItems.map(renderWithRow).join('') + renderPagerHtml(_withPage, totalPages, 'gotoWithPage');
     }
   } catch(e) { console.warn('pollWithdrawals error:', e.message); }
 }
@@ -2631,6 +2651,7 @@ window.loadDeposits = function() {
 };
 
 window.loadWithdrawals = async function(filter) {
+  if (filter && filter !== _currentWithdrawFilter) _withPage = 1;
   _currentWithdrawFilter = filter || 'pending';
   ['pending','approved','rejected','all'].forEach(f => {
     const btn = document.getElementById('wfilter-' + f);
@@ -2675,7 +2696,10 @@ window.loadWithdrawals = async function(filter) {
     filtered.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
     if (!el) return;
     if (filtered.length === 0) { el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No ' + _currentWithdrawFilter + ' withdrawals</div>'; return; }
-    el.innerHTML = filtered.map(w => {
+    const totalPages = Math.max(1, Math.ceil(filtered.length / _financePageSize));
+    if (_withPage > totalPages) _withPage = totalPages;
+    const pageItems = filtered.slice((_withPage-1)*_financePageSize, _withPage*_financePageSize);
+    el.innerHTML = pageItems.map(w => {
       const d = w.timestamp ? new Date(w.timestamp).toLocaleString('en-IN', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
       const statusColor = w.status === 'approved' ? 'var(--green)' : w.status === 'rejected' ? 'var(--red2)' : 'orange';
       const statusIcon = w.status === 'approved' ? '✅' : w.status === 'rejected' ? '❌' : '⏳';
@@ -2698,9 +2722,10 @@ window.loadWithdrawals = async function(filter) {
           <button onclick="rejectWithdrawal('${w.key}','${w.uid}','${w.amount||0}','${w.username||''}','${w.memberId||''}')" style="flex:1;padding:0.5rem;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:8px;color:var(--red2);font-weight:700;cursor:pointer;font-size:0.8rem;font-family:'Exo 2',sans-serif;">❌ Reject</button>
         </div>` : `<div style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;">Processed: ${w.processedAt ? new Date(w.processedAt).toLocaleString('en-IN') : '—'}${w.rejectionReason ? ' · Reason: ' + w.rejectionReason : ''}</div>`}
       </div>`;
-    }).join('');
+    }).join('') + renderPagerHtml(_withPage, totalPages, 'gotoWithdrawTabPage');
   } catch(e) { if (el) el.innerHTML = '<div style="color:var(--red2);padding:1rem;">Error: ' + e.message + '</div>'; }
 };
+window.gotoWithdrawTabPage = function(p) { _withPage = p; loadWithdrawals(_currentWithdrawFilter); };
 
 window.approveWithdrawal = async function(key, uid, username, memberId) {
   if (typeof username === 'number') { username = ''; } // handle old call signature
@@ -2942,11 +2967,13 @@ window.quickLookup = async function() {
 // ── HISTORY TOGGLE ──
 window.toggleDepHistory = function() {
   window._showDepHistory = !window._showDepHistory;
+  _depPage = 1;
   const btn = document.getElementById('depHistBtn');
   if (btn) btn.textContent = window._showDepHistory ? 'Hide History' : 'Show History';
 };
 window.toggleWithHistory = function() {
   window._showWithHistory = !window._showWithHistory;
+  _withPage = 1;
   const btn = document.getElementById('withHistBtn');
   if (btn) btn.textContent = window._showWithHistory ? 'Hide History' : 'Show History';
 };
