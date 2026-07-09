@@ -2511,15 +2511,6 @@
 
     const cleanContact = contact.replace(/\s/g,'');
 
-    // Check if account is locked
-    const lockKey = 'login_lock_' + cleanContact;
-    const lockData = JSON.parse(localStorage.getItem(lockKey) || '{}');
-    if (lockData.lockedUntil && Date.now() < lockData.lockedUntil) {
-      const remaining = Math.ceil((lockData.lockedUntil - Date.now()) / 3600000);
-      showToast('🔒 Account locked. Try again in ' + remaining + ' hour(s)');
-      return;
-    }
-
     try {
       showToast('⏳ Signing in...');
       const res = await fetch('https://royalwin-api.vercel.app/api/login', {
@@ -2528,22 +2519,11 @@
       });
       const data = await res.json();
       if (!data.success) {
-        if (res.status === 403) { showToast('❌ ' + data.msg); return; }
-        // Track failed attempts
-        const attempts = (lockData.attempts || 0) + 1;
-        if (attempts >= 5) {
-          const lockedUntil = Date.now() + 24 * 60 * 60 * 1000; // 24 hours
-          localStorage.setItem(lockKey, JSON.stringify({ attempts, lockedUntil }));
-          showToast('🔒 Too many failed attempts. Account locked for 24 hours.');
-          return;
-        } else {
-          localStorage.setItem(lockKey, JSON.stringify({ attempts, lockedUntil: null }));
-          showToast('❌ ' + (data.msg || 'Invalid credentials') + ' (' + (5 - attempts) + ' attempts remaining)');
-          return;
-        }
+        // Lockout/ban/invalid-credentials messages all come straight from the server now —
+        // it tracks failed attempts itself, so there's nothing to do here but show the message.
+        showToast('❌ ' + (data.msg || 'Invalid credentials'));
+        return;
       }
-      // Clear failed attempts on success
-      localStorage.removeItem(lockKey);
       localStorage.setItem('royalwin_token', data.token);
 
       // A temp password from an admin-approved reset must be replaced before the account
