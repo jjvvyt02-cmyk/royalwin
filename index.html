@@ -1871,9 +1871,45 @@
           <input class="form-input" type="password" id="loginPassword" placeholder="Your password" style="padding-right:2.6rem;">
           <button type="button" onclick="togglePasswordVisibility('loginPassword', this)" style="position:absolute;right:0.7rem;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:0.2rem;">👁️</button>
         </div>
+        <div style="text-align:right;margin-top:0.4rem;"><a onclick="showPage('forgotpassword')" style="font-size:0.82rem;color:var(--muted);cursor:pointer;">Forgot password?</a></div>
       </div>
       <button class="btn btn-gold btn-full" onclick="doLogin()">Sign In</button>
       <div class="auth-footer">No account? <a onclick="showPage('register')">Register now</a></div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-forgotpassword">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo"><div class="auth-logo-text">ROYAL♠WIN</div></div>
+      <div class="auth-title">Forgot Password</div>
+      <div class="auth-sub">Enter your registered mobile number. We'll review your request and get back to you.</div>
+      <div class="form-group">
+        <label class="form-label">Mobile Number</label>
+        <input class="form-input" type="text" id="forgotMobile" placeholder="+91 9876543210">
+      </div>
+      <button class="btn btn-gold btn-full" onclick="requestPasswordReset()">Submit Request</button>
+      <div class="auth-footer"><a onclick="showPage('login')">Back to Sign In</a></div>
+    </div>
+  </div>
+</div>
+
+<div class="page" id="page-setnewpassword">
+  <div class="auth-wrap">
+    <div class="auth-card">
+      <div class="auth-logo"><div class="auth-logo-text">ROYAL♠WIN</div></div>
+      <div class="auth-title">Set a New Password</div>
+      <div class="auth-sub">You signed in with a temporary password. Choose a new password to continue.</div>
+      <div class="form-group">
+        <label class="form-label">New Password</label>
+        <input class="form-input" type="password" id="forcedNewPassword" placeholder="At least 8 characters">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Confirm New Password</label>
+        <input class="form-input" type="password" id="forcedConfirmPassword" placeholder="Re-enter new password">
+      </div>
+      <button class="btn btn-gold btn-full" onclick="submitNewPassword()">Set Password & Continue</button>
     </div>
   </div>
 </div>
@@ -2271,7 +2307,10 @@
   }
 
   function showPage(name) {
-    const _guestAllowed = ['home', 'login', 'register', 'terms', 'privacy', 'responsible', 'gifts'];
+    // A temp-password login must be resolved before anything else is reachable —
+    // redirect any other navigation attempt back to the forced password-change page.
+    if (window._forcedPasswordChange && name !== 'setnewpassword') name = 'setnewpassword';
+    const _guestAllowed = ['home', 'login', 'register', 'terms', 'privacy', 'responsible', 'gifts', 'forgotpassword', 'setnewpassword'];
     if (!isLoggedIn && !_guestAllowed.includes(name)) {
       document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
       const loginPage = document.getElementById('page-login');
@@ -2506,6 +2545,17 @@
       // Clear failed attempts on success
       localStorage.removeItem(lockKey);
       localStorage.setItem('royalwin_token', data.token);
+
+      // A temp password from an admin-approved reset must be replaced before the account
+      // is usable — skip the normal login completion and force the change-password screen.
+      if (data.user && data.user.must_change_password) {
+        window._forcedPasswordChange = true;
+        window._pendingLoginUser = data.user;
+        showToast('🔑 Please set a new password to continue');
+        showPage('setnewpassword');
+        return;
+      }
+
       showToast('✅ Welcome back!');
       if (typeof onAuthChange === 'function') onAuthChange(data.user);
       showPage('home');
@@ -2514,6 +2564,49 @@
       }
     } catch(e) {
       showToast('❌ ' + (e.message || 'Login failed. Please try again.'));
+    }
+  }
+
+  async function requestPasswordReset() {
+    const mobileEl = document.getElementById('forgotMobile');
+    const mobile = mobileEl ? mobileEl.value.trim() : '';
+    if (!mobile) { showToast('⚠️ Enter your registered mobile number'); return; }
+    try {
+      showToast('⏳ Submitting request...');
+      await fetch('https://royalwin-api.vercel.app/api/forgot-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ mobile: mobile.replace(/\s/g,'') })
+      });
+      showToast("✅ Request received. Contact support if you don't hear back soon.");
+      if (mobileEl) mobileEl.value = '';
+      showPage('login');
+    } catch(e) {
+      showToast('❌ Something went wrong. Please try again.');
+    }
+  }
+
+  async function submitNewPassword() {
+    const newPw = document.getElementById('forcedNewPassword') ? document.getElementById('forcedNewPassword').value : '';
+    const confirmPw = document.getElementById('forcedConfirmPassword') ? document.getElementById('forcedConfirmPassword').value : '';
+    if (!newPw || newPw.length < 8) { showToast('⚠️ Password must be at least 8 characters'); return; }
+    if (newPw !== confirmPw) { showToast('⚠️ Passwords do not match'); return; }
+    const token = localStorage.getItem('royalwin_token');
+    if (!token) { showToast('❌ Session expired. Please log in again.'); window._forcedPasswordChange = false; showPage('login'); return; }
+    try {
+      const res = await fetch('https://royalwin-api.vercel.app/api/change-password', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ newPassword: newPw })
+      });
+      const data = await res.json();
+      if (!data.success) { showToast('❌ ' + (data.msg || 'Failed to set new password')); return; }
+      window._forcedPasswordChange = false;
+      showToast('✅ Password updated! Welcome back.');
+      const user = window._pendingLoginUser;
+      window._pendingLoginUser = null;
+      if (typeof onAuthChange === 'function') onAuthChange(user);
+      showPage('home');
+    } catch(e) {
+      showToast('❌ ' + (e.message || 'Failed to set new password'));
     }
   }
   function closeGiftsModal() {

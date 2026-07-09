@@ -437,7 +437,7 @@
       <button class="admin-tab" onclick="switchTab('withdrawals')">💸 Withdrawals <span id="pendingWithdrawBadge" style="display:none;background:#e02020;color:#fff;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.7rem;margin-left:4px;">0</span></button>
       <button class="admin-tab" onclick="switchTab('users')">👥 Users</button>
       <button class="admin-tab" onclick="switchTab('chat')">💬 Live Chat <span id="chatUnreadBadge" style="display:none;background:#e02020;color:#fff;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.7rem;margin-left:4px;">0</span></button>
-      <button class="admin-tab" onclick="switchTab('settings')">⚙️ Settings</button>
+      <button class="admin-tab" onclick="switchTab('settings')">⚙️ Settings <span id="settingsPendingBadge" style="display:none;background:#e02020;color:#fff;border-radius:50%;padding:0.1rem 0.4rem;font-size:0.7rem;margin-left:4px;">0</span></button>
     </div>
 
 
@@ -799,15 +799,13 @@
         <!-- LEFT COLUMN -->
         <div style="display:flex;flex-direction:column;gap:1.2rem;">
 
-          <!-- UPI IDs -->
+          <!-- Password Reset Requests -->
           <div class="control-card">
-            <h3>💳 UPI IDs</h3>
-            <div id="upiIdList" style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.7rem;"></div>
-            <div style="display:flex;gap:0.4rem;">
-              <input class="form-input" type="text" id="newUpiId" placeholder="name@ybl" style="flex:2;font-size:0.82rem;">
-              <input class="form-input" type="text" id="newUpiLabel" placeholder="Label" style="flex:1;font-size:0.82rem;">
-              <button class="btn btn-gold" onclick="addUpiId()" style="white-space:nowrap;padding:0.5rem 0.8rem;">➕</button>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.6rem;">
+              <h3 style="margin:0;">🔑 Password Reset Requests</h3>
+              <button class="btn btn-outline" style="padding:0.3rem 0.7rem;font-size:0.72rem;" onclick="togglePasswordResetHistory()" id="pwResetHistoryBtn">Show History</button>
             </div>
+            <div id="passwordResetList" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
           </div>
 
           <!-- USDT Addresses -->
@@ -1073,6 +1071,8 @@ function initAdmin() {
   loadRevenueStats();
   loadCXPayBalance();
   loadWGPayBalance();
+  loadPasswordResets();
+  setInterval(loadPasswordResets, 3000);
   switchTab('bets');
   setTimeout(() => { loadGiftCodes(); loadCommissionRates(); loadLimits(); }, 1000);
 }
@@ -2240,57 +2240,72 @@ window.toggleUsdtAddress = async function(key, active) {
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
-// ── MULTIPLE UPI ID MANAGER ──
-async function loadAdminUpiIdSetting() {
-  const listEl = document.getElementById('upiIdList');
-  if (!listEl) return;
+// ── PASSWORD RESET REQUESTS ──
+let _pwResetShowHistory = false;
+async function loadPasswordResets() {
+  const listEl = document.getElementById('passwordResetList');
   try {
-    const result = await apiCall('/api/admin/upi-ids');
-    renderUpiList(result.upiIds || {});
-  } catch(e) {}
+    const url = _pwResetShowHistory ? '/api/admin/password-reset-requests' : '/api/admin/password-reset-requests?status=pending';
+    const result = await apiCall(url);
+    const requests = result.requests || [];
+
+    const badge = document.getElementById('settingsPendingBadge');
+    if (badge) {
+      const pendingCount = _pwResetShowHistory ? requests.filter(r => r.status === 'pending').length : requests.length;
+      badge.textContent = pendingCount;
+      badge.style.display = pendingCount > 0 ? 'inline' : 'none';
+    }
+
+    if (!listEl) return;
+    if (!requests.length) {
+      listEl.innerHTML = `<div style="text-align:center;color:var(--muted);font-size:0.82rem;padding:1rem;">${_pwResetShowHistory ? 'No requests yet' : '✅ No pending requests'}</div>`;
+      return;
+    }
+    listEl.innerHTML = requests.map(r => {
+      const accountAge = r.account_created_at ? new Date(parseInt(r.account_created_at)).toLocaleDateString('en-IN', {day:'numeric',month:'short',year:'numeric'}) : '—';
+      const lastLogin = r.last_login ? new Date(parseInt(r.last_login)).toLocaleString('en-IN', {day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+      const statusColor = r.status === 'pending' ? 'orange' : r.status === 'approved' ? 'var(--gold)' : r.status === 'completed' ? 'var(--green)' : 'var(--red2)';
+      return `<div style="background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:0.7rem 0.9rem;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:0.5rem;">
+          <div>
+            <div style="font-weight:700;font-size:0.85rem;">${r.username || '—'} <span style="font-size:0.7rem;color:var(--gold);">ID: ${r.member_id || '—'}</span></div>
+            <div style="font-size:0.72rem;color:var(--muted);">📱 ${r.mobile}</div>
+            <div style="font-size:0.7rem;color:var(--muted);">Account since ${accountAge} · Last login ${lastLogin} · Deposited ₹${parseFloat(r.total_deposited||0).toLocaleString('en-IN')}</div>
+          </div>
+          <span style="font-size:0.68rem;color:${statusColor};white-space:nowrap;">${r.status}</span>
+        </div>
+        ${r.status === 'pending' ? `
+        <div style="display:flex;gap:0.4rem;margin-top:0.6rem;">
+          <button onclick="approvePasswordReset('${r.id}')" style="flex:1;background:var(--green);border:none;border-radius:6px;padding:0.4rem;color:#000;font-size:0.78rem;font-weight:700;cursor:pointer;">✅ Approve</button>
+          <button onclick="rejectPasswordReset('${r.id}')" style="flex:1;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:6px;padding:0.4rem;color:var(--red2);font-size:0.78rem;cursor:pointer;">❌ Reject</button>
+        </div>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) { console.warn('loadPasswordResets error:', e.message); }
 }
-function renderUpiList(data) {
-  const listEl = document.getElementById('upiIdList');
-  if (!listEl) return;
-  const entries = Object.entries(data);
-  if (!entries.length) { listEl.innerHTML='<div style="color:var(--muted);font-size:0.82rem;">No UPI IDs added yet.</div>'; return; }
-  listEl.innerHTML = entries.map(([key, u]) => `
-    <div style="display:flex;align-items:center;gap:0.6rem;padding:0.6rem 0.8rem;background:var(--bg3);border-radius:10px;border:1px solid var(--border);">
-      <div style="flex:1;">
-        <div style="font-weight:700;font-size:0.85rem;color:${u.active?'var(--text)':'var(--muted)'};">${u.label||'UPI'} <span style="font-size:0.7rem;color:var(--muted);">${u.id}</span></div>
-      </div>
-      <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.75rem;color:var(--muted);cursor:pointer;">
-        <input type="checkbox" ${u.active?'checked':''} onchange="toggleUpiId('${key}',this.checked)" style="cursor:pointer;">Active
-      </label>
-      <button onclick="removeUpiId('${key}')" style="background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.2);color:var(--red2);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer;font-size:0.75rem;">✕</button>
-    </div>`).join('');
-}
-window.addUpiId = async function() {
-  const id = document.getElementById('newUpiId').value.trim();
-  const label = document.getElementById('newUpiLabel').value.trim() || 'UPI';
-  if (!id) { showToast('⚠️ Enter a UPI ID'); return; }
-  if (!id.includes('@')) { showToast('⚠️ Invalid UPI ID format'); return; }
+window.togglePasswordResetHistory = function() {
+  _pwResetShowHistory = !_pwResetShowHistory;
+  const btn = document.getElementById('pwResetHistoryBtn');
+  if (btn) btn.textContent = _pwResetShowHistory ? 'Show Pending' : 'Show History';
+  loadPasswordResets();
+};
+window.approvePasswordReset = async function(id) {
+  if (!confirm('Issue a temporary password for this user?')) return;
   try {
-    await apiCall('/api/admin/upi-ids', 'POST', { action: 'add', id, label });
-    document.getElementById('newUpiId').value = '';
-    document.getElementById('newUpiLabel').value = '';
-    showToast('✅ UPI ID added!');
-    loadAdminUpiIdSetting();
+    const result = await apiCall('/api/admin/approve-password-reset', 'POST', { requestId: id });
+    if (result.tempPassword) {
+      alert('Temporary password: ' + result.tempPassword + '\n\nSend this to the user. It expires in 24 hours and must be changed on their next login.');
+    }
+    showToast('✅ Reset approved');
+    loadPasswordResets();
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
-window.removeUpiId = async function(key) {
-  if (!confirm('Remove this UPI ID?')) return;
+window.rejectPasswordReset = async function(id) {
+  if (!confirm('Reject this password reset request?')) return;
   try {
-    await apiCall('/api/admin/upi-ids', 'POST', { action: 'remove', key });
-    showToast('🗑️ UPI ID removed');
-    loadAdminUpiIdSetting();
-  } catch(e) { showToast('❌ Error: ' + e.message); }
-};
-window.toggleUpiId = async function(key, active) {
-  try {
-    await apiCall('/api/admin/upi-ids', 'POST', { action: 'toggle', key, active });
-    showToast(active ? '✅ UPI ID enabled' : '⛔ UPI ID disabled');
-    loadAdminUpiIdSetting();
+    await apiCall('/api/admin/reject-password-reset', 'POST', { requestId: id });
+    showToast('🗑️ Request rejected');
+    loadPasswordResets();
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
@@ -2648,7 +2663,7 @@ window.switchTab = function(tab) {
   if (tab === 'deposits') { loadDeposits(); }
   if (tab === 'users') { loadUsers(); loadFraudAlerts(); }
   if (tab === 'chat') { loadChatUserList(); }
-  if (tab === 'settings') { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadAdminUpiIdSetting(); loadUsdtAddresses(); }
+  if (tab === 'settings') { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadPasswordResets(); loadUsdtAddresses(); }
   if (tab === 'quantumpay') { loadQPDashboard('all'); }
 };
 
