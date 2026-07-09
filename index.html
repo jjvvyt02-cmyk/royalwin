@@ -5988,8 +5988,7 @@
     currentTxFilter = filter; _txPage = 1; _lastTxFilter = filter;
     const filtered = filter === 'all' ? (window.allTransactions || []) :
       (window.allTransactions || []).filter(tx => tx.type === filter
-        || (filter === 'deposit' && tx.type === 'deposit_bonus')
-        || (filter === 'commission' && tx.type === 'vip_diamond_reload'));
+        || (filter === 'deposit' && tx.type === 'deposit_bonus'));
     renderTxRows(filtered);
   }
 
@@ -6841,7 +6840,6 @@
       <button class="hf-btn" onclick="filterTx(this,'deposit')" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">⬇️ Deposits</button>
       <button class="hf-btn" onclick="filterTx(this,'withdrawal')" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">⬆️ Withdrawals</button>
       <button class="hf-btn" onclick="filterTx(this,'win')" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">🏆 Wins</button>
-      <button class="hf-btn" onclick="filterTx(this,'commission')" style="flex-shrink:0;padding:0.4rem 0.9rem;border-radius:20px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">💰 Commission</button>
     </div>
     
     <div id="txHistoryRows">
