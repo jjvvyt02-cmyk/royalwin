@@ -1773,6 +1773,7 @@ function renderUsers(users) {
           <button onclick="deleteUser('${u.uid}', '${u.username || 'Unknown'}')" style="font-size:0.68rem;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:4px;padding:0.2rem 0.5rem;color:var(--red2);cursor:pointer;">🗑️ Delete</button>
           <button onclick="deleteAllBets('${u.uid}', '${u.username || 'Unknown'}')" style="font-size:0.68rem;background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:var(--red2);cursor:pointer;">🎯 Clear Bets</button>
           <button onclick="openEditBets('${u.uid}', '${u.username || 'Unknown'}')" style="font-size:0.68rem;background:rgba(124,77,255,0.08);border:1px solid rgba(124,77,255,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:#a87dff;cursor:pointer;">✏️ Edit Bets</button>
+          <button onclick="resetUserData('${u.uid}', '${u.username || 'Unknown'}')" style="font-size:0.68rem;background:rgba(224,32,32,0.08);border:1px solid rgba(224,32,32,0.2);border-radius:4px;padding:0.2rem 0.5rem;color:var(--red2);cursor:pointer;">🧹 Reset Data</button>
         </div>
       </div>
     </div>`;
@@ -1785,6 +1786,17 @@ window.deleteAllBets = async function(uid, username) {
   try {
     await apiCall('/api/admin/clear-bets', 'POST', { uid });
     showToast('✅ All bet history cleared for ' + username);
+  } catch(e) { showToast('❌ Error: ' + e.message); }
+};
+
+// ── RESET USER DATA (wipes all site/game activity + VIP/wager progress; keeps
+// the account, balance, username, password, and contact info untouched) ──
+window.resetUserData = async function(uid, username) {
+  if (!confirm('Wipe ALL activity history (bets, transactions, deposits, withdrawals, notifications, VIP/wager progress, etc.) for ' + username + '?\n\nBalance, username, password, and contact info are kept. This cannot be undone.')) return;
+  try {
+    await apiCall('/api/admin/reset-user-data', 'POST', { uid });
+    showToast('✅ All activity data cleared for ' + username + ' — balance untouched');
+    loadUsers();
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
