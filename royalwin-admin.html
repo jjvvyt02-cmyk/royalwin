@@ -665,7 +665,7 @@
 
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:0.8rem;">
         <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">👥 Registered Users (<span id="userCount">0</span>)</div>
-        <input class="form-input" type="text" id="userSearch" placeholder="🔍 Search by Member ID, username, phone or UID..." style="max-width:320px;font-size:0.85rem;" oninput="filterUsers(this.value)">
+        <input class="form-input" type="text" id="userSearch" placeholder="🔍 Search by Member ID, username, phone or UID..." style="max-width:320px;font-size:0.85rem;" oninput="_usersPage=1;filterUsers(this.value)">
       </div>
       <div id="usersList" style="display:flex;flex-direction:column;gap:0.6rem;">
         <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">Loading users...</div>
@@ -1694,7 +1694,15 @@ async function loadSettings() {
 // ── USER SEARCH + BLOCK ──
 let allUsers = [];
 
+let _usersPage = 1;
+window.gotoUsersPage = function(p) {
+  _usersPage = p;
+  const searchEl = document.getElementById('userSearch');
+  const q = searchEl ? searchEl.value.trim() : '';
+  if (q) filterUsers(q); else renderUsers(allUsers);
+};
 async function loadUsers() {
+  _usersPage = 1;
   const el = document.getElementById('usersList');
   if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;">Loading...</div>';
   try {
@@ -1742,7 +1750,10 @@ function renderUsers(users) {
     el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:1rem;">No users found</div>';
     return;
   }
-  el.innerHTML = users.map(u => {
+  const totalPages = Math.max(1, Math.ceil(users.length / _financePageSize));
+  if (_usersPage > totalPages) _usersPage = totalPages;
+  const pageUsers = users.slice((_usersPage-1)*_financePageSize, _usersPage*_financePageSize);
+  el.innerHTML = pageUsers.map(u => {
     const exp = u.vip?.exp || 0;
     const vipLevel = getAdminVipLevel(exp);
     return `
@@ -1777,7 +1788,7 @@ function renderUsers(users) {
         </div>
       </div>
     </div>`;
-  }).join('');
+  }).join('') + renderPagerHtml(_usersPage, totalPages, 'gotoUsersPage');
 }
 
 // ── DELETE ALL BETS ──
@@ -2548,7 +2559,10 @@ window.adminSendChat = async function() {
 
 // ── QUANTUMPAY DASHBOARD ──
 window._qpCurrentFilter = 'all';
+let _qpPage = 1;
+window.gotoQPPage = function(p) { _qpPage = p; loadQPDashboard(window._qpCurrentFilter); };
 window.loadQPDashboard = async function(filter) {
+  if (filter && filter !== window._qpCurrentFilter) _qpPage = 1;
   window._qpCurrentFilter = filter || 'all';
   // Update filter button styles
   ['all','pending','completed','expired'].forEach(f => {
@@ -2587,8 +2601,11 @@ window.loadQPDashboard = async function(filter) {
       if (rowsEl) rowsEl.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">No invoices found</div>';
       return;
     }
+    const totalPages = Math.max(1, Math.ceil(filtered.length / _financePageSize));
+    if (_qpPage > totalPages) _qpPage = totalPages;
+    const pageItems = filtered.slice((_qpPage-1)*_financePageSize, _qpPage*_financePageSize);
     const statusColor = { pending: '#f0c040', completed: '#26a17b', expired: '#e05050', detected: '#4b9bf5' };
-    const rows = filtered.map(inv => {
+    const rows = pageItems.map(inv => {
       const date = new Date(inv.date).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
       const expires = inv.expiresAt ? new Date(inv.expiresAt).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : '—';
       const color = statusColor[inv.status] || '#aaa';
@@ -2610,7 +2627,7 @@ window.loadQPDashboard = async function(filter) {
         </div>
       </div>`;
     }).join('');
-    if (rowsEl) rowsEl.innerHTML = rows;
+    if (rowsEl) rowsEl.innerHTML = rows + renderPagerHtml(_qpPage, totalPages, 'gotoQPPage');
   } catch(e) {
     if (rowsEl) rowsEl.innerHTML = `<div style="text-align:center;color:#e05050;padding:2rem;">Error: ${e.message}</div>`;
     console.error('QP dashboard error:', e);
