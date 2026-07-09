@@ -3719,8 +3719,8 @@
         let statusColor, statusText, statusIcon, statusBg;
         switch(r.status) {
           case 'approved':   statusColor='var(--green)'; statusBg='rgba(39,174,96,0.1)';   statusIcon='✅'; statusText='Success'; break;
-          case 'rejected':   statusColor='var(--red2)';  statusBg='rgba(224,32,32,0.1)';   statusIcon='❌'; statusText='Rejected'; break;
-          case 'cancelled':  statusColor='var(--muted)'; statusBg='rgba(128,128,128,0.1)'; statusIcon='🚫'; statusText='Cancelled'; break;
+          case 'rejected': case 'cancelled': case 'failed':
+                             statusColor='var(--red2)';  statusBg='rgba(224,32,32,0.1)';   statusIcon='❌'; statusText='Failed'; break;
           case 'processing': statusColor='var(--gold)';  statusBg='rgba(240,192,64,0.1)';  statusIcon='⚙️'; statusText='Processing'; break;
           default:           statusColor='#f0c040';      statusBg='rgba(240,192,64,0.1)';  statusIcon='⏳'; statusText='Pending';
         }
@@ -3736,7 +3736,7 @@
           </div>
           ${r.orderId ? `<div style="font-size:0.68rem;color:var(--muted);margin-top:0.2rem;font-family:monospace;">#${r.orderId}</div>` : ''}
           ${r.status==='pending'?'<div style="font-size:0.68rem;color:var(--gold);margin-top:0.3rem;">⏳ Verification in progress...</div>':''}
-          ${r.status==='cancelled'?'<div style="font-size:0.68rem;color:var(--muted);margin-top:0.3rem;">Payment not completed</div>':''}
+          ${(r.status==='cancelled'||r.status==='rejected'||r.status==='failed')?'<div style="font-size:0.68rem;color:var(--muted);margin-top:0.3rem;">Payment not completed</div>':''}
         </div>`;
       },
       renderPager: (page, totalPages) => `<div style="display:flex;align-items:center;justify-content:center;gap:0.6rem;padding:0.7rem 0 1.5rem;border-top:1px solid var(--border);margin-top:0.5rem;">
@@ -3763,8 +3763,8 @@
         let statusColor, statusText, statusIcon;
         switch(r.status) {
           case 'approved':    statusColor='var(--green)'; statusIcon='✅'; statusText='Success'; break;
-          case 'rejected':    statusColor='var(--red2)';  statusIcon='❌'; statusText='Rejected'; break;
-          case 'failed':      statusColor='var(--red2)';  statusIcon='❌'; statusText='Failed'; break;
+          case 'rejected': case 'failed':
+                              statusColor='var(--red2)';  statusIcon='❌'; statusText='Failed'; break;
           case 'processing':  statusColor='var(--gold)';  statusIcon='⚙️'; statusText='Processing'; break;
           default:            statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
         }
@@ -4043,8 +4043,8 @@
         let statusColor, statusText, statusIcon;
         switch(r.status) {
           case 'approved':   statusColor='var(--green)'; statusIcon='✅'; statusText='Success'; break;
-          case 'rejected':   statusColor='var(--red2)';  statusIcon='❌'; statusText='Rejected'; break;
-          case 'cancelled':  statusColor='var(--muted)'; statusIcon='🚫'; statusText='Cancelled'; break;
+          case 'rejected': case 'cancelled': case 'failed':
+                             statusColor='var(--red2)';  statusIcon='❌'; statusText='Failed'; break;
           case 'processing': statusColor='var(--gold)';  statusIcon='⚙️'; statusText='Processing'; break;
           default:            statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
         }
@@ -4083,8 +4083,8 @@
         let statusColor, statusText, statusIcon;
         switch(r.status) {
           case 'approved':    statusColor='var(--green)'; statusIcon='✅'; statusText='Success'; break;
-          case 'rejected':    statusColor='var(--red2)';  statusIcon='❌'; statusText='Rejected'; break;
-          case 'failed':      statusColor='var(--red2)';  statusIcon='❌'; statusText='Failed'; break;
+          case 'rejected': case 'failed':
+                              statusColor='var(--red2)';  statusIcon='❌'; statusText='Failed'; break;
           case 'processing':  statusColor='var(--gold)';  statusIcon='⚙️'; statusText='Processing'; break;
           default:            statusColor='var(--gold)';  statusIcon='⏳'; statusText='Pending';
         }
