@@ -7922,13 +7922,6 @@
 <script>
 var _activeUsdtAddress = '';
 
-function getAssignedUsdtAddress() {
-  return fetch('https://royalwin-api.vercel.app/api/usdt-address')
-    .then(function(r) { return r.json(); })
-    .then(function(data) { return (data.success && data.address) || ''; })
-    .catch(function() { return ''; });
-}
-
 function openUSDTModal() {
   if (!isLoggedIn) { showToast('🔐 Please sign in first!'); showPage('login'); return; }
   var modal = document.getElementById('usdtModal');
@@ -8042,20 +8035,6 @@ function openUSDTModal() {
   }, 1000);
 
   window._usdtConfirmed = false;
-
-  getAssignedUsdtAddress().then(function(addr) {
-    if (_activeUsdtAddress) return; // QuantumPay already set address
-    _activeUsdtAddress = addr;
-    if (addrEl) addrEl.textContent = addr || 'No USDT address configured. Contact support.';
-    if (addr && qrEl && typeof QRCode !== 'undefined') {
-      qrEl.innerHTML = '';
-      new QRCode(qrEl, {
-        text: addr, width: 180, height: 180,
-        colorDark: '#000000', colorLight: '#ffffff',
-        correctLevel: QRCode.CorrectLevel.M
-      });
-    }
-  });
 }
 
 function closeUSDTModal() {

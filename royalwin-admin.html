@@ -808,17 +808,6 @@
             <div id="passwordResetList" style="display:flex;flex-direction:column;gap:0.5rem;"></div>
           </div>
 
-          <!-- USDT Addresses -->
-          <div class="control-card">
-            <h3>💚 USDT TRC20</h3>
-            <div id="usdtAddressList" style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.7rem;"></div>
-            <div style="display:flex;gap:0.4rem;">
-              <input class="form-input" type="text" id="newUsdtAddress" placeholder="TRC20 address" style="flex:2;font-size:0.82rem;">
-              <input class="form-input" type="text" id="newUsdtLabel" placeholder="Label" style="flex:1;font-size:0.82rem;">
-              <button class="btn btn-gold" onclick="addUsdtAddress()" style="white-space:nowrap;padding:0.5rem 0.8rem;">➕</button>
-            </div>
-          </div>
-
           <!-- Announcement -->
           <div class="control-card">
             <h3>📢 Announcement</h3>
@@ -2189,57 +2178,6 @@ window.rejectRequest = async function(type, key) {
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
-// ── USDT ADDRESS MANAGER ──
-async function loadUsdtAddresses() {
-  const listEl = document.getElementById('usdtAddressList');
-  if (!listEl) return;
-  try {
-    const result = await apiCall('/api/admin/usdt-addresses');
-    const data = result.addresses || {};
-    const entries = Object.entries(data);
-    if (!entries.length) { listEl.innerHTML = '<div style="color:var(--muted);font-size:0.82rem;">No USDT addresses added yet.</div>'; return; }
-    listEl.innerHTML = entries.map(([key, a]) => `
-      <div style="display:flex;align-items:center;gap:0.6rem;padding:0.6rem 0.8rem;background:var(--bg3);border-radius:10px;border:1px solid var(--border);">
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:700;font-size:0.82rem;color:${a.active?'#26a17b':'var(--muted)'};">${a.label||'Wallet'}</div>
-          <div style="font-size:0.7rem;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${a.address}</div>
-        </div>
-        <label style="display:flex;align-items:center;gap:0.3rem;font-size:0.75rem;color:var(--muted);cursor:pointer;flex-shrink:0;">
-          <input type="checkbox" ${a.active?'checked':''} onchange="toggleUsdtAddress('${key}',this.checked)" style="cursor:pointer;">Active
-        </label>
-        <button onclick="removeUsdtAddress('${key}')" style="background:rgba(224,32,32,0.1);border:1px solid rgba(224,32,32,0.2);color:var(--red2);border-radius:6px;padding:0.3rem 0.6rem;cursor:pointer;font-size:0.75rem;flex-shrink:0;">✕</button>
-      </div>`).join('');
-  } catch(e) {}
-}
-window.addUsdtAddress = async function() {
-  const address = document.getElementById('newUsdtAddress').value.trim();
-  const label = document.getElementById('newUsdtLabel').value.trim() || 'Wallet';
-  if (!address) { showToast('⚠️ Enter a USDT address'); return; }
-  if (address.length < 20) { showToast('⚠️ Invalid TRC20 address'); return; }
-  try {
-    await apiCall('/api/admin/usdt-addresses', 'POST', { action: 'add', address, label });
-    document.getElementById('newUsdtAddress').value = '';
-    document.getElementById('newUsdtLabel').value = '';
-    showToast('✅ USDT address added!');
-    loadUsdtAddresses();
-  } catch(e) { showToast('❌ Error: ' + e.message); }
-};
-window.removeUsdtAddress = async function(key) {
-  if (!confirm('Remove this USDT address?')) return;
-  try {
-    await apiCall('/api/admin/usdt-addresses', 'POST', { action: 'remove', key });
-    showToast('🗑️ Address removed');
-    loadUsdtAddresses();
-  } catch(e) { showToast('❌ Error: ' + e.message); }
-};
-window.toggleUsdtAddress = async function(key, active) {
-  try {
-    await apiCall('/api/admin/usdt-addresses', 'POST', { action: 'toggle', key, active });
-    showToast(active ? '✅ Address enabled' : '⛔ Address disabled');
-    loadUsdtAddresses();
-  } catch(e) { showToast('❌ Error: ' + e.message); }
-};
-
 // ── PASSWORD RESET REQUESTS ──
 let _pwResetShowHistory = false;
 async function loadPasswordResets() {
@@ -2663,7 +2601,7 @@ window.switchTab = function(tab) {
   if (tab === 'deposits') { loadDeposits(); }
   if (tab === 'users') { loadUsers(); loadFraudAlerts(); }
   if (tab === 'chat') { loadChatUserList(); }
-  if (tab === 'settings') { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadPasswordResets(); loadUsdtAddresses(); }
+  if (tab === 'settings') { loadGiftCodes(); loadCommissionRates(); loadCurrentAnnouncement(); loadPasswordResets(); }
   if (tab === 'quantumpay') { loadQPDashboard('all'); }
 };
 
