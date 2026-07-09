@@ -2140,7 +2140,7 @@ window.autoPayWithdrawal = async function(key, uid, amount) {
   try {
     const response = await fetch(VERCEL_API_URL + '/api/payout', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': localStorage.getItem('royalwin_admin_token') || '' },
       body: JSON.stringify({ withdrawalKey: key })
     });
     const data = await response.json();
@@ -2160,7 +2160,7 @@ window.autoPayWithdrawalWGPay = async function(key, uid, amount) {
   try {
     const response = await fetch(VERCEL_API_URL + '/api/wgpay-payout', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-admin-token': localStorage.getItem('royalwin_admin_token') || '' },
       body: JSON.stringify({ withdrawalKey: key })
     });
     const data = await response.json();
