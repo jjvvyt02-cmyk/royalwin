@@ -2341,8 +2341,8 @@ window.loadUserStats = async function() {
     if (!result.success) return;
     const total = result.totalUsers;
     const newToday = result.newUsers;
-    const active = 0;
-    const totalBalance = 0;
+    const active = result.activeUsers7d || 0;
+    const totalBalance = result.totalWalletBalance || 0;
     const el = document.getElementById('adminUserStats');
     if (el) {
       el.innerHTML = `
