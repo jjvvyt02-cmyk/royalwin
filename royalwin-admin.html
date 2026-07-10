@@ -667,6 +667,11 @@
         <div style="font-family:'Cinzel',serif;color:var(--gold);font-size:1rem;">👥 Registered Users (<span id="userCount">0</span>)</div>
         <input class="form-input" type="text" id="userSearch" placeholder="🔍 Search by Member ID, username, phone or UID..." style="max-width:320px;font-size:0.85rem;" oninput="_usersPage=1;filterUsers(this.value)">
       </div>
+      <div style="display:flex;gap:0.5rem;margin-bottom:1rem;flex-wrap:wrap;">
+        <button class="user-dep-filter-btn" onclick="setUserDepositFilter('all', this)" style="padding:0.3rem 0.8rem;border-radius:20px;border:1px solid var(--gold);background:rgba(240,192,64,0.15);color:var(--gold);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">All</button>
+        <button class="user-dep-filter-btn" onclick="setUserDepositFilter('deposited', this)" style="padding:0.3rem 0.8rem;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">💰 Deposited</button>
+        <button class="user-dep-filter-btn" onclick="setUserDepositFilter('never', this)" style="padding:0.3rem 0.8rem;border-radius:20px;border:1px solid var(--border);background:var(--card);color:var(--muted);font-size:0.78rem;font-weight:700;cursor:pointer;font-family:'Exo 2',sans-serif;">🚫 Never Deposited</button>
+      </div>
       <div id="usersList" style="display:flex;flex-direction:column;gap:0.6rem;">
         <div style="text-align:center;color:var(--muted);font-size:0.85rem;padding:1rem;">Loading users...</div>
       </div>
@@ -1718,8 +1723,7 @@ let _usersPage = 1;
 window.gotoUsersPage = function(p) {
   _usersPage = p;
   const searchEl = document.getElementById('userSearch');
-  const q = searchEl ? searchEl.value.trim() : '';
-  if (q) filterUsers(q); else renderUsers(allUsers);
+  filterUsers(searchEl ? searchEl.value.trim() : '');
 };
 async function loadUsers() {
   _usersPage = 1;
@@ -1746,9 +1750,7 @@ async function loadUsers() {
     }));
     if (countEl) countEl.textContent = allUsers.length;
     const searchEl = document.getElementById('userSearch');
-    const q = searchEl ? searchEl.value.trim() : '';
-    if (q) filterUsers(q);
-    else renderUsers(allUsers);
+    filterUsers(searchEl ? searchEl.value.trim() : '');
   } catch(e) {
     if (el) el.innerHTML = '<div style="text-align:center;color:var(--red2);padding:1rem;">❌ Error: ' + e.message + '</div>';
   }
@@ -1936,21 +1938,40 @@ window.dismissFraud = async function(fraudId) {
   } catch(e) { showToast('❌ Error: ' + e.message); }
 };
 
+window._userDepositFilter = 'all';
+function applyDepositFilter(list) {
+  if (window._userDepositFilter === 'deposited') return list.filter(u => (u._totalDeposits || 0) > 0);
+  if (window._userDepositFilter === 'never') return list.filter(u => !(u._totalDeposits > 0));
+  return list;
+}
+
+window.setUserDepositFilter = function(filter, el) {
+  window._userDepositFilter = filter;
+  _usersPage = 1;
+  document.querySelectorAll('.user-dep-filter-btn').forEach(b => {
+    const active = b === el;
+    b.style.background = active ? 'rgba(240,192,64,0.15)' : 'var(--card)';
+    b.style.borderColor = active ? 'var(--gold)' : 'var(--border)';
+    b.style.color = active ? 'var(--gold)' : 'var(--muted)';
+  });
+  const searchEl = document.getElementById('userSearch');
+  filterUsers(searchEl ? searchEl.value.trim() : '');
+};
+
 window.filterUsers = function(query) {
-  if (!query) { renderUsers(allUsers); return; }
-  const q = query.toLowerCase();
-  const qDigits = query.replace(/\D/g, '');
-  const filtered = allUsers.filter(u =>
-    (u.username || '').toLowerCase().includes(q) ||
-    (u.contact || '').toLowerCase().includes(q) ||
-    (u.mobile || '').toLowerCase().includes(q) ||
-    (u.email || '').toLowerCase().includes(q) ||
-    (u.memberId || '').toLowerCase().includes(q) ||
-    (u.uid || '').toLowerCase().includes(q) ||
-    (qDigits.length >= 5 && (u.contact || '').replace(/\D/g,'').includes(qDigits)) ||
-    (qDigits.length >= 5 && (u.mobile || '').replace(/\D/g,'').includes(qDigits))
-  );
-  renderUsers(filtered);
+  const base = query ? allUsers.filter(u => {
+    const q = query.toLowerCase();
+    const qDigits = query.replace(/\D/g, '');
+    return (u.username || '').toLowerCase().includes(q) ||
+      (u.contact || '').toLowerCase().includes(q) ||
+      (u.mobile || '').toLowerCase().includes(q) ||
+      (u.email || '').toLowerCase().includes(q) ||
+      (u.memberId || '').toLowerCase().includes(q) ||
+      (u.uid || '').toLowerCase().includes(q) ||
+      (qDigits.length >= 5 && (u.contact || '').replace(/\D/g,'').includes(qDigits)) ||
+      (qDigits.length >= 5 && (u.mobile || '').replace(/\D/g,'').includes(qDigits));
+  }) : allUsers;
+  renderUsers(applyDepositFilter(base));
 };
 
 
