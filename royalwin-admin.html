@@ -2740,9 +2740,15 @@ window.loadWithdrawals = async function(filter) {
             <div style="font-size:0.72rem;color:${statusColor};font-weight:700;">${statusIcon} ${w.status?.toUpperCase()}</div>
           </div>
         </div>
-        ${isPending ? `<div style="display:flex;gap:0.5rem;margin-top:0.5rem;">
-          <button onclick="approveWithdrawal('${w.key}','${w.uid}','${w.username||''}','${w.memberId||''}')" style="flex:1;padding:0.5rem;background:rgba(39,174,96,0.15);border:1px solid rgba(39,174,96,0.3);border-radius:8px;color:var(--green);font-weight:700;cursor:pointer;font-size:0.8rem;font-family:'Exo 2',sans-serif;">✅ Approve</button>
-          <button onclick="rejectWithdrawal('${w.key}','${w.uid}','${w.amount||0}','${w.username||''}','${w.memberId||''}')" style="flex:1;padding:0.5rem;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:8px;color:var(--red2);font-weight:700;cursor:pointer;font-size:0.8rem;font-family:'Exo 2',sans-serif;">❌ Reject</button>
+        ${isPending ? `<div style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.5rem;">
+          <div style="display:flex;gap:0.5rem;">
+            <button onclick="autoPayWithdrawal('${w.key}','${w.uid}',${w.amount||0})" style="flex:1;padding:0.5rem;background:var(--gold);border:none;border-radius:8px;color:#000;font-weight:700;cursor:pointer;font-size:0.8rem;font-family:'Exo 2',sans-serif;">⚡ CXPay</button>
+            <button onclick="autoPayWithdrawalWGPay('${w.key}','${w.uid}',${w.amount||0})" style="flex:1;padding:0.5rem;background:#8b5cf6;border:none;border-radius:8px;color:#fff;font-weight:700;cursor:pointer;font-size:0.8rem;font-family:'Exo 2',sans-serif;">⚡ WGPay</button>
+          </div>
+          <div style="display:flex;gap:0.5rem;">
+            <button onclick="approveWithdrawal('${w.key}','${w.uid}','${w.username||''}','${w.memberId||''}')" style="flex:1;padding:0.5rem;background:rgba(39,174,96,0.15);border:1px solid rgba(39,174,96,0.3);border-radius:8px;color:var(--green);font-weight:700;cursor:pointer;font-size:0.8rem;font-family:'Exo 2',sans-serif;">✅ Approve</button>
+            <button onclick="rejectWithdrawal('${w.key}','${w.uid}','${w.amount||0}','${w.username||''}','${w.memberId||''}')" style="flex:1;padding:0.5rem;background:rgba(224,32,32,0.15);border:1px solid rgba(224,32,32,0.3);border-radius:8px;color:var(--red2);font-weight:700;cursor:pointer;font-size:0.8rem;font-family:'Exo 2',sans-serif;">❌ Reject</button>
+          </div>
         </div>` : `<div style="font-size:0.7rem;color:var(--muted);margin-top:0.3rem;">Processed: ${w.processedAt ? new Date(w.processedAt).toLocaleString('en-IN') : '—'}${w.rejectionReason ? ' · Reason: ' + w.rejectionReason : ''}</div>`}
       </div>`;
     }).join('') + renderPagerHtml(_withPage, totalPages, 'gotoWithdrawTabPage');
