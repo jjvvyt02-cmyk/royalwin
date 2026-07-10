@@ -1253,11 +1253,21 @@ async function pollGameState() {
         badgeEl.style.color = isManual ? 'var(--red2)' : 'var(--gold)';
         badgeEl.style.border = isManual ? '1px solid rgba(224,32,32,0.3)' : '1px solid rgba(240,192,64,0.2)';
       }
-      // Bet summary
+      // Bet summary -- bet_summary is keyed by individual betId with {type,value,amount}
+      // (needed as-is for the smart-result payout calc in game-engine.js), so aggregate by
+      // selection here for display rather than assuming pre-aggregated fields that were
+      // never actually sent.
       const summary = state.bet_summary || {};
       const summaryEl = document.getElementById('betSummary' + mins + 'min');
       const betsEl = document.getElementById('bets' + mins + 'min');
-      const entries = Object.values(summary);
+      const bySelection = {};
+      Object.values(summary).forEach(b => {
+        const key = String(b.value);
+        if (!bySelection[key]) bySelection[key] = { selection: key, totalAmount: 0, count: 0 };
+        bySelection[key].totalAmount += parseFloat(b.amount || 0);
+        bySelection[key].count += 1;
+      });
+      const entries = Object.values(bySelection);
       if (entries.length === 0) {
         if (summaryEl) summaryEl.innerHTML = '<span style="color:var(--muted);">No bets yet</span>';
         if (betsEl) betsEl.textContent = '0 bets';
@@ -1543,7 +1553,17 @@ async function loadBets() {
       const summary = state.bet_summary || {};
       const summaryEl = document.getElementById('liveSummary' + mins + 'min');
       const totalEl = document.getElementById('liveTotalAmt' + mins + 'min');
-      const entries = Object.values(summary);
+      // bet_summary is keyed by individual betId with {type,value,amount} (needed as-is for the
+      // smart-result payout calc in game-engine.js) -- aggregate by selection here for display,
+      // rather than assuming pre-aggregated {selection,totalAmount,count} that was never sent.
+      const bySelection = {};
+      Object.values(summary).forEach(b => {
+        const key = String(b.value);
+        if (!bySelection[key]) bySelection[key] = { selection: key, totalAmount: 0, count: 0 };
+        bySelection[key].totalAmount += parseFloat(b.amount || 0);
+        bySelection[key].count += 1;
+      });
+      const entries = Object.values(bySelection);
       if (entries.length === 0) {
         if (summaryEl) summaryEl.innerHTML = '<span style="color:var(--muted);">No bets yet</span>';
         if (totalEl) totalEl.textContent = '₹0 · 0 bets';
