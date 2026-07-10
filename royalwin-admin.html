@@ -2683,7 +2683,7 @@ window.loadWithdrawals = async function(filter) {
   if (el) el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:2rem;">Loading...</div>';
   try {
     const allRes = await apiCall('/api/admin/withdrawals');
-    const all = (allRes.withdrawals || []).map(w => ({ key: w.id, uid: w.uid, username: w.username, memberId: w.member_id, amount: parseFloat(w.amount), amountToSend: parseFloat(w.amount_to_send || (w.amount * 0.95).toFixed(2)), method: w.method, upiId: (w.account_details||{}).upiId || '', status: w.status, timestamp: parseInt(w.created_at||0), processedAt: parseInt(w.processed_at||0), rejectionReason: '', gateway: w.method }));
+    const all = (allRes.withdrawals || []).map(w => ({ key: w.id, uid: w.uid, username: w.username, memberId: w.member_id, contact: w.contact, amount: parseFloat(w.amount), amountToSend: parseFloat(w.amount_to_send || (w.amount * 0.95).toFixed(2)), method: w.method, upiId: (w.account_details||{}).upiId || '', status: w.status, timestamp: parseInt(w.created_at||0), processedAt: parseInt(w.processed_at||0), rejectionReason: '', gateway: w.method }));
     // Stats
     const pending = all.filter(w => w.status === 'pending');
     const approved = all.filter(w => w.status === 'approved');
