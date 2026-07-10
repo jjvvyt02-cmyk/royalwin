@@ -8041,6 +8041,14 @@ async function confirmUSDTPayment() {
   if (amt < 1000) { showToast('⚠️ Minimum USDT deposit is ₹1,000'); return; }
   if (!window._usdtDepositKey) { showToast('❌ Connection error. Please try again.'); return; }
   try {
+    // Records a timestamp that the user claims to have sent payment -- doesn't credit
+    // anything itself, crediting is still purely driven by the blockchain scanner/webhook.
+    var token = localStorage.getItem('royalwin_token');
+    await fetch('https://royalwin-api.vercel.app/api/confirm-usdt-sent', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ depositKey: window._usdtDepositKey })
+    });
+
     window._usdtConfirmed = true;
     if (window._usdtTimerInterval) clearInterval(window._usdtTimerInterval);
     var timerEl = document.getElementById('usdtCountdown');
